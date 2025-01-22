@@ -39,3 +39,4 @@ app-example
 
 # test
 output/
+output/*.png
