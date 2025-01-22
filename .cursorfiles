@@ -1,0 +1,65 @@
+# Available Colors in Gluestack UI
+
+Each color has variants from 0-950. Here are the color categories:
+
+## Primary Colors
+
+- primary-{0-950}: Grayscale colors
+  Example: primary-500 is rgb(51, 51, 51) in light mode
+
+## Secondary Colors
+
+- secondary-{0-950}: Another set of grayscale colors
+  Example: secondary-500 is rgb(217, 217, 219) in light mode
+
+## Tertiary Colors
+
+- tertiary-{0-950}: Orange-based colors
+  Example: tertiary-500 is rgb(231, 129, 40) in light mode
+
+## Status Colors
+
+- error-{0-950}: Red colors for error states
+  Example: error-500 is rgb(230, 53, 53) in light mode
+
+- success-{0-950}: Green colors for success states
+  Example: success-500 is rgb(52, 131, 82) in light mode
+
+- warning-{0-950}: Orange colors for warning states
+  Example: warning-500 is rgb(231, 120, 40) in light mode
+
+- info-{0-950}: Blue colors for info states
+  Example: info-500 is rgb(13, 166, 242) in light mode
+
+## UI Colors
+
+- typography-{0-950}: Colors for text
+  Example: typography-500 is rgb(140, 140, 140) in light mode
+
+- outline-{0-950}: Colors for borders
+  Example: outline-500 is rgb(140, 141, 141) in light mode
+
+- background-{0-950}: Colors for backgrounds
+  Example: background-500 is rgb(142, 142, 142) in light mode
+
+## Special Background Colors
+
+- background-error: rgb(254, 241, 241) in light mode
+- background-warning: rgb(255, 243, 234) in light mode
+- background-success: rgb(237, 252, 242) in light mode
+- background-muted: rgb(247, 248, 247) in light mode
+- background-info: rgb(235, 248, 254) in light mode
+
+## Focus Ring Indicator Colors
+
+- indicator-primary: rgb(55, 55, 55) in light mode
+- indicator-info: rgb(83, 153, 236) in light mode
+- indicator-error: rgb(185, 28, 28) in light mode
+
+Note: All colors have different values in dark mode. The values shown above are for light mode.
+
+# Project Notes
+
+## Colors
+
+Check `components/ui/gluestack-ui-provider/config.ts` for available colors in the project.

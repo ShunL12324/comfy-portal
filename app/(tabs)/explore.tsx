@@ -1,109 +1,113 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Box } from '@/components/ui/box';
+import { Link } from '@/components/ui/link';
+import { ScrollView } from '@/components/ui/scroll-view';
+import { Text } from '@/components/ui/text';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ScrollView className="bg-background-0">
+      <Box className="flex-1 p-5">
+        <Box className="mb-4">
+          <Text className="text-2xl font-bold">Explore</Text>
+        </Box>
+        <Text className="mb-4">
+          This app includes example code to help you get started.
+        </Text>
+
+        <Accordion type="single">
+          <AccordionItem value="file-routing">
+            <AccordionTrigger>
+              <Text className="text-lg font-semibold">File-based routing</Text>
+            </AccordionTrigger>
+            <AccordionContent>
+              <Box className="gap-2">
+                <Text>
+                  This app has two screens:{' '}
+                  <Text className="font-semibold">app/(tabs)/index.tsx</Text>{' '}
+                  and{' '}
+                  <Text className="font-semibold">app/(tabs)/explore.tsx</Text>
+                </Text>
+                <Text>
+                  The layout file in{' '}
+                  <Text className="font-semibold">app/(tabs)/_layout.tsx</Text>{' '}
+                  sets up the tab navigator.
+                </Text>
+                <Link
+                  href="https://docs.expo.dev/router/introduction"
+                  isExternal
+                >
+                  <Text className="text-primary-500">Learn more</Text>
+                </Link>
+              </Box>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="platform-support">
+            <AccordionTrigger>
+              <Text className="text-lg font-semibold">
+                Android, iOS, and web support
+              </Text>
+            </AccordionTrigger>
+            <AccordionContent>
+              <Text>
+                You can open this project on Android, iOS, and the web. To open
+                the web version, press <Text className="font-semibold">w</Text>{' '}
+                in the terminal running this project.
+              </Text>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="custom-fonts">
+            <AccordionTrigger>
+              <Text className="text-lg font-semibold">Custom fonts</Text>
+            </AccordionTrigger>
+            <AccordionContent>
+              <Box className="gap-2">
+                <Text>
+                  Open <Text className="font-semibold">app/_layout.tsx</Text> to
+                  see how to load{' '}
+                  <Text style={{ fontFamily: 'SpaceMono' }}>
+                    custom fonts such as this one.
+                  </Text>
+                </Text>
+                <Link
+                  href="https://docs.expo.dev/versions/latest/sdk/font"
+                  isExternal
+                >
+                  <Text className="text-primary-500">Learn more</Text>
+                </Link>
+              </Box>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="theming">
+            <AccordionTrigger>
+              <Text className="text-lg font-semibold">Light and dark mode</Text>
+            </AccordionTrigger>
+            <AccordionContent>
+              <Box className="gap-2">
+                <Text>
+                  This template uses Gluestack UI for theming support. You can
+                  customize the theme in the Gluestack UI provider
+                  configuration.
+                </Text>
+                <Link
+                  href="https://gluestack.io/ui/docs/styling/theme/customizing-theme"
+                  isExternal
+                >
+                  <Text className="text-primary-500">Learn more</Text>
+                </Link>
+              </Box>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </Box>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-});
