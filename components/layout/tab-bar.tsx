@@ -7,6 +7,7 @@ import { Home, Send } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { Dimensions } from 'react-native';
 import { AnimatePresence } from 'moti';
+import { useThemeStore } from '@/store/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TAB_WIDTH = SCREEN_WIDTH / 2;
@@ -83,8 +84,11 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
 };
 
 export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
+  const { theme } = useThemeStore();
   return (
-    <VStack className="border-t border-secondary-200 bg-background-0">
+    <VStack
+      className={`border-t border-secondary-200 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}
+    >
       <HStack space="xs" className="relative">
         <MotiView
           className="absolute h-0.5 bg-primary-900"

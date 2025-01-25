@@ -1,8 +1,8 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
 import { MotiView } from 'moti';
 import { Clock, ImageIcon, Edit2, Trash2 } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
 import { usePresetsStore } from '@/store/presets';
+import { Heading } from '@/components/ui/heading';
 
 interface PresetCardProps {
   id: string;
@@ -25,6 +26,7 @@ interface PresetCardProps {
   createdAt: number;
   thumbnail?: string;
   onPress: () => void;
+  index?: number;
 }
 
 export const PresetCard = ({
@@ -33,8 +35,8 @@ export const PresetCard = ({
   createdAt,
   thumbnail,
   onPress,
+  index = 0,
 }: PresetCardProps) => {
-  const [isPressed, setIsPressed] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
   const removePreset = usePresetsStore((state) => state.removePreset);
@@ -49,78 +51,71 @@ export const PresetCard = ({
       <MotiView
         from={{ opacity: 0, scale: 0.98, translateY: 10 }}
         animate={{ opacity: 1, scale: 1, translateY: 0 }}
-        transition={{ type: 'spring', damping: 15, mass: 0.8 }}
+        transition={{
+          type: 'timing',
+          duration: 300,
+          delay: index * 100,
+        }}
       >
-        <Pressable
+        <TouchableOpacity
           onPress={onPress}
-          onPressIn={() => setIsPressed(true)}
-          onPressOut={() => setIsPressed(false)}
-          className="overflow-hidden rounded-2xl bg-background-50/80 backdrop-blur-xl"
+          activeOpacity={0.8}
+          className="overflow-hidden rounded-xl bg-background-50"
           style={{
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 15,
           }}
         >
-          <MotiView
-            animate={{
-              scale: isPressed ? 0.97 : 1,
-              opacity: isPressed ? 0.95 : 1,
-            }}
-            transition={{ type: 'timing', duration: 100 }}
-          >
-            <HStack className="items-center justify-between p-4">
-              <HStack space="md" className="flex-1 items-center">
-                {thumbnail ? (
-                  <Image
-                    source={{ uri: thumbnail }}
-                    className="h-16 w-16 rounded-2xl"
-                    resizeMode="cover"
-                    alt={`Thumbnail for ${name}`}
-                  />
-                ) : (
-                  <HStack className="h-16 w-16 items-center justify-center rounded-2xl bg-background-0/80 backdrop-blur-xl">
-                    <ImageIcon size={24} className="text-primary-500" />
-                  </HStack>
-                )}
-                <VStack space="xs" className="flex-1">
-                  <Text
-                    className="text-base font-semibold text-primary-500"
-                    numberOfLines={1}
-                  >
-                    {name}
+          <HStack className="items-center justify-between p-3.5">
+            <HStack space="md" className="flex-1 items-center">
+              {thumbnail ? (
+                <Image
+                  source={{ uri: thumbnail }}
+                  className="h-14 w-14 rounded-xl"
+                  resizeMode="cover"
+                  alt={`Thumbnail for ${name}`}
+                />
+              ) : (
+                <HStack className="h-14 w-14 items-center justify-center rounded-xl bg-background-0">
+                  <ImageIcon size={22} className="text-primary-500" />
+                </HStack>
+              )}
+              <VStack space="xs" className="min-w-0 flex-1">
+                <Text
+                  className="text-base font-semibold text-primary-500"
+                  numberOfLines={1}
+                >
+                  {name}
+                </Text>
+                <HStack space="xs" className="items-center">
+                  <Clock size={12} className="shrink-0 text-primary-300" />
+                  <Text className="text-xs text-primary-400" numberOfLines={1}>
+                    {new Date(createdAt).toLocaleString()}
                   </Text>
-                  <HStack space="xs" className="items-center">
-                    <Clock size={13} className="text-primary-300" />
-                    <Text className="text-xs text-primary-400">
-                      {new Date(createdAt).toLocaleString()}
-                    </Text>
-                  </HStack>
-                </VStack>
-              </HStack>
-              <VStack
-                space="md"
-                className="h-16 items-end justify-between py-0.5"
-              >
-                <HStack space="sm">
-                  <Pressable
-                    onPress={() => setIsEditModalOpen(true)}
-                    className="h-9 w-9 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
-                  >
-                    <Edit2 size={14} className="text-primary-500" />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setIsDeleteAlertOpen(true)}
-                    className="h-9 w-9 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
-                  >
-                    <Trash2 size={14} className="text-error-600" />
-                  </Pressable>
                 </HStack>
               </VStack>
             </HStack>
-          </MotiView>
-        </Pressable>
+
+            <VStack space="md" className="ml-4 shrink-0 py-1">
+              <HStack space="sm" className="mb-auto">
+                <TouchableOpacity
+                  onPress={() => setIsEditModalOpen(true)}
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-background-0 active:bg-background-100"
+                >
+                  <Edit2 size={13} className="text-primary-500" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setIsDeleteAlertOpen(true)}
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-background-0 active:bg-background-100"
+                >
+                  <Trash2 size={13} className="text-error-600" />
+                </TouchableOpacity>
+              </HStack>
+            </VStack>
+          </HStack>
+        </TouchableOpacity>
       </MotiView>
 
       <EditPresetModal
@@ -134,35 +129,31 @@ export const PresetCard = ({
         onClose={() => setIsDeleteAlertOpen(false)}
       >
         <AlertDialogBackdrop />
-        <AlertDialogContent className="rounded-2xl bg-background-0">
-          <AlertDialogHeader className="pb-3">
-            <Text className="text-lg font-semibold text-primary-500">
-              Delete Preset
-            </Text>
+        <AlertDialogContent className="rounded-xl bg-background-0">
+          <AlertDialogHeader>
+            <Heading size="sm">Delete Preset</Heading>
           </AlertDialogHeader>
-          <AlertDialogBody className="pb-4">
+          <AlertDialogBody>
             <Text className="text-sm text-primary-400">
               Are you sure you want to delete this preset? This action cannot be
               undone.
             </Text>
           </AlertDialogBody>
-          <AlertDialogFooter className="pt-3">
-            <HStack space="sm">
-              <Button
-                variant="outline"
-                onPress={() => setIsDeleteAlertOpen(false)}
-                className="flex-1 rounded-xl border-[0.5px] border-background-200"
-              >
-                <ButtonText className="text-primary-400">Cancel</ButtonText>
-              </Button>
-              <Button
-                variant="solid"
-                onPress={handleDelete}
-                className="flex-1 rounded-xl bg-error-500 active:bg-error-600"
-              >
-                <ButtonText className="text-background-0">Delete</ButtonText>
-              </Button>
-            </HStack>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onPress={() => setIsDeleteAlertOpen(false)}
+              className="flex-1 rounded-xl bg-background-50"
+            >
+              <ButtonText className="text-primary-400">Cancel</ButtonText>
+            </Button>
+            <Button
+              variant="solid"
+              onPress={handleDelete}
+              className="flex-1 rounded-xl bg-error-500 active:bg-error-600"
+            >
+              <ButtonText className="text-background-0">Delete</ButtonText>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

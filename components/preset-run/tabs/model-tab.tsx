@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Plus,
   Minus,
+  RefreshCw,
 } from 'lucide-react-native';
 import { BottomSheetModal, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { useServersStore } from '@/store/servers';
@@ -28,6 +29,8 @@ import {
   SliderThumb,
 } from '@/components/ui/slider';
 import { LoraConfig } from '@/types/generation';
+import { checkMultipleServers } from '@/utils/server-status';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * Model selection tab component
@@ -37,10 +40,12 @@ import { LoraConfig } from '@/types/generation';
 export function ModelTab({ params, onParamsChange }: TabProps) {
   const { width: windowWidth } = useWindowDimensions();
   const servers = useServersStore((state) => state.servers);
+  const refreshServers = useServersStore((state) => state.refreshServers);
   const checkpointModalRef = useRef<BottomSheetModal>(null);
   const loraModalRef = useRef<BottomSheetModal>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLoraIndex, setSelectedLoraIndex] = useState<number>(-1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const checkpointModels = servers.flatMap((server, serverIndex) =>
     (server.models || [])
@@ -145,6 +150,18 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
     },
     [params, onParamsChange],
   );
+
+  const handleRefreshModels = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshServers();
+    } catch (error) {
+      console.error('Failed to refresh models:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshServers, isRefreshing]);
 
   // Calculate item width based on window width
   const itemWidth = (windowWidth - 32 - 8) / 2; // 32 for padding, 8 for gap
@@ -476,25 +493,47 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
           </Text>
 
           <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
-            <Box className="overflow-hidden rounded-xl border-[0.5px] border-background-100 bg-background-50">
-              <Input variant="outline" size="md" className="border-0 px-3 py-2">
-                <Icon
-                  as={Search}
-                  size="sm"
-                  className="mr-2 text-background-400"
-                />
-                <InputField
-                  placeholder="Search models..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  className="flex-1 text-sm text-primary-500"
-                  placeholderTextColor="rgb(115, 115, 115)"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  clearButtonMode="while-editing"
-                />
-              </Input>
-            </Box>
+            <HStack space="sm" className="items-center">
+              <Box className="flex-1 overflow-hidden rounded-lg border-[0.5px] border-background-100 bg-background-50">
+                <Input
+                  variant="outline"
+                  size="md"
+                  className="border-0 px-3 py-2"
+                >
+                  <Icon
+                    as={Search}
+                    size="sm"
+                    className="mr-2 text-background-400"
+                  />
+                  <InputField
+                    placeholder="Search models..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    className="flex-1 text-sm text-primary-500"
+                    placeholderTextColor="rgb(115, 115, 115)"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    clearButtonMode="while-editing"
+                  />
+                </Input>
+              </Box>
+              <Button
+                variant="outline"
+                size="md"
+                onPress={handleRefreshModels}
+                className="aspect-square rounded-lg border-[0.5px] border-background-100 bg-background-50 p-0"
+              >
+                {isRefreshing ? (
+                  <Spinner size="small" className="text-background-400" />
+                ) : (
+                  <Icon
+                    as={RefreshCw}
+                    size="sm"
+                    className="text-background-400"
+                  />
+                )}
+              </Button>
+            </HStack>
           </Box>
 
           <BottomSheetFlatList
@@ -553,25 +592,47 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
           </Text>
 
           <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
-            <Box className="overflow-hidden rounded-xl border-[0.5px] border-background-100 bg-background-50">
-              <Input variant="outline" size="md" className="border-0 px-3 py-2">
-                <Icon
-                  as={Search}
-                  size="sm"
-                  className="mr-2 text-background-400"
-                />
-                <InputField
-                  placeholder="Search LoRAs..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  className="flex-1 text-sm text-primary-500"
-                  placeholderTextColor="rgb(115, 115, 115)"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  clearButtonMode="while-editing"
-                />
-              </Input>
-            </Box>
+            <HStack space="sm" className="items-center">
+              <Box className="flex-1 overflow-hidden rounded-lg border-[0.5px] border-background-100 bg-background-50">
+                <Input
+                  variant="outline"
+                  size="md"
+                  className="border-0 px-3 py-2"
+                >
+                  <Icon
+                    as={Search}
+                    size="sm"
+                    className="mr-2 text-background-400"
+                  />
+                  <InputField
+                    placeholder="Search LoRAs..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    className="flex-1 text-sm text-primary-500"
+                    placeholderTextColor="rgb(115, 115, 115)"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    clearButtonMode="while-editing"
+                  />
+                </Input>
+              </Box>
+              <Button
+                variant="outline"
+                size="md"
+                onPress={handleRefreshModels}
+                className="aspect-square rounded-lg border-[0.5px] border-background-100 bg-background-50 p-0"
+              >
+                {isRefreshing ? (
+                  <Spinner size="small" className="text-background-400" />
+                ) : (
+                  <Icon
+                    as={RefreshCw}
+                    size="sm"
+                    className="text-background-400"
+                  />
+                )}
+              </Button>
+            </HStack>
           </Box>
 
           <BottomSheetFlatList

@@ -14,6 +14,7 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
+import { useThemeStore } from '@/store/theme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -29,7 +30,14 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const colorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme();
+  const { theme, setSystemTheme } = useThemeStore();
+
+  useEffect(() => {
+    if (systemColorScheme) {
+      setSystemTheme(systemColorScheme);
+    }
+  }, [systemColorScheme]);
 
   useEffect(() => {
     if (loaded) {
@@ -43,10 +51,10 @@ export default function RootLayout() {
 
   return (
     <SafeAreaView
-      className={`flex-1 ${colorScheme === 'dark' ? 'bg-[#121212]' : 'bg-[#ffffff]'}`}
+      className={`flex-1 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <GluestackUIProvider mode={colorScheme === 'dark' ? 'dark' : 'light'}>
+        <GluestackUIProvider mode={theme === 'dark' ? 'dark' : 'light'}>
           <BottomSheetModalProvider>
             <Stack
               screenOptions={{
@@ -60,7 +68,7 @@ export default function RootLayout() {
               />
             </Stack>
           </BottomSheetModalProvider>
-          <StatusBar style="auto" />
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         </GluestackUIProvider>
       </GestureHandlerRootView>
     </SafeAreaView>

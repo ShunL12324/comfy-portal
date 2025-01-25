@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { ServerCard } from '@/components/server-card';
 import { MotiView } from 'moti';
+import { Text as RNText } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,8 @@ import { View } from '@/components/ui/view';
 import { Animated, Easing } from 'react-native';
 import { AddServerModal } from '@/components/add-server-modal';
 import { AppBar } from '@/components/layout/app-bar';
+import { useThemeStore } from '@/store/theme';
+import { BlurView } from 'expo-blur';
 
 const MINIMUM_REFRESH_TIME = 1000; // 1秒，确保至少旋转一圈
 
@@ -64,8 +67,10 @@ export default function HomeScreen() {
     setIsRefreshing(false);
   };
 
+  const { theme } = useThemeStore();
+
   return (
-    <View className="flex-1 bg-background-0">
+    <View className={`flex-1 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <AppBar
         title="Servers"
         bottomElement={
@@ -74,7 +79,7 @@ export default function HomeScreen() {
               variant="solid"
               action="primary"
               size="md"
-              className="h-11 flex-1 rounded-xl bg-background-50/80 backdrop-blur-sm active:bg-background-100/80"
+              className="h-11 flex-1 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
               onPress={() => setIsAddModalOpen(true)}
             >
               <HStack space="sm" className="items-center justify-center">
@@ -88,7 +93,7 @@ export default function HomeScreen() {
               variant="solid"
               action="secondary"
               size="md"
-              className="h-11 w-11 rounded-xl bg-background-50/80 p-0 backdrop-blur-sm active:bg-background-100/80"
+              className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
               onPress={handleRefresh}
               disabled={isRefreshing}
             >
@@ -103,31 +108,7 @@ export default function HomeScreen() {
       <ScrollView className="flex-1">
         <VStack space="md" className="px-5 pb-6">
           {servers.map((server, index) => (
-            <MotiView
-              key={server.id}
-              from={{
-                opacity: 0,
-                scale: 0.98,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-              }}
-              transition={{
-                type: 'timing',
-                delay: index * 50,
-                duration: 150,
-              }}
-            >
-              <ServerCard
-                name={server.name}
-                host={server.host}
-                port={server.port}
-                status={server.status}
-                latency={server.latency || 0}
-                id={server.id}
-              />
-            </MotiView>
+            <ServerCard key={server.id} id={server.id} index={index} />
           ))}
         </VStack>
       </ScrollView>

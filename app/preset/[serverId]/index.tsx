@@ -52,7 +52,7 @@ const PresetsScreen = () => {
             variant="solid"
             action="primary"
             size="md"
-            className="mt-2 h-11 rounded-xl bg-background-50/80 backdrop-blur-sm active:bg-background-100/80"
+            className="mt-2 h-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
             onPress={handleAddPreset}
           >
             <HStack space="sm" className="items-center justify-center">
@@ -67,7 +67,7 @@ const PresetsScreen = () => {
 
       <ScrollView className="flex-1">
         <VStack space="md" className="px-5 pb-6">
-          {filteredPresets.map((preset) => (
+          {filteredPresets.map((preset, index) => (
             <PresetCard
               key={preset.id}
               id={preset.id}
@@ -75,6 +75,7 @@ const PresetsScreen = () => {
               createdAt={preset.createdAt}
               thumbnail={preset.thumbnail}
               onPress={() => handleRunPreset(preset.id)}
+              index={index}
             />
           ))}
         </VStack>

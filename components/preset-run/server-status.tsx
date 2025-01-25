@@ -4,23 +4,12 @@ import { Box } from '@/components/ui/box';
 import { VStack } from '../ui/vstack';
 
 interface ServerStatusProps {
-  connected: boolean;
   generating: boolean;
   name: string;
 }
 
-export function ServerStatus({
-  connected,
-  generating,
-  name,
-}: ServerStatusProps) {
-  const getStatusColor = () => {
-    if (!connected) return 'error';
-    if (generating) return 'warning';
-    return 'success';
-  };
-
-  const color = getStatusColor();
+export function ServerStatus({ generating, name }: ServerStatusProps) {
+  const color = generating ? 'warning' : 'success';
 
   return (
     <VStack space="sm" className="items-center">
@@ -39,7 +28,7 @@ export function ServerStatus({
           <Text
             className={`text-2xs font-medium text-${color}-700 dark:text-${color}-300`}
           >
-            {connected ? (generating ? 'Generating' : 'Connected') : 'Offline'}
+            {generating ? 'Generating' : 'Ready'}
           </Text>
         </Box>
       </Box>

@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { VStack } from '../ui/vstack';
 import { HStack } from '../ui/hstack';
+import { useThemeStore } from '@/store/theme';
 
 interface AppBarProps {
   title: string;
@@ -25,9 +26,10 @@ export function AppBar({
   bottomElement,
 }: AppBarProps) {
   const router = useRouter();
+  const { theme } = useThemeStore();
 
   return (
-    <View className="w-full bg-background-0">
+    <View className={`w-full ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="items-center justify-between">
           <HStack className="items-center">

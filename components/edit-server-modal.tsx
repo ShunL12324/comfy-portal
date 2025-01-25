@@ -181,22 +181,22 @@ export const EditServerModal = ({
         }}
         pointerEvents="box-none"
       >
-        <ModalContent className="overflow-hidden rounded-2xl bg-background-0">
-          <VStack>
-            <ModalHeader>
+        <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-50">
+          <VStack className="p-0">
+            <ModalHeader className="px-0">
               <Text className="text-lg font-semibold text-primary-500">
                 Edit Server
               </Text>
             </ModalHeader>
-            <ModalBody className="py-6">
-              <VStack space="lg">
+            <ModalBody className="px-0 py-2">
+              <VStack space="md">
                 <FormControl isInvalid={!!errors.name}>
                   <FormControlLabel>
                     <Text className="text-sm font-medium text-primary-400">
                       Name
                     </Text>
                   </FormControlLabel>
-                  <Input className="mt-1.5 overflow-hidden rounded-xl border-[0.5px] border-background-200">
+                  <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       value={name}
                       onChangeText={(value) => {
@@ -205,12 +205,12 @@ export const EditServerModal = ({
                       }}
                       placeholder="Server name"
                       maxLength={MAX_NAME_LENGTH}
-                      className="bg-background-0 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {errors.name && (
                     <FormControlError>
-                      <Text className="mt-1.5 text-xs text-error-600">
+                      <Text className="mt-1 text-xs text-error-600">
                         {errors.name}
                       </Text>
                     </FormControlError>
@@ -223,7 +223,7 @@ export const EditServerModal = ({
                       Host
                     </Text>
                   </FormControlLabel>
-                  <Input className="mt-1.5 overflow-hidden rounded-xl border-[0.5px] border-background-200">
+                  <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       value={host}
                       onChangeText={(value) => {
@@ -231,12 +231,12 @@ export const EditServerModal = ({
                         setErrors((prev) => ({ ...prev, host: '' }));
                       }}
                       placeholder="Host or IP address"
-                      className="bg-background-0 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {errors.host && (
                     <FormControlError>
-                      <Text className="mt-1.5 text-xs text-error-600">
+                      <Text className="mt-1 text-xs text-error-600">
                         {errors.host}
                       </Text>
                     </FormControlError>
@@ -249,7 +249,7 @@ export const EditServerModal = ({
                       Port
                     </Text>
                   </FormControlLabel>
-                  <Input className="mt-1.5 overflow-hidden rounded-xl border-[0.5px] border-background-200">
+                  <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       value={port}
                       onChangeText={(value) => {
@@ -257,13 +257,13 @@ export const EditServerModal = ({
                         setErrors((prev) => ({ ...prev, port: '' }));
                       }}
                       placeholder="Port number"
-                      className="bg-background-0 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                       keyboardType="numeric"
                     />
                   </Input>
                   {errors.port && (
                     <FormControlError>
-                      <Text className="mt-1.5 text-xs text-error-600">
+                      <Text className="mt-1 text-xs text-error-600">
                         {errors.port}
                       </Text>
                     </FormControlError>
@@ -271,19 +271,19 @@ export const EditServerModal = ({
                 </FormControl>
               </VStack>
             </ModalBody>
-            <ModalFooter>
-              <HStack space="sm">
+            <ModalFooter className="px-0">
+              <HStack space="sm" className="py-0">
                 <Button
                   variant="outline"
                   onPress={handleClose}
-                  className="flex-1 rounded-xl border-[0.5px] border-background-200"
+                  className="flex-1 rounded-md bg-background-100"
                 >
                   <ButtonText className="text-primary-400">Cancel</ButtonText>
                 </Button>
                 <Button
                   variant="solid"
                   onPress={handleSave}
-                  className="flex-1 rounded-xl bg-primary-500 active:bg-primary-600"
+                  className="flex-1 rounded-md bg-primary-500"
                 >
                   <ButtonText className="text-background-0">
                     Save Changes

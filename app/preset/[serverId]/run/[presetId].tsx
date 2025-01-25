@@ -1,50 +1,90 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { VStack } from '@/components/ui/vstack';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { Text } from '@/components/ui/text';
+import {
+  Animated,
+  useWindowDimensions,
+  View,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { History, Maximize2 } from 'lucide-react-native';
+
+import { VStack } from '@/components/ui/vstack';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Center } from '@/components/ui/center';
+
 import { useServersStore } from '@/store/servers';
 import { usePresetsStore } from '@/store/presets';
-import { AppBar } from '@/components/layout/app-bar';
-import { ComfyClient, ConnectionStatus } from '@/utils/comfy-client';
+import { ComfyClient } from '@/utils/comfy-client';
 import { createPreset } from '@/utils/preset';
+import { saveGeneratedImage, loadHistoryImages } from '@/utils/image-storage';
+
+import { AppBar } from '@/components/layout/app-bar';
 import { ServerStatus } from '@/components/preset-run/server-status';
 import { ImagePreview } from '@/components/preset-run/image-preview';
 import { ParameterControls } from '@/components/preset-run/parameter-controls';
 import { GenerationButton } from '@/components/preset-run/generation-button';
 import { HistoryDrawer } from '@/components/preset-run/history-drawer';
-import { saveGeneratedImage, loadHistoryImages } from '@/utils/image-storage';
-import { Animated, useWindowDimensions, View, Platform } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
-import { History } from 'lucide-react-native';
 
+/**
+ * Parameters for image generation
+ */
 interface GenerationParams {
+  /** Selected model for generation */
   model: string;
+  /** Main prompt text */
   prompt: string;
+  /** Negative prompt text */
   negativePrompt: string;
+  /** Number of generation steps */
   steps: number;
+  /** Classifier-free guidance scale */
   cfg: number;
+  /** Generation seed */
   seed: number;
+  /** Output image width */
   width: number;
+  /** Output image height */
   height: number;
+  /** Sampling method */
   sampler: 'euler' | 'euler_ancestral' | 'dpmpp_3m_sde_gpu';
+  /** Sampling scheduler */
   scheduler: 'normal' | 'karras' | 'sgm_uniform';
+  /** Whether to use random seed */
   useRandomSeed: boolean;
 }
 
-// Separate the parallax image component to prevent unnecessary re-renders
+/**
+ * Props for the parallax scrolling image component
+ */
+interface ParallaxImageProps {
+  /** Animated scroll value */
+  scrollY: Animated.Value;
+  /** Height of the image container */
+  imageHeight: number;
+  /** URL of the image to display */
+  imageUrl?: string;
+  /** Progress information for image generation */
+  progress?: { current: number; total: number };
+  /** Whether the preview modal is open */
+  isPreviewOpen: boolean;
+  /** Callback when preview is closed */
+  onPreviewClose: () => void;
+}
+
+/**
+ * A component that displays an image with parallax scrolling effect
+ */
 const ParallaxImage = memo(function ParallaxImage({
   scrollY,
   imageHeight,
   imageUrl,
   progress,
-}: {
-  scrollY: Animated.Value;
-  imageHeight: number;
-  imageUrl?: string;
-  progress?: { current: number; total: number };
-}) {
+  isPreviewOpen,
+  onPreviewClose,
+}: ParallaxImageProps) {
   const scale = scrollY.interpolate({
     inputRange: [-imageHeight, 0],
     outputRange: [1.5, 1],
@@ -66,7 +106,6 @@ const ParallaxImage = memo(function ParallaxImage({
         right: 0,
         height: imageHeight,
         zIndex: 1,
-        overflow: 'hidden',
       }}
     >
       <Animated.View
@@ -75,12 +114,25 @@ const ParallaxImage = memo(function ParallaxImage({
           transform: [{ scale }, { translateY }],
         }}
       >
-        <ImagePreview imageUrl={imageUrl} progress={progress} />
+        <ImagePreview
+          imageUrl={imageUrl}
+          progress={progress}
+          isPreviewOpen={isPreviewOpen}
+          onPreviewClose={onPreviewClose}
+        />
       </Animated.View>
     </Animated.View>
   );
 });
 
+/**
+ * Screen component for running image generation presets
+ * Features:
+ * - Parameter controls for customizing generation
+ * - Real-time progress tracking
+ * - Image preview with parallax scrolling
+ * - Generation history management
+ */
 export default function RunPresetScreen() {
   const { serverId, presetId } = useLocalSearchParams();
   const server = useServersStore((state) =>
@@ -90,11 +142,9 @@ export default function RunPresetScreen() {
     state.presets.find((p) => p.id === presetId),
   );
 
-  // 使用本地状态管理连接状态
   const [connectionStatus, setConnectionStatus] = useState<
-    'online' | 'offline' | 'generating'
-  >('offline');
-
+    'idle' | 'generating'
+  >('idle');
   const [params, setParams] = useState<GenerationParams>({
     model: 'everclearPNYByZovya_v3.safetensors',
     prompt: '',
@@ -109,46 +159,38 @@ export default function RunPresetScreen() {
     useRandomSeed: true,
   });
 
-  useEffect(() => {
-    if (preset?.content) {
-      try {
-        const savedParams = JSON.parse(preset.content);
-        setParams(savedParams);
-      } catch (error) {
-        console.error('Failed to parse preset content:', error);
-      }
-    }
-  }, [preset?.content]);
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState({ value: 0, max: 0 });
   const [nodeProgress, setNodeProgress] = useState({ completed: 0, total: 0 });
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const comfyClient = useRef<ComfyClient | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [historyImages, setHistoryImages] = useState<
+    Array<{ url: string; timestamp: number }>
+  >([]);
 
+  const comfyClient = useRef<ComfyClient | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   const scrollY = useRef(new Animated.Value(0)).current;
   const imageHeight = screenHeight * 0.6;
 
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [historyImages, setHistoryImages] = useState<
-    Array<{
-      url: string;
-      timestamp: number;
-    }>
-  >([]);
-
-  // 使用 useRef 来存储上一次更新的时间和值
   const lastProgressUpdateRef = useRef(Date.now());
   const lastProgressValueRef = useRef(0);
   const lastNodeProgressUpdateRef = useRef(Date.now());
   const lastNodeProgressValueRef = useRef(0);
   const progressCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 使用 useCallback 包装更新函数
+  const cleanup = useCallback(() => {
+    if (progressCompleteTimeoutRef.current) {
+      clearTimeout(progressCompleteTimeoutRef.current);
+      progressCompleteTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => cleanup, [cleanup]);
+
   const debouncedSetProgress = useCallback((value: number, max: number) => {
     const now = Date.now();
-    // 确保两次更新之间至少间隔 200ms，且进度变化超过 1%
     const timeDiff = now - lastProgressUpdateRef.current;
     const progressPercentage = (value / max) * 100;
     const lastProgressPercentage = (lastProgressValueRef.current / max) * 100;
@@ -164,7 +206,6 @@ export default function RunPresetScreen() {
   const debouncedSetNodeProgress = useCallback(
     (completed: number, total: number) => {
       const now = Date.now();
-      // 确保两次更新之间至少间隔 200ms，且节点进度有变化
       const timeDiff = now - lastNodeProgressUpdateRef.current;
       if (
         timeDiff >= 200 &&
@@ -178,29 +219,21 @@ export default function RunPresetScreen() {
     [],
   );
 
-  // 清理函数
-  const cleanup = useCallback(() => {
-    if (progressCompleteTimeoutRef.current) {
-      clearTimeout(progressCompleteTimeoutRef.current);
-      progressCompleteTimeoutRef.current = null;
-    }
-  }, []);
-
-  // 组件卸载时清理
   useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+    if (preset?.content) {
+      try {
+        const savedParams = JSON.parse(preset.content);
+        setParams(savedParams);
+      } catch (error) {
+        console.error('Failed to parse preset content:', error);
+      }
+    }
+  }, [preset?.content]);
 
   useEffect(() => {
     if (server) {
       comfyClient.current = new ComfyClient({
         serverAddress: `${server.host}:${server.port}`,
-      });
-
-      comfyClient.current.setOnStatusChange((status) => {
-        if (!isGenerating) {
-          setConnectionStatus(status === 'connected' ? 'online' : 'offline');
-        }
       });
 
       const connectWithRetry = async (retries = 3) => {
@@ -226,15 +259,8 @@ export default function RunPresetScreen() {
     };
   }, [server?.id]);
 
-  // 监听生成状态变化
   useEffect(() => {
-    if (isGenerating) {
-      setConnectionStatus('generating');
-    } else if (comfyClient.current?.isConnected()) {
-      setConnectionStatus('online');
-    } else {
-      setConnectionStatus('offline');
-    }
+    setConnectionStatus(isGenerating ? 'generating' : 'idle');
   }, [isGenerating]);
 
   useEffect(() => {
@@ -247,8 +273,7 @@ export default function RunPresetScreen() {
     if (!comfyClient.current || !preset || !server) return;
 
     try {
-      cleanup(); // 清理之前可能存在的timeout
-      setConnectionStatus('generating');
+      cleanup();
       setIsGenerating(true);
       setProgress({ value: 0, max: 0 });
       setNodeProgress({ completed: 0, total: 0 });
@@ -258,16 +283,15 @@ export default function RunPresetScreen() {
           await comfyClient.current.connect();
         } catch (error) {
           setIsGenerating(false);
-          setConnectionStatus('offline');
+          setConnectionStatus('idle');
           return;
         }
       }
 
       const presetData = createPreset(params);
-      const images = await comfyClient.current.generate(presetData, {
+      await comfyClient.current.generate(presetData, {
         onProgress: (value, max) => {
           debouncedSetProgress(value, max);
-          // 如果进度接近完成但还未到100%，强制更新到100%
           if (value > max * 0.9 && value < max) {
             cleanup();
             progressCompleteTimeoutRef.current = setTimeout(() => {
@@ -279,79 +303,75 @@ export default function RunPresetScreen() {
         onNodeComplete: (_, total, completed) =>
           debouncedSetNodeProgress(completed, total),
         onComplete: async (images) => {
-          // 确保进度条显示完成
           setProgress((prev) => ({ ...prev, value: prev.max }));
-
-          // 等待一小段时间再更新图片，确保进度条动画完成
           await new Promise((resolve) => setTimeout(resolve, 300));
 
           if (images.length > 0) {
-            setGeneratedImage(images[0]);
-            await saveGeneratedImage({
+            const savedImage = await saveGeneratedImage({
               presetId: preset.id,
               imageUrl: images[0],
               params,
             });
+
+            if (savedImage) {
+              const localImageUrl = savedImage.path.startsWith('file://')
+                ? savedImage.path
+                : `file://${savedImage.path}`;
+              setGeneratedImage(localImageUrl);
+            } else {
+              setGeneratedImage(images[0]);
+            }
+
             const newHistoryImages = await loadHistoryImages(preset.id);
             setHistoryImages(newHistoryImages);
           }
 
           cleanup();
           setIsGenerating(false);
-          setConnectionStatus(
-            comfyClient.current?.isConnected() ? 'online' : 'offline',
-          );
         },
         onError: () => {
           cleanup();
           setIsGenerating(false);
-          setConnectionStatus(
-            comfyClient.current?.isConnected() ? 'online' : 'offline',
-          );
         },
       });
     } catch (error) {
       cleanup();
       setIsGenerating(false);
-      setConnectionStatus(
-        comfyClient.current?.isConnected() ? 'online' : 'offline',
-      );
     }
   };
 
-  const handleSelectHistoryImage = (url: string) => {
+  const handleSelectHistoryImage = useCallback((url: string) => {
     setGeneratedImage(url);
     setIsHistoryOpen(false);
-  };
+  }, []);
 
-  const handleDeleteImages = async (urls: string[]) => {
-    // Delete images from history
-    const newHistoryImages = historyImages.filter(
-      (img) => !urls.includes(img.url),
-    );
-    setHistoryImages(newHistoryImages);
-
-    // If the currently displayed image is being deleted, clear it
-    if (generatedImage && urls.includes(generatedImage)) {
-      setGeneratedImage(null);
-    }
-
-    // Delete images from storage
-    if (preset) {
-      await Promise.all(
-        urls.map((url) =>
-          saveGeneratedImage({
-            presetId: preset.id,
-            imageUrl: url,
-            params,
-            delete: true,
-          }),
-        ),
+  const handleDeleteImages = useCallback(
+    async (urls: string[]) => {
+      const newHistoryImages = historyImages.filter(
+        (img) => !urls.includes(img.url),
       );
-    }
-  };
+      setHistoryImages(newHistoryImages);
 
-  // Optimize scroll event handling
+      if (generatedImage && urls.includes(generatedImage)) {
+        setGeneratedImage(null);
+      }
+
+      if (preset) {
+        await Promise.all(
+          urls.map((url) =>
+            saveGeneratedImage({
+              presetId: preset.id,
+              imageUrl: url,
+              params,
+              delete: true,
+            }),
+          ),
+        );
+      }
+    },
+    [generatedImage, historyImages, params, preset],
+  );
+
   const handleScroll = useCallback(
     Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
       useNativeDriver: true,
@@ -359,7 +379,6 @@ export default function RunPresetScreen() {
     [scrollY],
   );
 
-  // Optimize scroll end handling
   const handleScrollEnd = useCallback(
     (event: any) => {
       const y = event.nativeEvent.contentOffset.y;
@@ -387,11 +406,7 @@ export default function RunPresetScreen() {
           showBack
           title={preset.name}
           centerElement={
-            <ServerStatus
-              connected={connectionStatus === 'online'}
-              generating={isGenerating}
-              name={server.name}
-            />
+            <ServerStatus generating={isGenerating} name={server.name} />
           }
           rightElement={
             <Button
@@ -405,7 +420,6 @@ export default function RunPresetScreen() {
         />
       </View>
 
-      {/* Parallax Container */}
       <View style={{ flex: 1 }}>
         <ParallaxImage
           scrollY={scrollY}
@@ -419,7 +433,27 @@ export default function RunPresetScreen() {
                 }
               : undefined
           }
+          isPreviewOpen={isPreviewOpen}
+          onPreviewClose={() => setIsPreviewOpen(false)}
         />
+
+        {generatedImage && (
+          <TouchableOpacity
+            activeOpacity={0.5}
+            onPress={() => setIsPreviewOpen(true)}
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: 8,
+              padding: 8,
+              zIndex: 30,
+            }}
+          >
+            <Icon as={Maximize2} size="sm" className="text-white" />
+          </TouchableOpacity>
+        )}
 
         <Animated.ScrollView
           className="flex-1"
@@ -437,7 +471,6 @@ export default function RunPresetScreen() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
-          {/* Content Container */}
           <View
             className="bg-background-0"
             style={{
@@ -459,7 +492,7 @@ export default function RunPresetScreen() {
           <GenerationButton
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
-            isServerOnline={connectionStatus === 'online'}
+            isServerOnline={true}
           />
         </View>
       </View>

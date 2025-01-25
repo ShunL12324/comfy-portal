@@ -100,52 +100,12 @@ export class ComfyClient {
   private lastMessageTime: number = 0;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
-  private connectionMonitor: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
-  private onStatusChange?: (status: ConnectionStatus) => void;
 
   constructor(options: ComfyClientOptions) {
     this.serverAddress = options.serverAddress;
     this.clientId = Crypto.randomUUID();
     [this.host, this.port] = this.serverAddress.split(':');
-  }
-
-  /**
-   * Sets a callback to be called when the connection status changes.
-   * @param callback - Function to be called with the new status
-   */
-  setOnStatusChange(callback: (status: ConnectionStatus) => void) {
-    this.onStatusChange = callback;
-  }
-
-  /**
-   * Starts monitoring the WebSocket connection.
-   * If no messages are received for 60 seconds, attempts to establish a new connection.
-   * @private
-   */
-  private startConnectionMonitor() {
-    this.stopConnectionMonitor();
-    this.lastMessageTime = Date.now();
-
-    this.connectionMonitor = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        const timeSinceLastMessage = Date.now() - this.lastMessageTime;
-        if (timeSinceLastMessage > 60000) {
-          this.connect().catch(() => { });
-        }
-      }
-    }, 10000);
-  }
-
-  /**
-   * Stops the connection monitor.
-   * @private
-   */
-  private stopConnectionMonitor() {
-    if (this.connectionMonitor) {
-      clearInterval(this.connectionMonitor);
-      this.connectionMonitor = null;
-    }
   }
 
   /**
@@ -160,39 +120,19 @@ export class ComfyClient {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
-        this.startConnectionMonitor();
-        this.onStatusChange?.('connected');
         resolve();
       };
 
       this.ws.onclose = () => {
-        this.stopConnectionMonitor();
-        this.onStatusChange?.('disconnected');
         this.scheduleReconnect();
       };
 
       this.ws.onerror = (error) => {
-        this.onStatusChange?.('disconnected');
         reject(error);
       };
 
       this.ws.onmessage = (event) => {
         this.lastMessageTime = Date.now();
-
-        try {
-          if (typeof event.data === 'string' && (
-            event.data.startsWith('o') ||
-            event.data === '[]' ||
-            event.data.startsWith('primus')
-          )) {
-            return;
-          }
-
-          const message = JSON.parse(event.data);
-          this.onStatusChange?.('connected');
-        } catch (error) {
-          // Ignore parse errors for non-JSON messages
-        }
       };
     });
   }
@@ -228,14 +168,12 @@ export class ComfyClient {
   async connect(): Promise<void> {
     if (this.isConnected()) return;
 
-    this.onStatusChange?.('connecting');
     try {
       const isLocal = await isLocalOrLanIP(this.host);
       const protocol = isLocal ? 'ws' : 'wss';
       const wsUrl = `${protocol}://${this.serverAddress}/ws?clientId=${this.clientId}`;
       await this.setupWebSocket(wsUrl);
     } catch (error) {
-      this.onStatusChange?.('disconnected');
       throw error;
     }
   }
@@ -244,7 +182,6 @@ export class ComfyClient {
    * Closes the WebSocket connection and stops all monitoring/reconnection attempts.
    */
   disconnect() {
-    this.stopConnectionMonitor();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -253,7 +190,6 @@ export class ComfyClient {
       this.ws.close();
       this.ws = null;
     }
-    this.onStatusChange?.('disconnected');
   }
 
   /**

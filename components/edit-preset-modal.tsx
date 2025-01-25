@@ -148,14 +148,14 @@ export function EditPresetModal({
         className="flex-1 items-center justify-center px-5"
         pointerEvents="box-none"
       >
-        <ModalContent className="overflow-hidden rounded-2xl bg-background-0">
-          <ModalHeader className="pb-3">
+        <ModalContent className="overflow-hidden rounded-xl border-0 bg-background-50">
+          <ModalHeader>
             <Text className="text-lg font-semibold text-primary-500">
               Edit Preset
             </Text>
           </ModalHeader>
 
-          <ModalBody className="pb-3">
+          <ModalBody>
             <VStack space="md">
               <FormControl isInvalid={!!error}>
                 <FormControlLabel>
@@ -166,7 +166,7 @@ export function EditPresetModal({
                 <Input
                   variant="outline"
                   size="md"
-                  className="rounded-xl border-[0.5px] border-background-100 bg-background-0"
+                  className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
                 >
                   <InputField
                     onChangeText={(value) => {
@@ -193,7 +193,7 @@ export function EditPresetModal({
                 </Text>
                 <Pressable
                   onPress={handleSelectImage}
-                  className="overflow-hidden rounded-xl border-[0.5px] border-background-100 bg-background-0"
+                  className="overflow-hidden rounded-md border-0 bg-background-0"
                 >
                   {thumbnail ? (
                     <Image
@@ -215,12 +215,12 @@ export function EditPresetModal({
             </VStack>
           </ModalBody>
 
-          <ModalFooter className="pt-3">
+          <ModalFooter>
             <Button
               variant="outline"
               action="secondary"
               onPress={handleClose}
-              className="mr-2 flex-1 rounded-xl border-[0.5px] border-background-100"
+              className="mr-3 flex-1 rounded-md border-0 bg-background-100"
             >
               <ButtonText className="text-primary-400">Cancel</ButtonText>
             </Button>
@@ -228,7 +228,7 @@ export function EditPresetModal({
               variant="solid"
               action="primary"
               onPress={handleUpdate}
-              className="flex-1 rounded-xl bg-primary-500 active:bg-primary-600"
+              className="flex-1 rounded-md border-0 bg-primary-500"
               disabled={!name.trim()}
             >
               <ButtonText className="text-background-0">Save</ButtonText>
