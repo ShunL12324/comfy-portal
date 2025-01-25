@@ -4,17 +4,11 @@ import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
 import { Pressable } from '@/components/ui/pressable';
 import { MotiView } from 'moti';
-import {
-  Activity,
-  Server,
-  Edit2,
-  Globe,
-  Hash,
-  Trash2,
-} from 'lucide-react-native';
-import { EditServerModal } from './edit-server-modal';
-import { router } from 'expo-router';
-import { useServersStore } from '@/store/servers';
+import { Clock, ImageIcon, Edit2, Trash2 } from 'lucide-react-native';
+import { Button } from '@/components/ui/button';
+import { ButtonText } from '@/components/ui/button';
+import { Image } from '@/components/ui/image';
+import { EditPresetModal } from '@/components/edit-preset-modal';
 import {
   AlertDialog,
   AlertDialogBackdrop,
@@ -23,39 +17,30 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { ButtonText } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
+import { usePresetsStore } from '@/store/presets';
 
-interface ServerCardProps {
-  name: string;
-  host: string;
-  port: number;
-  status: 'online' | 'offline';
-  latency: number;
+interface PresetCardProps {
   id: string;
-  onPress?: () => void;
+  name: string;
+  createdAt: number;
+  thumbnail?: string;
+  onPress: () => void;
 }
 
-export const ServerCard = ({
-  name,
-  host,
-  port,
-  status,
-  latency,
+export const PresetCard = ({
   id,
-}: ServerCardProps) => {
+  name,
+  createdAt,
+  thumbnail,
+  onPress,
+}: PresetCardProps) => {
+  const [isPressed, setIsPressed] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
-  const [isPressed, setIsPressed] = React.useState(false);
-  const removeServer = useServersStore((state) => state.removeServer);
-
-  const handlePress = () => {
-    router.push(`/preset/${id}`);
-  };
+  const removePreset = usePresetsStore((state) => state.removePreset);
 
   const handleDelete = () => {
-    removeServer(id);
+    removePreset(id);
     setIsDeleteAlertOpen(false);
   };
 
@@ -67,7 +52,7 @@ export const ServerCard = ({
         transition={{ type: 'spring', damping: 15, mass: 0.8 }}
       >
         <Pressable
-          onPress={handlePress}
+          onPress={onPress}
           onPressIn={() => setIsPressed(true)}
           onPressOut={() => setIsPressed(false)}
           className="overflow-hidden rounded-2xl bg-background-50/80 backdrop-blur-xl"
@@ -87,9 +72,18 @@ export const ServerCard = ({
           >
             <HStack className="items-center justify-between p-4">
               <HStack space="md" className="flex-1 items-center">
-                <HStack className="h-16 w-16 items-center justify-center rounded-2xl bg-background-0/80 backdrop-blur-xl">
-                  <Server size={24} className="text-primary-500" />
-                </HStack>
+                {thumbnail ? (
+                  <Image
+                    source={{ uri: thumbnail }}
+                    className="h-16 w-16 rounded-2xl"
+                    resizeMode="cover"
+                    alt={`Thumbnail for ${name}`}
+                  />
+                ) : (
+                  <HStack className="h-16 w-16 items-center justify-center rounded-2xl bg-background-0/80 backdrop-blur-xl">
+                    <ImageIcon size={24} className="text-primary-500" />
+                  </HStack>
+                )}
                 <VStack space="xs" className="flex-1">
                   <Text
                     className="text-base font-semibold text-primary-500"
@@ -97,29 +91,14 @@ export const ServerCard = ({
                   >
                     {name}
                   </Text>
-                  <VStack space="xs">
-                    <HStack space="xs" className="items-center">
-                      <Globe size={13} className="text-primary-300" />
-                      <Text
-                        className="text-xs text-primary-400"
-                        numberOfLines={1}
-                      >
-                        {host}
-                      </Text>
-                    </HStack>
-                    <HStack space="xs" className="items-center">
-                      <Hash size={13} className="text-primary-300" />
-                      <Text
-                        className="text-xs text-primary-400"
-                        numberOfLines={1}
-                      >
-                        {port}
-                      </Text>
-                    </HStack>
-                  </VStack>
+                  <HStack space="xs" className="items-center">
+                    <Clock size={13} className="text-primary-300" />
+                    <Text className="text-xs text-primary-400">
+                      {new Date(createdAt).toLocaleString()}
+                    </Text>
+                  </HStack>
                 </VStack>
               </HStack>
-
               <VStack
                 space="md"
                 className="h-16 items-end justify-between py-0.5"
@@ -127,42 +106,16 @@ export const ServerCard = ({
                 <HStack space="sm">
                   <Pressable
                     onPress={() => setIsEditModalOpen(true)}
-                    className="h-7 w-7 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
+                    className="h-9 w-9 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
                   >
-                    <Edit2 size={12} className="text-primary-500" />
+                    <Edit2 size={14} className="text-primary-500" />
                   </Pressable>
                   <Pressable
                     onPress={() => setIsDeleteAlertOpen(true)}
-                    className="h-7 w-7 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
+                    className="h-9 w-9 items-center justify-center rounded-xl bg-background-0/80 backdrop-blur-xl active:bg-background-100/80"
                   >
-                    <Trash2 size={12} className="text-error-600" />
+                    <Trash2 size={14} className="text-error-600" />
                   </Pressable>
-                </HStack>
-                <HStack
-                  space="xs"
-                  className={`items-center rounded-xl px-2.5 py-1.5 ${
-                    status === 'online'
-                      ? 'bg-success-50/30 backdrop-blur-xl'
-                      : 'bg-error-50/30 backdrop-blur-xl'
-                  }`}
-                >
-                  <Activity
-                    size={10}
-                    className={
-                      status === 'online'
-                        ? 'text-success-600'
-                        : 'text-error-600'
-                    }
-                  />
-                  <Text
-                    className={`text-xs font-semibold ${
-                      status === 'online'
-                        ? 'text-success-700'
-                        : 'text-error-700'
-                    }`}
-                  >
-                    {status === 'online' ? `${latency}ms` : 'Offline'}
-                  </Text>
                 </HStack>
               </VStack>
             </HStack>
@@ -170,10 +123,10 @@ export const ServerCard = ({
         </Pressable>
       </MotiView>
 
-      <EditServerModal
+      <EditPresetModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        server={{ id, name, host, port, status, latency }}
+        preset={{ id, name, createdAt, thumbnail }}
       />
 
       <AlertDialog
@@ -184,12 +137,12 @@ export const ServerCard = ({
         <AlertDialogContent className="rounded-2xl bg-background-0">
           <AlertDialogHeader className="pb-3">
             <Text className="text-lg font-semibold text-primary-500">
-              Delete Server
+              Delete Preset
             </Text>
           </AlertDialogHeader>
           <AlertDialogBody className="pb-4">
             <Text className="text-sm text-primary-400">
-              Are you sure you want to delete this server? This action cannot be
+              Are you sure you want to delete this preset? This action cannot be
               undone.
             </Text>
           </AlertDialogBody>

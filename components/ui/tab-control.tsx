@@ -11,7 +11,7 @@ interface TabControlProps {
 
 export const TabControl = ({ tabs, value, onChange }: TabControlProps) => {
   return (
-    <HStack className="border-b-[0.5px] border-background-100">
+    <HStack className="border-background-12 h-12 items-center border-b-[0.5px]">
       {tabs.map((tab) => (
         <Pressable
           key={tab}

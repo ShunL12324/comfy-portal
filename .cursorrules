@@ -6,6 +6,7 @@
 - we use moti for animations
 - we use expo
 - we use lucide-react-native for icons
+- we use expo-crypto for generating UUIDs and other crypto operations (DO NOT use browser's crypto API)
 - we follow Modern Minimal design principles
 
 # Design Guidelines

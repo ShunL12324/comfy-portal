@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalBackdrop } from '@/components/ui/modal';
 import { FormControl } from '@/components/ui/form-control';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,11 +30,11 @@ const KEYBOARD_OFFSET = Platform.OS === 'ios' ? 100 : 0;
 export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
   const addServer = useServersStore((state) => state.addServer);
   const [name, setName] = React.useState('');
-  const [domain, setDomain] = React.useState('');
+  const [host, setHost] = React.useState('');
   const [port, setPort] = React.useState('8188');
   const [errors, setErrors] = React.useState({
     name: '',
-    domain: '',
+    host: '',
     port: '',
   });
 
@@ -83,9 +83,9 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     return '';
   };
 
-  const validateDomain = (value: string) => {
+  const validateHost = (value: string) => {
     if (value.length === 0) {
-      return 'Domain is required';
+      return 'Host is required';
     }
     // 允许 IP 地址或域名
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -98,7 +98,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
       !domainRegex.test(value) &&
       !localhostRegex.test(value)
     ) {
-      return 'Invalid domain or IP address';
+      return 'Invalid host or IP address';
     }
 
     if (ipRegex.test(value)) {
@@ -129,22 +129,22 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
 
   const handleSave = () => {
     const nameError = validateName(name);
-    const domainError = validateDomain(domain);
+    const hostError = validateHost(host);
     const portError = validatePort(port);
 
     setErrors({
       name: nameError,
-      domain: domainError,
+      host: hostError,
       port: portError,
     });
 
-    if (nameError || domainError || portError) {
+    if (nameError || hostError || portError) {
       return;
     }
 
     addServer({
       name,
-      domain,
+      host,
       port: parseInt(port, 10),
     });
     handleClose();
@@ -152,18 +152,19 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
 
   const handleClose = () => {
     setName('');
-    setDomain('');
+    setHost('');
     setPort('8188');
     setErrors({
       name: '',
-      domain: '',
+      host: '',
       port: '',
     });
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose}>
+    <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick>
+      <ModalBackdrop onPress={handleClose} />
       <Animated.View
         style={{
           transform: [{ translateY }],
@@ -172,10 +173,11 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
           justifyContent: 'center',
           flex: 1,
         }}
+        pointerEvents="box-none"
       >
         <ModalContent className="overflow-hidden rounded-2xl bg-background-0">
           <VStack>
-            <ModalHeader className="border-b-[0.5px] border-background-200 pb-4">
+            <ModalHeader>
               <Text className="text-lg font-semibold text-primary-500">
                 Add Server
               </Text>
@@ -209,27 +211,27 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   )}
                 </FormControl>
 
-                <FormControl isInvalid={!!errors.domain}>
+                <FormControl isInvalid={!!errors.host}>
                   <FormControlLabel>
                     <Text className="text-sm font-medium text-primary-400">
-                      Domain
+                      Host
                     </Text>
                   </FormControlLabel>
                   <Input className="mt-1.5 overflow-hidden rounded-xl border-[0.5px] border-background-200">
                     <InputField
-                      value={domain}
+                      value={host}
                       onChangeText={(value) => {
-                        setDomain(value);
-                        setErrors((prev) => ({ ...prev, domain: '' }));
+                        setHost(value);
+                        setErrors((prev) => ({ ...prev, host: '' }));
                       }}
-                      placeholder="Domain or IP address"
+                      placeholder="Host or IP address"
                       className="bg-background-0 text-primary-500 placeholder:text-primary-300"
                     />
                   </Input>
-                  {errors.domain && (
+                  {errors.host && (
                     <FormControlError>
                       <Text className="mt-1.5 text-xs text-error-600">
-                        {errors.domain}
+                        {errors.host}
                       </Text>
                     </FormControlError>
                   )}
@@ -263,7 +265,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                 </FormControl>
               </VStack>
             </ModalBody>
-            <ModalFooter className="border-t-[0.5px] border-background-200 pt-4">
+            <ModalFooter>
               <HStack space="sm">
                 <Button
                   variant="outline"

@@ -11,6 +11,7 @@ import { useServersStore } from '@/store/servers';
 import { View } from '@/components/ui/view';
 import { Animated, Easing } from 'react-native';
 import { AddServerModal } from '@/components/add-server-modal';
+import { AppBar } from '@/components/layout/app-bar';
 
 const MINIMUM_REFRESH_TIME = 1000; // 1秒，确保至少旋转一圈
 
@@ -19,17 +20,6 @@ export default function HomeScreen() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { servers, loading, refreshServers } = useServersStore();
   const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  // 初始化默认服务器
-  useEffect(() => {
-    if (servers.length === 0) {
-      useServersStore.getState().addServer({
-        name: 'Local Network',
-        domain: '192.168.1.109',
-        port: 8188,
-      });
-    }
-  }, [servers.length]);
 
   const startRotation = () => {
     Animated.loop(
@@ -57,7 +47,11 @@ export default function HomeScreen() {
     startRotation();
     const startTime = Date.now();
 
-    await refreshServers();
+    try {
+      await refreshServers();
+    } catch (error) {
+      // Silently handle error
+    }
 
     const elapsedTime = Date.now() - startTime;
     if (elapsedTime < MINIMUM_REFRESH_TIME) {
@@ -72,16 +66,9 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-background-0">
-      <View className="absolute left-0 right-0 top-0 z-10 bg-background-0 px-5 pb-4 pt-3">
-        <VStack space="lg">
-          <VStack space="xs">
-            <Text className="text-2xl font-semibold text-primary-600">
-              Servers
-            </Text>
-            <Text className="text-sm text-secondary-600">
-              Select a ComfyUI server to connect
-            </Text>
-          </VStack>
+      <AppBar
+        title="Servers"
+        bottomElement={
           <HStack space="sm" className="items-center">
             <Button
               variant="solid"
@@ -110,11 +97,11 @@ export default function HomeScreen() {
               </Animated.View>
             </Button>
           </HStack>
-        </VStack>
-      </View>
+        }
+      />
 
       <ScrollView className="flex-1">
-        <VStack space="md" className="mt-[140px] px-5 pb-6">
+        <VStack space="md" className="px-5 pb-6">
           {servers.map((server, index) => (
             <MotiView
               key={server.id}
@@ -134,10 +121,10 @@ export default function HomeScreen() {
             >
               <ServerCard
                 name={server.name}
-                domain={server.domain}
+                host={server.host}
                 port={server.port}
                 status={server.status}
-                latency={server.latency}
+                latency={server.latency || 0}
                 id={server.id}
               />
             </MotiView>

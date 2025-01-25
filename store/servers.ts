@@ -1,24 +1,32 @@
+import { Model, Server } from '@/types/server';
+import { checkMultipleServers } from '@/utils/server-status';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { checkMultipleServers } from '@/utils/server-status';
-import * as Crypto from 'expo-crypto';
-
-export interface Server {
-  id: string;
-  name: string;
-  domain: string;
-  port: number;
-  status: 'online' | 'offline';
-  latency: number;
-}
 
 interface ServersState {
   servers: Server[];
   loading: boolean;
-  addServer: (server: Omit<Server, 'id' | 'status' | 'latency'>) => void;
+  addServer: (
+    server: Omit<
+      Server,
+      'id' | 'status' | 'latency' | 'models' | 'lastModelSync'
+    >,
+  ) => void;
   removeServer: (id: string) => void;
-  updateServer: (id: string, server: Partial<Server>) => void;
+  updateServer: (
+    id: string,
+    updates: Partial<
+      Omit<Server, 'id' | 'status' | 'latency' | 'models' | 'lastModelSync'>
+    >,
+  ) => void;
+  updateServerStatus: (
+    id: string,
+    status: Server['status'],
+    latency?: number,
+    models?: Model[],
+  ) => void;
   refreshServers: () => Promise<void>;
 }
 
@@ -33,45 +41,65 @@ export const useServersStore = create<ServersState>()(
           ...server,
           id: Crypto.randomUUID(),
           status: 'offline',
-          latency: 0,
         };
         set((state) => ({
           servers: [...state.servers, newServer],
         }));
       },
 
-      removeServer: (id) => {
+      removeServer: (id) =>
         set((state) => ({
-          servers: state.servers.filter((server) => server.id !== id),
-        }));
-      },
+          servers: state.servers.filter((s) => s.id !== id),
+        })),
 
-      updateServer: (id, updatedServer) => {
+      updateServer: (id, updates) =>
         set((state) => ({
-          servers: state.servers.map((server) =>
-            server.id === id ? { ...server, ...updatedServer } : server,
+          servers: state.servers.map((s) =>
+            s.id === id ? { ...s, ...updates } : s,
           ),
-        }));
-      },
+        })),
+
+      updateServerStatus: (id, status, latency, models) =>
+        set((state) => ({
+          servers: state.servers.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  status,
+                  latency,
+                  ...(models && {
+                    models,
+                    lastModelSync: Date.now(),
+                  }),
+                }
+              : s,
+          ),
+        })),
 
       refreshServers: async () => {
-        const { servers } = get();
         set({ loading: true });
-
         try {
-          const results = await checkMultipleServers(
-            servers.map(({ id, domain, port }) => ({ id, domain, port })),
-          );
-
+          const servers = get().servers;
+          const results = await checkMultipleServers(servers);
           set((state) => ({
-            servers: state.servers.map((server) => ({
-              ...server,
-              status: results[server.id].isOnline ? 'online' : 'offline',
-              latency: results[server.id].latency,
-            })),
+            servers: state.servers.map((server) => {
+              const result = results.find((r) => r.id === server.id);
+              if (result) {
+                return {
+                  ...server,
+                  status: result.status,
+                  latency: result.latency,
+                  ...(result.models && {
+                    models: result.models,
+                    lastModelSync: Date.now(),
+                  }),
+                };
+              }
+              return server;
+            }),
           }));
         } catch (error) {
-          console.error('Failed to check servers:', error);
+          // Silently handle error
         } finally {
           set({ loading: false });
         }
@@ -82,4 +110,4 @@ export const useServersStore = create<ServersState>()(
       storage: createJSONStorage(() => AsyncStorage),
     },
   ),
-); 
+);

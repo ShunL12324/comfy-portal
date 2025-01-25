@@ -1,65 +1,63 @@
-import React from 'react';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
+import React, { ReactNode } from 'react';
+import { View } from '@/components/ui/view';
 import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
-import { Icon } from '@/components/ui/icon';
-import { MotiView } from 'moti';
-import { ArrowLeft } from 'lucide-react-native';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { VStack } from '../ui/vstack';
+import { HStack } from '../ui/hstack';
 
 interface AppBarProps {
-  title?: string;
+  title: string;
   subtitle?: string;
   showBack?: boolean;
-  rightElement?: React.ReactNode;
+  rightElement?: ReactNode;
+  centerElement?: ReactNode;
+  bottomElement?: ReactNode;
 }
 
-export const AppBar = ({
+export function AppBar({
   title,
   subtitle,
   showBack,
   rightElement,
-}: AppBarProps) => {
+  centerElement,
+  bottomElement,
+}: AppBarProps) {
   const router = useRouter();
 
   return (
-    <MotiView
-      className="absolute left-0 right-0 top-0 z-10 bg-background-0"
-      from={{ opacity: 0, translateY: -5 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 200 }}
-    >
-      <VStack className="px-5 py-3">
+    <View className="w-full bg-background-0">
+      <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="items-center justify-between">
-          <HStack space="md" className="flex-1 items-center">
+          <HStack className="items-center">
             {showBack && (
-              <Pressable
+              <Button
+                variant="link"
+                className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0"
                 onPress={() => router.back()}
-                className="h-9 w-9 items-center justify-center rounded-xl bg-background-50 active:bg-background-100"
               >
-                <Icon as={ArrowLeft} size="md" className="text-primary-500" />
-              </Pressable>
+                <ChevronLeft size={24} className="text-primary-500" />
+              </Button>
             )}
-            <VStack space="xs">
-              {title && (
-                <Text
-                  className="text-lg font-semibold text-primary-500"
-                  numberOfLines={1}
-                >
-                  {title}
-                </Text>
-              )}
+            <VStack>
+              <Text className="text-lg font-semibold text-primary-500">
+                {title}
+              </Text>
               {subtitle && (
-                <Text className="text-sm text-primary-300" numberOfLines={1}>
-                  {subtitle}
-                </Text>
+                <Text className="text-sm text-primary-300">{subtitle}</Text>
               )}
             </VStack>
           </HStack>
-          {rightElement}
+          {centerElement && (
+            <View className="absolute left-0 right-0 items-center">
+              {centerElement}
+            </View>
+          )}
+          {rightElement && <View className="z-10">{rightElement}</View>}
         </HStack>
+        {bottomElement}
       </VStack>
-    </MotiView>
+    </View>
   );
-};
+}

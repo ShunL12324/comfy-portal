@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-export default function WorkflowLayout() {
+export default function PresetLayout() {
   return (
     <Stack
       screenOptions={{
