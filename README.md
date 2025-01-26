@@ -145,7 +145,7 @@ GitHub: https://github.com/ShunL12324/comfy-portal
 
 ## Support
 
-- [Open an issue](https://github.com/yourusername/comfy-portal/issues)
+- [Open an issue](https://github.com/ShunL12324/comfy-portal/issues)
 - [Join our community](#)
 
 ## Acknowledgments
