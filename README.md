@@ -80,7 +80,47 @@ We welcome contributions! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project adopts a Source Available license model - the source code is publicly available while certain usage rights are reserved. This approach allows us to maintain a balance between openness and sustainable development.
+
+### License Terms
+
+- **Source Code Access**: The source code is publicly available for learning, inspection, and personal use
+- **Personal & Educational Use**: You are free to:
+  - Use the software for personal projects
+  - Modify the code for personal use
+  - Study and learn from the codebase
+  - Use it for educational purposes
+- **Distribution & Commercial Use**:
+  - Commercial use requires a proper license
+  - The App Store version is our officially licensed commercial distribution
+  - For other commercial opportunities or special licensing needs, we're happy to discuss - please reach out
+
+### Dual Licensing Model
+
+1. **Source Available Version**:
+
+   - Free for personal and educational use
+   - Source code publicly available
+   - Community support through GitHub issues
+
+2. **Pro Version (App Store)**:
+   - Commercial license
+   - Additional premium features
+   - Priority support
+   - Regular updates
+
+### Commercial Licensing
+
+Interested in commercial use? We're open to discussion! Contact us for:
+
+- Commercial licensing
+- Custom development
+- Special use cases
+- Partnership opportunities
+
+Contact: [Your Contact Information]
+
+Note: The App Store version represents our primary commercial distribution channel.
 
 ## Support
 
