@@ -1,13 +1,9 @@
 import React from 'react';
-import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { TabBar } from '../../components/layout/tab-bar';
 import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   return (
     <Tabs
       screenOptions={{
@@ -15,7 +11,7 @@ export default function TabLayout() {
       }}
       tabBar={(props) => (
         <TabBar
-          activeTab={props.state.index === 0 ? 'home' : 'explore'}
+          activeTab={props.state.index === 0 ? 'home' : 'setting'}
           onChangeTab={(tab) => {
             props.navigation.navigate(tab === 'home' ? 'index' : tab);
           }}
@@ -23,7 +19,7 @@ export default function TabLayout() {
       )}
     >
       <Tabs.Screen name="index" />
-      <Tabs.Screen name="explore" />
+      <Tabs.Screen name="setting" />
     </Tabs>
   );
 }

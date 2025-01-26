@@ -12,8 +12,10 @@ import { Plus } from 'lucide-react-native';
 import { AppBar } from '@/components/layout/app-bar';
 import { AddPresetModal } from '@/components/add-preset-modal';
 import { PresetCard } from '@/components/preset-card';
+import { useThemeStore } from '@/store/theme';
 
 const PresetsScreen = () => {
+  const { theme } = useThemeStore();
   const { serverId } = useLocalSearchParams();
   const server = useServersStore((state) =>
     state.servers.find((s) => s.id === serverId),
@@ -43,7 +45,7 @@ const PresetsScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className={`flex-1 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <AppBar
         title="Presets"
         showBack

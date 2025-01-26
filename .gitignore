@@ -40,3 +40,10 @@ app-example
 # test
 output/
 output/*.png
+
+# credentials
+credentials.json
+
+# andriod & ios
+andriod/
+ios/

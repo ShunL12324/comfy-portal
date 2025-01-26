@@ -1,5 +1,6 @@
 import React, { useCallback, useRef } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
+import { Image } from 'expo-image';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { SelectorOption } from '../types';
@@ -57,8 +58,8 @@ export function ModelSelector({
                   <Image
                     source={{ uri: option.image }}
                     alt={option.label}
-                    className="h-full w-full"
-                    resizeMode="cover"
+                    style={{ height: '100%', width: '100%' }}
+                    contentFit="cover"
                   />
                 ) : (
                   <Box className="h-full w-full items-center justify-center bg-background-50">
@@ -119,8 +120,8 @@ export function ModelSelector({
                 <Image
                   source={{ uri: item.image }}
                   alt={item.label}
-                  className="h-full w-full"
-                  resizeMode="cover"
+                  style={{ height: '100%', width: '100%' }}
+                  contentFit="cover"
                 />
               ) : (
                 <Box className="h-full w-full items-center justify-center bg-background-50">

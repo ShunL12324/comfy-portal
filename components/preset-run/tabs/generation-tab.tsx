@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { SmoothSlider } from '@/components/ui/smooth-slider';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Plus, Minus, Shuffle } from 'lucide-react-native';
+import { Plus, Minus, Shuffle, Dices, Info } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { TabProps, RESOLUTIONS } from '../types';
 import { showToast } from '@/utils/toast';
@@ -25,6 +25,7 @@ const MAX_DIMENSION = 10240;
  */
 export function GenerationTab({ params, onParamsChange }: TabProps) {
   const insets = useSafeAreaInsets();
+  const [shakeKey, setShakeKey] = React.useState(0);
 
   // Local state for smooth slider interactions
   const [localSteps, setLocalSteps] = React.useState(params.steps);
@@ -122,6 +123,7 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
    * Generates a random seed for image generation
    */
   const handleRandomSeed = (): void => {
+    setShakeKey((prev) => prev + 1);
     onParamsChange({
       ...params,
       seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
@@ -309,10 +311,10 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
             type: 'timing',
             duration: 200,
           }}
-          className="overflow-hidden"
+          className="mt-2 h-auto gap-2"
         >
-          <HStack space="sm" className="mt-2 px-[0.5px]">
-            <Input className="flex-1 overflow-hidden rounded-xl border-[0.5px] border-background-100">
+          <HStack space="sm">
+            <Input className="flex-1 overflow-hidden rounded-lg border-0 border-background-100">
               <InputField
                 value={String(params.seed)}
                 onChangeText={(value: string) => {
@@ -323,25 +325,37 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
                 }}
                 keyboardType="numeric"
                 placeholder="Seed"
-                className="bg-background-50 px-3 py-2 text-sm text-primary-500"
+                className="border-0 bg-background-50 px-3 py-2 text-sm text-primary-500"
               />
             </Input>
             <Button
-              className="aspect-square h-[34px] rounded-xl border-[0.5px] border-background-100 bg-background-50 p-0"
+              className="aspect-square h-[34px] rounded-lg border-0 border-background-100 bg-background-50 p-0"
               onPress={handleRandomSeed}
             >
               <MotiView
-                animate={{ scaleY: [-1, 1] }}
-                transition={{
-                  type: 'timing',
-                  duration: 150,
+                key={shakeKey}
+                animate={{
+                  translateX: 0,
                 }}
-                key={params.seed}
-                style={{ transform: [{ scale: 1 }] }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 1000,
+                  damping: 10,
+                  mass: 0.3,
+                }}
+                from={{
+                  translateX: 5,
+                }}
               >
-                <Icon as={Shuffle} size="xs" className="text-primary-500" />
+                <Icon as={Dices} size="xs" className="text-primary-500" />
               </MotiView>
             </Button>
+          </HStack>
+          <HStack space="sm" className="items-center px-1 pb-2">
+            <Icon as={Info} className="h-3 w-3 text-typography-400" />
+            <Text className="text-xs text-typography-400">
+              Using the same seed will not start a new generation
+            </Text>
           </HStack>
         </MotiView>
       </VStack>

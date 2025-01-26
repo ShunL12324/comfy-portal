@@ -10,7 +10,7 @@ export interface Server {
   name: string;
   host: string;
   port: number;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'refreshing';
   latency?: number;
   models?: Model[];
   lastModelSync?: number;

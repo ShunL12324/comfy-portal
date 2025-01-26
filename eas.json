@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 14.4.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "18.20.5"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal"
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release",
+        "credentialsSource": "local"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

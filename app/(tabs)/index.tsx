@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { ServerCard } from '@/components/server-card';
-import { MotiView } from 'moti';
-import { Text as RNText } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button } from '@/components/ui/button';
@@ -14,58 +12,22 @@ import { Animated, Easing } from 'react-native';
 import { AddServerModal } from '@/components/add-server-modal';
 import { AppBar } from '@/components/layout/app-bar';
 import { useThemeStore } from '@/store/theme';
-import { BlurView } from 'expo-blur';
-
-const MINIMUM_REFRESH_TIME = 1000; // 1秒，确保至少旋转一圈
 
 export default function HomeScreen() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const { servers, loading, refreshServers } = useServersStore();
+  const { servers, refreshServer } = useServersStore();
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  const startRotation = () => {
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    ).start();
-  };
-
-  const stopRotation = () => {
-    rotateAnim.stopAnimation();
-    rotateAnim.setValue(0);
+  const handleRefreshServers = async () => {
+    servers.forEach((s) => {
+      refreshServer(s.id).then;
+    });
   };
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    startRotation();
-    const startTime = Date.now();
-
-    try {
-      await refreshServers();
-    } catch (error) {
-      // Silently handle error
-    }
-
-    const elapsedTime = Date.now() - startTime;
-    if (elapsedTime < MINIMUM_REFRESH_TIME) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, MINIMUM_REFRESH_TIME - elapsedTime),
-      );
-    }
-
-    stopRotation();
-    setIsRefreshing(false);
-  };
 
   const { theme } = useThemeStore();
 
@@ -94,8 +56,7 @@ export default function HomeScreen() {
               action="secondary"
               size="md"
               className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
-              onPress={handleRefresh}
-              disabled={isRefreshing}
+              onPress={handleRefreshServers}
             >
               <Animated.View style={{ transform: [{ rotate: spin }] }}>
                 <RotateCw size={18} className="text-primary-500" />
