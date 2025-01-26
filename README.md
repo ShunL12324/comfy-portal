@@ -14,14 +14,14 @@ Comfy Portal is an open-source iOS application that brings the power of ComfyUI 
 
 ## Pro Version
 
-A pro version of Comfy Portal is available on the App Store with additional features:
+A pro version of Comfy Portal is available with additional features:
 
 - Advanced workflow management
 - Premium presets and templates
 - Priority support
 - Extended customization options
 
-[Get Pro Version on App Store](#) _(Coming Soon)_
+Note: The pro version is for authorized commercial use only. Please contact us for licensing information.
 
 ## Getting Started
 
@@ -31,20 +31,21 @@ A pro version of Comfy Portal is available on the App Store with additional feat
 - iOS Development environment
 - Xcode (latest version)
 - ComfyUI instance (local or remote)
+- [Expo Go](https://expo.dev/go) app installed on your iOS device
 
 ### Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/comfy-portal.git
+   git clone https://github.com/ShunL12324/comfy-portal.git
    cd comfy-portal
    ```
 
 2. Install dependencies:
 
    ```bash
-   npm install
+   npx expo install
    ```
 
 3. Start the development server:
@@ -54,8 +55,49 @@ A pro version of Comfy Portal is available on the App Store with additional feat
    ```
 
 4. Run on iOS:
-   - Press 'i' to open in iOS simulator
+   - Press 'i' to open in iOS simulator (requires Xcode)
    - Or scan the QR code with your iPhone camera to open in Expo Go
+   - For development builds: `npx expo run:ios`
+
+### Development Builds
+
+To create a development build:
+
+1. Install EAS CLI:
+
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. Configure Apple Developer Account:
+
+   - Enroll in the [Apple Developer Program](https://developer.apple.com/programs/)
+   - Set up your Apple Developer Team ID in `eas.json`
+   - Configure your Bundle Identifier
+   - Create and download required certificates and provisioning profiles
+   - For detailed instructions, see [Expo's iOS credentials guide](https://docs.expo.dev/app-signing/ios-credentials/)
+
+3. Build for development:
+
+   ```bash
+   npx eas build --profile development --platform ios
+   ```
+
+4. Install the development build:
+   ```bash
+   npx eas build:run
+   ```
+
+Note: For running on physical devices, you'll need:
+
+- Valid Apple Developer Account (Apple Developer Program membership required)
+- Development Certificate
+- Provisioning Profile matching your bundle identifier
+- Device registered in your Apple Developer account
+
+These requirements are for personal development use only. This is not intended for App Store distribution.
+
+For more information about development builds, visit [Expo Development Builds Documentation](https://docs.expo.dev/develop/development-builds/introduction/).
 
 ## Development
 
@@ -80,47 +122,26 @@ We welcome contributions! Please feel free to submit a Pull Request.
 
 ## License
 
-This project adopts a Source Available license model - the source code is publicly available while certain usage rights are reserved. This approach allows us to maintain a balance between openness and sustainable development.
+This project uses a Source Available license. The source code is publicly available for personal and educational use, while commercial usage requires proper licensing.
 
 ### License Terms
 
-- **Source Code Access**: The source code is publicly available for learning, inspection, and personal use
-- **Personal & Educational Use**: You are free to:
-  - Use the software for personal projects
-  - Modify the code for personal use
-  - Study and learn from the codebase
-  - Use it for educational purposes
-- **Distribution & Commercial Use**:
-  - Commercial use requires a proper license
-  - The App Store version is our officially licensed commercial distribution
-  - For other commercial opportunities or special licensing needs, we're happy to discuss - please reach out
+- **Personal & Educational Use**: Free to use for:
 
-### Dual Licensing Model
+  - Personal projects
+  - Learning and studying
+  - Academic research
+  - Testing and evaluation
 
-1. **Source Available Version**:
+- **Commercial Use**:
+  - Requires proper licensing
+  - Contact us for commercial opportunities
 
-   - Free for personal and educational use
-   - Source code publicly available
-   - Community support through GitHub issues
+For detailed terms and conditions, please see the [LICENSE](LICENSE) file.
 
-2. **Pro Version (App Store)**:
-   - Commercial license
-   - Additional premium features
-   - Priority support
-   - Regular updates
-
-### Commercial Licensing
-
-Interested in commercial use? We're open to discussion! Contact us for:
-
-- Commercial licensing
-- Custom development
-- Special use cases
-- Partnership opportunities
-
-Contact: [Your Contact Information]
-
-Note: The App Store version represents our primary commercial distribution channel.
+For commercial inquiries:
+Email: liushun0574@gmail.com
+GitHub: https://github.com/ShunL12324/comfy-portal
 
 ## Support
 

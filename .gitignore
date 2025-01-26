@@ -45,5 +45,5 @@ output/*.png
 credentials.json
 
 # andriod & ios
-andriod/
+android/
 ios/
