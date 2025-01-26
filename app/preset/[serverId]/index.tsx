@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { usePresetsStore } from '@/store/presets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useServersStore } from '@/store/servers';
-import { Plus } from 'lucide-react-native';
+import { Icon, AddIcon } from '@/components/ui/icon';
 import { AppBar } from '@/components/layout/app-bar';
 import { AddPresetModal } from '@/components/add-preset-modal';
 import { PresetCard } from '@/components/preset-card';
@@ -45,7 +45,7 @@ const PresetsScreen = () => {
   );
 
   return (
-    <View className={`flex-1 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+    <View className={`flex-1 bg-background-0`}>
       <AppBar
         title="Presets"
         showBack
@@ -54,12 +54,12 @@ const PresetsScreen = () => {
             variant="solid"
             action="primary"
             size="md"
-            className="mt-2 h-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+            className="mt-2 h-11 rounded-xl bg-background-200 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
             onPress={handleAddPreset}
           >
             <HStack space="sm" className="items-center justify-center">
-              <Plus size={18} className="text-primary-500" />
-              <Text className="text-sm font-medium text-primary-500">
+              <Icon as={AddIcon} size="md" className="text-accent-500" />
+              <Text className="text-sm font-medium text-typography-900">
                 Add Preset
               </Text>
             </HStack>
