@@ -1,21 +1,21 @@
 import React from 'react';
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { TabProps, SAMPLERS, SCHEDULERS } from '../types';
+import { TabProps } from '../types';
+import { SamplerSelector } from '@/components/selectors/sampler';
+import { SchedulerSelector } from '@/components/selectors/scheduler';
 
 export function SamplerTab({ params, onParamsChange }: TabProps) {
   return (
     <VStack space="lg" className="px-4 py-4">
       <VStack space="sm">
         <Text className="text-base font-medium text-primary-500">Sampler</Text>
-        <SegmentedControl
-          options={[...SAMPLERS]}
+        <SamplerSelector
           value={params.sampler}
-          onChange={(value: string) =>
+          onChange={(value) =>
             onParamsChange({
               ...params,
-              sampler: value as (typeof SAMPLERS)[number],
+              sampler: value,
             })
           }
         />
@@ -25,13 +25,12 @@ export function SamplerTab({ params, onParamsChange }: TabProps) {
         <Text className="text-base font-medium text-primary-500">
           Scheduler
         </Text>
-        <SegmentedControl
-          options={[...SCHEDULERS]}
+        <SchedulerSelector
           value={params.scheduler}
-          onChange={(value: string) =>
+          onChange={(value) =>
             onParamsChange({
               ...params,
-              scheduler: value as (typeof SCHEDULERS)[number],
+              scheduler: value,
             })
           }
         />

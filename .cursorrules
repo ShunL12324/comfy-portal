@@ -20,6 +20,7 @@
 # Available Gluestack UI Components
 
 We have the following components from gluestack-ui:
+
 - Accordion
 - ActionSheet
 - Alert
@@ -77,7 +78,9 @@ We have the following components from gluestack-ui:
 
 # Styling Guidelines
 
-- Use HStack and VStack for layout instead of View or Box
-- HStack and VStack props: space (string) and reversed (boolean)
 - Use nativewind classes for styling instead of inline styles
 - Let gluestack handle theming
+
+## Colors
+
+Check `components/ui/gluestack-ui-provider/config.ts` for available colors in the project.

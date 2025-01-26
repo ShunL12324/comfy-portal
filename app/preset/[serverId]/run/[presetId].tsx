@@ -8,12 +8,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { History, Maximize2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { Center } from '@/components/ui/center';
+import { showToast } from '@/utils/toast';
 
 import { useServersStore } from '@/store/servers';
 import { usePresetsStore } from '@/store/presets';
@@ -28,33 +29,7 @@ import { ParameterControls } from '@/components/preset-run/parameter-controls';
 import { GenerationButton } from '@/components/preset-run/generation-button';
 import { HistoryDrawer } from '@/components/preset-run/history-drawer';
 
-/**
- * Parameters for image generation
- */
-interface GenerationParams {
-  /** Selected model for generation */
-  model: string;
-  /** Main prompt text */
-  prompt: string;
-  /** Negative prompt text */
-  negativePrompt: string;
-  /** Number of generation steps */
-  steps: number;
-  /** Classifier-free guidance scale */
-  cfg: number;
-  /** Generation seed */
-  seed: number;
-  /** Output image width */
-  width: number;
-  /** Output image height */
-  height: number;
-  /** Sampling method */
-  sampler: 'euler' | 'euler_ancestral' | 'dpmpp_3m_sde_gpu';
-  /** Sampling scheduler */
-  scheduler: 'normal' | 'karras' | 'sgm_uniform';
-  /** Whether to use random seed */
-  useRandomSeed: boolean;
-}
+import { GenerationParams } from '@/types/generation';
 
 /**
  * Props for the parallax scrolling image component
@@ -180,6 +155,8 @@ export default function RunPresetScreen() {
   const lastNodeProgressValueRef = useRef(0);
   const progressCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const insets = useSafeAreaInsets();
+
   const cleanup = useCallback(() => {
     if (progressCompleteTimeoutRef.current) {
       clearTimeout(progressCompleteTimeoutRef.current);
@@ -282,6 +259,12 @@ export default function RunPresetScreen() {
         try {
           await comfyClient.current.connect();
         } catch (error) {
+          console.error('Failed to connect to server:', error);
+          showToast.error(
+            'Connection Failed',
+            'Unable to connect to server. Please check your server status.',
+            insets.top + 8,
+          );
           setIsGenerating(false);
           setConnectionStatus('idle');
           return;

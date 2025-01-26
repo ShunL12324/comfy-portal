@@ -5,31 +5,155 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import {
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-} from '@/components/ui/slider';
+import { SmoothSlider } from '@/components/ui/smooth-slider';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Plus, Minus, Shuffle } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { TabProps, RESOLUTIONS } from '../types';
+import { showToast } from '@/utils/toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+/**
+ * Constants for dimension validation
+ */
+const MIN_DIMENSION = 50;
+const MAX_DIMENSION = 10240;
+
+/**
+ * GenerationTab component handles image generation parameters including resolution,
+ * steps, CFG scale, and seed settings.
+ */
 export function GenerationTab({ params, onParamsChange }: TabProps) {
-  const handleRandomSeed = () => {
+  const insets = useSafeAreaInsets();
+
+  // Local state for smooth slider interactions
+  const [localSteps, setLocalSteps] = React.useState(params.steps);
+  const [localCfg, setLocalCfg] = React.useState(params.cfg);
+  const [displaySteps, setDisplaySteps] = React.useState(params.steps);
+  const [displayCfg, setDisplayCfg] = React.useState(params.cfg);
+
+  // Resolution states
+  const [isCustom, setIsCustom] = React.useState(() => {
+    const matchedResolution = RESOLUTIONS.find(
+      (r) => r.width === params.width && r.height === params.height,
+    );
+    return !matchedResolution;
+  });
+  const [localWidth, setLocalWidth] = React.useState(
+    String(params.width || ''),
+  );
+  const [localHeight, setLocalHeight] = React.useState(
+    String(params.height || ''),
+  );
+
+  /**
+   * Validates if a dimension value is within acceptable range
+   */
+  const isValidDimension = (value: number): boolean => {
+    return value >= MIN_DIMENSION && value <= MAX_DIMENSION;
+  };
+
+  /**
+   * Validates and updates dimension values when input loses focus
+   * Shows toast messages for out-of-range values and adjusts them accordingly
+   */
+  const validateAndUpdateDimension = (
+    value: string,
+    dimension: 'width' | 'height',
+  ): void => {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      let finalValue = num;
+
+      if (finalValue !== 0) {
+        if (finalValue < MIN_DIMENSION) {
+          finalValue = MIN_DIMENSION;
+          showToast.info(
+            'Resolution adjusted',
+            `Minimum ${dimension} is ${MIN_DIMENSION}px`,
+            insets.top,
+          );
+        } else if (finalValue > MAX_DIMENSION) {
+          finalValue = MAX_DIMENSION;
+          showToast.info(
+            'Resolution adjusted',
+            `Maximum ${dimension} is ${MAX_DIMENSION}px`,
+            insets.top,
+          );
+        }
+      }
+
+      onParamsChange({
+        ...params,
+        [dimension]: finalValue,
+      });
+
+      if (dimension === 'width') {
+        setLocalWidth(String(finalValue));
+      } else {
+        setLocalHeight(String(finalValue));
+      }
+    }
+  };
+
+  /**
+   * Synchronize local state with external parameter changes
+   */
+  React.useEffect(() => {
+    setLocalSteps(params.steps);
+    setDisplaySteps(params.steps);
+    setLocalCfg(params.cfg);
+    setDisplayCfg(params.cfg);
+    setLocalWidth(String(params.width || ''));
+    setLocalHeight(String(params.height || ''));
+  }, [params.steps, params.cfg, params.width, params.height]);
+
+  /**
+   * Update custom resolution state when dimensions change
+   */
+  React.useEffect(() => {
+    const matchedResolution = RESOLUTIONS.find(
+      (r) => r.width === params.width && r.height === params.height,
+    );
+    setIsCustom(!matchedResolution);
+  }, [params.width, params.height]);
+
+  /**
+   * Generates a random seed for image generation
+   */
+  const handleRandomSeed = (): void => {
     onParamsChange({
       ...params,
       seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
     });
   };
 
-  const handleResolutionChange = (value: string) => {
+  /**
+   * Gets the current resolution display value for the segmented control
+   */
+  const getCurrentResolution = (): string => {
+    if (isCustom) return 'Custom';
+    const matchedResolution = RESOLUTIONS.find(
+      (r) => r.width === params.width && r.height === params.height,
+    );
+    return matchedResolution
+      ? matchedResolution.label ||
+          `${matchedResolution.width}×${matchedResolution.height}`
+      : 'Custom';
+  };
+
+  /**
+   * Handles resolution selection changes in the segmented control
+   */
+  const handleResolutionChange = (value: string): void => {
     if (value === 'Custom') {
-      onParamsChange({ ...params, width: 0, height: 0 });
+      setIsCustom(true);
     } else {
+      setIsCustom(false);
       const [width, height] = value.split('×').map(Number);
       onParamsChange({ ...params, width, height });
+      setLocalWidth(String(width));
+      setLocalHeight(String(height));
     }
   };
 
@@ -41,15 +165,13 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
         </Text>
         <SegmentedControl
           options={RESOLUTIONS.map((r) => r.label || `${r.width}×${r.height}`)}
-          value={
-            params.width === 0 ? 'Custom' : `${params.width}×${params.height}`
-          }
+          value={getCurrentResolution()}
           onChange={handleResolutionChange}
         />
         <MotiView
           animate={{
-            height: params.width === 0 ? 49 : 0,
-            opacity: params.width === 0 ? 1 : 0,
+            height: isCustom ? 49 : 0,
+            opacity: isCustom ? 1 : 0,
           }}
           transition={{
             type: 'timing',
@@ -58,32 +180,32 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
           className="overflow-hidden"
         >
           <HStack space="sm" className="mt-2 px-[0.5px]">
-            <Input className="flex-1 overflow-hidden rounded-xl border-[0.5px] border-background-100">
+            <Input
+              isInvalid={params.width !== 0 && !isValidDimension(params.width)}
+              className="flex-1 overflow-hidden rounded-lg border-0 bg-background-50 focus:border-[0.5px] focus:border-background-100"
+            >
               <InputField
-                value={params.width === 0 ? '' : String(params.width)}
-                onChangeText={(value: string) => {
-                  const num = Number(value);
-                  if (!isNaN(num)) {
-                    onParamsChange({ ...params, width: num });
-                  }
-                }}
+                value={localWidth}
+                onChangeText={setLocalWidth}
+                onBlur={() => validateAndUpdateDimension(localWidth, 'width')}
                 keyboardType="numeric"
-                placeholder="Width"
-                className="bg-background-50 p-3 text-sm text-primary-500"
+                placeholder="Width (50-10240)"
+                className="p-3 text-sm text-primary-500"
               />
             </Input>
-            <Input className="flex-1 overflow-hidden rounded-xl border-[0.5px] border-background-100">
+            <Input
+              isInvalid={
+                params.height !== 0 && !isValidDimension(params.height)
+              }
+              className="flex-1 overflow-hidden rounded-lg border-0 bg-background-50 focus:border-[0.5px] focus:border-background-100"
+            >
               <InputField
-                value={params.height === 0 ? '' : String(params.height)}
-                onChangeText={(value: string) => {
-                  const num = Number(value);
-                  if (!isNaN(num)) {
-                    onParamsChange({ ...params, height: num });
-                  }
-                }}
+                value={localHeight}
+                onChangeText={setLocalHeight}
+                onBlur={() => validateAndUpdateDimension(localHeight, 'height')}
                 keyboardType="numeric"
-                placeholder="Height"
-                className="bg-background-50 p-3 text-sm text-primary-500"
+                placeholder="Height (50-10240)"
+                className="p-3 text-sm text-primary-500"
               />
             </Input>
           </HStack>
@@ -91,16 +213,10 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
       </VStack>
 
       <VStack space="sm">
-        <HStack className="items-center justify-between">
-          <Text className="text-base font-medium text-primary-500">Steps</Text>
-          <Text className="text-sm font-medium text-primary-500">
-            {params.steps}
-          </Text>
-        </HStack>
-        <HStack space="sm" className="items-center">
+        <Text className="text-base font-medium text-primary-500">Steps</Text>
+        <HStack space="sm" className="mt-2 items-center">
           <Button
-            variant="outline"
-            className="h-8 w-8 rounded-xl bg-background-50 p-0"
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
             onPress={() =>
               onParamsChange({
                 ...params,
@@ -110,23 +226,17 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
           >
             <Icon as={Minus} size="sm" className="text-primary-500" />
           </Button>
-          <Slider
-            value={params.steps}
+          <SmoothSlider
+            value={localSteps}
             minValue={1}
             maxValue={100}
             step={1}
-            onChange={(value) => onParamsChange({ ...params, steps: value })}
-            size="sm"
+            onChange={setLocalSteps}
+            onChangeEnd={(value) => onParamsChange({ ...params, steps: value })}
             className="flex-1"
-          >
-            <SliderTrack>
-              <SliderFilledTrack />
-            </SliderTrack>
-            <SliderThumb />
-          </Slider>
+          />
           <Button
-            variant="outline"
-            className="h-8 w-8 rounded-xl bg-background-50 p-0"
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
             onPress={() =>
               onParamsChange({
                 ...params,
@@ -140,18 +250,12 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
       </VStack>
 
       <VStack space="sm">
-        <HStack className="items-center justify-between">
-          <Text className="text-base font-medium text-primary-500">
-            CFG Scale
-          </Text>
-          <Text className="text-sm font-medium text-primary-500">
-            {params.cfg}
-          </Text>
-        </HStack>
-        <HStack space="sm" className="items-center">
+        <Text className="text-base font-medium text-primary-500">
+          CFG Scale
+        </Text>
+        <HStack space="sm" className="mt-2 items-center">
           <Button
-            variant="outline"
-            className="h-8 w-8 rounded-xl bg-background-50 p-0"
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
             onPress={() =>
               onParamsChange({
                 ...params,
@@ -161,23 +265,17 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
           >
             <Icon as={Minus} size="sm" className="text-primary-500" />
           </Button>
-          <Slider
-            value={params.cfg}
+          <SmoothSlider
+            value={localCfg}
             minValue={1}
             maxValue={20}
             step={0.5}
-            onChange={(value) => onParamsChange({ ...params, cfg: value })}
-            size="sm"
+            onChange={setLocalCfg}
+            onChangeEnd={(value) => onParamsChange({ ...params, cfg: value })}
             className="flex-1"
-          >
-            <SliderTrack>
-              <SliderFilledTrack />
-            </SliderTrack>
-            <SliderThumb />
-          </Slider>
+          />
           <Button
-            variant="outline"
-            className="h-8 w-8 rounded-xl bg-background-50 p-0"
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
             onPress={() =>
               onParamsChange({
                 ...params,
@@ -229,7 +327,6 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
               />
             </Input>
             <Button
-              variant="outline"
               className="aspect-square h-[34px] rounded-xl border-[0.5px] border-background-100 bg-background-50 p-0"
               onPress={handleRandomSeed}
             >

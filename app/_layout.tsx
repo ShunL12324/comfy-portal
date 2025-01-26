@@ -15,6 +15,8 @@ import {
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
 import { useThemeStore } from '@/store/theme';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from '@/utils/toast';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -71,6 +73,7 @@ export default function RootLayout() {
           <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         </GluestackUIProvider>
       </GestureHandlerRootView>
+      <Toast config={toastConfig} />
     </SafeAreaView>
   );
 }
