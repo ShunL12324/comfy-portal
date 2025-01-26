@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { ButtonText } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Icon } from './ui/icon';
+import { HStack } from '@/components/ui/hstack';
 
 // Types
 interface ServerCardProps {
@@ -57,7 +58,7 @@ interface ActionButtonsProps {
 const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
   <View className="flex-1 flex-row items-center gap-2">
     <View className="h-24 w-24 items-center justify-center rounded-lg bg-background-0">
-      <Icon as={Server} size="xl" className="text-typography-300" />
+      <Icon as={Server} size="xl" className="text-accent-500" />
     </View>
     <View className="min-w-0 flex-1">
       <Text
@@ -68,7 +69,7 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
       </Text>
       <View className="mt-0.5 flex-col gap-1">
         <View className="flex-row items-center gap-1">
-          <Globe size={12} className="shrink-0 text-primary-300" />
+          <Icon as={Globe} size="2xs" className="text-accent-500 shrink-0" />
           <Text
             className="flex-shrink text-xs text-primary-400"
             numberOfLines={1}
@@ -77,13 +78,13 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Hash size={12} className="shrink-0 text-primary-300" />
+          <Icon as={Hash} size="2xs" className="text-accent-500 shrink-0" />
           <Text className="text-xs text-primary-400" numberOfLines={1}>
             {port}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Layers size={12} className="shrink-0 text-primary-300" />
+          <Icon as={Layers} size="2xs" className="text-accent-500 shrink-0" />
           <Text className="text-xs text-primary-400" numberOfLines={1}>
             {models?.length || 'No'} models
           </Text>
@@ -99,13 +100,13 @@ const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
       onPress={onEdit}
       className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
     >
-      <Edit2 size={13} className="text-primary-500" />
+      <Icon as={Edit2} size="2xs" className="text-accent-500" />
     </TouchableOpacity>
     <TouchableOpacity
       onPress={onDelete}
       className="h-8 w-8 items-center justify-center rounded-lg bg-background-0 active:bg-background-100"
     >
-      <Trash2 size={13} className="text-error-600" />
+      <Icon as={Trash2} size="2xs" className="text-error-600" />
     </TouchableOpacity>
   </View>
 );
@@ -114,7 +115,7 @@ const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
   <TouchableOpacity
     disabled={isRefreshing}
     className={`items-center rounded-md px-2 py-2 ${
-      status === 'online' ? 'bg-success-50' : 'bg-background-100'
+      status === 'online' ? 'bg-success-50' : 'bg-background-0'
     }`}
   >
     <MotiView
@@ -138,7 +139,7 @@ const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
             duration: 1000,
           }}
         >
-          <Icon as={Loader} className="h-4 w-4 text-typography-400" />
+          <Icon as={Loader} size="sm" className="text-accent-500" />
         </MotiView>
       ) : status === 'online' ? (
         <Icon as={Activity} size="sm" className="text-success-400" />
@@ -168,32 +169,38 @@ const DeleteAlert = ({
   onDelete: () => void;
 }) => (
   <AlertDialog isOpen={isOpen} onClose={onClose}>
-    <AlertDialogBackdrop />
-    <AlertDialogContent className="rounded-xl bg-background-0">
-      <AlertDialogHeader>
-        <Heading size="sm">Delete Server</Heading>
+    <AlertDialogBackdrop onPress={onClose} />
+    <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
+      <AlertDialogHeader className="px-0">
+        <Text className="text-lg font-semibold text-primary-500">
+          Delete Server
+        </Text>
       </AlertDialogHeader>
-      <AlertDialogBody>
+      <AlertDialogBody className="px-0 py-4">
         <Text className="text-sm text-primary-400">
           Are you sure you want to delete this server? This action cannot be
           undone.
         </Text>
       </AlertDialogBody>
-      <AlertDialogFooter>
-        <Button
-          variant="outline"
-          onPress={onClose}
-          className="flex-1 rounded-xl bg-background-50"
-        >
-          <ButtonText className="text-primary-400">Cancel</ButtonText>
-        </Button>
-        <Button
-          variant="solid"
-          onPress={onDelete}
-          className="flex-1 rounded-xl bg-error-500 active:bg-error-600"
-        >
-          <ButtonText className="text-background-0">Delete</ButtonText>
-        </Button>
+      <AlertDialogFooter className="px-0">
+        <HStack space="sm" className="py-0">
+          <Button
+            variant="outline"
+            onPress={onClose}
+            className="flex-1 rounded-md bg-background-100"
+          >
+            <ButtonText className="text-sm text-primary-400">Cancel</ButtonText>
+          </Button>
+          <Button
+            variant="solid"
+            onPress={onDelete}
+            className="flex-1 rounded-md bg-error-500 active:bg-error-600"
+          >
+            <ButtonText className="text-sm text-typography-900">
+              Delete
+            </ButtonText>
+          </Button>
+        </HStack>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
@@ -240,7 +247,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         <TouchableOpacity
           onPress={handlePress}
           activeOpacity={0.8}
-          className="overflow-hidden rounded-xl bg-background-50"
+          className="overflow-hidden rounded-xl bg-background-200"
           style={{
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },

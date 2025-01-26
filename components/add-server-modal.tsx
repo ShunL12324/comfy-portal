@@ -135,7 +135,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
       avoidKeyboard
     >
       <ModalBackdrop />
-      <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-50">
+      <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
         <VStack className="p-0">
           <ModalHeader className="px-0">
             <Text className="text-lg font-semibold text-primary-500">

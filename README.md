@@ -14,16 +14,20 @@ Comfy Portal is an open-source iOS application that brings the power of ComfyUI 
 
 ## Pro Version
 
-A pro version of Comfy Portal is available with additional features:
+A pro version of Comfy Portal is available on the App Store with additional features:
 
 - Advanced workflow management
 - Premium presets and templates
 - Priority support
 - Extended customization options
+- Cloud sync capabilities
+- Advanced AI features
 
-Note: The pro version is for authorized commercial use only. Please contact us for licensing information.
+[Get Pro Version on App Store](#) _(Coming Soon)_
 
 ## Getting Started
+
+Note: These instructions are for personal development and testing purposes only.
 
 ### Prerequisites
 

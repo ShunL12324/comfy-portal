@@ -8,6 +8,7 @@ import { MotiView } from 'moti';
 import { Dimensions } from 'react-native';
 import { AnimatePresence } from 'moti';
 import { useThemeStore } from '@/store/theme';
+import { Icon } from '../ui/icon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const TAB_WIDTH = SCREEN_WIDTH / 2;
@@ -62,11 +63,12 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
         />
         <TabItem
           icon={
-            <Home
-              size={20}
-              className={
+            <Icon
+              as={Home}
+              size="lg"
+              className={`${
                 activeTab === 'home' ? 'text-primary-900' : 'text-secondary-500'
-              }
+              }`}
             />
           }
           label="Home"
@@ -75,13 +77,14 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
         />
         <TabItem
           icon={
-            <Settings2
-              size={20}
-              className={
+            <Icon
+              as={Settings2}
+              size="lg"
+              className={`${
                 activeTab === 'setting'
                   ? 'text-primary-900'
                   : 'text-secondary-500'
-              }
+              }`}
             />
           }
           label="Setting"

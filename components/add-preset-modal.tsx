@@ -151,7 +151,7 @@ export function AddPresetModal({
         className="flex-1 items-center justify-center px-5"
         pointerEvents="box-none"
       >
-        <ModalContent className="overflow-hidden rounded-xl border-0 bg-background-50">
+        <ModalContent className="overflow-hidden rounded-xl border-0 bg-background-200">
           <ModalHeader>
             <Text className="text-lg font-semibold text-primary-500">
               Add Preset
