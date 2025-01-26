@@ -10,6 +10,8 @@ All Rights Reserved
 "Personal Use" means use by an individual for non-commercial purposes.
 "Commercial Use" means any use intended for or directed toward commercial advantage or monetary compensation.
 "Distribute" means to make available to any third party.
+"Modification" means any change to the Software, including but not limited to adaptations, derivatives, or enhancements.
+"You" means the individual or entity exercising the rights granted under this License.
 
 2. Grant of Rights
 
@@ -18,6 +20,7 @@ Subject to the terms and conditions of this License, you are granted a non-exclu
 a) Use the Software for Personal Use
 b) Study and modify the Software for Personal Use
 c) Share modifications for Personal Use with other licensed users
+d) Create and maintain a fork of the Software for Personal Use
 
 3. Restrictions
 
@@ -26,6 +29,9 @@ a) Use the Software for any Commercial Use without explicit written permission
 b) Distribute the Software or any derivative works without explicit written permission
 c) Grant sublicenses to the Software
 d) Remove or alter any proprietary notices in the Software
+e) Use the Software in any way that suggests official endorsement by the copyright holder
+f) Use the name, trademarks, or logos of the Software for any commercial purpose without explicit permission
+g) Circumvent any technical measures designed to enforce these license terms
 
 4. Personal Use
 
@@ -35,6 +41,7 @@ Personal Use is permitted and encouraged, including:
 - Personal projects without commercial intent
 - Contributing improvements back to the project
 - Testing and evaluation
+- Academic research and study
 
 5. Commercial Use
 
@@ -44,21 +51,38 @@ All Commercial Use requires a separate commercial license. This includes:
 - Using the Software in commercial products
 - Providing commercial services based on the Software
 - Any monetization of the Software or derivative works
+- Using the Software in a commercial environment
+- Offering hosting or cloud services based on the Software
 
 6. Contributions
 
-By submitting contributions to the Software, you grant the copyright holder a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license to use, reproduce, modify, display, perform, sublicense, and distribute your contributions.
+By submitting contributions to the Software, you:
+a) Grant the copyright holder a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license to use, reproduce, modify, display, perform, sublicense, and distribute your contributions
+b) Represent that you have the right to grant this license
+c) Agree that your contributions may be included in the commercial version of the Software
 
 7. Disclaimer of Warranty
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
 
 8. Limitation of Liability
 
-IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. THIS INCLUDES BUT IS NOT LIMITED TO DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES.
 
 9. Termination
 
-This License automatically terminates if you fail to comply with its terms and conditions.
+This License automatically terminates if you fail to comply with its terms and conditions. Upon termination:
+a) All rights granted under this License will cease immediately
+b) You must stop all use and distribution of the Software
+c) Any sublicenses granted by you shall terminate automatically
 
-For commercial licensing inquiries, please contact: [Your Contact Information]
+10. Miscellaneous
+
+a) This License represents the complete agreement concerning the subject matter hereof
+b) If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable
+c) This License shall be governed by and construed in accordance with the laws of Australia
+d) The Software is subject to export control laws and may be subject to import and export regulations
+
+For commercial licensing inquiries, please contact:
+Email: liushun0574@gmail.com
+Website: https://github.com/ShunL12324/comfy-portal
