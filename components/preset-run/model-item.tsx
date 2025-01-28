@@ -55,7 +55,6 @@ export function ModelItem({ model, serverName, isSelected }: ModelItemProps) {
   };
 
   const modelName = getModelNameWithoutExtension(model.name);
-  // 如果文本不够长，添加换行符确保两行显示
   const displayName = modelName.length < 20 ? modelName + '\n ' : modelName;
 
   return (

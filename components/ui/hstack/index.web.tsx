@@ -14,7 +14,7 @@ const HStack = React.forwardRef<React.ElementRef<'div'>, IHStackProps>(
         ref={ref}
       />
     );
-  }
+  },
 );
 
 HStack.displayName = 'HStack';

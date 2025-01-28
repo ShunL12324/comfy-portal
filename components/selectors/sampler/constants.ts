@@ -32,7 +32,7 @@ export const SAMPLERS = [
   'gradient_estimation',
   'ddim',
   'uni_pc',
-  'uni_pc_bh2'
+  'uni_pc_bh2',
 ] as const;
 
 export type Sampler = (typeof SAMPLERS)[number];
@@ -40,4 +40,4 @@ export type Sampler = (typeof SAMPLERS)[number];
 export const SAMPLER_OPTIONS: SelectorOption[] = SAMPLERS.map((sampler) => ({
   value: sampler,
   label: sampler,
-})); 
+}));

@@ -15,7 +15,7 @@ const Card = React.forwardRef<React.ElementRef<typeof View>, ICardProps>(
         ref={ref}
       />
     );
-  }
+  },
 );
 
 Card.displayName = 'Card';

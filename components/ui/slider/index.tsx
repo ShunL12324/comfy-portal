@@ -24,7 +24,7 @@ export const UISlider = createSlider({
 cssInterop(UISlider.Track, { className: 'style' });
 
 const sliderStyle = tva({
-  base: 'justify-center items-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
+  base: 'items-center justify-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
   variants: {
     orientation: {
       horizontal: 'w-full',
@@ -43,7 +43,7 @@ const sliderStyle = tva({
 });
 
 const sliderThumbStyle = tva({
-  base: 'bg-primary-500 absolute rounded-full data-[focus=true]:bg-primary-600 data-[active=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[disabled=true]:bg-primary-500 web:cursor-pointer web:data-[active=true]:outline web:data-[active=true]:outline-4 web:data-[active=true]:outline-primary-400 shadow-hard-1',
+  base: 'absolute rounded-full bg-primary-500 shadow-hard-1 web:cursor-pointer data-[focus=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[active=true]:bg-primary-600 web:data-[active=true]:outline web:data-[active=true]:outline-4 web:data-[active=true]:outline-primary-400 data-[disabled=true]:bg-primary-500',
 
   parentVariants: {
     size: {
@@ -55,7 +55,7 @@ const sliderThumbStyle = tva({
 });
 
 const sliderTrackStyle = tva({
-  base: 'bg-background-300 rounded-lg overflow-hidden',
+  base: 'overflow-hidden rounded-lg bg-background-300',
   parentVariants: {
     orientation: {
       horizontal: 'w-full',
@@ -142,7 +142,7 @@ const sliderTrackStyle = tva({
 });
 
 const sliderFilledTrackStyle = tva({
-  base: 'bg-primary-500 data-[focus=true]:bg-primary-600 data-[active=true]:bg-primary-600 data-[hover=true]:bg-primary-600',
+  base: 'bg-primary-500 data-[focus=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[active=true]:bg-primary-600',
   parentVariants: {
     orientation: {
       horizontal: 'h-full',
@@ -166,7 +166,7 @@ const Slider = React.forwardRef<
       isReversed = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UISlider
@@ -182,7 +182,7 @@ const Slider = React.forwardRef<
         context={{ size, orientation, isReversed }}
       />
     );
-  }
+  },
 );
 
 type ISliderThumbProps = React.ComponentProps<typeof UISlider.Thumb> &

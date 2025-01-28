@@ -1,6 +1,6 @@
-import { Preset } from './preset';
 import * as Crypto from 'expo-crypto';
 import { buildServerUrl, isLocalOrLanIP } from './network';
+import { GenerationParams } from '@/types/generation';
 
 /**
  * Configuration options for the ComfyUI client
@@ -205,7 +205,7 @@ export class ComfyClient {
    * Monitors WebSocket messages for various execution events and updates progress through callbacks.
    * 
    * @param promptId - The ID of the prompt being executed
-   * @param preset - The workflow preset being executed
+   * @param params - The workflow parameters being executed
    * @param callbacks - Callbacks for progress updates
    * @returns Promise that resolves to true if generation succeeds
    * @throws Error if WebSocket is not connected
@@ -213,7 +213,7 @@ export class ComfyClient {
    */
   private trackProgress(
     promptId: string,
-    preset: Preset,
+    params: GenerationParams,
     callbacks: ProgressCallback,
   ): Promise<boolean> {
     return new Promise((resolve, reject) => {
@@ -222,7 +222,7 @@ export class ComfyClient {
         return;
       }
 
-      const nodeIds = Object.keys(preset);
+      const nodeIds = Object.keys(params);
       const finishedNodes: string[] = [];
 
       const handleMessage = (event: MessageEvent) => {
@@ -289,13 +289,13 @@ export class ComfyClient {
   /**
    * Queues a workflow preset for execution on the ComfyUI server.
    * 
-   * @param preset - The workflow preset to execute
+   * @param params - The workflow parameters to execute
    * @returns Promise that resolves to the prompt ID
    * @throws Error if queueing fails or server returns an error
    * @private
    */
-  private async queuePrompt(preset: Preset): Promise<string> {
-    const payload = { prompt: preset, client_id: this.clientId };
+  private async queuePrompt(params: GenerationParams): Promise<string> {
+    const payload = { prompt: params, client_id: this.clientId };
     const url = await buildServerUrl(this.host, this.port, '/prompt');
     const response = await fetch(url, {
       method: 'POST',
@@ -362,7 +362,7 @@ export class ComfyClient {
    * - Final image URLs
    * - Error notifications
    * 
-   * @param preset - The workflow preset to execute
+   * @param params - The workflow parameters to execute
    * @param callbacks - Callbacks for tracking generation progress
    * @returns Promise that resolves to an array of image URLs
    * @throws Error if generation fails at any stage
@@ -388,10 +388,10 @@ export class ComfyClient {
    * });
    * ```
    */
-  async generate(preset: Preset, callbacks: ProgressCallback): Promise<string[]> {
+  async generate(params: GenerationParams, callbacks: ProgressCallback): Promise<string[]> {
     try {
-      const promptId = await this.queuePrompt(preset);
-      const success = await this.trackProgress(promptId, preset, callbacks);
+      const promptId = await this.queuePrompt(params);
+      const success = await this.trackProgress(promptId, params, callbacks);
       if (!success) {
         throw new Error('Generation failed');
       }

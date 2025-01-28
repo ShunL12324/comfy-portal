@@ -15,15 +15,15 @@ export const UIIcon = createIcon({
 >;
 
 const iconStyle = tva({
-  base: 'text-typography-950 fill-none pointer-events-none',
+  base: 'pointer-events-none fill-none text-typography-950',
   variants: {
     size: {
       '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      xs: 'h-3.5 w-3.5',
+      sm: 'h-4 w-4',
+      md: 'h-[18px] w-[18px]',
+      lg: 'h-5 w-5',
+      xl: 'h-6 w-6',
     },
   },
 });
@@ -75,7 +75,7 @@ const Icon = React.forwardRef<React.ElementRef<typeof Svg>, IIConProps>(
         className={iconStyle({ size, class: className })}
       />
     );
-  }
+  },
 );
 
 export { Icon };
@@ -99,7 +99,7 @@ const createIconUI = ({ ...props }: ParameterTypes) => {
         ...inComingProps
       }: VariantProps<typeof iconStyle> &
         React.ComponentPropsWithoutRef<typeof UIIconCreateIcon>,
-      ref
+      ref,
     ) => {
       return (
         <UIIconCreateIcon
@@ -108,7 +108,7 @@ const createIconUI = ({ ...props }: ParameterTypes) => {
           className={iconStyle({ size, class: className })}
         />
       );
-    }
+    },
   );
 };
 export { createIconUI as createIcon };

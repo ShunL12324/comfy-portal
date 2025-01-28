@@ -40,7 +40,7 @@ const accordionItemStyle = tva({
   },
 });
 const accordionTitleTextStyle = tva({
-  base: 'text-typography-900 font-bold flex-1 text-left',
+  base: 'flex-1 text-left font-bold text-typography-900',
   parentVariants: {
     size: {
       sm: 'text-sm',
@@ -50,20 +50,20 @@ const accordionTitleTextStyle = tva({
   },
 });
 const accordionIconStyle = tva({
-  base: 'text-typography-900 fill-none',
+  base: 'fill-none text-typography-900',
   parentVariants: {
     size: {
       '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      xs: 'h-3.5 w-3.5',
+      sm: 'h-4 w-4',
+      md: 'h-[18px] w-[18px]',
+      lg: 'h-5 w-5',
+      xl: 'h-6 w-6',
     },
   },
 });
 const accordionContentTextStyle = tva({
-  base: 'text-typography-700 font-normal',
+  base: 'font-normal text-typography-700',
   parentVariants: {
     size: {
       sm: 'text-sm',
@@ -76,10 +76,10 @@ const accordionHeaderStyle = tva({
   base: 'mx-0 my-0',
 });
 const accordionContentStyle = tva({
-  base: 'pt-1 pb-3 px-4',
+  base: 'px-4 pb-3 pt-1',
 });
 const accordionTriggerStyle = tva({
-  base: 'w-full flex-row justify-between items-center web:outline-none focus:outline-none data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed data-[focus-visible=true]:bg-background-50 py-3 px-4',
+  base: 'w-full flex-row items-center justify-between px-4 py-3 focus:outline-none web:outline-none data-[focus-visible=true]:bg-background-50 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-40',
 });
 
 const Root = withStyleContext(View, SCOPE);

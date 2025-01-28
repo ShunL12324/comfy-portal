@@ -27,7 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ButtonText } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
-import { Icon } from './ui/icon';
+import { Icon } from '../ui/icon';
 import { HStack } from '@/components/ui/hstack';
 
 // Types

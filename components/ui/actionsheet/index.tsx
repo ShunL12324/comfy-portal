@@ -91,18 +91,18 @@ cssInterop(PrimitiveIcon, {
   },
 });
 
-const actionsheetStyle = tva({ base: 'w-full h-full web:pointer-events-none' });
+const actionsheetStyle = tva({ base: 'h-full w-full web:pointer-events-none' });
 
 const actionsheetContentStyle = tva({
-  base: 'items-center rounded-tl-3xl rounded-tr-3xl p-5 pt-2 bg-background-0 web:pointer-events-auto web:select-none shadow-hard-5 border border-b-0 border-outline-100',
+  base: 'items-center rounded-tl-3xl rounded-tr-3xl border border-b-0 border-outline-100 bg-background-0 p-5 pt-2 shadow-hard-5 web:pointer-events-auto web:select-none',
 });
 
 const actionsheetItemStyle = tva({
-  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 web:data-[focus-visible=true]:outline-indicator-primary gap-2',
+  base: 'w-full flex-row items-center gap-2 rounded-sm p-3 hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 web:data-[focus-visible=true]:outline-indicator-primary data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed',
 });
 
 const actionsheetItemTextStyle = tva({
-  base: 'text-typography-700 font-normal font-body',
+  base: 'font-body font-normal text-typography-700',
   variants: {
     isTruncated: {
       true: '',
@@ -118,11 +118,11 @@ const actionsheetItemTextStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -133,35 +133,35 @@ const actionsheetItemTextStyle = tva({
 });
 
 const actionsheetDragIndicatorStyle = tva({
-  base: 'w-16 h-1 bg-background-400 rounded-full',
+  base: 'h-1 w-16 rounded-full bg-background-400',
 });
 
 const actionsheetDragIndicatorWrapperStyle = tva({
-  base: 'w-full py-1 items-center',
+  base: 'w-full items-center py-1',
 });
 
 const actionsheetBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 bg-background-dark web:cursor-default web:pointer-events-auto',
+  base: 'absolute bottom-0 left-0 right-0 top-0 bg-background-dark web:pointer-events-auto web:cursor-default',
 });
 
 const actionsheetScrollViewStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetVirtualizedListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetFlatListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetSectionListStyle = tva({
-  base: 'w-full h-auto',
+  base: 'h-auto w-full',
 });
 
 const actionsheetSectionHeaderTextStyle = tva({
-  base: 'leading-5 font-bold font-heading my-0 text-typography-500 p-3 uppercase',
+  base: 'font-heading my-0 p-3 font-bold uppercase leading-5 text-typography-500',
   variants: {
     isTruncated: {
       true: '',
@@ -180,11 +180,11 @@ const actionsheetSectionHeaderTextStyle = tva({
       '4xl': 'text-4xl',
       '3xl': 'text-3xl',
       '2xl': 'text-2xl',
-      'xl': 'text-xl',
-      'lg': 'text-lg',
-      'md': 'text-base',
-      'sm': 'text-sm',
-      'xs': 'text-xs',
+      xl: 'text-xl',
+      lg: 'text-lg',
+      md: 'text-base',
+      sm: 'text-sm',
+      xs: 'text-xs',
     },
 
     sub: {
@@ -203,15 +203,15 @@ const actionsheetSectionHeaderTextStyle = tva({
 });
 
 const actionsheetIconStyle = tva({
-  base: 'text-background-500 fill-none',
+  base: 'fill-none text-background-500',
   variants: {
     size: {
       '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'w-[18px] h-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      xs: 'h-3.5 w-3.5',
+      sm: 'h-4 w-4',
+      md: 'h-[18px] w-[18px]',
+      lg: 'h-5 w-5',
+      xl: 'h-6 w-6',
     },
   },
 });
@@ -335,7 +335,7 @@ const ActionsheetItemText = React.forwardRef<
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UIActionsheet.ItemText
@@ -351,7 +351,7 @@ const ActionsheetItemText = React.forwardRef<
         {...props}
       />
     );
-  }
+  },
 );
 
 const ActionsheetDragIndicator = React.forwardRef<
@@ -485,7 +485,7 @@ const ActionsheetSectionHeaderText = React.forwardRef<
       highlight,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UIActionsheet.SectionHeaderText
@@ -504,7 +504,7 @@ const ActionsheetSectionHeaderText = React.forwardRef<
         {...props}
       />
     );
-  }
+  },
 );
 
 const ActionsheetIcon = React.forwardRef<

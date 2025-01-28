@@ -22,7 +22,7 @@ const IndicatorWrapper = React.forwardRef<
 const LabelWrapper = React.forwardRef<React.ElementRef<typeof Text>, TextProps>(
   ({ ...props }, ref) => {
     return <Text {...props} ref={ref} />;
-  }
+  },
 );
 
 const IconWrapper = React.forwardRef<
@@ -70,18 +70,18 @@ const checkboxStyle = tva({
 });
 
 const checkboxIndicatorStyle = tva({
-  base: 'justify-center items-center border-outline-400 bg-transparent rounded web:data-[focus-visible=true]:outline-none web:data-[focus-visible=true]:ring-2 web:data-[focus-visible=true]:ring-indicator-primary data-[checked=true]:bg-primary-600 data-[checked=true]:border-primary-600 data-[hover=true]:data-[checked=false]:border-outline-500 data-[hover=true]:bg-transparent data-[hover=true]:data-[invalid=true]:border-error-700 data-[hover=true]:data-[checked=true]:bg-primary-700 data-[hover=true]:data-[checked=true]:border-primary-700 data-[hover=true]:data-[checked=true]:data-[disabled=true]:border-primary-600 data-[hover=true]:data-[checked=true]:data-[disabled=true]:bg-primary-600 data-[hover=true]:data-[checked=true]:data-[disabled=true]:opacity-40 data-[hover=true]:data-[checked=true]:data-[disabled=true]:data-[invalid=true]:border-error-700 data-[hover=true]:data-[disabled=true]:border-outline-400 data-[hover=true]:data-[disabled=true]:data-[invalid=true]:border-error-700 data-[active=true]:data-[checked=true]:bg-primary-800 data-[active=true]:data-[checked=true]:border-primary-800 data-[invalid=true]:border-error-700 data-[disabled=true]:opacity-40',
+  base: 'items-center justify-center rounded border-outline-400 bg-transparent data-[checked=true]:border-primary-600 data-[checked=true]:bg-primary-600 data-[invalid=true]:border-error-700 web:data-[focus-visible=true]:outline-none web:data-[focus-visible=true]:ring-2 web:data-[focus-visible=true]:ring-indicator-primary data-[hover=true]:data-[checked=false]:border-outline-500 data-[hover=true]:data-[checked=true]:bg-primary-700 data-[hover=true]:data-[checked=true]:border-primary-700 data-[hover=true]:data-[checked=true]:data-[disabled=true]:bg-primary-600 data-[hover=true]:data-[checked=true]:data-[disabled=true]:border-primary-600 data-[hover=true]:data-[checked=true]:data-[disabled=true]:data-[invalid=true]:border-error-700 data-[hover=true]:data-[checked=true]:data-[disabled=true]:opacity-40 data-[hover=true]:data-[invalid=true]:border-error-700 data-[hover=true]:bg-transparent data-[hover=true]:data-[disabled=true]:data-[invalid=true]:border-error-700 data-[hover=true]:data-[disabled=true]:border-outline-400 data-[active=true]:data-[checked=true]:bg-primary-800 data-[active=true]:data-[checked=true]:border-primary-800 data-[disabled=true]:opacity-40',
   parentVariants: {
     size: {
-      lg: 'w-6 h-6 border-[3px]',
-      md: 'w-5 h-5 border-2',
-      sm: 'w-4 h-4 border-2',
+      lg: 'h-6 w-6 border-[3px]',
+      md: 'h-5 w-5 border-2',
+      sm: 'h-4 w-4 border-2',
     },
   },
 });
 
 const checkboxLabelStyle = tva({
-  base: 'text-typography-600 data-[checked=true]:text-typography-900 data-[hover=true]:text-typography-900 data-[hover=true]:data-[checked=true]:text-typography-900 data-[hover=true]:data-[checked=true]:data-[disabled=true]:text-typography-900 data-[hover=true]:data-[disabled=true]:text-typography-400 data-[active=true]:text-typography-900 data-[active=true]:data-[checked=true]:text-typography-900 data-[disabled=true]:opacity-40 web:select-none',
+  base: 'text-typography-600 web:select-none data-[checked=true]:text-typography-900 data-[hover=true]:data-[checked=true]:data-[disabled=true]:text-typography-900 data-[hover=true]:data-[checked=true]:text-typography-900 data-[hover=true]:text-typography-900 data-[hover=true]:data-[disabled=true]:text-typography-400 data-[active=true]:data-[checked=true]:text-typography-900 data-[active=true]:text-typography-900 data-[disabled=true]:opacity-40',
   parentVariants: {
     size: {
       lg: 'text-lg',
@@ -92,7 +92,7 @@ const checkboxLabelStyle = tva({
 });
 
 const checkboxIconStyle = tva({
-  base: 'text-typography-50 fill-none',
+  base: 'fill-none text-typography-50',
 
   parentVariants: {
     size: {

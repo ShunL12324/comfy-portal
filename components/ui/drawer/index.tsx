@@ -41,7 +41,7 @@ cssInterop(AnimatedPressable, { className: 'style' });
 cssInterop(Motion.View, { className: 'style' });
 
 const drawerStyle = tva({
-  base: 'w-full h-full web:pointer-events-none relative',
+  base: 'relative h-full w-full web:pointer-events-none',
   variants: {
     size: {
       sm: '',
@@ -59,11 +59,11 @@ const drawerStyle = tva({
 });
 
 const drawerBackdropStyle = tva({
-  base: 'absolute left-0 top-0 right-0 bottom-0 bg-background-dark web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 bg-background-dark web:cursor-default',
 });
 
 const drawerContentStyle = tva({
-  base: 'bg-background-0 overflow-scroll border-outline-100 p-6 absolute',
+  base: 'absolute overflow-scroll border-outline-100 bg-background-0 p-6',
   parentVariants: {
     size: {
       sm: 'w-1/4',
@@ -123,19 +123,19 @@ const drawerContentStyle = tva({
 });
 
 const drawerCloseButtonStyle = tva({
-  base: 'z-10 rounded data-[focus-visible=true]:web:bg-background-100 web:outline-0 cursor-pointer',
+  base: 'z-10 cursor-pointer rounded web:outline-0 data-[focus-visible=true]:web:bg-background-100',
 });
 
 const drawerHeaderStyle = tva({
-  base: 'justify-between items-center flex-row',
+  base: 'flex-row items-center justify-between',
 });
 
 const drawerBodyStyle = tva({
-  base: 'mt-4 mb-6 shrink-0',
+  base: 'mb-6 mt-4 shrink-0',
 });
 
 const drawerFooterStyle = tva({
-  base: 'flex-row justify-end items-center',
+  base: 'flex-row items-center justify-end',
 });
 
 type IDrawerProps = React.ComponentProps<typeof UIDrawer> &

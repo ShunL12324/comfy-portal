@@ -30,7 +30,7 @@ const Skeleton = forwardRef<
       speed = 2,
       ...props
     },
-    ref
+    ref,
   ) => {
     const pulseAnim = new Animated.Value(1);
     const customTimingFunction = Easing.bezier(0.4, 0, 0.6, 1);
@@ -76,7 +76,7 @@ const Skeleton = forwardRef<
 
       return children;
     }
-  }
+  },
 );
 
 const SkeletonText = forwardRef<
@@ -93,7 +93,7 @@ const SkeletonText = forwardRef<
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     if (!isLoaded) {
       if (_lines) {
@@ -129,7 +129,7 @@ const SkeletonText = forwardRef<
     } else {
       return children;
     }
-  }
+  },
 );
 
 Skeleton.displayName = 'Skeleton';

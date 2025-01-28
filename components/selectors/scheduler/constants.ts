@@ -9,12 +9,14 @@ export const SCHEDULERS = [
   'ddim_uniform',
   'beta',
   'linear_quadratic',
-  'kl_optimal'
+  'kl_optimal',
 ] as const;
 
 export type Scheduler = (typeof SCHEDULERS)[number];
 
-export const SCHEDULER_OPTIONS: SelectorOption[] = SCHEDULERS.map((scheduler) => ({
-  value: scheduler,
-  label: scheduler,
-})); 
+export const SCHEDULER_OPTIONS: SelectorOption[] = SCHEDULERS.map(
+  (scheduler) => ({
+    value: scheduler,
+    label: scheduler,
+  }),
+);

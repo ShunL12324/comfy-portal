@@ -8,25 +8,25 @@ import { Motion, AnimatePresence } from '@legendapp/motion';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
 
 const menuStyle = tva({
-  base: 'rounded-md bg-background-0 border border-outline-100 p-1 shadow-hard-5',
+  base: 'rounded-md border border-outline-100 bg-background-0 p-1 shadow-hard-5',
 });
 
 const menuItemStyle = tva({
-  base: 'min-w-[200px] p-3 flex-row items-center rounded data-[hover=true]:bg-background-50 data-[active=true]:bg-background-100 data-[focus=true]:bg-background-50 data-[focus=true]:web:outline-none data-[focus=true]:web:outline-0 data-[disabled=true]:opacity-40 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:outline-2 data-[focus-visible=true]:web:outline-primary-700 data-[focus-visible=true]:web:outline data-[focus-visible=true]:web:cursor-pointer data-[disabled=true]:data-[focus=true]:bg-transparent',
+  base: 'min-w-[200px] flex-row items-center rounded p-3 data-[focus=true]:bg-background-50 data-[focus=true]:web:outline-none data-[focus=true]:web:outline-0 data-[focus-visible=true]:web:cursor-pointer data-[focus-visible=true]:web:outline data-[focus-visible=true]:web:outline-2 data-[focus-visible=true]:web:outline-primary-700 data-[hover=true]:bg-background-50 data-[active=true]:bg-background-100 data-[disabled=true]:data-[focus=true]:bg-transparent data-[disabled=true]:opacity-40 data-[disabled=true]:web:cursor-not-allowed',
 });
 
 const menuBackdropStyle = tva({
-  base: 'absolute top-0 bottom-0 left-0 right-0 web:cursor-default',
+  base: 'absolute bottom-0 left-0 right-0 top-0 web:cursor-default',
   // add this classnames if you want to give background color to backdrop
   // opacity-50 bg-background-500,
 });
 
 const menuSeparatorStyle = tva({
-  base: 'bg-background-200 h-px w-full',
+  base: 'h-px w-full bg-background-200',
 });
 
 const menuItemLabelStyle = tva({
-  base: 'text-typography-700 font-normal font-body',
+  base: 'font-body font-normal text-typography-700',
 
   variants: {
     isTruncated: {
@@ -43,11 +43,11 @@ const menuItemLabelStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -110,7 +110,7 @@ const Separator = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 export const UIMenu = createMenu({
   Root: Motion.View,
@@ -155,7 +155,7 @@ const Menu = React.forwardRef<React.ElementRef<typeof UIMenu>, IMenuProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 const MenuItem = UIMenu.Item;
@@ -177,7 +177,7 @@ const MenuItemLabel = React.forwardRef<
       highlight,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UIMenu.ItemLabel
@@ -196,7 +196,7 @@ const MenuItemLabel = React.forwardRef<
         {...props}
       />
     );
-  }
+  },
 );
 
 const MenuSeparator = UIMenu.Separator;

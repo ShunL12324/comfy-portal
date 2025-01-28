@@ -16,7 +16,7 @@ const VStack = React.forwardRef<React.ElementRef<typeof View>, IVStackProps>(
         ref={ref}
       />
     );
-  }
+  },
 );
 
 VStack.displayName = 'VStack';

@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect } from 'react';
-import { Pressable } from './pressable';
-import { Text } from './text';
+import { Pressable } from '../ui/pressable';
+import { Text } from '../ui/text';
 import { View, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   useSharedValue,
 } from 'react-native-reanimated';
-import { useThemeStore } from '@/store/theme';
 
 /**
  * Props for the SegmentedControl component
@@ -31,16 +30,6 @@ const springConfig = {
 };
 
 /**
- * Theme-specific colors for the component
- */
-const getThemeColors = (isDark: boolean) => ({
-  slider: isDark ? '#1F1F1F' : '#FFFFFF',
-  background: isDark ? '#2A2A2A' : '#F0F0F0',
-  activeText: isDark ? '#FFFFFF' : '#000000',
-  inactiveText: isDark ? '#999999' : '#666666',
-});
-
-/**
  * A customizable segmented control component with smooth animations
  * @component
  */
@@ -49,8 +38,6 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   value,
   onChange,
 }) => {
-  const theme = useThemeStore((state) => state.theme);
-  const colors = getThemeColors(theme === 'dark');
   const selectedIndex = options.indexOf(value);
   const translateX = useSharedValue(0);
   const width = useSharedValue(0);
@@ -85,46 +72,28 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
     return {
       transform: [{ translateX: translateX.value }],
       width: segmentWidth - 8,
-      height: 32,
-      position: 'absolute',
-      backgroundColor: colors.slider,
-      borderRadius: 8,
-      top: 4,
-      left: 4,
     };
   });
 
   return (
     <View
-      style={{
-        overflow: 'hidden',
-        borderRadius: 10,
-        backgroundColor: colors.background,
-        height: 40,
-        padding: 0,
-        flexDirection: 'row',
-      }}
+      className="h-10 flex-row overflow-hidden rounded-[10px] bg-background-300"
       onLayout={onLayout}
     >
-      <Animated.View style={sliderStyle} />
+      <Animated.View
+        className="absolute left-1 top-1 h-8 rounded-lg bg-background-50"
+        style={sliderStyle}
+      />
       {options.map((option) => (
         <Pressable
           key={option}
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            paddingHorizontal: 4,
-          }}
+          className="h-full flex-1 items-center justify-center px-1"
           onPress={() => onChange(option)}
         >
           <Text
-            style={{
-              fontSize: 11,
-              fontWeight: '500',
-              color: value === option ? colors.activeText : colors.inactiveText,
-            }}
+            className={`text-[11px] font-medium ${
+              value === option ? 'text-typography-900' : 'text-typography-500'
+            }`}
           >
             {option}
           </Text>

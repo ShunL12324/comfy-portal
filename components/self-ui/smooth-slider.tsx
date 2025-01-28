@@ -42,6 +42,10 @@ interface SmoothSliderProps {
   className?: string;
   /** Whether to show the value label (default: true) */
   showValue?: boolean;
+  /** Size of the thumb in pixels (default: 28) */
+  thumbSize?: number;
+  /** Height of the track in pixels (default: 24) */
+  trackHeight?: number;
 }
 
 /**
@@ -58,9 +62,9 @@ export function SmoothSlider({
   onChangeEnd,
   className = '',
   showValue = true,
+  thumbSize = 28,
+  trackHeight = 24,
 }: SmoothSliderProps) {
-  const THUMB_SIZE = 28;
-  const TRACK_HEIGHT = 24;
   const [trackWidth, setTrackWidth] = React.useState(240);
 
   /** Converts a value to its percentage representation */
@@ -112,6 +116,7 @@ export function SmoothSlider({
       if (Math.abs(newValue - ctx.lastValue) >= step) {
         runOnJS(Haptics.selectionAsync)();
         ctx.lastValue = newValue;
+        if (onChange) runOnJS(onChange)(newValue);
       }
     },
     onEnd: () => {
@@ -119,13 +124,12 @@ export function SmoothSlider({
       isDragging.value = false;
       const finalValue = percentToValue(translateX.value);
       runOnJS(Haptics.selectionAsync)();
-      if (onChange) runOnJS(onChange)(finalValue);
       if (onChangeEnd) runOnJS(onChangeEnd)(finalValue);
     },
   });
 
   const fillStyle = useAnimatedStyle(() => ({
-    width: (translateX.value / 100) * trackWidth + THUMB_SIZE,
+    width: (translateX.value / 100) * trackWidth + thumbSize,
   }));
 
   const thumbStyle = useAnimatedStyle(() => ({
@@ -148,7 +152,7 @@ export function SmoothSlider({
 
   const onLayout = React.useCallback((event: any) => {
     const { width } = event.nativeEvent.layout;
-    setTrackWidth(width - THUMB_SIZE);
+    setTrackWidth(width - thumbSize);
   }, []);
 
   return (
@@ -172,8 +176,8 @@ export function SmoothSlider({
       )}
       <View className="flex w-full px-2">
         <View
-          className="relative rounded-full bg-background-100"
-          style={{ height: TRACK_HEIGHT }}
+          className="relative rounded-full bg-background-50"
+          style={{ height: trackHeight }}
           onLayout={onLayout}
         >
           <View className="absolute inset-0 overflow-hidden rounded-full">
@@ -184,12 +188,12 @@ export function SmoothSlider({
           </View>
           <PanGestureHandler onGestureEvent={panGestureHandler}>
             <Animated.View
-              className="absolute rounded-full border-[0.5px] border-background-100 bg-background-50 shadow-sm"
+              className="absolute rounded-full border-[0.5px] border-background-200 bg-background-300 shadow-sm"
               style={[
                 {
-                  width: THUMB_SIZE,
-                  height: THUMB_SIZE,
-                  top: (TRACK_HEIGHT - THUMB_SIZE) / 2,
+                  width: thumbSize,
+                  height: thumbSize,
+                  top: (trackHeight - thumbSize) / 2,
                   left: 0,
                 },
                 thumbStyle,

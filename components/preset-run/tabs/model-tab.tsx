@@ -51,10 +51,10 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
                   ],
                 })
               }
-              className="border-[0.5px] border-background-100"
+              className="border-[0.5px] border-outline-100"
             >
-              <Icon as={Plus} size="sm" className="text-primary-500" />
-              <Text className="ml-1 text-sm text-primary-500">Add LoRA</Text>
+              <Icon as={Plus} size="sm" className="text-typography-500" />
+              <Text className="ml-1 text-sm text-typography-500">Add LoRA</Text>
             </Button>
           </HStack>
 
@@ -63,13 +63,35 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
               <ModelSelector
                 key={index}
                 value={lora.name}
+                onDelete={() => {
+                  const loras = [...(params.loras || [])];
+                  loras.splice(index, 1);
+                  onParamsChange({ ...params, loras });
+                }}
                 onChange={(value) => {
                   const loras = [...(params.loras || [])];
-                  loras[index] = { ...lora, name: value };
+                  loras[index] = {
+                    ...lora,
+                    name: value,
+                    strengthClip: lora.strengthClip ?? 1,
+                    strengthModel: lora.strengthModel ?? 1,
+                  };
+                  onParamsChange({ ...params, loras });
+                }}
+                onLoraClipStrengthChange={(value) => {
+                  const loras = [...(params.loras || [])];
+                  loras[index] = { ...lora, strengthClip: value };
+                  onParamsChange({ ...params, loras });
+                }}
+                onLoraModelStrengthChange={(value) => {
+                  const loras = [...(params.loras || [])];
+                  loras[index] = { ...lora, strengthModel: value };
                   onParamsChange({ ...params, loras });
                 }}
                 servers={servers}
                 type="loras"
+                initialClipStrength={lora.strengthClip}
+                initialModelStrength={lora.strengthModel}
               />
             ))}
           </VStack>

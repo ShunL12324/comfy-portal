@@ -1,4 +1,4 @@
-import { LoraConfig } from '@/types/generation';
+import { LoraConfig, GenerationParams } from '@/types/generation';
 
 export const SAMPLERS = [
   'euler',
@@ -32,7 +32,7 @@ export const SAMPLERS = [
   'gradient_estimation',
   'ddim',
   'uni_pc',
-  'uni_pc_bh2'
+  'uni_pc_bh2',
 ] as const;
 
 export const SCHEDULERS = [
@@ -44,7 +44,7 @@ export const SCHEDULERS = [
   'ddim_uniform',
   'beta',
   'linear_quadratic',
-  'kl_optimal'
+  'kl_optimal',
 ] as const;
 
 export interface Resolution {
@@ -60,22 +60,7 @@ export const RESOLUTIONS: readonly Resolution[] = [
   { width: 0, height: 0, label: 'Custom' },
 ] as const;
 
-export interface GenerationParams {
-  model: string;
-  prompt: string;
-  negativePrompt: string;
-  steps: number;
-  cfg: number;
-  seed: number;
-  width: number;
-  height: number;
-  sampler: (typeof SAMPLERS)[number];
-  scheduler: (typeof SCHEDULERS)[number];
-  useRandomSeed: boolean;
-  loras?: LoraConfig[];
-}
-
 export interface TabProps {
   params: GenerationParams;
   onParamsChange: (params: GenerationParams) => void;
-} 
+}

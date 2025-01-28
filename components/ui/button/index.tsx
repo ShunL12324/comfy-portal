@@ -37,33 +37,33 @@ cssInterop(PrimitiveIcon, {
 });
 
 const buttonStyle = tva({
-  base: 'group/button rounded bg-primary-500 flex-row items-center justify-center data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2 data-[disabled=true]:opacity-40 gap-2',
+  base: 'group/button flex-row items-center justify-center gap-2 rounded bg-primary-500 data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2 data-[disabled=true]:opacity-40',
   variants: {
     action: {
       primary:
-        'bg-primary-500 data-[hover=true]:bg-primary-600 data-[active=true]:bg-primary-700 border-primary-300 data-[hover=true]:border-primary-400 data-[active=true]:border-primary-500 data-[focus-visible=true]:web:ring-indicator-info',
+        'border-primary-300 bg-primary-500 data-[focus-visible=true]:web:ring-indicator-info data-[hover=true]:border-primary-400 data-[hover=true]:bg-primary-600 data-[active=true]:border-primary-500 data-[active=true]:bg-primary-700',
       secondary:
-        'bg-secondary-500 border-secondary-300 data-[hover=true]:bg-secondary-600 data-[hover=true]:border-secondary-400 data-[active=true]:bg-secondary-700 data-[active=true]:border-secondary-700 data-[focus-visible=true]:web:ring-indicator-info',
+        'border-secondary-300 bg-secondary-500 data-[focus-visible=true]:web:ring-indicator-info data-[hover=true]:border-secondary-400 data-[hover=true]:bg-secondary-600 data-[active=true]:border-secondary-700 data-[active=true]:bg-secondary-700',
       positive:
-        'bg-success-500 border-success-300 data-[hover=true]:bg-success-600 data-[hover=true]:border-success-400 data-[active=true]:bg-success-700 data-[active=true]:border-success-500 data-[focus-visible=true]:web:ring-indicator-info',
+        'border-success-300 bg-success-500 data-[focus-visible=true]:web:ring-indicator-info data-[hover=true]:border-success-400 data-[hover=true]:bg-success-600 data-[active=true]:border-success-500 data-[active=true]:bg-success-700',
       negative:
-        'bg-error-500 border-error-300 data-[hover=true]:bg-error-600 data-[hover=true]:border-error-400 data-[active=true]:bg-error-700 data-[active=true]:border-error-500 data-[focus-visible=true]:web:ring-indicator-info',
+        'border-error-300 bg-error-500 data-[focus-visible=true]:web:ring-indicator-info data-[hover=true]:border-error-400 data-[hover=true]:bg-error-600 data-[active=true]:border-error-500 data-[active=true]:bg-error-700',
       default:
         'bg-transparent data-[hover=true]:bg-background-50 data-[active=true]:bg-transparent',
     },
     variant: {
       link: 'px-0',
       outline:
-        'bg-transparent border data-[hover=true]:bg-background-50 data-[active=true]:bg-transparent',
+        'border bg-transparent data-[hover=true]:bg-background-50 data-[active=true]:bg-transparent',
       solid: '',
     },
 
     size: {
-      xs: 'px-3.5 h-8',
-      sm: 'px-4 h-9',
-      md: 'px-5 h-10',
-      lg: 'px-6 h-11',
-      xl: 'px-7 h-12',
+      xs: 'h-8 px-3.5',
+      sm: 'h-9 px-4',
+      md: 'h-10 px-5',
+      lg: 'h-11 px-6',
+      xl: 'h-12 px-7',
     },
   },
   compoundVariants: [
@@ -71,25 +71,25 @@ const buttonStyle = tva({
       action: 'primary',
       variant: 'link',
       class:
-        'px-0 bg-transparent data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
+        'bg-transparent px-0 data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
     },
     {
       action: 'secondary',
       variant: 'link',
       class:
-        'px-0 bg-transparent data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
+        'bg-transparent px-0 data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
     },
     {
       action: 'positive',
       variant: 'link',
       class:
-        'px-0 bg-transparent data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
+        'bg-transparent px-0 data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
     },
     {
       action: 'negative',
       variant: 'link',
       class:
-        'px-0 bg-transparent data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
+        'bg-transparent px-0 data-[hover=true]:bg-transparent data-[active=true]:bg-transparent',
     },
     {
       action: 'primary',
@@ -119,7 +119,7 @@ const buttonStyle = tva({
 });
 
 const buttonTextStyle = tva({
-  base: 'text-typography-0 font-semibold web:select-none',
+  base: 'font-semibold text-typography-0 web:select-none',
   parentVariants: {
     action: {
       primary:
@@ -257,11 +257,11 @@ const buttonGroupStyle = tva({
   base: '',
   variants: {
     space: {
-      'xs': 'gap-1',
-      'sm': 'gap-2',
-      'md': 'gap-3',
-      'lg': 'gap-4',
-      'xl': 'gap-5',
+      xs: 'gap-1',
+      sm: 'gap-2',
+      md: 'gap-3',
+      lg: 'gap-4',
+      xl: 'gap-5',
       '2xl': 'gap-6',
       '3xl': 'gap-7',
       '4xl': 'gap-8',
@@ -270,8 +270,8 @@ const buttonGroupStyle = tva({
       true: 'gap-0',
     },
     flexDirection: {
-      'row': 'flex-row',
-      'column': 'flex-col',
+      row: 'flex-row',
+      column: 'flex-col',
       'row-reverse': 'flex-row-reverse',
       'column-reverse': 'flex-col-reverse',
     },
@@ -290,7 +290,7 @@ const Button = React.forwardRef<
 >(
   (
     { className, variant = 'solid', size = 'md', action = 'primary', ...props },
-    ref
+    ref,
   ) => {
     return (
       <UIButton
@@ -300,7 +300,7 @@ const Button = React.forwardRef<
         context={{ variant, size, action }}
       />
     );
-  }
+  },
 );
 
 type IButtonTextProps = React.ComponentPropsWithoutRef<typeof UIButton.Text> &
@@ -408,7 +408,7 @@ const ButtonGroup = React.forwardRef<
       flexDirection = 'column',
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <UIButton.Group
@@ -422,7 +422,7 @@ const ButtonGroup = React.forwardRef<
         ref={ref}
       />
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

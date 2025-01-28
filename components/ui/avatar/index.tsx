@@ -21,54 +21,54 @@ const UIAvatar = createAvatar({
 });
 
 const avatarStyle = tva({
-  base: 'rounded-full justify-center items-center relative bg-primary-600 group-[.avatar-group]/avatar-group:-ml-2.5',
+  base: 'relative items-center justify-center rounded-full bg-primary-600 group-[.avatar-group]/avatar-group:-ml-2.5',
   variants: {
     size: {
-      'xs': 'w-6 h-6',
-      'sm': 'w-8 h-8',
-      'md': 'w-12 h-12',
-      'lg': 'w-16 h-16',
-      'xl': 'w-24 h-24',
-      '2xl': 'w-32 h-32',
+      xs: 'h-6 w-6',
+      sm: 'h-8 w-8',
+      md: 'h-12 w-12',
+      lg: 'h-16 w-16',
+      xl: 'h-24 w-24',
+      '2xl': 'h-32 w-32',
     },
   },
 });
 
 const avatarFallbackTextStyle = tva({
-  base: 'text-typography-0 font-semibold overflow-hidden text-transform:uppercase web:cursor-default',
+  base: 'text-transform:uppercase overflow-hidden font-semibold text-typography-0 web:cursor-default',
 
   parentVariants: {
     size: {
-      'xs': 'text-2xs',
-      'sm': 'text-xs',
-      'md': 'text-base',
-      'lg': 'text-xl',
-      'xl': 'text-3xl',
+      xs: 'text-2xs',
+      sm: 'text-xs',
+      md: 'text-base',
+      lg: 'text-xl',
+      xl: 'text-3xl',
       '2xl': 'text-5xl',
     },
   },
 });
 
 const avatarGroupStyle = tva({
-  base: 'group/avatar-group flex-row-reverse relative avatar-group',
+  base: 'group/avatar-group avatar-group relative flex-row-reverse',
 });
 
 const avatarBadgeStyle = tva({
-  base: 'w-5 h-5 bg-success-500 rounded-full absolute right-0 bottom-0 border-background-0 border-2',
+  base: 'absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-background-0 bg-success-500',
   parentVariants: {
     size: {
-      'xs': 'w-2 h-2',
-      'sm': 'w-2 h-2',
-      'md': 'w-3 h-3',
-      'lg': 'w-4 h-4',
-      'xl': 'w-6 h-6',
-      '2xl': 'w-8 h-8',
+      xs: 'h-2 w-2',
+      sm: 'h-2 w-2',
+      md: 'h-3 w-3',
+      lg: 'h-4 w-4',
+      xl: 'h-6 w-6',
+      '2xl': 'h-8 w-8',
     },
   },
 });
 
 const avatarImageStyle = tva({
-  base: 'h-full w-full rounded-full absolute',
+  base: 'absolute h-full w-full rounded-full',
 });
 
 type IAvatarProps = Omit<

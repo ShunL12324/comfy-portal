@@ -1,8 +1,11 @@
+import { GenerationParams } from './generation';
+
 export interface Preset {
   id: string;
   name: string;
   serverId: string;
   createdAt: number;
-  content: string;
   thumbnail?: string;
+  lastUsed?: number;
+  params: GenerationParams;
 } 

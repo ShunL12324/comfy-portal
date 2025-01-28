@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView } from '@/components/ui/scroll-view';
-import { ServerCard } from '@/components/server-card';
+import { ServerCard } from '@/components/self-ui/server-card';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { HStack } from '@/components/ui/hstack';
 import { useServersStore } from '@/store/servers';
 import { View } from '@/components/ui/view';
 import { MotiView } from 'moti';
-import { AddServerModal } from '@/components/add-server-modal';
+import { AddServerModal } from '@/components/self-ui/add-server-modal';
 import { AppBar } from '@/components/layout/app-bar';
 import { useThemeStore } from '@/store/theme';
 import { Icon } from '@/components/ui/icon';

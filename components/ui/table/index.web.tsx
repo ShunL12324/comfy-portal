@@ -43,7 +43,7 @@ const TableHeader = React.forwardRef(
         />
       </TableHeaderContext.Provider>
     );
-  }
+  },
 );
 
 const TableBody = React.forwardRef(
@@ -55,7 +55,7 @@ const TableBody = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 const TableFooter = React.forwardRef(
@@ -74,7 +74,7 @@ const TableFooter = React.forwardRef(
         />
       </TableFooterContext.Provider>
     );
-  }
+  },
 );
 
 const TableHead = React.forwardRef(
@@ -86,7 +86,7 @@ const TableHead = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 const TableRow = React.forwardRef(({ className, ...props }: any, ref?: any) => {
@@ -114,7 +114,7 @@ const TableData = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 const TableCaption = React.forwardRef(
@@ -126,7 +126,7 @@ const TableCaption = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 Table.displayName = 'Table';

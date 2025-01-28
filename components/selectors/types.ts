@@ -18,7 +18,9 @@ export interface SearchableBottomSheetProps {
   showRefreshButton?: boolean;
   onRefresh?: () => Promise<void>;
   isRefreshing?: boolean;
-  renderTrigger?: (selectedOption: SelectorOption | undefined) => React.ReactNode;
+  renderTrigger?: (
+    selectedOption: SelectorOption | undefined,
+  ) => React.ReactNode;
   renderItem?: (item: SelectorOption, isSelected: boolean) => React.ReactNode;
   numColumns?: number;
-} 
+}

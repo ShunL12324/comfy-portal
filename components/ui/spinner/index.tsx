@@ -22,7 +22,7 @@ const Spinner = React.forwardRef<
       'aria-label': ariaLabel = 'loading',
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <ActivityIndicator
@@ -34,7 +34,7 @@ const Spinner = React.forwardRef<
         className={spinnerStyle({ class: className })}
       />
     );
-  }
+  },
 );
 
 Spinner.displayName = 'Spinner';

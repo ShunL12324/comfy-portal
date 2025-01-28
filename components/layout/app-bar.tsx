@@ -29,7 +29,7 @@ export function AppBar({
   const { theme } = useThemeStore();
 
   return (
-    <View className={`w-full ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+    <View className={`w-full bg-background-0`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="items-center justify-between">
           <HStack className="items-center">

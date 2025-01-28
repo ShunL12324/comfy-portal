@@ -37,7 +37,7 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
         className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-base text-primary-900">
+        <Text className="text-sm text-typography-900">
           {selectedOption?.label || value}
         </Text>
         <Icon as={ChevronDown} size="sm" className="text-primary-300" />

@@ -1,10 +1,11 @@
 import * as FileSystem from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
+import { GenerationParams } from '@/types/generation';
 
 interface SaveImageOptions {
   presetId: string;
   imageUrl: string;
-  params: Record<string, any>;
+  params: GenerationParams;
   delete?: boolean;
 }
 
@@ -65,6 +66,17 @@ export async function saveGeneratedImage({
 export async function getGeneratedImages(presetId: string) {
   try {
     const dirPath = `${FileSystem.documentDirectory}presets/${presetId}/generated`;
+
+    const fileInfo = await FileSystem.getInfoAsync(dirPath);
+    if (!fileInfo.exists) {
+      // create the directory
+      await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+    } else if (!fileInfo.isDirectory) {
+      // delete the file then create the directory
+      await FileSystem.deleteAsync(dirPath);
+      await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+    }
+
     const files = await FileSystem.readDirectoryAsync(dirPath);
 
     const images = files

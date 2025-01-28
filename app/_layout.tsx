@@ -52,9 +52,7 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}
-    >
+    <SafeAreaView className="flex-1 bg-background-0">
       <GestureHandlerRootView style={{ flex: 1 }}>
         <GluestackUIProvider mode={theme === 'dark' ? 'dark' : 'light'}>
           <BottomSheetModalProvider>

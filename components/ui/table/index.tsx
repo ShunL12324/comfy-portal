@@ -54,7 +54,7 @@ const Table = React.forwardRef<React.ElementRef<typeof ExpoTable>, ITableProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 const TableHeader = React.forwardRef<

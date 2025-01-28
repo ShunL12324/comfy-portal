@@ -10,8 +10,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useServersStore } from '@/store/servers';
 import { Icon, AddIcon } from '@/components/ui/icon';
 import { AppBar } from '@/components/layout/app-bar';
-import { AddPresetModal } from '@/components/add-preset-modal';
-import { PresetCard } from '@/components/preset-card';
+import { AddPresetModal } from '@/components/self-ui/add-preset-modal';
+import { PresetCard } from '@/components/self-ui/preset-card';
 import { useThemeStore } from '@/store/theme';
 
 const PresetsScreen = () => {
@@ -76,6 +76,8 @@ const PresetsScreen = () => {
               name={preset.name}
               createdAt={preset.createdAt}
               thumbnail={preset.thumbnail}
+              lastUsed={preset.lastUsed}
+              params={preset.params}
               onPress={() => handleRunPreset(preset.id)}
               index={index}
             />

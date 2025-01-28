@@ -24,6 +24,7 @@ import { Image } from '@/components/ui/image';
 import { Pressable } from '@/components/ui/pressable';
 import { ImagePlus } from 'lucide-react-native';
 import * as Crypto from 'expo-crypto';
+import { GenerationParams } from '@/types/generation';
 
 interface AddPresetModalProps {
   isOpen: boolean;
@@ -96,11 +97,24 @@ export function AddPresetModal({
       }
     }
 
+    const DEFAULT_PARAMS: GenerationParams = {
+      model: 'everclearPNYByZovya_v3.safetensors',
+      prompt: '',
+      negativePrompt: '',
+      steps: 30,
+      cfg: 7,
+      seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
+      width: 768,
+      height: 1024,
+      sampler: 'dpmpp_3m_sde_gpu',
+      scheduler: 'sgm_uniform',
+      useRandomSeed: true,
+    };
+
     addPreset({
       name: name.trim(),
       serverId,
-      content: '',
-      createdAt: Date.now(),
+      params: DEFAULT_PARAMS,
       thumbnail: finalThumbnail,
     });
 

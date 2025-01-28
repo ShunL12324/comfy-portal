@@ -141,7 +141,7 @@ const Grid = forwardRef<React.ElementRef<typeof View>, IGridProps>(
 
         const colSpan2 = getBreakPointValue(
           generateResponsiveColSpans({ gridItemClassName }),
-          DEVICE_WIDTH
+          DEVICE_WIDTH,
         );
         const colSpan = colSpan2 ? colSpan2 : 1;
 
@@ -218,7 +218,7 @@ const Grid = forwardRef<React.ElementRef<typeof View>, IGridProps>(
         </View>
       </GridContext.Provider>
     );
-  }
+  },
 );
 
 cssInterop(Grid, {
@@ -267,7 +267,7 @@ const GridItem = forwardRef<React.ElementRef<typeof View>, IGridItemProps>(
     const gridItemClass = _extra?.className;
     const responsiveColSpan: number =
       useBreakpointValue(
-        generateResponsiveColSpans({ gridItemClassName: gridItemClass })
+        generateResponsiveColSpans({ gridItemClassName: gridItemClass }),
       ) ?? 1;
 
     useEffect(() => {
@@ -298,7 +298,7 @@ const GridItem = forwardRef<React.ElementRef<typeof View>, IGridItemProps>(
               numColumns /
               calculatedWidth) *
               100,
-            100
+            100,
           ) + '%';
 
         setFlexBasisValue(flexBasisVal);
@@ -330,7 +330,7 @@ const GridItem = forwardRef<React.ElementRef<typeof View>, IGridItemProps>(
         ]}
       />
     );
-  }
+  },
 );
 
 Grid.displayName = 'Grid';

@@ -12,14 +12,14 @@ import type { VariantProps } from '@gluestack-ui/nativewind-utils';
 const SCOPE = 'BADGE';
 
 const badgeStyle = tva({
-  base: 'flex-row items-center rounded-sm data-[disabled=true]:opacity-50 px-2 py-1',
+  base: 'flex-row items-center rounded-sm px-2 py-1 data-[disabled=true]:opacity-50',
   variants: {
     action: {
-      error: 'bg-background-error border-error-300',
-      warning: 'bg-background-warning border-warning-300',
-      success: 'bg-background-success border-success-300',
-      info: 'bg-background-info border-info-300',
-      muted: 'bg-background-muted border-background-300',
+      error: 'border-error-300 bg-background-error',
+      warning: 'border-warning-300 bg-background-warning',
+      success: 'border-success-300 bg-background-success',
+      info: 'border-info-300 bg-background-info',
+      muted: 'border-background-300 bg-background-muted',
     },
     variant: {
       solid: '',
@@ -34,7 +34,7 @@ const badgeStyle = tva({
 });
 
 const badgeTextStyle = tva({
-  base: 'text-typography-700 font-body font-normal tracking-normal uppercase',
+  base: 'font-body font-normal uppercase tracking-normal text-typography-700',
 
   parentVariants: {
     action: {

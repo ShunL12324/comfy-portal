@@ -23,6 +23,7 @@ import * as FileSystem from 'expo-file-system';
 import { Image } from '@/components/ui/image';
 import { Pressable } from '@/components/ui/pressable';
 import { ImagePlus } from 'lucide-react-native';
+import { GenerationParams } from '@/types/generation';
 
 interface EditPresetModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ interface EditPresetModalProps {
     name: string;
     createdAt: number;
     thumbnail?: string;
+    params: GenerationParams;
   };
 }
 
@@ -102,6 +104,7 @@ export function EditPresetModal({
     updatePreset(preset.id, {
       name: name.trim(),
       thumbnail: finalThumbnail,
+      params: preset.params,
     });
 
     handleClose();

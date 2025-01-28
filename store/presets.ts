@@ -6,9 +6,10 @@ import { Preset } from '@/types/preset';
 
 interface PresetsState {
   presets: Preset[];
-  addPreset: (preset: Omit<Preset, 'id'>) => void;
+  addPreset: (preset: Omit<Preset, 'id' | 'createdAt'>) => void;
   removePreset: (id: string) => void;
   updatePreset: (id: string, updates: Partial<Omit<Preset, 'id'>>) => void;
+  updateUsage: (id: string) => void;
 }
 
 export const usePresetsStore = create<PresetsState>()(
@@ -20,6 +21,7 @@ export const usePresetsStore = create<PresetsState>()(
         const newPreset: Preset = {
           ...preset,
           id: Crypto.randomUUID(),
+          createdAt: Date.now(),
         };
         set((state) => ({
           presets: [...state.presets, newPreset],
@@ -35,6 +37,13 @@ export const usePresetsStore = create<PresetsState>()(
         set((state) => ({
           presets: state.presets.map((p) =>
             p.id === id ? { ...p, ...updates } : p,
+          ),
+        })),
+
+      updateUsage: (id) =>
+        set((state) => ({
+          presets: state.presets.map((p) =>
+            p.id === id ? { ...p, lastUsed: Date.now() } : p
           ),
         })),
     }),

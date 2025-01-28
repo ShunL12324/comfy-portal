@@ -17,7 +17,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
 } from 'react-native-reanimated';
 import {
   Gesture,
@@ -87,8 +86,6 @@ interface ImagePreviewProps {
   onPreviewClose?: () => void;
 }
 
-const AnimatedImage = Animated.createAnimatedComponent(Image);
-
 /**
  * A component that displays an image with preview functionality and gesture controls
  * Features:
@@ -104,10 +101,6 @@ export const ImagePreview = memo(function ImagePreview({
   onPreviewClose,
 }: ImagePreviewProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-
-  const handleClose = useCallback(() => {
-    onPreviewClose?.();
-  }, [onPreviewClose]);
 
   /*
    * Gesture state management

@@ -17,7 +17,7 @@ const SCOPE = 'TOAST';
 cssInterop(Motion.View, { className: 'style' });
 
 const toastStyle = tva({
-  base: 'p-4 m-1 rounded-md gap-1 web:pointer-events-auto shadow-hard-5 border-outline-100',
+  base: 'm-1 gap-1 rounded-md border-outline-100 p-4 shadow-hard-5 web:pointer-events-auto',
   variants: {
     action: {
       error: 'bg-error-800',
@@ -35,7 +35,7 @@ const toastStyle = tva({
 });
 
 const toastTitleStyle = tva({
-  base: 'text-typography-0 font-medium font-body tracking-md text-left',
+  base: 'font-body tracking-md text-left font-medium text-typography-0',
   variants: {
     isTruncated: {
       true: '',
@@ -51,11 +51,11 @@ const toastTitleStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -106,7 +106,7 @@ const toastTitleStyle = tva({
 });
 
 const toastDescriptionStyle = tva({
-  base: 'font-normal font-body tracking-md text-left',
+  base: 'font-body tracking-md text-left font-normal',
   variants: {
     isTruncated: {
       true: '',
@@ -122,11 +122,11 @@ const toastDescriptionStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -157,7 +157,7 @@ const Toast = React.forwardRef<React.ElementRef<typeof Root>, IToastProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 type IToastTitleProps = React.ComponentProps<typeof Text> & {

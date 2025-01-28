@@ -20,7 +20,6 @@ import { showToast } from '@/utils/toast';
 import { useServersStore } from '@/store/servers';
 import { usePresetsStore } from '@/store/presets';
 import { ComfyClient } from '@/utils/comfy-client';
-import { createPreset } from '@/utils/preset';
 import { saveGeneratedImage, loadHistoryImages } from '@/utils/image-storage';
 
 import { AppBar } from '@/components/layout/app-bar';
@@ -130,15 +129,10 @@ export default function RunPresetScreen() {
   );
 
   useEffect(() => {
-    if (preset?.content) {
-      try {
-        const savedParams = JSON.parse(preset.content);
-        setParams(savedParams);
-      } catch (error) {
-        console.error('Failed to parse preset content:', error);
-      }
+    if (preset?.params) {
+      setParams(preset.params);
     }
-  }, [preset?.content]);
+  }, [preset?.params]);
 
   useEffect(() => {
     if (server) {
@@ -204,8 +198,7 @@ export default function RunPresetScreen() {
         }
       }
 
-      const presetData = createPreset(params);
-      await comfyClient.current.generate(presetData, {
+      await comfyClient.current.generate(params, {
         onProgress: (value, max) => {
           debouncedSetProgress(value, max);
           if (value > max * 0.9 && value < max) {
@@ -219,20 +212,21 @@ export default function RunPresetScreen() {
         onNodeComplete: (_, total, completed) =>
           debouncedSetNodeProgress(completed, total),
         onComplete: async (images) => {
+          usePresetsStore.getState().updateUsage(preset.id);
           setProgress((prev) => ({ ...prev, value: prev.max }));
           await new Promise((resolve) => setTimeout(resolve, 300));
 
           if (images.length > 0) {
-            const savedImage = await saveGeneratedImage({
+            await saveGeneratedImage({
               presetId: preset.id,
               imageUrl: images[0],
-              params,
+              params: params,
             });
 
-            if (savedImage) {
-              const localImageUrl = savedImage.path.startsWith('file://')
-                ? savedImage.path
-                : `file://${savedImage.path}`;
+            if (images.length > 0) {
+              const localImageUrl = images[0].startsWith('file://')
+                ? images[0]
+                : `file://${images[0]}`;
               setGeneratedImage(localImageUrl);
             } else {
               setGeneratedImage(images[0]);
@@ -316,7 +310,7 @@ export default function RunPresetScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-background-200">
       <View style={{ zIndex: 20 }}>
         <AppBar
           showBack
@@ -372,7 +366,7 @@ export default function RunPresetScreen() {
         )}
 
         <Animated.ScrollView
-          className="flex-1"
+          className="z-10 flex-1"
           onScroll={handleScroll}
           scrollEventThrottle={16}
           bounces={true}
@@ -387,24 +381,16 @@ export default function RunPresetScreen() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
-          <View
-            className="bg-background-0"
-            style={{
-              zIndex: 10,
-              minHeight: screenHeight - imageHeight,
-            }}
-          >
-            <VStack space="lg" className="pb-24">
-              <ParameterControls
-                params={params}
-                onParamsChange={setParams}
-                presetId={preset.id}
-              />
-            </VStack>
+          <View className="z-10 h-full pb-24">
+            <ParameterControls
+              params={params}
+              onParamsChange={setParams}
+              presetId={preset.id}
+            />
           </View>
         </Animated.ScrollView>
 
-        <View className="z-20 bg-background-0">
+        <View className="z-20">
           <GenerationButton
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
