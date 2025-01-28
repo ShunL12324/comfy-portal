@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { buildServerUrl, isLocalOrLanIP } from './network';
 import { GenerationParams } from '@/types/generation';
+import { createPreset } from './preset';
 
 /**
  * Configuration options for the ComfyUI client
@@ -295,8 +296,10 @@ export class ComfyClient {
    * @private
    */
   private async queuePrompt(params: GenerationParams): Promise<string> {
-    const payload = { prompt: params, client_id: this.clientId };
+    const workflow = createPreset(params);
+    const payload = { prompt: workflow, client_id: this.clientId };
     const url = await buildServerUrl(this.host, this.port, '/prompt');
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -304,7 +307,8 @@ export class ComfyClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to queue prompt: ${await response.text()}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to queue prompt: ${errorText}`);
     }
 
     const data = await response.json();

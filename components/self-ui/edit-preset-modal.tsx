@@ -24,6 +24,7 @@ import { Image } from '@/components/ui/image';
 import { Pressable } from '@/components/ui/pressable';
 import { ImagePlus } from 'lucide-react-native';
 import { GenerationParams } from '@/types/generation';
+import { savePresetThumbnail } from '@/utils/image-storage';
 
 interface EditPresetModalProps {
   isOpen: boolean;
@@ -126,8 +127,24 @@ export function EditPresetModal({
       quality: 0.8,
     });
 
-    if (!result.canceled) {
-      setThumbnail(result.assets[0].uri);
+    if (!result.canceled && preset) {
+      try {
+        const savedImage = await savePresetThumbnail({
+          presetId: preset.id,
+          imageUri: result.assets[0].uri,
+          mimeType: result.assets[0].mimeType,
+        });
+
+        if (savedImage) {
+          const localImageUri = savedImage.path.startsWith('file://')
+            ? savedImage.path
+            : `file://${savedImage.path}`;
+          setThumbnail(localImageUri);
+        }
+      } catch (error) {
+        console.error('Failed to save thumbnail:', error);
+        alert('Failed to save image. Please try again.');
+      }
     }
   };
 

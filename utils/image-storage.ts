@@ -118,4 +118,70 @@ export async function loadHistoryImages(presetId: string) {
     console.error('Failed to load history images:', error);
     return [];
   }
+}
+
+export async function savePresetThumbnail({
+  presetId,
+  imageUri,
+  delete: shouldDelete,
+  mimeType,
+}: {
+  presetId: string;
+  imageUri: string;
+  delete?: boolean;
+  mimeType?: string;
+}) {
+  try {
+    const dirPath = `${FileSystem.documentDirectory}presets/${presetId}/thumbnail`;
+
+    if (shouldDelete) {
+      await FileSystem.deleteAsync(dirPath).catch(() => { });
+      return;
+    }
+
+    // Create directory if it doesn't exist
+    await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+
+    // Determine file extension
+    let ext: string;
+    if (mimeType) {
+      // Get extension from MIME type
+      switch (mimeType) {
+        case 'image/jpeg':
+          ext = 'jpg';
+          break;
+        case 'image/png':
+          ext = 'png';
+          break;
+        case 'image/webp':
+          ext = 'webp';
+          break;
+        case 'image/heic':
+          ext = 'heic';
+          break;
+        default:
+          ext = mimeType.split('/')[1] || 'jpg';
+      }
+    } else {
+      // Try to get extension from uri, fallback to jpg
+      ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+    }
+
+    // Generate filename with determined extension
+    const filename = `thumbnail.${ext}`;
+    const filePath = `${dirPath}/${filename}`;
+
+    // Copy image to permanent storage
+    await FileSystem.copyAsync({
+      from: imageUri,
+      to: filePath,
+    });
+
+    return {
+      path: filePath,
+    };
+  } catch (error) {
+    console.error('Failed to save/delete preset thumbnail:', error);
+    throw error;
+  }
 } 

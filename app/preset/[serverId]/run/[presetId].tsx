@@ -8,7 +8,7 @@ import {
   Pressable,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { History, Images, Maximize2 } from 'lucide-react-native';
+import { Images, Maximize2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { VStack } from '@/components/ui/vstack';
@@ -20,7 +20,11 @@ import { showToast } from '@/utils/toast';
 import { useServersStore } from '@/store/servers';
 import { usePresetsStore } from '@/store/presets';
 import { ComfyClient } from '@/utils/comfy-client';
-import { saveGeneratedImage, loadHistoryImages } from '@/utils/image-storage';
+import {
+  saveGeneratedImage,
+  loadHistoryImages,
+  savePresetThumbnail,
+} from '@/utils/image-storage';
 
 import { AppBar } from '@/components/layout/app-bar';
 import { ServerStatus } from '@/components/preset-run/server-status';
@@ -49,9 +53,16 @@ export default function RunPresetScreen() {
     state.presets.find((p) => p.id === presetId),
   );
 
-  const [connectionStatus, setConnectionStatus] = useState<
-    'idle' | 'generating'
-  >('idle');
+  const [generationState, setGenerationState] = useState<{
+    status: 'idle' | 'generating';
+    progress: { value: number; max: number };
+    nodeProgress: { completed: number; total: number };
+  }>({
+    status: 'idle',
+    progress: { value: 0, max: 0 },
+    nodeProgress: { completed: 0, total: 0 },
+  });
+
   const [params, setParams] = useState<GenerationParams>({
     model: 'everclearPNYByZovya_v3.safetensors',
     prompt: '',
@@ -66,9 +77,6 @@ export default function RunPresetScreen() {
     useRandomSeed: true,
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState({ value: 0, max: 0 });
-  const [nodeProgress, setNodeProgress] = useState({ completed: 0, total: 0 });
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -89,44 +97,45 @@ export default function RunPresetScreen() {
 
   const insets = useSafeAreaInsets();
 
-  const cleanup = useCallback(() => {
-    if (progressCompleteTimeoutRef.current) {
-      clearTimeout(progressCompleteTimeoutRef.current);
-      progressCompleteTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => cleanup, [cleanup]);
-
-  const debouncedSetProgress = useCallback((value: number, max: number) => {
-    const now = Date.now();
-    const timeDiff = now - lastProgressUpdateRef.current;
-    const progressPercentage = (value / max) * 100;
-    const lastProgressPercentage = (lastProgressValueRef.current / max) * 100;
-    const progressDiff = Math.abs(progressPercentage - lastProgressPercentage);
-
-    if (timeDiff >= 200 && (progressDiff >= 1 || value === max)) {
-      setProgress({ value, max });
-      lastProgressUpdateRef.current = now;
-      lastProgressValueRef.current = value;
-    }
-  }, []);
-
-  const debouncedSetNodeProgress = useCallback(
-    (completed: number, total: number) => {
+  const updateProgressDebounced = useCallback(
+    (type: 'progress' | 'nodeProgress', value: number, max: number) => {
       const now = Date.now();
-      const timeDiff = now - lastNodeProgressUpdateRef.current;
-      if (
-        timeDiff >= 200 &&
-        (completed !== lastNodeProgressValueRef.current || completed === total)
-      ) {
-        setNodeProgress({ completed, total });
-        lastNodeProgressUpdateRef.current = now;
-        lastNodeProgressValueRef.current = completed;
+      const ref =
+        type === 'progress' ? lastProgressUpdateRef : lastNodeProgressUpdateRef;
+      const valueRef =
+        type === 'progress' ? lastProgressValueRef : lastNodeProgressValueRef;
+
+      const timeDiff = now - ref.current;
+      const percentage = (value / max) * 100;
+      const lastPercentage = (valueRef.current / max) * 100;
+      const progressDiff = Math.abs(percentage - lastPercentage);
+
+      if (timeDiff >= 200 && (progressDiff >= 1 || value === max)) {
+        setGenerationState((prev) => ({
+          ...prev,
+          [type]:
+            type === 'progress'
+              ? { value, max }
+              : { completed: value, total: max },
+        }));
+        ref.current = now;
+        valueRef.current = value;
       }
     },
     [],
   );
+
+  const resetGeneration = useCallback(() => {
+    if (progressCompleteTimeoutRef.current) {
+      clearTimeout(progressCompleteTimeoutRef.current);
+      progressCompleteTimeoutRef.current = null;
+    }
+    setGenerationState({
+      status: 'idle',
+      progress: { value: 0, max: 0 },
+      nodeProgress: { completed: 0, total: 0 },
+    });
+  }, []);
 
   useEffect(() => {
     if (preset?.params) {
@@ -164,10 +173,6 @@ export default function RunPresetScreen() {
   }, [server?.id]);
 
   useEffect(() => {
-    setConnectionStatus(isGenerating ? 'generating' : 'idle');
-  }, [isGenerating]);
-
-  useEffect(() => {
     if (preset) {
       loadHistoryImages(preset.id).then(setHistoryImages);
     }
@@ -177,10 +182,8 @@ export default function RunPresetScreen() {
     if (!comfyClient.current || !preset || !server) return;
 
     try {
-      cleanup();
-      setIsGenerating(true);
-      setProgress({ value: 0, max: 0 });
-      setNodeProgress({ completed: 0, total: 0 });
+      resetGeneration();
+      setGenerationState((prev) => ({ ...prev, status: 'generating' }));
 
       if (!comfyClient.current.isConnected()) {
         try {
@@ -192,61 +195,69 @@ export default function RunPresetScreen() {
             'Unable to connect to server. Please check your server status.',
             insets.top + 8,
           );
-          setIsGenerating(false);
-          setConnectionStatus('idle');
+          resetGeneration();
           return;
         }
       }
 
       await comfyClient.current.generate(params, {
         onProgress: (value, max) => {
-          debouncedSetProgress(value, max);
+          updateProgressDebounced('progress', value, max);
           if (value > max * 0.9 && value < max) {
-            cleanup();
+            if (progressCompleteTimeoutRef.current) {
+              clearTimeout(progressCompleteTimeoutRef.current);
+            }
             progressCompleteTimeoutRef.current = setTimeout(() => {
-              setProgress({ value: max, max });
+              setGenerationState((prev) => ({
+                ...prev,
+                progress: { value: max, max },
+              }));
             }, 500);
           }
         },
         onNodeStart: () => {},
         onNodeComplete: (_, total, completed) =>
-          debouncedSetNodeProgress(completed, total),
+          updateProgressDebounced('nodeProgress', completed, total),
         onComplete: async (images) => {
           usePresetsStore.getState().updateUsage(preset.id);
-          setProgress((prev) => ({ ...prev, value: prev.max }));
+          setGenerationState((prev) => ({
+            ...prev,
+            progress: { ...prev.progress, value: prev.progress.max },
+          }));
+
           await new Promise((resolve) => setTimeout(resolve, 300));
 
           if (images.length > 0) {
-            await saveGeneratedImage({
+            const result = await saveGeneratedImage({
               presetId: preset.id,
               imageUrl: images[0],
               params: params,
             });
 
-            if (images.length > 0) {
-              const localImageUrl = images[0].startsWith('file://')
-                ? images[0]
-                : `file://${images[0]}`;
-              setGeneratedImage(localImageUrl);
-            } else {
-              setGeneratedImage(images[0]);
-            }
+            if (result) {
+              const localImageUrl = result.path.startsWith('file://')
+                ? result.path
+                : `file://${result.path}`;
 
-            const newHistoryImages = await loadHistoryImages(preset.id);
-            setHistoryImages(newHistoryImages);
+              setGeneratedImage(localImageUrl);
+              const newHistoryImages = await loadHistoryImages(preset.id);
+              setHistoryImages(newHistoryImages);
+            } else {
+              console.error('Failed to save generated image');
+              showToast.error(
+                'Save Failed',
+                'Unable to save the generated image.',
+                insets.top + 8,
+              );
+            }
           }
 
-          cleanup();
-          setIsGenerating(false);
+          resetGeneration();
         },
-        onError: () => {
-          cleanup();
-          setIsGenerating(false);
-        },
+        onError: resetGeneration,
       });
     } catch (error) {
-      cleanup();
-      setIsGenerating(false);
+      resetGeneration();
     }
   };
 
@@ -316,7 +327,10 @@ export default function RunPresetScreen() {
           showBack
           title={preset.name}
           centerElement={
-            <ServerStatus generating={isGenerating} name={server.name} />
+            <ServerStatus
+              generating={generationState.status === 'generating'}
+              name={server.name}
+            />
           }
           rightElement={
             <Button
@@ -336,34 +350,17 @@ export default function RunPresetScreen() {
           imageHeight={imageHeight}
           imageUrl={generatedImage || undefined}
           progress={
-            isGenerating
+            generationState.status === 'generating'
               ? {
-                  current: progress.value,
-                  total: progress.max,
+                  current: generationState.progress.value,
+                  total: generationState.progress.max,
                 }
               : undefined
           }
           isPreviewOpen={isPreviewOpen}
           onPreviewClose={() => setIsPreviewOpen(false)}
+          presetId={preset.id}
         />
-
-        {generatedImage && (
-          <TouchableOpacity
-            activeOpacity={0.5}
-            onPress={() => setIsPreviewOpen(true)}
-            style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              borderRadius: 8,
-              padding: 8,
-              zIndex: 30,
-            }}
-          >
-            <Icon as={Maximize2} size="sm" className="text-white" />
-          </TouchableOpacity>
-        )}
 
         <Animated.ScrollView
           className="z-10 flex-1"
@@ -371,7 +368,6 @@ export default function RunPresetScreen() {
           scrollEventThrottle={16}
           bounces={true}
           contentContainerStyle={{
-            paddingTop: imageHeight,
             minHeight: screenHeight,
           }}
           style={{ zIndex: 10 }}
@@ -381,6 +377,18 @@ export default function RunPresetScreen() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
+          {/* Placeholder for parallax image area */}
+          <Pressable
+            style={{ height: imageHeight }}
+            className="z-10 w-full"
+            disabled={!generatedImage}
+            onPress={() => {
+              if (generatedImage) {
+                setIsPreviewOpen(true);
+              }
+            }}
+          />
+
           <View className="z-10 h-full pb-24">
             <ParameterControls
               params={params}
@@ -393,7 +401,7 @@ export default function RunPresetScreen() {
         <View className="z-20">
           <GenerationButton
             onGenerate={handleGenerate}
-            isGenerating={isGenerating}
+            isGenerating={generationState.status === 'generating'}
             isServerOnline={true}
           />
         </View>

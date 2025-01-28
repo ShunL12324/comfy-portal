@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View, Pressable } from 'react-native';
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
 import { Text } from '@/components/ui/text';
@@ -53,72 +53,69 @@ export const PresetCard = ({
 
   return (
     <>
-      <MotiView
-        from={{ opacity: 0, scale: 0.98, translateY: 10 }}
-        animate={{ opacity: 1, scale: 1, translateY: 0 }}
-        transition={{
-          type: 'timing',
-          duration: 300,
-          delay: index * 100,
-        }}
+      <Pressable
+        className="active:scale-98 overflow-hidden rounded-xl bg-background-200 active:opacity-80"
+        onPress={onPress}
       >
-        <TouchableOpacity
-          className="overflow-hidden rounded-xl bg-background-200"
-          onPress={onPress}
-        >
-          {/* Top Image Section */}
-          <View className="h-32 w-full bg-background-100">
-            {thumbnail ? (
-              <Image
-                source={{ uri: thumbnail }}
-                className="w-full flex-1"
-                alt="Preset thumbnail"
-              />
-            ) : (
-              <View className="flex-1 items-center justify-center">
-                <ImageIcon size={32} className="text-primary-300" />
-              </View>
-            )}
-          </View>
+        {/* Top Image Section */}
+        <View className="h-64 w-full bg-background-100">
+          {thumbnail ? (
+            <Image
+              source={{ uri: `${thumbnail}?t=${Date.now()}` }}
+              className="w-full flex-1"
+              alt="Preset thumbnail"
+              onError={(error) => {
+                console.error('[PresetCard] Failed to load thumbnail:', error);
+                // Clear invalid thumbnail
+                usePresetsStore
+                  .getState()
+                  .updatePreset(id, { thumbnail: undefined });
+              }}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <ImageIcon size={32} className="text-primary-300" />
+            </View>
+          )}
+        </View>
 
-          {/* Bottom Info Section */}
-          <View className="p-3">
-            <Text
-              className="text-base font-semibold text-primary-500"
-              numberOfLines={1}
-            >
-              {name}
-            </Text>
+        {/* Bottom Info Section */}
+        <View className="p-3">
+          <Text
+            className="text-base font-semibold text-primary-500"
+            numberOfLines={1}
+          >
+            {name}
+          </Text>
 
-            <View className="mt-2 flex-row items-center justify-between">
-              <View className="flex-1">
-                <Text className="text-xs text-primary-400" numberOfLines={1}>
-                  {params.model || 'No model selected'}
-                </Text>
-                <Text className="mt-1 text-xs text-primary-400">
-                  Last used:{' '}
-                  {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
-                </Text>
-              </View>
+          <View className="mt-2 flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text className="text-xs text-primary-400" numberOfLines={1}>
+                {params.model || 'No model selected'}
+              </Text>
+              <Text className="mt-1 text-xs text-primary-400">
+                Last used:{' '}
+                {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
+              </Text>
+            </View>
 
-              <View className="ml-2 flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => setIsEditModalOpen(true)}
-                  className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-                >
-                  <Icon as={Edit2} size="2xs" className="text-accent-500" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setIsDeleteAlertOpen(true)}
-                  className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-                >
-                  <Icon as={Trash2} size="2xs" className="text-error-600" />
-                </TouchableOpacity>
-              </View>
+            <View className="ml-2 flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => setIsEditModalOpen(true)}
+                className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
+              >
+                <Icon as={Edit2} size="2xs" className="text-accent-500" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setIsDeleteAlertOpen(true)}
+                className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
+              >
+                <Icon as={Trash2} size="2xs" className="text-error-600" />
+              </TouchableOpacity>
             </View>
           </View>
-        </TouchableOpacity>
-      </MotiView>
+        </View>
+      </Pressable>
 
       <EditPresetModal
         isOpen={isEditModalOpen}

@@ -4,15 +4,29 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { MotiView } from 'moti';
 import { memo, useMemo, useState, useCallback } from 'react';
-import { Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
+import {
+  Platform,
+  TouchableOpacity,
+  useWindowDimensions,
+  Pressable,
+} from 'react-native';
 import { Icon } from '@/components/ui/icon';
-import { Maximize2, X, ImageIcon } from 'lucide-react-native';
+import { Maximize2, X, ImageIcon, Save } from 'lucide-react-native';
 import {
   Modal,
   ModalBackdrop,
   ModalContent,
   ModalBody,
 } from '@/components/ui/modal';
+import {
+  Actionsheet,
+  ActionsheetBackdrop,
+  ActionsheetContent,
+  ActionsheetDragIndicator,
+  ActionsheetDragIndicatorWrapper,
+  ActionsheetItem,
+  ActionsheetItemText,
+} from '@/components/ui/actionsheet';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -24,6 +38,11 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
+import * as MediaLibrary from 'expo-media-library';
+import { showToast } from '@/utils/toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePresetsStore } from '@/store/presets';
+import { savePresetThumbnail } from '@/utils/image-storage';
 
 /**
  * Props for the progress overlay component
@@ -84,6 +103,8 @@ interface ImagePreviewProps {
   isPreviewOpen?: boolean;
   /** Callback when the preview is closed */
   onPreviewClose?: () => void;
+  /** Current preset ID */
+  presetId?: string;
 }
 
 /**
@@ -99,8 +120,12 @@ export const ImagePreview = memo(function ImagePreview({
   progress,
   isPreviewOpen = false,
   onPreviewClose,
+  presetId,
 }: ImagePreviewProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const [showActionsheet, setShowActionsheet] = useState(false);
+  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+  const safeAreaInsets = useSafeAreaInsets();
 
   /*
    * Gesture state management
@@ -176,10 +201,73 @@ export const ImagePreview = memo(function ImagePreview({
     ],
   }));
 
+  const handleSaveToGallery = async () => {
+    try {
+      if (!permissionResponse?.granted) {
+        const { granted } = await requestPermission();
+        if (!granted) {
+          return;
+        }
+      }
+
+      if (imageUrl) {
+        await MediaLibrary.saveToLibraryAsync(imageUrl);
+        setShowActionsheet(false);
+        showToast.success(
+          'Image saved to your gallery',
+          undefined,
+          safeAreaInsets.top + 16,
+        );
+      }
+    } catch (error) {
+      console.error('Failed to save image:', error);
+      showToast.error(
+        'Failed to save image',
+        undefined,
+        safeAreaInsets.top + 16,
+      );
+    }
+  };
+
+  const handleSetAsThumbnail = async () => {
+    if (!imageUrl || !presetId) return;
+
+    try {
+      const savedImage = await savePresetThumbnail({
+        presetId,
+        imageUri: imageUrl,
+      });
+
+      if (savedImage) {
+        const localImageUri = savedImage.path.startsWith('file://')
+          ? savedImage.path
+          : `file://${savedImage.path}`;
+
+        usePresetsStore.getState().updatePreset(presetId, {
+          thumbnail: localImageUri,
+        });
+
+        showToast.success(
+          'Thumbnail updated',
+          undefined,
+          safeAreaInsets.top + 16,
+        );
+      }
+    } catch (error) {
+      console.error('Failed to set thumbnail:', error);
+      showToast.error(
+        'Failed to set thumbnail',
+        undefined,
+        safeAreaInsets.top + 16,
+      );
+    }
+    setShowActionsheet(false);
+  };
+
   return (
-    <Box className="relative h-full w-full overflow-hidden border-[0.5px] border-neutral-200 dark:border-neutral-800">
+    <Box className="relative h-full w-full overflow-hidden border-0 p-0">
       {imageUrl && imageUrl.length > 0 ? (
-        <Center className="h-full">
+        <Center className="h-full w-full">
           <Box className="relative h-full w-full">
             <Image
               source={{ uri: imageUrl }}
@@ -187,7 +275,7 @@ export const ImagePreview = memo(function ImagePreview({
                 width: '100%',
                 height: '100%',
               }}
-              contentFit="contain"
+              contentFit="cover"
               cachePolicy="memory-disk"
             />
 
@@ -237,17 +325,45 @@ export const ImagePreview = memo(function ImagePreview({
                           containerStyle,
                         ]}
                       >
-                        <Image
-                          source={{ uri: imageUrl }}
-                          style={{
-                            width: '100%',
-                            height: '100%',
+                        <Pressable
+                          className="h-full w-full"
+                          onPress={onPreviewClose}
+                          onLongPress={() => {
+                            setShowActionsheet(true);
                           }}
-                          contentFit="contain"
-                        />
+                          delayLongPress={500}
+                        >
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                            }}
+                            contentFit="contain"
+                          />
+                        </Pressable>
                       </Animated.View>
                     </GestureDetector>
                   </GestureHandlerRootView>
+
+                  <MotiView
+                    from={{
+                      opacity: 1,
+                    }}
+                    animate={{
+                      opacity: 0,
+                    }}
+                    transition={{
+                      type: 'timing',
+                      duration: 300,
+                      delay: 2000,
+                    }}
+                    className="absolute bottom-16 left-0 right-0 items-center justify-center"
+                  >
+                    <Text className="text-base font-medium text-white/70">
+                      Long press to open menu
+                    </Text>
+                  </MotiView>
 
                   <TouchableOpacity
                     activeOpacity={0.5}
@@ -264,6 +380,36 @@ export const ImagePreview = memo(function ImagePreview({
                   >
                     <Icon as={X} size="sm" className="text-white" />
                   </TouchableOpacity>
+
+                  <Actionsheet
+                    isOpen={showActionsheet}
+                    onClose={() => setShowActionsheet(false)}
+                  >
+                    <ActionsheetBackdrop />
+                    <ActionsheetContent className="bg-background-0">
+                      <ActionsheetDragIndicatorWrapper>
+                        <ActionsheetDragIndicator />
+                      </ActionsheetDragIndicatorWrapper>
+                      <ActionsheetItem
+                        onPress={handleSaveToGallery}
+                        className="flex-row items-center gap-3"
+                      >
+                        <Icon as={Save} size="sm" />
+                        <ActionsheetItemText>Save Image</ActionsheetItemText>
+                      </ActionsheetItem>
+                      {presetId && (
+                        <ActionsheetItem
+                          onPress={handleSetAsThumbnail}
+                          className="mb-8 flex-row items-center gap-3"
+                        >
+                          <Icon as={ImageIcon} size="sm" />
+                          <ActionsheetItemText>
+                            Set as Preset Thumbnail
+                          </ActionsheetItemText>
+                        </ActionsheetItem>
+                      )}
+                    </ActionsheetContent>
+                  </Actionsheet>
                 </ModalBody>
               </ModalContent>
             </Modal>

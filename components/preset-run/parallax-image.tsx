@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Animated } from 'react-native';
 import { ImagePreview } from './image-preview';
+import { Pressable } from 'react-native-gesture-handler';
 
 /**
  * Props for the parallax scrolling image component
@@ -18,6 +19,8 @@ interface ParallaxImageProps {
   isPreviewOpen: boolean;
   /** Callback when preview is closed */
   onPreviewClose: () => void;
+  /** Current preset ID */
+  presetId?: string;
 }
 
 /**
@@ -30,6 +33,7 @@ export const ParallaxImage = memo(function ParallaxImage({
   progress,
   isPreviewOpen,
   onPreviewClose,
+  presetId,
 }: ParallaxImageProps) {
   const scale = scrollY.interpolate({
     inputRange: [-imageHeight, 0],
@@ -44,29 +48,36 @@ export const ParallaxImage = memo(function ParallaxImage({
   });
 
   return (
-    <Animated.View
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: imageHeight,
-        zIndex: 1,
+    <Pressable
+      onPress={() => {
+        console.log('onPress2');
       }}
     >
       <Animated.View
         style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
           height: imageHeight,
-          transform: [{ scale }, { translateY }],
+          zIndex: 1,
         }}
       >
-        <ImagePreview
-          imageUrl={imageUrl}
-          progress={progress}
-          isPreviewOpen={isPreviewOpen}
-          onPreviewClose={onPreviewClose}
-        />
+        <Animated.View
+          style={{
+            height: imageHeight,
+            transform: [{ scale }, { translateY }],
+          }}
+        >
+          <ImagePreview
+            imageUrl={imageUrl}
+            progress={progress}
+            isPreviewOpen={isPreviewOpen}
+            onPreviewClose={onPreviewClose}
+            presetId={presetId}
+          />
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+    </Pressable>
   );
 });

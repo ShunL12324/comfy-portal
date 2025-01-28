@@ -25,6 +25,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { ImagePlus } from 'lucide-react-native';
 import * as Crypto from 'expo-crypto';
 import { GenerationParams } from '@/types/generation';
+import { savePresetThumbnail } from '@/utils/image-storage';
 
 interface AddPresetModalProps {
   isOpen: boolean;
@@ -141,7 +142,24 @@ export function AddPresetModal({
     });
 
     if (!result.canceled) {
-      setThumbnail(result.assets[0].uri);
+      try {
+        const tempId = await Crypto.randomUUID();
+        const savedImage = await savePresetThumbnail({
+          presetId: tempId,
+          imageUri: result.assets[0].uri,
+          mimeType: result.assets[0].mimeType,
+        });
+
+        if (savedImage) {
+          const localImageUri = savedImage.path.startsWith('file://')
+            ? savedImage.path
+            : `file://${savedImage.path}`;
+          setThumbnail(localImageUri);
+        }
+      } catch (error) {
+        console.error('Failed to save thumbnail:', error);
+        alert('Failed to save image. Please try again.');
+      }
     }
   };
 

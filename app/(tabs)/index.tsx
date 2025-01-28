@@ -4,7 +4,13 @@ import { ServerCard } from '@/components/self-ui/server-card';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Button } from '@/components/ui/button';
-import { Plus, RotateCw } from 'lucide-react-native';
+import {
+  Plus,
+  RotateCw,
+  HelpCircle,
+  ArrowRight,
+  ScanSearch,
+} from 'lucide-react-native';
 import { HStack } from '@/components/ui/hstack';
 import { useServersStore } from '@/store/servers';
 import { View } from '@/components/ui/view';
@@ -13,6 +19,9 @@ import { AddServerModal } from '@/components/self-ui/add-server-modal';
 import { AppBar } from '@/components/layout/app-bar';
 import { useThemeStore } from '@/store/theme';
 import { Icon } from '@/components/ui/icon';
+import { Center } from '@/components/ui/center';
+import { Heading } from '@/components/ui/heading';
+import { Link } from 'expo-router';
 
 export default function HomeScreen() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -71,9 +80,76 @@ export default function HomeScreen() {
 
       <ScrollView className="flex-1">
         <VStack space="md" className="px-5 pb-6">
-          {servers.map((server, index) => (
-            <ServerCard key={server.id} id={server.id} index={index} />
-          ))}
+          {servers.length > 0 ? (
+            servers.map((server, index) => (
+              <ServerCard key={server.id} id={server.id} index={index} />
+            ))
+          ) : (
+            <Center className="mt-10">
+              <MotiView
+                from={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'timing', duration: 300 }}
+              >
+                <VStack space="lg" className="items-center px-6">
+                  <VStack space="lg" className="items-center">
+                    <MotiView
+                      from={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{
+                        type: 'timing',
+                        duration: 500,
+                        delay: 100,
+                      }}
+                    >
+                      <Icon
+                        as={ScanSearch}
+                        size="xl"
+                        className="mb-2 h-16 w-16 text-typography-200"
+                      />
+                    </MotiView>
+                    <VStack space="xs" className="items-center">
+                      <Text className="text-center text-sm text-typography-500">
+                        Click the{' '}
+                        <Text className="text-accent-500">+ Add Server</Text>{' '}
+                        button above to connect to your ComfyUI instance
+                      </Text>
+                    </VStack>
+                  </VStack>
+
+                  <VStack space="md" className="items-center">
+                    <HStack space="xs" className="items-center justify-center">
+                      <Text className="text-sm text-typography-500">
+                        New to ComfyUI?
+                      </Text>
+                      <Link href="/guide" asChild>
+                        <Button
+                          variant="outline"
+                          action="secondary"
+                          size="md"
+                          className="rounded-xl border-0 px-0 data-[hover=true]:opacity-70"
+                        >
+                          <HStack
+                            space="xs"
+                            className="items-center justify-center"
+                          >
+                            <Text className="text-sm font-medium text-accent-500">
+                              Setup Instructions
+                            </Text>
+                            <Icon
+                              as={ArrowRight}
+                              size="xs"
+                              className="text-accent-500"
+                            />
+                          </HStack>
+                        </Button>
+                      </Link>
+                    </HStack>
+                  </VStack>
+                </VStack>
+              </MotiView>
+            </Center>
+          )}
         </VStack>
       </ScrollView>
 
