@@ -5,26 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comfy Portal - Legal Documents</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
   </head>
   <body>
-    <div class="container">
-      <h1>Comfy Portal Legal Documents</h1>
-      <p>
-        Welcome to the legal documentation page for Comfy Portal. Please select
-        the document you'd like to view:
-      </p>
+    <div class="markdown-body container"></div>
+    <script>
+      const md = window.markdownit();
+      const content = `# Comfy Portal Legal Documents
 
-      <ul>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="terms.html">Terms of Service</a></li>
-      </ul>
+Last updated: February 1, 2025
 
-      <p>
-        For more information about Comfy Portal, please visit our
-        <a href="https://github.com/ShunL12324/comfy-portal"
-          >GitHub repository</a
-        >.
-      </p>
-    </div>
+Welcome to the legal documentation page for Comfy Portal. Please select the document you'd like to view:
+
+- [Privacy Policy](privacy.html)
+- [Terms of Service](terms.html)
+
+For more information about Comfy Portal, please visit our [GitHub repository](https://github.com/ShunL12324/comfy-portal).
+`;
+      document.querySelector('.markdown-body').innerHTML = md.render(content);
+    </script>
   </body>
 </html>
