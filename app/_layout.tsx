@@ -52,26 +52,29 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background-0">
+    <>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <GluestackUIProvider mode={theme === 'dark' ? 'dark' : 'light'}>
-          <BottomSheetModalProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="+not-found"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-          </BottomSheetModalProvider>
-          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          <SafeAreaView className="flex-1 bg-background-0">
+            <BottomSheetModalProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="+not-found"
+                  options={{ headerShown: false }}
+                />
+              </Stack>
+            </BottomSheetModalProvider>
+
+            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          </SafeAreaView>
         </GluestackUIProvider>
       </GestureHandlerRootView>
       <Toast config={toastConfig} />
-    </SafeAreaView>
+    </>
   );
 }

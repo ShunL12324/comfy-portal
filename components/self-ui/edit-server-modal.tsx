@@ -1,21 +1,24 @@
-import React from 'react';
-import { Modal, ModalBackdrop } from '@/components/ui/modal';
-import { FormControl } from '@/components/ui/form-control';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { VStack } from '@/components/ui/vstack';
+import { Button, ButtonText } from '@/components/ui/button';
+import {
+  FormControl,
+  FormControlError,
+  FormControlLabel,
+} from '@/components/ui/form-control';
 import { HStack } from '@/components/ui/hstack';
+import { Input, InputField } from '@/components/ui/input';
+import {
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
 import { Server } from '@/types/server';
-import { ModalContent } from '@/components/ui/modal';
-import { ModalHeader } from '@/components/ui/modal';
-import { ModalBody } from '@/components/ui/modal';
-import { ModalFooter } from '@/components/ui/modal';
-import { FormControlLabel } from '@/components/ui/form-control';
-import { InputField } from '@/components/ui/input';
-import { ButtonText } from '@/components/ui/button';
-import { FormControlError } from '@/components/ui/form-control';
+import React from 'react';
 import { Animated, Keyboard, Platform } from 'react-native';
 
 interface EditServerModalProps {
@@ -188,7 +191,7 @@ export const EditServerModal = ({
                 Edit Server
               </Text>
             </ModalHeader>
-            <ModalBody className="px-0 py-2">
+            <ModalBody scrollEnabled={false}>
               <VStack space="md">
                 <FormControl isInvalid={!!errors.name}>
                   <FormControlLabel>
@@ -198,14 +201,14 @@ export const EditServerModal = ({
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
-                      value={name}
+                      defaultValue={name}
                       onChangeText={(value) => {
                         setName(value);
                         setErrors((prev) => ({ ...prev, name: '' }));
                       }}
                       placeholder="Server name"
                       maxLength={MAX_NAME_LENGTH}
-                      className="px-3 py-2 text-primary-500"
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
                     />
                   </Input>
                   {errors.name && (
@@ -225,13 +228,13 @@ export const EditServerModal = ({
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
-                      value={host}
+                      defaultValue={host}
                       onChangeText={(value) => {
                         setHost(value);
                         setErrors((prev) => ({ ...prev, host: '' }));
                       }}
                       placeholder="Host or IP address"
-                      className="px-3 py-2 text-primary-500"
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
                     />
                   </Input>
                   {errors.host && (
@@ -251,13 +254,13 @@ export const EditServerModal = ({
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
-                      value={port}
+                      defaultValue={port}
                       onChangeText={(value) => {
                         setPort(value);
                         setErrors((prev) => ({ ...prev, port: '' }));
                       }}
                       placeholder="Port number"
-                      className="px-3 py-2 text-primary-500"
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
                       keyboardType="numeric"
                     />
                   </Input>

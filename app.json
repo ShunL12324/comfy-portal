@@ -66,14 +66,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos"
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to set preview images"
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
-          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to set preview images",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save generated images to your photos",
           "isAccessMediaLocationEnabled": true
         }
       ]

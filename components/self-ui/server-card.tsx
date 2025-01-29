@@ -69,7 +69,7 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
       </Text>
       <View className="mt-0.5 flex-col gap-1">
         <View className="flex-row items-center gap-1">
-          <Icon as={Globe} size="2xs" className="text-accent-500 shrink-0" />
+          <Icon as={Globe} size="2xs" className="shrink-0 text-accent-500" />
           <Text
             className="flex-shrink text-xs text-primary-400"
             numberOfLines={1}
@@ -78,13 +78,13 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Icon as={Hash} size="2xs" className="text-accent-500 shrink-0" />
+          <Icon as={Hash} size="2xs" className="shrink-0 text-accent-500" />
           <Text className="text-xs text-primary-400" numberOfLines={1}>
             {port}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Icon as={Layers} size="2xs" className="text-accent-500 shrink-0" />
+          <Icon as={Layers} size="2xs" className="shrink-0 text-accent-500" />
           <Text className="text-xs text-primary-400" numberOfLines={1}>
             {models?.length || 'No'} models
           </Text>

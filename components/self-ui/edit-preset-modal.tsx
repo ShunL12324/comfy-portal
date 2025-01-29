@@ -1,30 +1,30 @@
-import React, { useState } from 'react';
+import { Button, ButtonText } from '@/components/ui/button';
+import {
+  FormControl,
+  FormControlError,
+  FormControlLabel,
+} from '@/components/ui/form-control';
+import { Image } from '@/components/ui/image';
+import { Input, InputField } from '@/components/ui/input';
 import {
   Modal,
   ModalBackdrop,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from '@/components/ui/modal';
-import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { VStack } from '@/components/ui/vstack';
-import { Input, InputField } from '@/components/ui/input';
-import { usePresetsStore } from '@/store/presets';
-import { ButtonText } from '@/components/ui/button';
-import { Keyboard, Platform, Animated } from 'react-native';
-import { View } from '@/components/ui/view';
-import { FormControl } from '@/components/ui/form-control';
-import { FormControlLabel } from '@/components/ui/form-control';
-import { FormControlError } from '@/components/ui/form-control';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
-import { Image } from '@/components/ui/image';
 import { Pressable } from '@/components/ui/pressable';
-import { ImagePlus } from 'lucide-react-native';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { usePresetsStore } from '@/store/presets';
 import { GenerationParams } from '@/types/generation';
 import { savePresetThumbnail } from '@/utils/image-storage';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
+import { ImagePlus } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Animated, Keyboard } from 'react-native';
 
 interface EditPresetModalProps {
   isOpen: boolean;
@@ -168,14 +168,14 @@ export function EditPresetModal({
         className="flex-1 items-center justify-center px-5"
         pointerEvents="box-none"
       >
-        <ModalContent className="overflow-hidden rounded-xl border-0 bg-background-200">
+        <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <ModalHeader>
             <Text className="text-lg font-semibold text-primary-500">
               Edit Preset
             </Text>
           </ModalHeader>
 
-          <ModalBody>
+          <ModalBody scrollEnabled={false}>
             <VStack space="md">
               <FormControl isInvalid={!!error}>
                 <FormControlLabel>
@@ -193,7 +193,7 @@ export function EditPresetModal({
                       setName(value);
                       setError('');
                     }}
-                    value={name}
+                    defaultValue={name}
                     placeholder="Enter preset name"
                     className="px-3 py-2 text-sm text-primary-500 placeholder:text-primary-300"
                   />
@@ -238,7 +238,6 @@ export function EditPresetModal({
           <ModalFooter>
             <Button
               variant="outline"
-              action="secondary"
               onPress={handleClose}
               className="mr-3 flex-1 rounded-md border-0 bg-background-100"
             >
@@ -246,7 +245,6 @@ export function EditPresetModal({
             </Button>
             <Button
               variant="solid"
-              action="primary"
               onPress={handleUpdate}
               className="flex-1 rounded-md border-0 bg-primary-500"
               disabled={!name.trim()}

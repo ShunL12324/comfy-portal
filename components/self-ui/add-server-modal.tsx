@@ -1,22 +1,26 @@
-import React from 'react';
-import { Modal, ModalBackdrop } from '@/components/ui/modal';
-import { FormControl } from '@/components/ui/form-control';
-import { Input } from '@/components/ui/input';
-import { Button, ButtonIcon } from '@/components/ui/button';
-import { VStack } from '@/components/ui/vstack';
+import { Button, ButtonText } from '@/components/ui/button';
+import {
+  FormControl,
+  FormControlError,
+  FormControlErrorText,
+  FormControlLabel,
+  FormControlLabelText,
+} from '@/components/ui/form-control';
 import { HStack } from '@/components/ui/hstack';
+import { Input, InputField } from '@/components/ui/input';
+import {
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
-import { ModalContent } from '@/components/ui/modal';
-import { ModalHeader } from '@/components/ui/modal';
-import { ModalBody } from '@/components/ui/modal';
-import { ModalFooter } from '@/components/ui/modal';
-import { FormControlLabel } from '@/components/ui/form-control';
-import { InputField } from '@/components/ui/input';
-import { ButtonText } from '@/components/ui/button';
-import { FormControlError } from '@/components/ui/form-control';
-import { Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import React from 'react';
+import { Animated, Keyboard } from 'react-native';
 
 interface AddServerModalProps {
   isOpen: boolean;
@@ -32,11 +36,33 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
   const [name, setName] = React.useState('');
   const [host, setHost] = React.useState('');
   const [port, setPort] = React.useState('8188');
-  const [errors, setErrors] = React.useState({
-    name: '',
-    host: '',
-    port: '',
-  });
+  const [nameError, setNameError] = React.useState('');
+  const [hostError, setHostError] = React.useState('');
+  const [portError, setPortError] = React.useState('');
+  const translateY = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardWillShow', () => {
+      Animated.timing(translateY, {
+        toValue: -120,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [translateY]);
 
   const validateName = (value: string) => {
     if (value.length === 0) {
@@ -93,17 +119,15 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
   };
 
   const handleSave = () => {
-    const nameError = validateName(name);
-    const hostError = validateHost(host);
-    const portError = validatePort(port);
+    const newNameError = validateName(name);
+    const newHostError = validateHost(host);
+    const newPortError = validatePort(port);
 
-    setErrors({
-      name: nameError,
-      host: hostError,
-      port: portError,
-    });
+    setNameError(newNameError);
+    setHostError(newHostError);
+    setPortError(newPortError);
 
-    if (nameError || hostError || portError) {
+    if (newNameError || newHostError || newPortError) {
       return;
     }
 
@@ -119,132 +143,142 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     setName('');
     setHost('');
     setPort('8188');
-    setErrors({
-      name: '',
-      host: '',
-      port: '',
-    });
+    setNameError('');
+    setHostError('');
+    setPortError('');
     onClose();
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      closeOnOverlayClick
-      avoidKeyboard
-    >
-      <ModalBackdrop />
-      <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
-        <VStack className="p-0">
-          <ModalHeader className="px-0">
-            <Text className="text-lg font-semibold text-primary-500">
-              Add Server
-            </Text>
-          </ModalHeader>
-          <ModalBody className="px-0 py-2">
-            <VStack space="md">
-              <FormControl isInvalid={!!errors.name}>
-                <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">
-                    Name
-                  </Text>
-                </FormControlLabel>
-                <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-                  <InputField
-                    value={name}
-                    onChangeText={(value) => {
-                      setName(value);
-                      setErrors((prev) => ({ ...prev, name: '' }));
-                    }}
-                    placeholder="Server name"
-                    maxLength={MAX_NAME_LENGTH}
-                    className="px-3 py-2 text-primary-500"
-                  />
-                </Input>
-                {errors.name && (
-                  <FormControlError>
-                    <Text className="mt-1 text-xs text-error-600">
-                      {errors.name}
-                    </Text>
-                  </FormControlError>
-                )}
-              </FormControl>
+    <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick>
+      <ModalBackdrop onPress={handleClose} />
+      <Animated.View
+        style={[
+          {
+            width: '100%',
+            transform: [{ translateY }],
+          },
+        ]}
+        className="flex-1 items-center justify-center px-5"
+        pointerEvents="box-none"
+      >
+        <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
+          <VStack space="md">
+            <ModalHeader>
+              <Text className="text-lg font-semibold text-primary-500">
+                Add Server
+              </Text>
+            </ModalHeader>
+            <ModalBody scrollEnabled={false}>
+              <VStack space="md">
+                <FormControl isInvalid={!!nameError} size="md">
+                  <FormControlLabel>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">
+                      Name
+                    </FormControlLabelText>
+                  </FormControlLabel>
+                  <Input
+                    size="md"
+                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
+                  >
+                    <InputField
+                      onChangeText={(value) => {
+                        setName(value);
+                        setNameError('');
+                      }}
+                      placeholder="Server name"
+                      maxLength={MAX_NAME_LENGTH}
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                    />
+                  </Input>
+                  {nameError && (
+                    <FormControlError>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">
+                        {nameError}
+                      </FormControlErrorText>
+                    </FormControlError>
+                  )}
+                </FormControl>
 
-              <FormControl isInvalid={!!errors.host}>
-                <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">
-                    Host
-                  </Text>
-                </FormControlLabel>
-                <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-                  <InputField
-                    value={host}
-                    onChangeText={(value) => {
-                      setHost(value);
-                      setErrors((prev) => ({ ...prev, host: '' }));
-                    }}
-                    placeholder="Host or IP address"
-                    className="px-3 py-2 text-primary-500"
-                  />
-                </Input>
-                {errors.host && (
-                  <FormControlError>
-                    <Text className="mt-1 text-xs text-error-600">
-                      {errors.host}
-                    </Text>
-                  </FormControlError>
-                )}
-              </FormControl>
+                <FormControl isInvalid={!!hostError} size="md">
+                  <FormControlLabel>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">
+                      Host
+                    </FormControlLabelText>
+                  </FormControlLabel>
+                  <Input
+                    size="md"
+                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
+                  >
+                    <InputField
+                      onChangeText={(value) => {
+                        setHost(value);
+                        setHostError('');
+                      }}
+                      placeholder="Host or IP address"
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                    />
+                  </Input>
+                  {hostError && (
+                    <FormControlError>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">
+                        {hostError}
+                      </FormControlErrorText>
+                    </FormControlError>
+                  )}
+                </FormControl>
 
-              <FormControl isInvalid={!!errors.port}>
-                <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">
-                    Port
-                  </Text>
-                </FormControlLabel>
-                <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-                  <InputField
-                    value={port}
-                    onChangeText={(value) => {
-                      setPort(value);
-                      setErrors((prev) => ({ ...prev, port: '' }));
-                    }}
-                    placeholder="Port number"
-                    className="px-3 py-2 text-primary-500"
-                    keyboardType="numeric"
-                  />
-                </Input>
-                {errors.port && (
-                  <FormControlError>
-                    <Text className="mt-1 text-xs text-error-600">
-                      {errors.port}
-                    </Text>
-                  </FormControlError>
-                )}
-              </FormControl>
-            </VStack>
-          </ModalBody>
-          <ModalFooter className="px-0">
-            <HStack space="sm" className="py-0">
-              <Button
-                variant="outline"
-                onPress={handleClose}
-                className="flex-1 rounded-md bg-background-100"
-              >
-                <ButtonText className="text-primary-400">Cancel</ButtonText>
-              </Button>
-              <Button
-                variant="solid"
-                onPress={handleSave}
-                className="flex-1 rounded-md bg-primary-500"
-              >
-                <ButtonText className="text-background-0">Add</ButtonText>
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </VStack>
-      </ModalContent>
+                <FormControl isInvalid={!!portError} size="md">
+                  <FormControlLabel>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">
+                      Port
+                    </FormControlLabelText>
+                  </FormControlLabel>
+                  <Input
+                    size="md"
+                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
+                  >
+                    <InputField
+                      onChangeText={(value) => {
+                        setPort(value);
+                        setPortError('');
+                      }}
+                      placeholder="Port number"
+                      keyboardType="numeric"
+                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                    />
+                  </Input>
+                  {portError && (
+                    <FormControlError>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">
+                        {portError}
+                      </FormControlErrorText>
+                    </FormControlError>
+                  )}
+                </FormControl>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <HStack space="sm">
+                <Button
+                  variant="outline"
+                  onPress={handleClose}
+                  className="flex-1 rounded-md bg-background-100"
+                >
+                  <ButtonText className="text-primary-400">Cancel</ButtonText>
+                </Button>
+                <Button
+                  variant="solid"
+                  onPress={handleSave}
+                  className="flex-1 rounded-md bg-primary-500"
+                >
+                  <ButtonText className="text-background-0">Add</ButtonText>
+                </Button>
+              </HStack>
+            </ModalFooter>
+          </VStack>
+        </ModalContent>
+      </Animated.View>
     </Modal>
   );
 };
