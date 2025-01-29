@@ -50,3 +50,6 @@ ios/
 
 # tools
 tools/
+
+# .ipa
+*.ipa
