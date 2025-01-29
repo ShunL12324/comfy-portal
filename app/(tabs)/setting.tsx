@@ -10,9 +10,11 @@ import { Link } from 'expo-router';
 import {
   BookOpen,
   ChevronRight,
+  FileText,
   GithubIcon,
   Info,
   Palette,
+  Shield,
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';
@@ -63,6 +65,51 @@ export default function SettingScreen() {
                   />
                   <Text className="text-base font-medium text-typography-900">
                     Server Setup Guide
+                  </Text>
+                </View>
+                <Icon
+                  as={ChevronRight}
+                  size="sm"
+                  className="text-typography-400"
+                />
+              </View>
+            </Pressable>
+          </Link>
+
+          {/* Legal Section */}
+          <Link href="/legal/privacy" asChild>
+            <Pressable className="py-4">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Icon
+                    as={Shield}
+                    size="lg"
+                    className="mr-3 text-accent-500"
+                  />
+                  <Text className="text-base font-medium text-typography-900">
+                    Privacy Policy
+                  </Text>
+                </View>
+                <Icon
+                  as={ChevronRight}
+                  size="sm"
+                  className="text-typography-400"
+                />
+              </View>
+            </Pressable>
+          </Link>
+
+          <Link href="/legal/terms" asChild>
+            <Pressable className="py-4">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Icon
+                    as={FileText}
+                    size="lg"
+                    className="mr-3 text-accent-500"
+                  />
+                  <Text className="text-base font-medium text-typography-900">
+                    Terms of Service
                   </Text>
                 </View>
                 <Icon
