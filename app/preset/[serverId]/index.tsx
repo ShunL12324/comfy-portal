@@ -10,12 +10,10 @@ import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { usePresetsStore } from '@/store/presets';
 import { useServersStore } from '@/store/servers';
-import { useThemeStore } from '@/store/theme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 
 const PresetsScreen = () => {
-  const { theme } = useThemeStore();
   const { serverId } = useLocalSearchParams();
   const server = useServersStore((state) =>
     state.servers.find((s) => s.id === serverId),
@@ -78,6 +76,7 @@ const PresetsScreen = () => {
               thumbnail={preset.thumbnail}
               lastUsed={preset.lastUsed}
               params={preset.params}
+              serverId={serverId as string}
               onPress={() => handleRunPreset(preset.id)}
               index={index}
             />

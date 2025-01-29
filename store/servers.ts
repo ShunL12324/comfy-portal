@@ -1,4 +1,5 @@
 import { Model, Server } from '@/types/server';
+import { cleanupServerData } from '@/utils/image-storage';
 import { checkMultipleServers, checkServerStatus } from '@/utils/server-status';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
@@ -49,9 +50,13 @@ export const useServersStore = create<ServersState>()(
       },
 
       removeServer: (id) =>
-        set((state) => ({
-          servers: state.servers.filter((s) => s.id !== id),
-        })),
+        set((state) => {
+          // Clean up server data
+          cleanupServerData(id).catch(console.error);
+          return {
+            servers: state.servers.filter((s) => s.id !== id),
+          };
+        }),
 
       updateServer: (id, updates) =>
         set((state) => ({

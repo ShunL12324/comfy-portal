@@ -21,6 +21,8 @@ interface ParallaxImageProps {
   onPreviewClose: () => void;
   /** Current preset ID */
   presetId?: string;
+  /** Current server ID */
+  serverId?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export const ParallaxImage = memo(function ParallaxImage({
   isPreviewOpen,
   onPreviewClose,
   presetId,
+  serverId,
 }: ParallaxImageProps) {
   const scale = scrollY.interpolate({
     inputRange: [-imageHeight, 0],
@@ -75,6 +78,7 @@ export const ParallaxImage = memo(function ParallaxImage({
             isPreviewOpen={isPreviewOpen}
             onPreviewClose={onPreviewClose}
             presetId={presetId}
+            serverId={serverId}
           />
         </Animated.View>
       </Animated.View>

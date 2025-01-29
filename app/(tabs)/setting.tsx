@@ -1,21 +1,21 @@
 import { AppBar } from '@/components/layout/app-bar';
-import { View } from '@/components/ui/view';
-import { Text } from '@/components/ui/text';
-import { Pressable } from '@/components/ui/pressable';
+import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { Icon } from '@/components/ui/icon';
+import { Pressable } from '@/components/ui/pressable';
+import { ScrollView } from '@/components/ui/scroll-view';
+import { Text } from '@/components/ui/text';
+import { View } from '@/components/ui/view';
+import { useThemeStore } from '@/store/theme';
+import { Link } from 'expo-router';
 import {
-  ChevronRight,
   BookOpen,
-  Info,
+  ChevronRight,
   GithubIcon,
+  Info,
   Palette,
 } from 'lucide-react-native';
-import { Link } from 'expo-router';
-import { useThemeStore } from '@/store/theme';
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { useState } from 'react';
 import { MotiView } from 'moti';
+import { useState } from 'react';
 
 export default function SettingScreen() {
   const { theme, isSystemTheme, setTheme, useSystemTheme } = useThemeStore();
@@ -35,9 +35,9 @@ export default function SettingScreen() {
     <View className="flex-1 bg-background-0">
       <AppBar title="Setting" />
       <ScrollView className="flex-1">
-        <View className="px-5 pb-6">
-          {/* Theme */}
-          <View className="mb-4">
+        <View className="px-5">
+          {/* Theme Section */}
+          <View className="py-4">
             <View className="mb-4 flex-row items-center">
               <Icon as={Palette} size="lg" className="mr-3 text-accent-500" />
               <Text className="text-base font-medium text-typography-900">
@@ -51,33 +51,31 @@ export default function SettingScreen() {
             />
           </View>
 
-          <View className="h-[1px] bg-outline-200" />
-
-          {/* Guide */}
+          {/* Guide Section */}
           <Link href="/guide" asChild>
-            <Pressable className="flex-row items-center justify-between py-4">
-              <View className="flex-row items-center">
+            <Pressable className="py-4">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Icon
+                    as={BookOpen}
+                    size="lg"
+                    className="mr-3 text-accent-500"
+                  />
+                  <Text className="text-base font-medium text-typography-900">
+                    Server Setup Guide
+                  </Text>
+                </View>
                 <Icon
-                  as={BookOpen}
-                  size="lg"
-                  className="mr-3 text-accent-500"
+                  as={ChevronRight}
+                  size="sm"
+                  className="text-typography-400"
                 />
-                <Text className="text-base font-medium text-typography-900">
-                  Server Setup Guide
-                </Text>
               </View>
-              <Icon
-                as={ChevronRight}
-                size="sm"
-                className="text-typography-400"
-              />
             </Pressable>
           </Link>
 
-          <View className="h-[1px] bg-outline-200" />
-
-          {/* About */}
-          <View className="pt-4">
+          {/* About Section */}
+          <View className="py-4">
             <Pressable
               className="flex-row items-center justify-between"
               onPress={() => setIsAboutExpanded(!isAboutExpanded)}
@@ -115,8 +113,9 @@ export default function SettingScreen() {
                   type: 'timing',
                   duration: 200,
                 }}
+                className="mt-4"
               >
-                <Text className="mb-4 mt-4 text-sm leading-5 text-typography-600">
+                <Text className="mb-4 text-sm leading-5 text-typography-600">
                   A mobile client for ComfyUI, designed to help you manage and
                   run your ComfyUI workflows on the go. Built with modern
                   technologies and focused on providing the best user

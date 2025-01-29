@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect } from 'react';
-import { Pressable } from '../ui/pressable';
-import { Text } from '../ui/text';
-import { View, LayoutChangeEvent } from 'react-native';
+import { LayoutChangeEvent, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  withSpring,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
+import { Pressable } from '../ui/pressable';
+import { Text } from '../ui/text';
 
 /**
  * Props for the SegmentedControl component
@@ -46,10 +46,12 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
    * Updates the slider position when selection or options change
    */
   useEffect(() => {
-    translateX.value = withSpring(
-      selectedIndex * (width.value / options.length),
-      springConfig,
-    );
+    if (selectedIndex !== -1) {
+      translateX.value = withSpring(
+        selectedIndex * (width.value / options.length),
+        springConfig,
+      );
+    }
   }, [selectedIndex, options.length, width.value]);
 
   /**
@@ -58,8 +60,10 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {
       width.value = event.nativeEvent.layout.width;
-      translateX.value =
-        selectedIndex * (event.nativeEvent.layout.width / options.length);
+      if (selectedIndex !== -1) {
+        translateX.value =
+          selectedIndex * (event.nativeEvent.layout.width / options.length);
+      }
     },
     [selectedIndex, options.length],
   );

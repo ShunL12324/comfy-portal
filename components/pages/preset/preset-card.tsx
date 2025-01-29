@@ -25,6 +25,7 @@ interface PresetCardProps {
   thumbnail?: string;
   lastUsed?: number;
   params: any;
+  serverId: string;
   onPress: () => void;
   index?: number;
 }
@@ -36,6 +37,7 @@ export const PresetCard = ({
   thumbnail,
   lastUsed,
   params,
+  serverId,
   onPress,
   index = 0,
 }: PresetCardProps) => {
@@ -117,7 +119,7 @@ export const PresetCard = ({
       <EditPresetModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        preset={{ id, name, createdAt, thumbnail, params }}
+        preset={{ id, name, createdAt, thumbnail, params, serverId }}
       />
 
       <AlertDialog

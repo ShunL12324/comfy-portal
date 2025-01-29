@@ -136,7 +136,10 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
   const getCurrentResolution = (): string => {
     if (isCustom) return 'Custom';
     const matchedResolution = RESOLUTIONS.find(
-      (r) => r.width === params.width && r.height === params.height,
+      (r) =>
+        r.width === params.width &&
+        r.height === params.height &&
+        r.label !== 'Custom',
     );
     return matchedResolution
       ? matchedResolution.label ||

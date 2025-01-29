@@ -7,16 +7,46 @@ import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
 import { TabProps } from '@/types/generation';
 import { Plus } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
+
+interface ModelTabProps extends TabProps {
+  serverId: string;
+}
 
 /**
  * Model selection tab component
  * Displays a button to open a bottom sheet modal with a list of available checkpoint models
  * Each model item shows a preview image (if available), model name, and server name
  */
-export function ModelTab({ params, onParamsChange }: TabProps) {
-  const servers = useServersStore((state) => state.servers);
-  const refreshServers = useServersStore((state) => state.refreshServers);
+export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
+  const server = useServersStore((state) =>
+    state.servers.find((s) => s.id === serverId),
+  );
+  const refreshServer = useServersStore((state) => state.refreshServer);
+
+  // Auto-select first checkpoint model if none is selected
+  useEffect(() => {
+    if (!params.model && server?.models) {
+      const checkpoints = server.models.filter((m) => m.type === 'checkpoints');
+      if (checkpoints.length > 0) {
+        onParamsChange({
+          ...params,
+          model: checkpoints[0].name,
+        });
+      }
+    }
+  }, [server?.models, params.model]);
+
+  if (!server) {
+    return (
+      <VStack
+        space="lg"
+        className="flex-1 items-center justify-center px-4 py-4"
+      >
+        <Text className="text-base text-error-500">Server not found</Text>
+      </VStack>
+    );
+  }
 
   return (
     <VStack space="lg" className="flex-1 px-4 py-4">
@@ -29,8 +59,8 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
           <ModelSelector
             value={params.model}
             onChange={(value) => onParamsChange({ ...params, model: value })}
-            servers={servers}
-            onRefresh={refreshServers}
+            servers={[server]}
+            onRefresh={() => refreshServer(serverId)}
             type="checkpoints"
           />
         </VStack>
@@ -88,7 +118,7 @@ export function ModelTab({ params, onParamsChange }: TabProps) {
                   loras[index] = { ...lora, strengthModel: value };
                   onParamsChange({ ...params, loras });
                 }}
-                servers={servers}
+                servers={[server]}
                 type="loras"
                 initialClipStrength={lora.strengthClip}
                 initialModelStrength={lora.strengthModel}

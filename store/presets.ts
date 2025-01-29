@@ -1,8 +1,9 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { Preset } from '@/types/preset';
+import { cleanupPresetData } from '@/utils/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { Preset } from '@/types/preset';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface PresetsState {
   presets: Preset[];
@@ -29,9 +30,16 @@ export const usePresetsStore = create<PresetsState>()(
       },
 
       removePreset: (id) =>
-        set((state) => ({
-          presets: state.presets.filter((p) => p.id !== id),
-        })),
+        set((state) => {
+          const preset = state.presets.find((p) => p.id === id);
+          if (preset) {
+            // Clean up preset data
+            cleanupPresetData(preset.serverId, id).catch(console.error);
+          }
+          return {
+            presets: state.presets.filter((p) => p.id !== id),
+          };
+        }),
 
       updatePreset: (id, updates) =>
         set((state) => ({

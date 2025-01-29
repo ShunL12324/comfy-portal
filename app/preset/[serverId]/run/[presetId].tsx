@@ -169,9 +169,9 @@ export default function RunPresetScreen() {
 
   useEffect(() => {
     if (preset) {
-      loadHistoryImages(preset.id).then(setHistoryImages);
+      loadHistoryImages(serverId as string, preset.id).then(setHistoryImages);
     }
-  }, [preset]);
+  }, [preset, serverId]);
 
   const handleGenerate = async () => {
     if (!comfyClient.current || !preset || !server) return;
@@ -238,6 +238,7 @@ export default function RunPresetScreen() {
 
           if (images.length > 0) {
             const result = await saveGeneratedImage({
+              serverId: serverId as string,
               presetId: preset.id,
               imageUrl: images[0],
               params: params,
@@ -249,7 +250,10 @@ export default function RunPresetScreen() {
                 : `file://${result.path}`;
 
               setGeneratedImage(localImageUrl);
-              const newHistoryImages = await loadHistoryImages(preset.id);
+              const newHistoryImages = await loadHistoryImages(
+                serverId as string,
+                preset.id,
+              );
               setHistoryImages(newHistoryImages);
             } else {
               console.error('Failed to save generated image');
@@ -290,6 +294,7 @@ export default function RunPresetScreen() {
         await Promise.all(
           urls.map((url) =>
             saveGeneratedImage({
+              serverId: serverId as string,
               presetId: preset.id,
               imageUrl: url,
               params,
@@ -299,7 +304,7 @@ export default function RunPresetScreen() {
         );
       }
     },
-    [generatedImage, historyImages, params, preset],
+    [generatedImage, historyImages, params, preset, serverId],
   );
 
   const handleScroll = useCallback(
@@ -372,6 +377,7 @@ export default function RunPresetScreen() {
           isPreviewOpen={isPreviewOpen}
           onPreviewClose={() => setIsPreviewOpen(false)}
           presetId={preset.id}
+          serverId={serverId as string}
         />
 
         <Animated.ScrollView
@@ -406,6 +412,7 @@ export default function RunPresetScreen() {
               params={params}
               onParamsChange={setParams}
               presetId={preset.id}
+              serverId={serverId as string}
             />
           </View>
         </Animated.ScrollView>

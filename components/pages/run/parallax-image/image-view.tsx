@@ -1,23 +1,3 @@
-import { Box } from '@/components/ui/box';
-import { Center } from '@/components/ui/center';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { MotiView } from 'moti';
-import { memo, useMemo, useState, useCallback } from 'react';
-import {
-  Platform,
-  TouchableOpacity,
-  useWindowDimensions,
-  Pressable,
-} from 'react-native';
-import { Icon } from '@/components/ui/icon';
-import { Maximize2, X, ImageIcon, Save } from 'lucide-react-native';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalBody,
-} from '@/components/ui/modal';
 import {
   Actionsheet,
   ActionsheetBackdrop,
@@ -27,22 +7,42 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from '@/components/ui/actionsheet';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { Box } from '@/components/ui/box';
+import { Center } from '@/components/ui/center';
+import { Icon } from '@/components/ui/icon';
+import {
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContent,
+} from '@/components/ui/modal';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { usePresetsStore } from '@/store/presets';
+import { savePresetThumbnail } from '@/utils/image-storage';
+import { showToast } from '@/utils/toast';
+import { Image } from 'expo-image';
+import * as MediaLibrary from 'expo-media-library';
+import { ImageIcon, Save, X } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import { memo, useMemo, useState } from 'react';
+import {
+  Platform,
+  Pressable,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
-import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library';
-import { showToast } from '@/utils/toast';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { usePresetsStore } from '@/store/presets';
-import { savePresetThumbnail } from '@/utils/image-storage';
 
 /**
  * Props for the progress overlay component
@@ -105,6 +105,8 @@ interface ImagePreviewProps {
   onPreviewClose?: () => void;
   /** Current preset ID */
   presetId?: string;
+  /** Current server ID */
+  serverId?: string;
 }
 
 /**
@@ -121,6 +123,7 @@ export const ImagePreview = memo(function ImagePreview({
   isPreviewOpen = false,
   onPreviewClose,
   presetId,
+  serverId,
 }: ImagePreviewProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
@@ -230,10 +233,11 @@ export const ImagePreview = memo(function ImagePreview({
   };
 
   const handleSetAsThumbnail = async () => {
-    if (!imageUrl || !presetId) return;
+    if (!imageUrl || !presetId || !serverId) return;
 
     try {
       const savedImage = await savePresetThumbnail({
+        serverId,
         presetId,
         imageUri: imageUrl,
       });

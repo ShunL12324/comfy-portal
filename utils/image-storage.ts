@@ -1,8 +1,9 @@
-import * as FileSystem from 'expo-file-system';
-import * as Crypto from 'expo-crypto';
 import { GenerationParams } from '@/types/generation';
+import * as Crypto from 'expo-crypto';
+import * as FileSystem from 'expo-file-system';
 
 interface SaveImageOptions {
+  serverId: string;
   presetId: string;
   imageUrl: string;
   params: GenerationParams;
@@ -10,13 +11,14 @@ interface SaveImageOptions {
 }
 
 export async function saveGeneratedImage({
+  serverId,
   presetId,
   imageUrl,
   params,
   delete: shouldDelete,
 }: SaveImageOptions) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}presets/${presetId}/generated`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/generated`;
 
     if (shouldDelete) {
       // Extract filename from path
@@ -63,9 +65,9 @@ export async function saveGeneratedImage({
   }
 }
 
-export async function getGeneratedImages(presetId: string) {
+export async function getGeneratedImages(serverId: string, presetId: string) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}presets/${presetId}/generated`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/generated`;
 
     const fileInfo = await FileSystem.getInfoAsync(dirPath);
     if (!fileInfo.exists) {
@@ -103,9 +105,9 @@ export async function getGeneratedImages(presetId: string) {
   }
 }
 
-export async function loadHistoryImages(presetId: string) {
+export async function loadHistoryImages(serverId: string, presetId: string) {
   try {
-    const images = await getGeneratedImages(presetId);
+    const images = await getGeneratedImages(serverId, presetId);
 
     return images
       .filter((image) => image.metadata) // Only include images with valid metadata
@@ -121,18 +123,20 @@ export async function loadHistoryImages(presetId: string) {
 }
 
 export async function savePresetThumbnail({
+  serverId,
   presetId,
   imageUri,
   delete: shouldDelete,
   mimeType,
 }: {
+  serverId: string;
   presetId: string;
   imageUri: string;
   delete?: boolean;
   mimeType?: string;
 }) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}presets/${presetId}/thumbnail`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/thumbnail`;
 
     if (shouldDelete) {
       await FileSystem.deleteAsync(dirPath).catch(() => { });
@@ -183,5 +187,25 @@ export async function savePresetThumbnail({
   } catch (error) {
     console.error('Failed to save/delete preset thumbnail:', error);
     throw error;
+  }
+}
+
+// Helper function to clean up server data
+export async function cleanupServerData(serverId: string) {
+  try {
+    const serverDir = `${FileSystem.documentDirectory}server/${serverId}`;
+    await FileSystem.deleteAsync(serverDir).catch(() => { });
+  } catch (error) {
+    console.error('Failed to cleanup server data:', error);
+  }
+}
+
+// Helper function to clean up preset data
+export async function cleanupPresetData(serverId: string, presetId: string) {
+  try {
+    const presetDir = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}`;
+    await FileSystem.deleteAsync(presetDir).catch(() => { });
+  } catch (error) {
+    console.error('Failed to cleanup preset data:', error);
   }
 } 

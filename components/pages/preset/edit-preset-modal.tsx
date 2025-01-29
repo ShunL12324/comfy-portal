@@ -35,6 +35,7 @@ interface EditPresetModalProps {
     createdAt: number;
     thumbnail?: string;
     params: GenerationParams;
+    serverId: string;
   };
 }
 
@@ -130,6 +131,7 @@ export function EditPresetModal({
     if (!result.canceled && preset) {
       try {
         const savedImage = await savePresetThumbnail({
+          serverId: preset.serverId,
           presetId: preset.id,
           imageUri: result.assets[0].uri,
           mimeType: result.assets[0].mimeType,

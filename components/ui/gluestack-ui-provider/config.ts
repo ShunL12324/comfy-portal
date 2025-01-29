@@ -129,18 +129,18 @@ export const config = {
     '--color-outline-950': '26 23 23',
 
     /* Background */
-    '--color-background-0': '255 255 255',
-    '--color-background-50': '246 246 246',
-    '--color-background-100': '242 241 241',
-    '--color-background-200': '220 219 219',
-    '--color-background-300': '213 212 212',
-    '--color-background-400': '162 163 163',
-    '--color-background-500': '142 142 142',
-    '--color-background-600': '116 116 116',
-    '--color-background-700': '83 82 82',
-    '--color-background-800': '65 64 64',
-    '--color-background-900': '39 38 37',
-    '--color-background-950': '18 18 18',
+    '--color-background-0': '255 255 255', // rgb(255, 255, 255)
+    '--color-background-50': '246 246 246', // rgb(246, 246, 246)
+    '--color-background-100': '242 241 241', // rgb(242, 241, 241)
+    '--color-background-200': '235 235 235', // rgb(235, 235, 235)
+    '--color-background-300': '213 212 212', // rgb(213, 212, 212)
+    '--color-background-400': '162 163 163', // rgb(162, 163, 163)
+    '--color-background-500': '142 142 142', // rgb(142, 142, 142)
+    '--color-background-600': '116 116 116', // rgb(116, 116, 116)
+    '--color-background-700': '83 82 82', // rgb(83, 82, 82)
+    '--color-background-800': '65 64 64', // rgb(65, 64, 64)
+    '--color-background-900': '39 38 37', // rgb(39, 38, 37)
+    '--color-background-950': '18 18 18', // rgb(18, 18, 18)
 
     /* Background Special */
     '--color-background-error': '254 241 241',
@@ -155,18 +155,18 @@ export const config = {
     '--color-indicator-error': '185 28 28',
 
     /* Accent Colors */
-    '--color-accent-0': '239 246 255', // rgb(239, 246, 255) - Lightest accent
-    '--color-accent-50': '219 234 254', // rgb(219, 234, 254)
-    '--color-accent-100': '191 219 254', // rgb(191, 219, 254)
-    '--color-accent-200': '147 197 253', // rgb(147, 197, 253)
-    '--color-accent-300': '96 165 250', // rgb(96, 165, 250)
-    '--color-accent-400': '59 130 246', // rgb(59, 130, 246)
-    '--color-accent-500': '37 99 235', // rgb(37, 99, 235) - Primary accent
-    '--color-accent-600': '29 78 216', // rgb(29, 78, 216)
-    '--color-accent-700': '30 64 175', // rgb(30, 64, 175)
-    '--color-accent-800': '30 58 138', // rgb(30, 58, 138)
-    '--color-accent-900': '30 48 110', // rgb(30, 48, 110)
-    '--color-accent-950': '23 37 84', // rgb(23, 37, 84) - Darkest accent
+    '--color-accent-0': '255 255 255', // rgb(255, 255, 255) - Pure white
+    '--color-accent-50': '250 250 250', // rgb(250, 250, 250)
+    '--color-accent-100': '244 244 245', // rgb(244, 244, 245)
+    '--color-accent-200': '228 228 231', // rgb(228, 228, 231)
+    '--color-accent-300': '212 212 216', // rgb(212, 212, 216)
+    '--color-accent-400': '161 161 170', // rgb(161, 161, 170)
+    '--color-accent-500': '113 113 122', // rgb(113, 113, 122) - Primary gray
+    '--color-accent-600': '82 82 91', // rgb(82, 82, 91)
+    '--color-accent-700': '63 63 70', // rgb(63, 63, 70)
+    '--color-accent-800': '39 39 42', // rgb(39, 39, 42)
+    '--color-accent-900': '24 24 27', // rgb(24, 24, 27)
+    '--color-accent-950': '9 9 11', // rgb(9, 9, 11) - Almost black
   }),
   dark: vars({
     '--color-primary-0': '166 166 166', // rgb(166, 166, 166)
@@ -321,17 +321,17 @@ export const config = {
     '--color-indicator-error': '232 70 69', // rgb(232, 70, 69)
 
     /* Accent Colors */
-    '--color-accent-0': '23 37 84', // rgb(23, 37, 84) - Darkest accent
-    '--color-accent-50': '30 48 110', // rgb(30, 48, 110)
-    '--color-accent-100': '30 58 138', // rgb(30, 58, 138)
-    '--color-accent-200': '30 64 175', // rgb(30, 64, 175)
-    '--color-accent-300': '29 78 216', // rgb(29, 78, 216)
-    '--color-accent-400': '37 99 235', // rgb(37, 99, 235)
-    '--color-accent-500': '59 130 246', // rgb(59, 130, 246) - Primary accent
-    '--color-accent-600': '96 165 250', // rgb(96, 165, 250)
-    '--color-accent-700': '147 197 253', // rgb(147, 197, 253)
-    '--color-accent-800': '191 219 254', // rgb(191, 219, 254)
-    '--color-accent-900': '219 234 254', // rgb(219, 234, 254)
-    '--color-accent-950': '239 246 255', // rgb(239, 246, 255) - Lightest accent
+    '--color-accent-0': '9 9 11', // rgb(9, 9, 11) - Almost black
+    '--color-accent-50': '24 24 27', // rgb(24, 24, 27)
+    '--color-accent-100': '39 39 42', // rgb(39, 39, 42)
+    '--color-accent-200': '63 63 70', // rgb(63, 63, 70)
+    '--color-accent-300': '82 82 91', // rgb(82, 82, 91)
+    '--color-accent-400': '113 113 122', // rgb(113, 113, 122)
+    '--color-accent-500': '161 161 170', // rgb(161, 161, 170) - Primary gray
+    '--color-accent-600': '212 212 216', // rgb(212, 212, 216)
+    '--color-accent-700': '228 228 231', // rgb(228, 228, 231)
+    '--color-accent-800': '244 244 245', // rgb(244, 244, 245)
+    '--color-accent-900': '250 250 250', // rgb(250, 250, 250)
+    '--color-accent-950': '255 255 255', // rgb(255, 255, 255) - Pure white
   }),
 };

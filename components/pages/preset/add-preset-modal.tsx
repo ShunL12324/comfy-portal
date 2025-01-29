@@ -145,6 +145,7 @@ export function AddPresetModal({
       try {
         const tempId = await Crypto.randomUUID();
         const savedImage = await savePresetThumbnail({
+          serverId,
           presetId: tempId,
           imageUri: result.assets[0].uri,
           mimeType: result.assets[0].mimeType,

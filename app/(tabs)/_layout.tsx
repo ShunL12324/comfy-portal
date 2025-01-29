@@ -11,9 +11,9 @@ export default function TabLayout() {
       }}
       tabBar={(props) => (
         <TabBar
-          activeTab={props.state.index === 0 ? 'home' : 'setting'}
+          activeTab={props.state.index === 0 ? 'server' : 'setting'}
           onChangeTab={(tab) => {
-            props.navigation.navigate(tab === 'home' ? 'index' : tab);
+            props.navigation.navigate(tab === 'server' ? 'index' : tab);
           }}
         />
       )}

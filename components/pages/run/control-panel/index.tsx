@@ -15,12 +15,14 @@ interface ParameterControlsProps {
   params: GenerationParams;
   onParamsChange: (params: GenerationParams) => void;
   presetId: string;
+  serverId: string;
 }
 
 export function ParameterControls({
   params,
   onParamsChange,
   presetId,
+  serverId,
 }: ParameterControlsProps) {
   const updatePreset = usePresetsStore((state) => state.updatePreset);
   const [activeTab, setActiveTab] = useState<
@@ -58,7 +60,11 @@ export function ParameterControls({
       switch (activeTab) {
         case 'model':
           return (
-            <ModelTab params={params} onParamsChange={handleParamsChange} />
+            <ModelTab
+              params={params}
+              onParamsChange={handleParamsChange}
+              serverId={serverId}
+            />
           );
         case 'prompt':
           return (

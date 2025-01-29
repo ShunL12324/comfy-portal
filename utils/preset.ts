@@ -160,31 +160,36 @@ export function createPreset(params: GenerationParams): Preset {
 
   // Handle LoRA nodes if present
   if (params.loras && params.loras.length > 0) {
-    let lastModelNodeId = "1";  // Start from checkpoint loader
-    let lastClipNodeId = "3";   // Start from CLIPSetLastLayer
-    let nextNodeId = 9;         // Start LoRA nodes from ID 9
+    // Filter out LoRAs with empty names
+    const validLoras = params.loras.filter(lora => lora.name.trim() !== '');
 
-    // Create LoRA nodes
-    params.loras.forEach((lora) => {
-      const nodeId = nextNodeId.toString();
-      preset[nodeId] = createLoraNode(
-        nodeId,
-        lora,
-        [lastModelNodeId, 0],
-        [lastClipNodeId, lastClipNodeId === "3" ? 0 : 1]
-      );
+    if (validLoras.length > 0) {
+      let lastModelNodeId = "1";  // Start from checkpoint loader
+      let lastClipNodeId = "3";   // Start from CLIPSetLastLayer
+      let nextNodeId = 9;         // Start LoRA nodes from ID 9
 
-      lastModelNodeId = nodeId;
-      lastClipNodeId = nodeId;
-      nextNodeId++;
-    });
+      // Create LoRA nodes
+      validLoras.forEach((lora) => {
+        const nodeId = nextNodeId.toString();
+        preset[nodeId] = createLoraNode(
+          nodeId,
+          lora,
+          [lastModelNodeId, 0],
+          [lastClipNodeId, lastClipNodeId === "3" ? 0 : 1]
+        );
 
-    // Update KSampler connections to use the last LoRA node
-    preset[2].inputs.model = [lastModelNodeId, 0];
+        lastModelNodeId = nodeId;
+        lastClipNodeId = nodeId;
+        nextNodeId++;
+      });
 
-    // Update CLIPTextEncode connections to use the last LoRA node
-    preset[4].inputs.clip = [lastModelNodeId, 1];
-    preset[5].inputs.clip = [lastModelNodeId, 1];
+      // Update KSampler connections to use the last LoRA node
+      preset[2].inputs.model = [lastModelNodeId, 0];
+
+      // Update CLIPTextEncode connections to use the last LoRA node
+      preset[4].inputs.clip = [lastModelNodeId, 1];
+      preset[5].inputs.clip = [lastModelNodeId, 1];
+    }
   }
 
   // Update other parameters
