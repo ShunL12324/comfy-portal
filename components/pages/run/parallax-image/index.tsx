@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Animated } from 'react-native';
-import { ImagePreview } from './image-preview';
 import { Pressable } from 'react-native-gesture-handler';
+import { ImagePreview } from './image-view';
 
 /**
  * Props for the parallax scrolling image component

@@ -1,40 +1,49 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import {
-  Animated,
-  useWindowDimensions,
-  View,
-  Platform,
-  TouchableOpacity,
-  Pressable,
-} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Images, Maximize2 } from 'lucide-react-native';
+import { Images } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { VStack } from '@/components/ui/vstack';
-import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { showToast } from '@/utils/toast';
 
-import { useServersStore } from '@/store/servers';
 import { usePresetsStore } from '@/store/presets';
+import { useServersStore } from '@/store/servers';
 import { ComfyClient } from '@/utils/comfy-client';
-import {
-  saveGeneratedImage,
-  loadHistoryImages,
-  savePresetThumbnail,
-} from '@/utils/image-storage';
+import { loadHistoryImages, saveGeneratedImage } from '@/utils/image-storage';
 
 import { AppBar } from '@/components/layout/app-bar';
-import { ServerStatus } from '@/components/preset-run/server-status';
-import { ImagePreview } from '@/components/preset-run/image-preview';
-import { ParameterControls } from '@/components/preset-run/parameter-controls';
-import { GenerationButton } from '@/components/preset-run/generation-button';
-import { HistoryDrawer } from '@/components/preset-run/history-drawer';
-import { ParallaxImage } from '@/components/preset-run/parallax-image';
+import { ParameterControls } from '@/components/pages/run/control-panel';
+import { GenerationButton } from '@/components/pages/run/generation-button';
+import { ServerStatus } from '@/components/pages/run/generation-status-indicator';
+import { HistoryDrawer } from '@/components/pages/run/history-drawer';
+import { ParallaxImage } from '@/components/pages/run/parallax-image';
 
 import { GenerationParams } from '@/types/generation';
+
+interface GenerationState {
+  status: 'idle' | 'generating' | 'downloading';
+  progress: { value: number; max: number };
+  nodeProgress: { completed: number; total: number };
+  downloadProgress: number;
+}
+
+const DEFAULT_PARAMS: GenerationParams = {
+  model: '',
+  prompt: '',
+  negativePrompt: '',
+  steps: 30,
+  cfg: 7,
+  seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
+  width: 768,
+  height: 1024,
+  sampler: 'euler_ancestral',
+  scheduler: 'sgm_uniform',
+  useRandomSeed: true,
+};
 
 /**
  * Screen component for running image generation presets
@@ -53,29 +62,14 @@ export default function RunPresetScreen() {
     state.presets.find((p) => p.id === presetId),
   );
 
-  const [generationState, setGenerationState] = useState<{
-    status: 'idle' | 'generating';
-    progress: { value: number; max: number };
-    nodeProgress: { completed: number; total: number };
-  }>({
+  const [generationState, setGenerationState] = useState<GenerationState>({
     status: 'idle',
     progress: { value: 0, max: 0 },
     nodeProgress: { completed: 0, total: 0 },
+    downloadProgress: 0,
   });
 
-  const [params, setParams] = useState<GenerationParams>({
-    model: 'everclearPNYByZovya_v3.safetensors',
-    prompt: '',
-    negativePrompt: '',
-    steps: 30,
-    cfg: 7,
-    seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
-    width: 768,
-    height: 1024,
-    sampler: 'dpmpp_3m_sde_gpu',
-    scheduler: 'sgm_uniform',
-    useRandomSeed: true,
-  });
+  const [params, setParams] = useState<GenerationParams>(DEFAULT_PARAMS);
 
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -134,6 +128,7 @@ export default function RunPresetScreen() {
       status: 'idle',
       progress: { value: 0, max: 0 },
       nodeProgress: { completed: 0, total: 0 },
+      downloadProgress: 0,
     });
   }, []);
 
@@ -218,6 +213,20 @@ export default function RunPresetScreen() {
         onNodeStart: () => {},
         onNodeComplete: (_, total, completed) =>
           updateProgressDebounced('nodeProgress', completed, total),
+        onDownloadProgress: (_, progress) => {
+          if (progress === 0) {
+            setGenerationState((prev) => ({
+              ...prev,
+              status: 'downloading',
+              downloadProgress: 0,
+            }));
+          } else {
+            setGenerationState((prev) => ({
+              ...prev,
+              downloadProgress: progress,
+            }));
+          }
+        },
         onComplete: async (images) => {
           usePresetsStore.getState().updateUsage(preset.id);
           setGenerationState((prev) => ({
@@ -329,6 +338,9 @@ export default function RunPresetScreen() {
           centerElement={
             <ServerStatus
               generating={generationState.status === 'generating'}
+              downloading={generationState.status === 'downloading'}
+              downloadProgress={generationState.downloadProgress}
+              generationProgress={generationState.progress}
               name={server.name}
             />
           }

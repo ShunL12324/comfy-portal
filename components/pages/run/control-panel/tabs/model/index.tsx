@@ -1,13 +1,13 @@
-import React, { useCallback } from 'react';
-import { VStack } from '@/components/ui/vstack';
-import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
-import { Plus } from 'lucide-react-native';
-import { useServersStore } from '@/store/servers';
-import { TabProps } from '../types';
 import { ModelSelector } from '@/components/selectors/model';
+import { Button } from '@/components/ui/button';
+import { HStack } from '@/components/ui/hstack';
+import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { useServersStore } from '@/store/servers';
+import { TabProps } from '@/types/generation';
+import { Plus } from 'lucide-react-native';
+import React from 'react';
 
 /**
  * Model selection tab component

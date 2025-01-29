@@ -1,16 +1,16 @@
-import React from 'react';
-import { VStack } from '@/components/ui/vstack';
-import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
+import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { SmoothSlider } from '@/components/self-ui/smooth-slider';
 import { Button } from '@/components/ui/button';
+import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import { SmoothSlider } from '@/components/self-ui/smooth-slider';
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { Plus, Minus, Shuffle, Dices, Info } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import { TabProps, RESOLUTIONS } from '../types';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { RESOLUTIONS, TabProps } from '@/types/generation';
 import { showToast } from '@/utils/toast';
+import { Dices, Info, Minus, Plus } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**

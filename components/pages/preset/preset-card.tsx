@@ -1,25 +1,22 @@
-import React from 'react';
-import { TouchableOpacity, View, Pressable } from 'react-native';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Text } from '@/components/ui/text';
-import { MotiView } from 'moti';
-import { Clock, ImageIcon, Edit2, Trash2 } from 'lucide-react-native';
-import { Button } from '@/components/ui/button';
-import { ButtonText } from '@/components/ui/button';
-import { Image } from '@/components/ui/image';
-import { EditPresetModal } from '@/components/self-ui/edit-preset-modal';
+import { EditPresetModal } from '@/components/pages/preset/edit-preset-modal';
 import {
   AlertDialog,
   AlertDialogBackdrop,
-  AlertDialogContent,
-  AlertDialogHeader,
   AlertDialogBody,
+  AlertDialogContent,
   AlertDialogFooter,
+  AlertDialogHeader,
 } from '@/components/ui/alert-dialog';
-import { usePresetsStore } from '@/store/presets';
+import { Button, ButtonText } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
+import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
+import { Image } from '@/components/ui/image';
+import { Text } from '@/components/ui/text';
+import { usePresetsStore } from '@/store/presets';
+import { Edit2, ImageIcon, Trash2 } from 'lucide-react-native';
+import React from 'react';
+import { Pressable, TouchableOpacity, View } from 'react-native';
 
 interface PresetCardProps {
   id: string;
@@ -104,13 +101,13 @@ export const PresetCard = ({
                 onPress={() => setIsEditModalOpen(true)}
                 className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
               >
-                <Icon as={Edit2} size="2xs" className="text-accent-500" />
+                <Icon as={Edit2} size="sm" className="text-accent-500" />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setIsDeleteAlertOpen(true)}
                 className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
               >
-                <Icon as={Trash2} size="2xs" className="text-error-600" />
+                <Icon as={Trash2} size="sm" className="text-error-600" />
               </TouchableOpacity>
             </View>
           </View>

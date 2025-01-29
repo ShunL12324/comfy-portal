@@ -1,9 +1,9 @@
-import React from 'react';
-import { VStack } from '@/components/ui/vstack';
-import { Text } from '@/components/ui/text';
-import { TabProps } from '../types';
 import { SamplerSelector } from '@/components/selectors/sampler';
 import { SchedulerSelector } from '@/components/selectors/scheduler';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { TabProps } from '@/types/generation';
+import React from 'react';
 
 export function SamplerTab({ params, onParamsChange }: TabProps) {
   return (

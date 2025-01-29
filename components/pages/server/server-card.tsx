@@ -1,34 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { MotiView } from 'moti';
-import {
-  Activity,
-  Server,
-  Edit2,
-  Globe,
-  Hash,
-  Trash2,
-  Layers,
-  Unplug,
-  Loader,
-} from 'lucide-react-native';
-import { EditServerModal } from './edit-server-modal';
-import { router } from 'expo-router';
-import { useServersStore } from '@/store/servers';
 import {
   AlertDialog,
   AlertDialogBackdrop,
-  AlertDialogContent,
-  AlertDialogHeader,
   AlertDialogBody,
+  AlertDialogContent,
   AlertDialogFooter,
+  AlertDialogHeader,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { ButtonText } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { Icon } from '../ui/icon';
+import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
+import { Text } from '@/components/ui/text';
+import { useServersStore } from '@/store/servers';
+import { router } from 'expo-router';
+import {
+  Activity,
+  Edit2,
+  Globe,
+  Hash,
+  Layers,
+  Loader,
+  Server,
+  Trash2,
+  Unplug,
+} from 'lucide-react-native';
+import { MotiView } from 'moti';
+import React, { useEffect, useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import { Icon } from '../../ui/icon';
+import { EditServerModal } from './edit-server-modal';
 
 // Types
 interface ServerCardProps {
@@ -56,22 +54,22 @@ interface ActionButtonsProps {
 
 // Sub-components
 const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
-  <View className="flex-1 flex-row items-center gap-2">
+  <View className="h-full flex-1 flex-row items-center gap-4">
     <View className="h-24 w-24 items-center justify-center rounded-lg bg-background-0">
       <Icon as={Server} size="xl" className="text-accent-500" />
     </View>
-    <View className="min-w-0 flex-1">
+    <View className="h-full min-w-0 flex-1 items-start justify-start">
       <Text
         className="text-base font-semibold text-primary-500"
         numberOfLines={1}
       >
         {name}
       </Text>
-      <View className="mt-0.5 flex-col gap-1">
+      <View className="mt-2 flex-col gap-1">
         <View className="flex-row items-center gap-1">
           <Icon as={Globe} size="2xs" className="shrink-0 text-accent-500" />
           <Text
-            className="flex-shrink text-xs text-primary-400"
+            className="flex-shrink text-2xs text-primary-400"
             numberOfLines={1}
           >
             {host}
@@ -79,13 +77,13 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
         </View>
         <View className="flex-row items-center gap-1">
           <Icon as={Hash} size="2xs" className="shrink-0 text-accent-500" />
-          <Text className="text-xs text-primary-400" numberOfLines={1}>
+          <Text className="text-2xs text-primary-400" numberOfLines={1}>
             {port}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
           <Icon as={Layers} size="2xs" className="shrink-0 text-accent-500" />
-          <Text className="text-xs text-primary-400" numberOfLines={1}>
+          <Text className="text-2xs text-primary-400" numberOfLines={1}>
             {models?.length || 'No'} models
           </Text>
         </View>
@@ -100,13 +98,13 @@ const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
       onPress={onEdit}
       className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
     >
-      <Icon as={Edit2} size="2xs" className="text-accent-500" />
+      <Icon as={Edit2} size="xs" className="text-accent-500" />
     </TouchableOpacity>
     <TouchableOpacity
       onPress={onDelete}
       className="h-8 w-8 items-center justify-center rounded-lg bg-background-0 active:bg-background-100"
     >
-      <Icon as={Trash2} size="2xs" className="text-error-600" />
+      <Icon as={Trash2} size="xs" className="text-error-600" />
     </TouchableOpacity>
   </View>
 );
@@ -248,12 +246,6 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
           onPress={handlePress}
           activeOpacity={0.8}
           className="overflow-hidden rounded-xl bg-background-200"
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 15,
-          }}
         >
           <View className="flex-row items-center justify-between p-3.5">
             <ServerInfo name={name} host={host} port={port} models={models} />

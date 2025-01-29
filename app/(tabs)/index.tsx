@@ -1,27 +1,19 @@
-import React, { useState } from 'react';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { ServerCard } from '@/components/self-ui/server-card';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { Button } from '@/components/ui/button';
-import {
-  Plus,
-  RotateCw,
-  HelpCircle,
-  ArrowRight,
-  ScanSearch,
-} from 'lucide-react-native';
-import { HStack } from '@/components/ui/hstack';
-import { useServersStore } from '@/store/servers';
-import { View } from '@/components/ui/view';
-import { MotiView } from 'moti';
-import { AddServerModal } from '@/components/self-ui/add-server-modal';
 import { AppBar } from '@/components/layout/app-bar';
-import { useThemeStore } from '@/store/theme';
-import { Icon } from '@/components/ui/icon';
+import { AddServerModal } from '@/components/pages/server/add-server-modal';
+import { ServerCard } from '@/components/pages/server/server-card';
+import { Button } from '@/components/ui/button';
 import { Center } from '@/components/ui/center';
-import { Heading } from '@/components/ui/heading';
+import { HStack } from '@/components/ui/hstack';
+import { Icon } from '@/components/ui/icon';
+import { ScrollView } from '@/components/ui/scroll-view';
+import { Text } from '@/components/ui/text';
+import { View } from '@/components/ui/view';
+import { VStack } from '@/components/ui/vstack';
+import { useServersStore } from '@/store/servers';
 import { Link } from 'expo-router';
+import { ArrowRight, Plus, RotateCw, ScanSearch } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import React, { useState } from 'react';
 
 export default function HomeScreen() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

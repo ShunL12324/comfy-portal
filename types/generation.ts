@@ -58,4 +58,23 @@ export interface GenerationParams {
   | 'kl_optimal';
   useRandomSeed: boolean;
   loras?: LoraConfig[];
-} 
+}
+
+export interface Resolution {
+  width: number;
+  height: number;
+  label?: string;
+}
+
+export const RESOLUTIONS: readonly Resolution[] = [
+  { width: 512, height: 512 },
+  { width: 768, height: 768 },
+  { width: 768, height: 1024 },
+  { width: 0, height: 0, label: 'Custom' },
+] as const;
+
+
+export interface TabProps {
+  params: GenerationParams;
+  onParamsChange: (params: GenerationParams) => void;
+}

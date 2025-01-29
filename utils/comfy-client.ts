@@ -1,6 +1,7 @@
-import * as Crypto from 'expo-crypto';
-import { buildServerUrl, isLocalOrLanIP } from './network';
 import { GenerationParams } from '@/types/generation';
+import * as Crypto from 'expo-crypto';
+import * as FileSystem from 'expo-file-system';
+import { buildServerUrl, isLocalOrLanIP } from './network';
 import { createPreset } from './preset';
 
 /**
@@ -50,6 +51,13 @@ interface ProgressCallback {
    * @param error - Error message
    */
   onError?: (error: string) => void;
+
+  /**
+   * Called when downloading generated images
+   * @param filename - Name of the file being downloaded
+   * @param progress - Download progress percentage (0-100)
+   */
+  onDownloadProgress?: (filename: string, progress: number) => void;
 }
 
 /**
@@ -345,12 +353,33 @@ export class ComfyClient {
     filename: string,
     subfolder: string,
     type: string,
+    callbacks?: ProgressCallback
   ): Promise<string> {
-    return buildServerUrl(
+    const url = await buildServerUrl(
       this.host,
       this.port,
       `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`,
     );
+
+    try {
+      const downloadResumable = FileSystem.createDownloadResumable(
+        url,
+        FileSystem.documentDirectory + filename,
+        {},
+        (downloadProgress) => {
+          if (callbacks?.onDownloadProgress) {
+            const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
+            callbacks.onDownloadProgress(filename, Math.round(progress));
+          }
+        }
+      );
+
+      const { uri } = await downloadResumable.downloadAsync() || {};
+      return uri || url;
+    } catch (error) {
+      console.warn(`Failed to download image ${filename}:`, error);
+      return url;
+    }
   }
 
   /**
@@ -412,6 +441,7 @@ export class ComfyClient {
               image.filename,
               image.subfolder,
               image.type,
+              callbacks
             );
             images.push(imageUrl);
           }

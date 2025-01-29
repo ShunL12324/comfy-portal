@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { VStack } from '@/components/ui/vstack';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
-import { MotiView, AnimatePresence } from 'moti';
-import { View, Pressable, ScrollView } from 'react-native';
+import { VStack } from '@/components/ui/vstack';
 import { usePresetsStore } from '@/store/presets';
-import { ModelTab } from './tabs/model-tab';
-import { PromptTab } from './tabs/prompt-tab';
-import { SamplerTab } from './tabs/sampler-tab';
-import { GenerationTab } from './tabs/generation-tab';
 import { GenerationParams } from '@/types/generation';
+import { AnimatePresence, MotiView } from 'moti';
+import React, { useCallback, useRef, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import { GenerationTab } from './tabs/generation';
+import { ModelTab } from './tabs/model';
+import { PromptTab } from './tabs/prompt';
+import { SamplerTab } from './tabs/sampler';
 
 interface ParameterControlsProps {
   params: GenerationParams;
