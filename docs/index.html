@@ -4,13 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comfy Portal - Legal Documents</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
+    />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
   </head>
   <body>
     <div class="markdown-body container"></div>
     <script>
-      const md = window.markdownit();
+      const md = window.markdownit({
+        html: true,
+        linkify: true,
+        typographer: true,
+      });
       const content = `# Comfy Portal Legal Documents
 
 Last updated: February 1, 2025

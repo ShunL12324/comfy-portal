@@ -4,60 +4,119 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Privacy Policy - Comfy Portal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
+    />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
   </head>
   <body>
     <div class="markdown-body container"></div>
     <script>
-      const md = window.markdownit();
+      const md = window.markdownit({
+        html: true,
+        linkify: true,
+        typographer: true,
+      });
       const content = `# Privacy Policy
 
 Last updated: February 1, 2025
 
 ## Introduction
 
-Welcome to Comfy Portal. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we handle your information when you use our mobile application.
+Welcome to Comfy Portal. We take your privacy seriously and want to be transparent about our practices. Comfy Portal is a utility app designed to help you manage and run your ComfyUI workflows. We believe in data minimalism and user privacy.
 
-## Information We Collect
+## Data Collection
 
-We collect minimal information to provide and improve our services:
+**We do not collect any personal information or usage data.** Comfy Portal operates as a standalone tool with all data stored locally on your device:
 
-- **Server Connection Data:** ComfyUI server addresses that you input for connection purposes
-- **Usage Data:** Basic analytics about how you use the app to improve our service
-- **Device Information:** Basic device information required for app functionality
+- **Server Connections:** Your ComfyUI server addresses are stored locally on your device only
+- **Generated Images:** All images are processed and stored locally
+- **App Settings:** Your preferences and settings are stored locally on your device
 
-## How We Use Your Information
+## Local Storage
 
-We use the collected information for:
+All data is stored locally on your device:
 
-- Facilitating connections to your ComfyUI servers
-- Improving app functionality and user experience
-- Providing technical support
+- Server connection information is saved in your device's local storage
+- Generated images are saved to your device's storage
+- App settings and preferences remain on your device
 
-## Data Storage
+We have no access to any of this information as it never leaves your device.
 
-All server connection information is stored locally on your device. We do not store any of your ComfyUI server data or generated images on our servers.
+## System Crash Reports
+
+While we do not collect crash data directly, please be aware that:
+- Your device's operating system (iOS/Android) may collect crash reports
+- These system-level crash reports are handled by Apple/Google according to their respective privacy policies
+- You can control crash reporting settings through your device's system settings
 
 ## Third-Party Services
 
-Our app may use third-party services for analytics and crash reporting. These services collect minimal data and comply with standard privacy practices.
+The app connects only to:
+- Your self-hosted ComfyUI servers (as configured by you)
+- Our GitHub Pages for displaying this privacy policy and terms of service
 
-## Your Rights
+We do not use any analytics services, tracking tools, or other third-party services that collect data.
 
-You have the right to:
+## Third-Party Server Usage
 
-- Access your personal information
-- Delete your data from the app
-- Opt-out of analytics collection
+**Important Notice About Third-Party Servers:**
+
+- If you choose to connect to a ComfyUI server operated by a third party:
+  - We are not responsible for the privacy practices of that server
+  - Your data (including images and prompts) may be processed, stored, or logged by the third-party server
+  - The third-party server operator may have their own privacy policies and data collection practices
+  - Your prompts might contain personal preferences or sensitive information
+  - We strongly recommend:
+    - Only connecting to servers you trust
+    - Reading the privacy policy of any third-party server you use
+    - Using your own self-hosted server for sensitive content
+    - Being mindful of the personal information you include in your prompts
+  - We cannot guarantee the privacy or security of data transmitted to third-party servers
+
+## Your Data Rights
+
+Since we don't collect any data, there is no need for:
+- Data access requests
+- Data deletion requests
+- Data portability
+
+All your data is under your direct control on your device.
+
+## App Permissions
+
+The app requests the following permissions for basic functionality:
+
+- **Photo Library Access:**
+  - To save generated images to your photo library
+  - To set preview images for your workflows
+  - We never upload your photos to any server
+  - All image processing is done locally on your device
+- **Network Access:**
+  - Only used for connecting to your ComfyUI servers
+  - Required for fetching this privacy policy and terms of service from GitHub Pages
+- **Storage Access:**
+  - For saving app settings and workflow configurations locally
+  - For temporary storage of generated images before saving to photo library
+
+## Age Restrictions
+
+Comfy Portal is rated 17+ and is intended for mature users only. This rating reflects:
+- The technical nature of the app requiring server infrastructure knowledge
+- The potential mature content that can be generated through AI models
+- The responsibility required in using AI generation tools
+
+The app is not intended for users under 17 years of age. Users must comply with their local age restrictions and regulations regarding AI content generation tools.
 
 ## Changes to This Policy
 
-We may update this privacy policy from time to time. We will notify you of any changes by posting the new policy on this page.
+We may update this privacy policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new policy on this page.
 
 ## Contact Us
 
-If you have any questions about this privacy policy, please contact us through our GitHub repository.`;
+If you have any questions about this privacy policy or our privacy practices, please contact us through our [GitHub repository](https://github.com/ShunL12324/comfy-portal).`;
       document.querySelector('.markdown-body').innerHTML = md.render(content);
     </script>
   </body>
