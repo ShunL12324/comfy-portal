@@ -146,6 +146,18 @@ export async function savePresetThumbnail({
     // Create directory if it doesn't exist
     await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
 
+    // Clean up existing thumbnail files
+    try {
+      const files = await FileSystem.readDirectoryAsync(dirPath);
+      await Promise.all(
+        files.map((file) =>
+          FileSystem.deleteAsync(`${dirPath}/${file}`).catch(() => { }),
+        ),
+      );
+    } catch (error) {
+      // Directory might not exist yet, which is fine
+    }
+
     // Determine file extension
     let ext: string;
     if (mimeType) {
@@ -180,6 +192,12 @@ export async function savePresetThumbnail({
       from: imageUri,
       to: filePath,
     });
+
+    // Verify the file exists
+    const fileInfo = await FileSystem.getInfoAsync(filePath);
+    if (!fileInfo.exists) {
+      throw new Error('Failed to verify thumbnail file exists after saving');
+    }
 
     return {
       path: filePath,

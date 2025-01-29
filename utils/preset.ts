@@ -158,6 +158,9 @@ export function createPreset(params: GenerationParams): Preset {
   // Update checkpoint loader
   preset[1].inputs.ckpt_name = params.model;
 
+  // Update CLIP layer
+  preset[3].inputs.stop_at_clip_layer = params.stopAtClipLayer;
+
   // Handle LoRA nodes if present
   if (params.loras && params.loras.length > 0) {
     // Filter out LoRAs with empty names

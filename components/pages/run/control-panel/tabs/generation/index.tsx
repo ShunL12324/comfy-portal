@@ -11,6 +11,7 @@ import { showToast } from '@/utils/toast';
 import { Dices, Info, Minus, Plus } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
@@ -30,8 +31,7 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
   // Local state for smooth slider interactions
   const [localSteps, setLocalSteps] = React.useState(params.steps);
   const [localCfg, setLocalCfg] = React.useState(params.cfg);
-  const [displaySteps, setDisplaySteps] = React.useState(params.steps);
-  const [displayCfg, setDisplayCfg] = React.useState(params.cfg);
+  const [displayClipLayer, setDisplayClipLayer] = React.useState(-2);
 
   // Resolution states
   const [isCustom, setIsCustom] = React.useState(() => {
@@ -102,12 +102,19 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
    */
   React.useEffect(() => {
     setLocalSteps(params.steps);
-    setDisplaySteps(params.steps);
     setLocalCfg(params.cfg);
-    setDisplayCfg(params.cfg);
     setLocalWidth(String(params.width || ''));
     setLocalHeight(String(params.height || ''));
-  }, [params.steps, params.cfg, params.width, params.height]);
+    if (typeof params.stopAtClipLayer === 'number') {
+      setDisplayClipLayer(params.stopAtClipLayer);
+    }
+  }, [
+    params.steps,
+    params.cfg,
+    params.width,
+    params.height,
+    params.stopAtClipLayer,
+  ]);
 
   /**
    * Update custom resolution state when dimensions change
@@ -291,6 +298,61 @@ export function GenerationTab({ params, onParamsChange }: TabProps) {
             <Icon as={Plus} size="sm" className="text-primary-500" />
           </Button>
         </HStack>
+      </VStack>
+
+      {/* CLIP Layer Section */}
+      <VStack space="sm">
+        <HStack space="sm" className="items-center justify-between">
+          <Text className="text-base font-medium text-primary-500">
+            CLIP Layer
+          </Text>
+          <Text className="text-sm text-typography-400">Advanced</Text>
+        </HStack>
+        <HStack space="sm" className="mt-2 items-center">
+          <Button
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
+            onPress={() => {
+              const currentValue =
+                typeof params.stopAtClipLayer === 'number'
+                  ? params.stopAtClipLayer
+                  : -2;
+              const newValue = Math.max(-24, currentValue - 1);
+              onParamsChange({
+                ...params,
+                stopAtClipLayer: newValue,
+              });
+            }}
+          >
+            <Icon as={Minus} size="sm" className="text-primary-500" />
+          </Button>
+          <Text className="flex-1 text-center text-sm text-typography-500">
+            {displayClipLayer}
+          </Text>
+          <Button
+            className="h-8 w-8 rounded-lg bg-background-50 p-0"
+            onPress={() => {
+              const currentValue =
+                typeof params.stopAtClipLayer === 'number'
+                  ? params.stopAtClipLayer
+                  : -2;
+              const newValue = Math.min(-1, currentValue + 1);
+              onParamsChange({
+                ...params,
+                stopAtClipLayer: newValue,
+              });
+            }}
+          >
+            <Icon as={Plus} size="sm" className="text-primary-500" />
+          </Button>
+        </HStack>
+        <View className="flex-row justify-start gap-1 px-1">
+          <Icon as={Info} className="mt-0.5 h-3 w-3 text-typography-400" />
+          <Text className="flex-1 text-xs text-typography-400">
+            Controls which CLIP layer to stop at. Range from -24 to -1. The
+            value will affect how the model interprets your prompts. For
+            pony-based models, usually use -2 is recommended.
+          </Text>
+        </View>
       </VStack>
 
       <VStack space="sm">

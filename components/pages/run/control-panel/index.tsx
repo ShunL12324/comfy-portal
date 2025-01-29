@@ -2,9 +2,10 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { usePresetsStore } from '@/store/presets';
+import { useServersStore } from '@/store/servers';
 import { GenerationParams } from '@/types/generation';
 import { AnimatePresence, MotiView } from 'moti';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { GenerationTab } from './tabs/generation';
 import { ModelTab } from './tabs/model';
@@ -25,10 +26,26 @@ export function ParameterControls({
   serverId,
 }: ParameterControlsProps) {
   const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const server = useServersStore((state) =>
+    state.servers.find((s) => s.id === serverId),
+  );
   const [activeTab, setActiveTab] = useState<
     'model' | 'prompt' | 'sampler' | 'generation'
   >('prompt');
   const debounceTimerRef = useRef<NodeJS.Timeout>();
+
+  // Auto-select first checkpoint model if none is selected
+  useEffect(() => {
+    if (!params.model && server?.models) {
+      const checkpoints = server.models.filter((m) => m.type === 'checkpoints');
+      if (checkpoints.length > 0) {
+        handleParamsChange({
+          ...params,
+          model: checkpoints[0].name,
+        });
+      }
+    }
+  }, [server?.models, params.model]);
 
   const tabs = [
     { key: 'model', title: 'Model' },

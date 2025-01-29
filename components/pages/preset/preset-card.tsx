@@ -60,15 +60,20 @@ export const PresetCard = ({
         <View className="h-64 w-full bg-background-100">
           {thumbnail ? (
             <Image
-              source={{ uri: `${thumbnail}?t=${Date.now()}` }}
+              source={{ uri: thumbnail }}
               className="w-full flex-1"
               alt="Preset thumbnail"
               onError={(error) => {
-                console.error('[PresetCard] Failed to load thumbnail:', error);
-                // Clear invalid thumbnail
-                usePresetsStore
-                  .getState()
-                  .updatePreset(id, { thumbnail: undefined });
+                console.error(
+                  '[PresetCard] Failed to load thumbnail:',
+                  error.nativeEvent.error,
+                );
+                // Only clear invalid thumbnail if the file doesn't exist
+                if (error.nativeEvent.error.includes('no such file')) {
+                  usePresetsStore
+                    .getState()
+                    .updatePreset(id, { thumbnail: undefined });
+                }
               }}
             />
           ) : (

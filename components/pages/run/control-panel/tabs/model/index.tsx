@@ -7,7 +7,7 @@ import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
 import { TabProps } from '@/types/generation';
 import { Plus } from 'lucide-react-native';
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface ModelTabProps extends TabProps {
   serverId: string;
@@ -19,23 +19,20 @@ interface ModelTabProps extends TabProps {
  * Each model item shows a preview image (if available), model name, and server name
  */
 export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const server = useServersStore((state) =>
     state.servers.find((s) => s.id === serverId),
   );
   const refreshServer = useServersStore((state) => state.refreshServer);
 
-  // Auto-select first checkpoint model if none is selected
-  useEffect(() => {
-    if (!params.model && server?.models) {
-      const checkpoints = server.models.filter((m) => m.type === 'checkpoints');
-      if (checkpoints.length > 0) {
-        onParamsChange({
-          ...params,
-          model: checkpoints[0].name,
-        });
-      }
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshServer(serverId);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [server?.models, params.model]);
+  };
 
   if (!server) {
     return (
@@ -60,7 +57,8 @@ export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
             value={params.model}
             onChange={(value) => onParamsChange({ ...params, model: value })}
             servers={[server]}
-            onRefresh={() => refreshServer(serverId)}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
             type="checkpoints"
           />
         </VStack>
@@ -122,6 +120,8 @@ export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
                 type="loras"
                 initialClipStrength={lora.strengthClip}
                 initialModelStrength={lora.strengthModel}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
               />
             ))}
           </VStack>

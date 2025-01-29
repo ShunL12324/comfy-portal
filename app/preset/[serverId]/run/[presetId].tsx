@@ -40,6 +40,7 @@ const DEFAULT_PARAMS: GenerationParams = {
   seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
   width: 768,
   height: 1024,
+  stopAtClipLayer: -2,
   sampler: 'euler_ancestral',
   scheduler: 'sgm_uniform',
   useRandomSeed: true,
@@ -69,7 +70,10 @@ export default function RunPresetScreen() {
     downloadProgress: 0,
   });
 
-  const [params, setParams] = useState<GenerationParams>(DEFAULT_PARAMS);
+  const [params, setParams] = useState<GenerationParams>(() => ({
+    ...DEFAULT_PARAMS,
+    ...(preset?.params || {}),
+  }));
 
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);

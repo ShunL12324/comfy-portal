@@ -99,7 +99,7 @@ export function AddPresetModal({
     }
 
     const DEFAULT_PARAMS: GenerationParams = {
-      model: 'everclearPNYByZovya_v3.safetensors',
+      model: '',
       prompt: '',
       negativePrompt: '',
       steps: 30,
@@ -107,7 +107,8 @@ export function AddPresetModal({
       seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
       width: 768,
       height: 1024,
-      sampler: 'dpmpp_3m_sde_gpu',
+      stopAtClipLayer: -2,
+      sampler: 'euler_ancestral',
       scheduler: 'sgm_uniform',
       useRandomSeed: true,
     };

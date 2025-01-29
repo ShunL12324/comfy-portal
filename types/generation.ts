@@ -13,6 +13,7 @@ export interface GenerationParams {
   seed: number;
   width: number;
   height: number;
+  stopAtClipLayer: number;
   sampler:
   | 'euler'
   | 'euler_cfg_pp'
