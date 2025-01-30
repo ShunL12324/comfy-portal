@@ -8,13 +8,13 @@ import { View } from '@/components/ui/view';
 import { useThemeStore } from '@/store/theme';
 import { Link } from 'expo-router';
 import {
-  BookOpen,
-  ChevronRight,
-  FileText,
-  GithubIcon,
-  Info,
-  Palette,
-  Shield,
+    BookOpen,
+    ChevronRight,
+    FileText,
+    GithubIcon,
+    Info,
+    Palette,
+    Shield,
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';

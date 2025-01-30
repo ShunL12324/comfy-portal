@@ -13,7 +13,7 @@ const LocalServerGuide = () => (
     className="flex-1 bg-background-0"
     style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/local-server.html',
+      uri: 'https://shunl12324.github.io/comfy-portal/guide/local-server',
     }}
     cacheEnabled={false}
     cacheMode="LOAD_NO_CACHE"
@@ -26,7 +26,7 @@ const RemoteServerGuide = () => (
     className="flex-1 bg-background-0"
     style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server.html',
+      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server',
     }}
     cacheEnabled={false}
     cacheMode="LOAD_NO_CACHE"
@@ -39,7 +39,7 @@ const RunPodServerGuide = () => (
     className="flex-1 bg-background-0"
     style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod.html',
+      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod',
     }}
     cacheEnabled={false}
     cacheMode="LOAD_NO_CACHE"
