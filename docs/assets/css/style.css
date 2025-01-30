@@ -1,9 +1,4 @@
-:root {
-  --text-color: #24292f;
-  --background-color: #ffffff;
-  --text-secondary: #57606a;
-}
-
+/* 基础样式 */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,9 +6,16 @@
 }
 
 body {
-  background-color: var(--background-color);
+  background-color: #ffffff;
 }
 
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #0d1117;
+  }
+}
+
+/* 布局 */
 .container {
   max-width: 800px;
   margin: 0 auto;
@@ -26,7 +28,7 @@ body {
   }
 }
 
-/* 只保留我们自定义的组件样式 */
+/* 组件样式 */
 .warning-card {
   background-color: #fff8c5;
   border: 1px solid #f6e05e;
@@ -51,4 +53,27 @@ body {
   padding: 16px;
   margin: 16px 0;
   color: #1e40af;
+}
+
+@media (prefers-color-scheme: dark) {
+  .warning-card {
+    background-color: rgba(255, 248, 197, 0.1);
+    border-color: rgba(246, 224, 94, 0.4);
+  }
+
+  .warning-card h4,
+  .warning-card p {
+    color: #e9b949;
+  }
+
+  .info-card {
+    background-color: rgba(219, 234, 254, 0.1);
+    border-color: rgba(147, 197, 253, 0.4);
+    color: #93c5fd;
+  }
+}
+
+/* 修复 markdown 背景 */
+.markdown-body {
+  background-color: transparent !important;
 }
