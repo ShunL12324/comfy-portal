@@ -1,33 +1,34 @@
 ---
 layout: default
-title: Comfy Portal Documentation
+lang: en
 ---
 
-# Welcome to Comfy Portal Documentation
+# Comfy Portal Documentation
 
-Comfy Portal is a mobile client application for ComfyUI, designed to help you manage and run AI image generation workflows on the go.
+[中文文档](/comfy-portal/zh/)
 
-## Quick Start
+Welcome to the official documentation for Comfy Portal. Comfy Portal is a modern iOS client application built with React Native for ComfyUI, enabling users to interact with ComfyUI servers directly from their iOS devices.
 
-- [Local Server Setup Guide](guide/local-server)
-- [Remote Server Setup Guide](guide/remote-server)
-- [RunPod Server Guide](guide/remote-server-runpod)
+## Getting Started
 
-## Important Links
+Choose one of the following guides to get started with Comfy Portal:
 
-- [Terms of Service](terms)
-- [Privacy Policy](privacy)
+### Server Setup Guides
 
-## Features
+- [Local Server Setup](/comfy-portal/guide/local-server) - Run ComfyUI on your computer
+- [Remote Server Setup](/comfy-portal/guide/remote-server) - Host ComfyUI on a remote server
+- [RunPod Server Setup](/comfy-portal/guide/remote-server-runpod) - Deploy ComfyUI on RunPod
 
-- Connect to self-hosted or third-party ComfyUI servers
-- Manage and run AI image generation workflows
-- Local storage for your workflows and settings
-- Dark mode support
-- Modern and intuitive interface
+## Resources
+
+- [App Store Download](https://apps.apple.com/us/app/comfy-portal/id6741044736)
+- [GitHub Repository](https://github.com/ShunL12324/comfy-portal)
+- [Privacy Policy](/comfy-portal/privacy)
+- [Terms of Service](/comfy-portal/terms)
 
 ## Support
 
-If you have any questions or need help, please contact us at:
+If you encounter any issues or need assistance:
 
-- Email: aiforsure66@gmail.com
+- Email: liushun0574@gmail.com
+- GitHub Issues: [Submit an issue](https://github.com/ShunL12324/comfy-portal/issues)
