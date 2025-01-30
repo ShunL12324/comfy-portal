@@ -22,6 +22,6 @@ defaults:
     values:
       layout: default
   - scope:
-      path: '_content/guide'
+      path: 'guide'
     values:
       layout: guide
