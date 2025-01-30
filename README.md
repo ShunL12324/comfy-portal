@@ -76,6 +76,21 @@ Current Version: 1.0.0
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
 
+## Roadmap
+
+We're actively working on new features to make Comfy Portal even better:
+
+### Coming Soon
+
+- 📥 **Model Management**
+  - Direct model downloads from within the app
+  - Model version tracking
+  - Storage optimization
+- 🔄 **Server Workflow Sync**
+  - Bi-directional workflow synchronization
+  - Cloud backup and restore
+  - Cross-device workflow sharing
+
 ## Technology Stack
 
 - **Framework**: [Expo](https://expo.dev) with React Native
