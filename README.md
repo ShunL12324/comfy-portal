@@ -7,7 +7,7 @@
 [![App Store](https://img.shields.io/badge/download-App_Store-0D96F6.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
 [![License: Custom](https://img.shields.io/badge/license-Custom-yellow.svg)](LICENSE)
 
-Comfy Portal is a native iOS client application that brings the power of ComfyUI to your mobile device. It enables users to interact with ComfyUI servers directly from their iOS devices, making AI image generation more accessible and portable.
+Comfy Portal is a modern iOS client application built with React Native for ComfyUI. It enables users to interact with ComfyUI servers directly from their iOS devices, making AI image generation more accessible and portable.
 
 > **Note**: This is a third-party client for ComfyUI and is not officially affiliated with the ComfyUI project.
 
