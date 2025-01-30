@@ -7,7 +7,7 @@ export default function TermsScreen() {
       <WebView
         className="flex-1"
         source={{
-          uri: 'https://shunl12324.github.io/comfy-portal/terms.html',
+          uri: 'https://shunl12324.github.io/comfy-portal/terms',
         }}
         cacheEnabled={false}
         cacheMode="LOAD_NO_CACHE"

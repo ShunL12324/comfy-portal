@@ -7,7 +7,7 @@ export default function PrivacyScreen() {
       <WebView
         className="flex-1"
         source={{
-          uri: 'https://shunl12324.github.io/comfy-portal/privacy.html',
+          uri: 'https://shunl12324.github.io/comfy-portal/privacy',
         }}
         cacheEnabled={false}
         cacheMode="LOAD_NO_CACHE"
