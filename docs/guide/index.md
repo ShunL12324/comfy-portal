@@ -31,7 +31,7 @@ Choose the guide that best fits your needs:
 
 If you encounter any issues or need assistance:
 
-- Check our [FAQ](#) section
+- Check our [FAQ](faq) section
 - Join our community discussions
 - Contact support at [support email]
 
