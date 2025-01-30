@@ -21,6 +21,57 @@ Comfy Portal is a native iOS client application that brings the power of ComfyUI
 - 📊 Resource usage monitoring
 - 🌙 Dark mode support
 
+## Screenshots
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <img src="repo-assets/demo.gif" width="200" alt="App Demo" />
+    <img src="repo-assets/screenshot-1.png" width="200" alt="Screenshot 1" />
+    <img src="repo-assets/screenshot-2.png" width="200" alt="Screenshot 2" />
+    <img src="repo-assets/screenshot-3.png" width="200" alt="Screenshot 3" />
+    <img src="repo-assets/screenshot-4.jpg" width="200" alt="Screenshot 4" />
+</div>
+
+## Installation
+
+### App Store (Recommended)
+
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
+
+### Build from Source
+
+> **Important**: Building from source is for personal use only. Redistribution or commercial use of modified versions is not permitted. Please see the [LICENSE](LICENSE) file for details.
+
+#### Prerequisites
+
+- macOS with Xcode 15.0+
+- Node.js 18.0+
+- iOS Development environment set up
+- CocoaPods installed
+- Physical iOS device or simulator (iOS 15.1+)
+
+#### Build Steps
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/ShunL12324/comfy-portal.git
+cd comfy-portal
+```
+
+2. Install dependencies:
+
+```bash
+npx expo install
+```
+
+3. Build and run on iOS device:
+
+```bash
+npx expo run:ios -d
+```
+
+Note: The built app is for personal use only. You may not redistribute the app or create modified versions for commercial use.
+
 ## Server Setup Guides
 
 We provide detailed guides for setting up your ComfyUI server:
@@ -52,16 +103,6 @@ We provide detailed guides for setting up your ComfyUI server:
 - View results instantly on your device
 - Save and share generated images directly
 
-## Screenshots
-
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-    <img src="repo-assets/demo.gif" width="200" alt="App Demo" />
-    <img src="repo-assets/screenshot-1.png" width="200" alt="Screenshot 1" />
-    <img src="repo-assets/screenshot-2.png" width="200" alt="Screenshot 2" />
-    <img src="repo-assets/screenshot-3.png" width="200" alt="Screenshot 3" />
-    <img src="repo-assets/screenshot-4.jpg" width="200" alt="Screenshot 4" />
-</div>
-
 ## Version
 
 Current Version: 1.0.0
@@ -71,10 +112,6 @@ Current Version: 1.0.0
 - iOS 15.1 or later
 - iPhone only (iPad support coming soon)
 - Access to a ComfyUI server (local or remote)
-
-## Installation
-
-[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
 
 ## Roadmap
 
