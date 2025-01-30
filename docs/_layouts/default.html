@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title }}</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+    <link rel="stylesheet" href="{{ "/assets/css/style.css" | relative_url }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown-dark.min.css" media="(prefers-color-scheme: dark)">
-    <link rel="icon" href="{{ '/assets/images/icon.png' | relative_url }}" type="image/png">
+    <link rel="icon" href="{{ "/assets/images/icon.png" | relative_url }}" type="image/png">
     <script>
       // 检测系统颜色主题变化
       const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

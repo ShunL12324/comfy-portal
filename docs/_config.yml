@@ -2,8 +2,8 @@ title: Comfy Portal Documentation
 description: Documentation for Comfy Portal - Your AI Image Generation Assistant
 
 # Site settings
-baseurl: '' # 本地开发时设为空
-url: '' # the base hostname & protocol, e.g. http://example.com
+baseurl: '/comfy-portal' # GitHub Pages repository name
+url: 'https://shunl12324.github.io' # GitHub Pages URL
 
 # Build settings
 markdown: kramdown
