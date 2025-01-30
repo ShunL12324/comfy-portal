@@ -53,3 +53,12 @@ tools/
 
 # .ipa
 *.ipa
+
+# Jekyll docs
+docs/_site/
+docs/.jekyll-cache/
+docs/.sass-cache/
+docs/.jekyll-metadata
+docs/.jekyll-cache
+docs/vendor/
+.bundle/

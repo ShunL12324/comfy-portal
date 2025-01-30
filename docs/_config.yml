@@ -1,0 +1,46 @@
+title: Comfy Portal Documentation
+description: Documentation for Comfy Portal - Your AI Image Generation Assistant
+
+# Site settings
+baseurl: '' # 本地开发时设为空
+url: '' # the base hostname & protocol, e.g. http://example.com
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+    default_lang: text
+    guess_lang: true
+
+# Collections
+collections:
+  guide:
+    output: true
+    permalink: /guide/:path/
+
+# Defaults
+defaults:
+  - scope:
+      path: ''
+    values:
+      layout: default
+  - scope:
+      path: 'guide'
+      type: 'guide'
+    values:
+      layout: guide
+
+# Exclude from processing
+exclude:
+  - 'node_modules'
+  - 'vendor/*'
+  - 'Gemfile'
+  - 'Gemfile.lock'
+  - .sass-cache/
+  - .jekyll-cache/
+
+sass:
+  sass_dir: assets/css # 指向现有CSS目录

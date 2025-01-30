@@ -1,0 +1,132 @@
+---
+layout: default
+---
+
+<div class="guide-content">
+  <aside class="guide-sidebar">
+    <nav class="guide-nav">
+      <div class="guide-section">
+        <h3>Getting Started</h3>
+        <ul>
+          <li>
+            <a href="{{ '/guide' | relative_url }}" {% if page.url == '/guide/' %}class="active"{% endif %}>Overview</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="guide-section">
+        <h3>Server Setup</h3>
+        <ul>
+          <li>
+            <a
+              href="{{ '/guide/local-server' | relative_url }}"
+              {% if page.url == '/guide/local-server.html' %}class="active"{% endif %}
+              >Local Server</a
+            >
+          </li>
+          <li>
+            <a
+              href="{{ '/guide/remote-server' | relative_url }}"
+              {% if page.url == '/guide/remote-server.html' %}class="active"{% endif %}
+              >Remote Server</a
+            >
+          </li>
+          <li>
+            <a
+              href="{{ '/guide/remote-server-runpod' | relative_url }}"
+              {% if page.url == '/guide/remote-server-runpod.html' %}class="active"{% endif %}
+              >RunPod Server</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <article class="guide-article markdown-body">
+    <h1>{{ page.title }}</h1>
+
+    {% if page.warning_title %}
+    <div class="info-box warning">
+      <h4>{{ page.warning_title }}</h4>
+      <p>{{ page.warning_content }}</p>
+    </div>
+    {% endif %} {{ content }}
+  </article>
+</div>
+
+<style>
+  .guide-content {
+    display: flex;
+    gap: 32px;
+  }
+
+  .guide-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+  }
+
+  .guide-nav {
+    position: sticky;
+    top: 24px;
+  }
+
+  .guide-section {
+    margin-bottom: 24px;
+  }
+
+  .guide-section h3 {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--color-fg-muted);
+  }
+
+  .guide-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .guide-section li {
+    margin: 4px 0;
+  }
+
+  .guide-section a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--color-fg-default);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .guide-section a:hover {
+    background: var(--color-canvas-subtle);
+  }
+
+  .guide-section a.active {
+    background: var(--color-canvas-subtle);
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .guide-article {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 768px) {
+    .guide-content {
+      flex-direction: column;
+    }
+
+    .guide-sidebar {
+      width: 100%;
+    }
+
+    .guide-nav {
+      position: static;
+    }
+  }
+</style>

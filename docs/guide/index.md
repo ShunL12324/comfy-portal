@@ -1,0 +1,38 @@
+---
+layout: guide
+title: Server Setup Guides
+warning_title: Disclaimer
+warning_content: These guides provide setup instructions only. Please understand all potential risks before proceeding. We are not responsible for any damages or losses that may occur.
+---
+
+Welcome to the Comfy Portal server setup guides. Here you'll find detailed instructions for setting up and running your ComfyUI server in different environments.
+
+## Available Guides
+
+### Local Server
+
+- [Local Server Setup Guide](local-server) - Learn how to set up and run ComfyUI on your local machine.
+
+### Remote Servers
+
+- [Remote Server Setup Guide](remote-server) - General guide for setting up ComfyUI on a remote server.
+- [RunPod Server Setup Guide](remote-server-runpod) - Specific instructions for setting up ComfyUI on RunPod.
+
+## Getting Started
+
+Choose the guide that best fits your needs:
+
+1. If you want to run ComfyUI on your own computer, follow the [Local Server Setup Guide](local-server).
+2. If you want to run ComfyUI on a remote server:
+   - For general remote server setup, use the [Remote Server Setup Guide](remote-server)
+   - For RunPod specific setup, use the [RunPod Server Setup Guide](remote-server-runpod)
+
+## Need Help?
+
+If you encounter any issues or need assistance:
+
+- Check our [FAQ](#) section
+- Join our community discussions
+- Contact support at [support email]
+
+Remember to check back regularly as these guides are updated with new information and improvements.

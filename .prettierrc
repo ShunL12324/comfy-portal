@@ -3,8 +3,23 @@
   "singleQuote": true,
   "trailingComma": "all",
   "semi": true,
-  "plugins": ["prettier-plugin-tailwindcss"],
+  "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-liquid"],
   "tailwindConfig": "./tailwind.config.js",
   "tailwindFunctions": ["tva"],
-  "tailwindStylesheet": "./global.css"
+  "tailwindStylesheet": "./global.css",
+  "overrides": [
+    {
+      "files": ["docs/**/*.html"],
+      "options": {
+        "parser": "liquid-html",
+        "liquidSingleQuote": true
+      }
+    },
+    {
+      "files": ["docs/**/*.md"],
+      "options": {
+        "parser": "liquid-md"
+      }
+    }
+  ]
 }

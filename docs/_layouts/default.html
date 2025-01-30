@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title }}</title>
+    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown-dark.min.css" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="{{ '/assets/images/icon.png' | relative_url }}" type="image/png">
+    <script>
+      // 检测系统颜色主题变化
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      darkModeMediaQuery.addListener((e) => {
+        document.documentElement.classList.toggle('dark-mode', e.matches);
+      });
+      // 初始化主题
+      if (darkModeMediaQuery.matches) {
+        document.documentElement.classList.add('dark-mode');
+      }
+    </script>
+  </head>
+  <body>
+    <div class="nav-wrapper">
+      <nav class="container">
+        <a href="{{ "/" | relative_url }}" class="nav-brand">
+          <img src="{{ '/assets/images/icon.png' | relative_url }}" alt="{{ site.title }}" class="nav-logo">
+          <span>{{ site.title }}</span>
+        </a>
+        <div class="nav-links">
+          <a href="{{ "/guide" | relative_url }}">Guide</a>
+          <a href="{{ "/privacy" | relative_url }}">Privacy</a>
+          <a href="{{ "/terms" | relative_url }}">Terms</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="page-wrapper">
+      <div class="container">
+        <div class="markdown-body">
+          {{ content }}
+        </div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>&copy; {{ site.time | date: '%Y' }} {{ site.title }}. All rights reserved.</p>
+      </div>
+    </footer>
+  </body>
+</html> 
