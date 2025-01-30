@@ -74,19 +74,17 @@ fi
 echo -e "${BLUE}=== ComfyUI Installation Plan ===${NC}"
 echo -e "This script will:"
 echo -e "1. Update system packages"
-echo -e "2. Install essential tools (git, zsh, tmux, python3)"
+echo -e "2. Install essential tools (git, zsh, tmux)"
 echo -e "3. Clone and set up ComfyUI in /workspace"
-echo -e "4. Create Python virtual environment"
-echo -e "5. Install PyTorch with CUDA 12.4 support"
-echo -e "6. Install ComfyUI Manager"
+echo -e "4. Install ComfyUI Manager"
 if [ "$INSTALL_MODEL_MANAGER" = true ]; then
-  echo -e "7. Install ComfyUI Model Manager"
+  echo -e "5. Install ComfyUI Model Manager"
 fi
-echo -e "8. Create necessary model directories"
-echo -e "9. Start ComfyUI in a tmux session named 'comfyui'"
+echo -e "6. Create necessary model directories"
+echo -e "7. Start ComfyUI in a tmux session named 'comfyui'"
 echo
 echo -e "${YELLOW}Note: This installation requires an internet connection and may take several minutes.${NC}"
-echo -e "${YELLOW}Make sure you have at least 10GB of free disk space.${NC}"
+echo -e "${YELLOW}Please ensure you have sufficient disk space available.${NC}"
 echo
 
 # Ask for confirmation
@@ -108,7 +106,7 @@ apt update && apt upgrade -y || {
 
 # Install essential tools
 log_info "Installing essential tools..."
-apt install -y git zsh tmux python3-venv python3-pip || {
+apt install -y git zsh tmux || {
   log_error "Failed to install essential tools"
   exit 1
 }
@@ -128,27 +126,6 @@ else
 fi
 
 cd ComfyUI
-
-# Create and activate virtual environment
-log_info "Setting up Python virtual environment..."
-if [ ! -d "venv" ]; then
-  python3 -m venv venv || {
-    log_error "Failed to create virtual environment"
-    exit 1
-  }
-fi
-
-source venv/bin/activate || {
-  log_error "Failed to activate virtual environment"
-  exit 1
-}
-
-# Install PyTorch with CUDA support
-log_info "Installing PyTorch with CUDA support..."
-pip install --no-cache-dir torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu124 || {
-  log_error "Failed to install PyTorch"
-  exit 1
-}
 
 # Install ComfyUI dependencies
 log_info "Installing ComfyUI dependencies..."
@@ -201,8 +178,7 @@ tmux kill-session -t comfyui 2>/dev/null || true
 # Try to start ComfyUI in tmux session
 if tmux new-session -d -s comfyui; then
   tmux send-keys -t comfyui "cd /workspace/ComfyUI" C-m
-  tmux send-keys -t comfyui "source venv/bin/activate" C-m
-  tmux send-keys -t comfyui "python main.py --listen 0.0.0.0 --port 3000" C-m
+  tmux send-keys -t comfyui "python main.py --listen 0.0.0.0 --port 8188" C-m
 
   # Wait a bit to check if the session is still alive
   sleep 3
@@ -217,7 +193,7 @@ if tmux new-session -d -s comfyui; then
     echo -e "3. Stop ComfyUI server:"
     echo -e "   ${BLUE}tmux kill-session -t comfyui${NC}"
     echo
-    echo -e "${GREEN}ComfyUI is running at:${NC} http://localhost:3000"
+    echo -e "${GREEN}ComfyUI is running at:${NC} http://localhost:8188"
   else
     log_warn "ComfyUI tmux session started but may have crashed"
     show_manual_instructions
@@ -233,8 +209,7 @@ show_manual_instructions() {
   echo -e "${YELLOW}=== How to run ComfyUI manually ===${NC}"
   echo -e "Run these commands to start ComfyUI:"
   echo -e "${BLUE}cd /workspace/ComfyUI${NC}"
-  echo -e "${BLUE}source venv/bin/activate${NC}"
-  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 3000${NC}"
+  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 8188${NC}"
   echo
   echo -e "Or to run in a new tmux session:"
   echo -e "${BLUE}tmux new-session -s comfyui${NC}"

@@ -2,6 +2,11 @@
 
 <img src="assets/images/icon.png" width="120" alt="Comfy Portal Logo" />
 
+[![Platform - iOS](https://img.shields.io/badge/platform-iOS-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
+[![iOS 15.1+](https://img.shields.io/badge/iOS-15.1%2B-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
+[![App Store](https://img.shields.io/badge/download-App_Store-0D96F6.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
+[![License: Custom](https://img.shields.io/badge/license-Custom-yellow.svg)](LICENSE)
+
 Comfy Portal is a native iOS client application that brings the power of ComfyUI to your mobile device. It enables users to interact with ComfyUI servers directly from their iOS devices, making AI image generation more accessible and portable.
 
 > **Note**: This is a third-party client for ComfyUI and is not officially affiliated with the ComfyUI project.
@@ -15,6 +20,14 @@ Comfy Portal is a native iOS client application that brings the power of ComfyUI
 - 🛡️ Local-first approach with data privacy
 - 📊 Resource usage monitoring
 - 🌙 Dark mode support
+
+## Server Setup Guides
+
+We provide detailed guides for setting up your ComfyUI server:
+
+- [Local Server Setup](https://shunl12324.github.io/comfy-portal/guide/local-server.html) - Run ComfyUI on your computer
+- [Remote Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server.html) - Host ComfyUI on a remote server
+- [RunPod Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod.html) - Deploy ComfyUI on RunPod
 
 ## Key Features
 
@@ -41,7 +54,13 @@ Comfy Portal is a native iOS client application that brings the power of ComfyUI
 
 ## Screenshots
 
-[Coming Soon]
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <img src="repo-assets/demo.gif" width="200" alt="App Demo" />
+    <img src="repo-assets/screenshot-1.png" width="200" alt="Screenshot 1" />
+    <img src="repo-assets/screenshot-2.png" width="200" alt="Screenshot 2" />
+    <img src="repo-assets/screenshot-3.png" width="200" alt="Screenshot 3" />
+    <img src="repo-assets/screenshot-4.jpg" width="200" alt="Screenshot 4" />
+</div>
 
 ## Version
 
@@ -55,37 +74,7 @@ Current Version: 1.0.0
 
 ## Installation
 
-### App Store
-
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
-
-### Development Build
-
-> Note: These instructions are for personal learning and use only.
-
-1. Prerequisites:
-
-   - Node.js (LTS version)
-   - Xcode 14.0 or later
-   - iOS Development environment
-   - Valid Apple Developer Account
-   - iOS Development Certificate and Provisioning Profile properly set up in Xcode
-
-2. Clone and Install:
-
-   ```bash
-   git clone https://github.com/ShunL12324/comfy-portal.git
-   cd comfy-portal
-   npx expo install
-   ```
-
-3. Start Development:
-
-   ```bash
-   npx expo run:ios -d
-   ```
-
-This will build and run a full development version on your device.
 
 ## Technology Stack
 

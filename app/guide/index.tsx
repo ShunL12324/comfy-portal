@@ -10,7 +10,8 @@ import { WebView } from 'react-native-webview';
 
 const LocalServerGuide = () => (
   <WebView
-    className="flex-1"
+    className="flex-1 bg-background-0"
+    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
       uri: 'https://shunl12324.github.io/comfy-portal/guide/local-server.html',
     }}
@@ -22,7 +23,8 @@ const LocalServerGuide = () => (
 
 const RemoteServerGuide = () => (
   <WebView
-    className="flex-1"
+    className="flex-1 bg-background-0"
+    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
       uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server.html',
     }}
@@ -34,7 +36,8 @@ const RemoteServerGuide = () => (
 
 const RunPodServerGuide = () => (
   <WebView
-    className="flex-1"
+    className="flex-1 bg-background-0"
+    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
     source={{
       uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod.html',
     }}
