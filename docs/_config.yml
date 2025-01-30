@@ -13,7 +13,7 @@ kramdown:
 collections:
   content:
     output: true
-    permalink: /:path/
+    permalink: /:collection/:path
 
 # Defaults
 defaults:

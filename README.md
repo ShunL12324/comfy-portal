@@ -76,9 +76,9 @@ Note: The built app is for personal use only. You may not redistribute the app o
 
 We provide detailed guides for setting up your ComfyUI server:
 
-- [Local Server Setup](https://shunl12324.github.io/comfy-portal/content/guide/local-server) - Run ComfyUI on your computer
-- [Remote Server Setup](https://shunl12324.github.io/comfy-portal/content/guide/remote-server) - Host ComfyUI on a remote server
-- [RunPod Server Setup](https://shunl12324.github.io/comfy-portal/content/guide/remote-server-runpod) - Deploy ComfyUI on RunPod
+- [Local Server Setup](https://shunl12324.github.io/comfy-portal/guide/local-server) - Run ComfyUI on your computer
+- [Remote Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server) - Host ComfyUI on a remote server
+- [RunPod Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod) - Deploy ComfyUI on RunPod
 
 ## Key Features
 
@@ -167,8 +167,8 @@ For detailed terms and conditions, please see the [LICENSE](LICENSE) file.
 
 ## Legal
 
-- [Privacy Policy](https://shunl12324.github.io/comfy-portal/content/privacy)
-- [Terms of Service](https://shunl12324.github.io/comfy-portal/content/terms)
+- [Privacy Policy](https://shunl12324.github.io/comfy-portal/privacy)
+- [Terms of Service](https://shunl12324.github.io/comfy-portal/terms)
 
 ## Support & Contact
 
