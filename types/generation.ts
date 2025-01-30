@@ -1,4 +1,5 @@
 export interface LoraConfig {
+  id: string;
   name: string;
   strengthModel: number;
   strengthClip: number;

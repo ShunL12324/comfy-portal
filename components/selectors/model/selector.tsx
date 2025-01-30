@@ -1,5 +1,6 @@
 import { SmoothSlider } from '@/components/self-ui/smooth-slider';
 import { Box } from '@/components/ui/box';
+import { Button } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
@@ -12,16 +13,15 @@ import {
   Check,
   ChevronDown,
   ImageIcon,
+  Minus,
+  Plus,
   Sliders,
   Trash2,
-  Plus,
-  Minus,
 } from 'lucide-react-native';
 import React, { useCallback, useRef } from 'react';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { SelectorOption } from '../types';
 import { createModelOptions } from './constants';
-import { Button } from '@/components/ui/button';
 
 interface ModelSelectorProps {
   value: string;
@@ -64,7 +64,11 @@ function StrengthControl({
       <HStack space="sm" className="mt-2 items-center">
         <Button
           className="h-6 w-6 rounded-lg bg-background-200 p-0"
-          onPress={() => onChange(Math.max(0, value - 0.05))}
+          onPress={() => {
+            const newValue = Math.max(0, value - 0.05);
+            onChange(newValue);
+            onChangeEnd?.(newValue);
+          }}
         >
           <Icon as={Minus} size="xs" className="text-primary-500" />
         </Button>
@@ -82,7 +86,11 @@ function StrengthControl({
         />
         <Button
           className="h-6 w-6 rounded-lg bg-background-200 p-0"
-          onPress={() => onChange(Math.min(2, value + 0.05))}
+          onPress={() => {
+            const newValue = Math.min(2, value + 0.05);
+            onChange(newValue);
+            onChangeEnd?.(newValue);
+          }}
         >
           <Icon as={Plus} size="xs" className="text-primary-500" />
         </Button>
@@ -129,6 +137,12 @@ export function ModelSelector({
   const [localModelStrength, setLocalModelStrength] =
     React.useState(initialModelStrength);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+
+  // Update local strength values when initialStrength changes
+  React.useEffect(() => {
+    setLocalClipStrength(initialClipStrength);
+    setLocalModelStrength(initialModelStrength);
+  }, [initialClipStrength, initialModelStrength]);
 
   const handlePress = useCallback(() => {
     setIsVisible(true);

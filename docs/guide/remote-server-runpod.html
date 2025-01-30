@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RunPod Server Setup Guide - Comfy Portal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <style>
+      .warning-card {
+        background-color: #fff8c5;
+        border: 1px solid #f6e05e;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+
+      .warning-card h4 {
+        color: #92400e;
+        margin-bottom: 8px;
+      }
+
+      .warning-card p {
+        color: #92400e;
+      }
+
+      .info-card {
+        background-color: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 16px 0;
+        color: #1e40af;
+      }
+
+      .step-card {
+        border: 1px solid var(--color-border-muted);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+
+      .step-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .step-number {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-right: 12px;
+        color: var(--color-accent-fg);
+      }
+
+      .code-block {
+        background-color: var(--color-canvas-subtle);
+        padding: 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        margin: 12px 0;
+      }
+
+      .example-block {
+        background-color: var(--color-canvas-subtle);
+        padding: 12px;
+        border-radius: 6px;
+        margin: 12px 0;
+      }
+
+      .guide-image {
+        max-width: 100%;
+        border-radius: 12px;
+        margin: 16px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="markdown-body container">
+      <div class="warning-card">
+        <h4>⚠️ Disclaimer</h4>
+        <p>
+          RunPod is a third-party service. We have no affiliation with RunPod
+          and are not responsible for their service, pricing, or any potential
+          damages or losses that may occur.
+        </p>
+      </div>
+    </div>
+    <script>
+      const md = window.markdownit({
+        html: true,
+        linkify: true,
+        typographer: true,
+      });
+      const content = `
+## 1. Configure RunPod Template
+
+When deploying your pod, make these important configurations:
+
+- Click "Edit Template" during deployment
+- Find "Expose HTTP Ports" section
+- Add port 8188 (ComfyUI's default port)
+
+For detailed port configuration instructions, see:
+[RunPod Port Configuration Guide →](https://docs.runpod.io/pods/configuration/expose-ports)
+
+## 2. Start ComfyUI
+
+After your pod is running, start ComfyUI with network access enabled:
+
+\`\`\`bash
+python main.py --listen 0.0.0.0 --port 8188
+\`\`\`
+
+You can verify the HTTP service status and get your connection URL:
+
+- Go to your pod's management page
+- Click "Connect" button
+- Under "HTTP Services", you should see port :8188 marked as "Ready"
+
+![RunPod HTTP Services interface showing the connection URL](../assets/images/guide/runpod-url.png)
+
+## 3. Connect to the Server
+
+Once ComfyUI is running, tap the "+" button to add the server:
+
+- Name: Give your pod a memorable name (e.g., "RunPod Server")
+- Host: Your pod's proxy URL (do not include https:// prefix)
+- Port: 443 (RunPod proxy uses HTTPS port)
+
+<div class="info-card">
+Although ComfyUI runs on port 8188, we use port 443 because RunPod proxies the connection through HTTPS.
+</div>
+
+**Example:**
+
+> Name: RunPod ComfyUI  
+> Host: ****abc-8188.proxy.runpod.net  
+> Port: 443`;
+
+      // Insert the rendered markdown after the warning card
+      const container = document.querySelector('.markdown-body');
+      const renderedContent = md.render(content);
+      container.insertAdjacentHTML('beforeend', renderedContent);
+    </script>
+  </body>
+</html>

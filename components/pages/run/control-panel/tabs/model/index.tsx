@@ -5,13 +5,20 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
-import { TabProps } from '@/types/generation';
+import { LoraConfig, TabProps } from '@/types/generation';
+import * as Crypto from 'expo-crypto';
 import { Plus } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 interface ModelTabProps extends TabProps {
   serverId: string;
 }
+
+const DEFAULT_LORA: Omit<LoraConfig, 'id'> = {
+  name: '',
+  strengthModel: 1,
+  strengthClip: 1,
+};
 
 /**
  * Model selection tab component
@@ -24,6 +31,18 @@ export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
     state.servers.find((s) => s.id === serverId),
   );
   const refreshServer = useServersStore((state) => state.refreshServer);
+
+  const updateLora = useCallback(
+    (loraId: string, updates: Partial<LoraConfig>) => {
+      const loras = [...(params.loras || [])];
+      const index = loras.findIndex((l) => l.id === loraId);
+      if (index !== -1) {
+        loras[index] = { ...loras[index], ...updates };
+        onParamsChange({ ...params, loras });
+      }
+    },
+    [params, onParamsChange],
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -75,7 +94,10 @@ export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
                   ...params,
                   loras: [
                     ...(params.loras || []),
-                    { name: '', strengthModel: 1, strengthClip: 1 },
+                    {
+                      id: Crypto.randomUUID(),
+                      ...DEFAULT_LORA,
+                    },
                   ],
                 })
               }
@@ -87,35 +109,23 @@ export function ModelTab({ params, onParamsChange, serverId }: ModelTabProps) {
           </HStack>
 
           <VStack space="sm">
-            {params.loras?.map((lora, index) => (
+            {params.loras?.map((lora) => (
               <ModelSelector
-                key={index}
+                key={lora.id}
                 value={lora.name}
                 onDelete={() => {
-                  const loras = [...(params.loras || [])];
-                  loras.splice(index, 1);
+                  const loras = (params.loras || []).filter(
+                    (l) => l.id !== lora.id,
+                  );
                   onParamsChange({ ...params, loras });
                 }}
-                onChange={(value) => {
-                  const loras = [...(params.loras || [])];
-                  loras[index] = {
-                    ...lora,
-                    name: value,
-                    strengthClip: lora.strengthClip ?? 1,
-                    strengthModel: lora.strengthModel ?? 1,
-                  };
-                  onParamsChange({ ...params, loras });
-                }}
-                onLoraClipStrengthChange={(value) => {
-                  const loras = [...(params.loras || [])];
-                  loras[index] = { ...lora, strengthClip: value };
-                  onParamsChange({ ...params, loras });
-                }}
-                onLoraModelStrengthChange={(value) => {
-                  const loras = [...(params.loras || [])];
-                  loras[index] = { ...lora, strengthModel: value };
-                  onParamsChange({ ...params, loras });
-                }}
+                onChange={(value) => updateLora(lora.id, { name: value })}
+                onLoraClipStrengthChange={(value) =>
+                  updateLora(lora.id, { strengthClip: value })
+                }
+                onLoraModelStrengthChange={(value) =>
+                  updateLora(lora.id, { strengthModel: value })
+                }
                 servers={[server]}
                 type="loras"
                 initialClipStrength={lora.strengthClip}

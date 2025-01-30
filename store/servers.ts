@@ -1,6 +1,6 @@
 import { Model, Server } from '@/types/server';
 import { cleanupServerData } from '@/utils/image-storage';
-import { checkMultipleServers, checkServerStatus } from '@/utils/server-status';
+import { checkMultipleServers, checkServerStatus } from '@/utils/server-sync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { create } from 'zustand';

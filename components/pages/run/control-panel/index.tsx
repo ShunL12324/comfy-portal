@@ -54,23 +54,36 @@ export function ParameterControls({
     { key: 'generation', title: 'Generation' },
   ] as const;
 
-  const handleParamsChange = useCallback(
+  const debouncedUpdatePreset = useCallback(
     (newParams: GenerationParams) => {
-      onParamsChange(newParams);
-      // clear the timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-
-      // set a new timer
       debounceTimerRef.current = setTimeout(() => {
         updatePreset(presetId, {
           params: newParams,
         });
       }, 500);
     },
-    [onParamsChange, presetId, updatePreset],
+    [presetId, updatePreset],
   );
+
+  const handleParamsChange = useCallback(
+    (newParams: GenerationParams) => {
+      onParamsChange(newParams);
+      debouncedUpdatePreset(newParams);
+    },
+    [onParamsChange, debouncedUpdatePreset],
+  );
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const renderContent = () => {
     const content = (() => {

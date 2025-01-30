@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remote Server Setup Guide - Comfy Portal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <style>
+      .warning-card {
+        background-color: #fff8c5;
+        border: 1px solid #f6e05e;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+
+      .warning-card h4 {
+        color: #92400e;
+        margin-bottom: 8px;
+      }
+
+      .warning-card p {
+        color: #92400e;
+      }
+
+      .step-card {
+        border: 1px solid var(--color-border-muted);
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+
+      .step-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .step-number {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-right: 12px;
+        color: var(--color-accent-fg);
+      }
+
+      .code-block {
+        background-color: var(--color-canvas-subtle);
+        padding: 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        margin: 12px 0;
+      }
+
+      .example-block {
+        background-color: var(--color-canvas-subtle);
+        padding: 12px;
+        border-radius: 6px;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="markdown-body container">
+      <div class="warning-card">
+        <h4>⚠️ Disclaimer</h4>
+        <p>
+          This guide provides setup instructions only. Please understand all
+          potential risks before proceeding. We are not responsible for any
+          damages or losses that may occur.
+        </p>
+      </div>
+    </div>
+    <script>
+      const md = window.markdownit({
+        html: true,
+        linkify: true,
+        typographer: true,
+      });
+      const content = `
+Follow these steps to connect to your remote ComfyUI server. The setup
+is similar to local server, but requires additional security measures.
+
+Please follow the official ComfyUI installation guide to set up the
+required environment and dependencies on your remote server:
+
+[ComfyUI Installation Guide →](https://github.com/comfyanonymous/ComfyUI#installing)
+
+## 1. Network Requirements
+
+Ensure your remote server meets these requirements:
+
+- A public IP address or domain name
+- Port 8188 (or your chosen port) is open and accessible
+- Firewall configured to allow incoming connections
+
+## 2. HTTPS Setup (Required)
+
+Due to Apple's security restrictions, HTTPS is required for remote
+connections. You have two options:
+
+- Follow ComfyUI's built-in SSL/TLS setup guide:
+  [ComfyUI TLS/SSL Setup Guide →](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#how-to-use-tlsssl)
+
+Alternatively, you can use Nginx or similar web servers as a reverse
+proxy to handle HTTPS
+
+## 3. Connect to the Server
+
+Once the server is running with HTTPS, tap the "+" button to add it
+with these details:
+
+- Name: Give your server a memorable name (e.g., "Cloud Server")
+- Host: Your server's public IP or domain name (do not include
+https:// prefix)
+- Port: 8188 (or your configured port)
+
+**Example:**
+
+> Name: Cloud ComfyUI  
+> Host: comfyui.example.com  
+> Port: 8188
+
+For troubleshooting and additional setup options, visit:
+
+[ComfyUI GitHub Repository →](https://github.com/comfyanonymous/ComfyUI)`;
+
+      // Insert the rendered markdown after the warning card
+      const container = document.querySelector('.markdown-body');
+      const renderedContent = md.render(content);
+      container.insertAdjacentHTML('beforeend', renderedContent);
+    </script>
+  </body>
+</html>
