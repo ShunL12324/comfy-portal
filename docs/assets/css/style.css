@@ -1,28 +1,6 @@
 /* 基础样式 */
-:root {
-  margin: 0;
-  padding: 0;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-}
-
 body {
   background-color: #ffffff;
-  min-height: 100vh;
-  width: 100%;
-  margin: 0;
-  padding: 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,16 +11,14 @@ body {
 
 /* 布局 */
 .container {
-  width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 32px 16px;
 }
 
 /* markdown 样式覆盖 */
 .markdown-body {
   background-color: transparent !important;
-  color: inherit !important;
 }
 
 /* 组件样式 */
