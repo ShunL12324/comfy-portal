@@ -1,25 +1,9 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Privacy Policy - Comfy Portal</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
-  </head>
-  <body>
-    <div class="markdown-body container"></div>
-    <script>
-      const md = window.markdownit({
-        html: true,
-        linkify: true,
-        typographer: true,
-      });
-      const content = `# Privacy Policy
+---
+layout: default
+title: Privacy Policy
+---
+
+# Privacy Policy
 
 Last updated: February 1, 2025
 
@@ -48,6 +32,7 @@ We have no access to any of this information as it never leaves your device.
 ## System Crash Reports
 
 While we do not collect crash data directly, please be aware that:
+
 - Your device's operating system (iOS/Android) may collect crash reports
 - These system-level crash reports are handled by Apple/Google according to their respective privacy policies
 - You can control crash reporting settings through your device's system settings
@@ -55,6 +40,7 @@ While we do not collect crash data directly, please be aware that:
 ## Third-Party Services
 
 The app connects only to:
+
 - Your self-hosted ComfyUI servers (as configured by you)
 - Our GitHub Pages for displaying this privacy policy and terms of service
 
@@ -79,6 +65,7 @@ We do not use any analytics services, tracking tools, or other third-party servi
 ## Your Data Rights
 
 Since we don't collect any data, there is no need for:
+
 - Data access requests
 - Data deletion requests
 - Data portability
@@ -104,6 +91,7 @@ The app requests the following permissions for basic functionality:
 ## Age Restrictions
 
 Comfy Portal is rated 17+ and is intended for mature users only. This rating reflects:
+
 - The technical nature of the app requiring server infrastructure knowledge
 - The potential mature content that can be generated through AI models
 - The responsibility required in using AI generation tools
@@ -120,8 +108,4 @@ If you have any questions about this privacy policy or our privacy practices, pl
 
 - **Email**: aiforsure66@gmail.com
 
-We will make our best effort to respond to your inquiries within 2 business days.`;
-      document.querySelector('.markdown-body').innerHTML = md.render(content);
-    </script>
-  </body>
-</html>
+We will make our best effort to respond to your inquiries within 2 business days.

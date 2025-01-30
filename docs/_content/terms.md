@@ -1,25 +1,9 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terms of Service - Comfy Portal</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css"
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
-  </head>
-  <body>
-    <div class="markdown-body container"></div>
-    <script>
-      const md = window.markdownit({
-        html: true,
-        linkify: true,
-        typographer: true,
-      });
-      const content = `# Terms of Service
+---
+layout: default
+title: Terms of Service
+---
+
+# Terms of Service
 
 Last updated: February 1, 2025
 
@@ -41,6 +25,7 @@ This agreement is between you and the App developers only, and not with Apple or
 ## 2. Description of Service
 
 Comfy Portal is an independent mobile client application that provides an interface to connect to and interact with ComfyUI servers. The App:
+
 - Is a third-party client and is not officially affiliated with the ComfyUI project
 - Allows you to connect to self-hosted or third-party ComfyUI servers
 - Provides tools for managing and running AI image generation workflows
@@ -75,6 +60,7 @@ Comfy Portal is an independent mobile client application that provides an interf
 ## 3. License Scope
 
 The license granted is:
+
 - Non-transferable
 - For personal use on Apple-branded devices that you own or control
 - Subject to the Usage Rules in the Apple Media Services Terms and Conditions
@@ -85,28 +71,33 @@ The license granted is:
 You are responsible for:
 
 ### Server Management
+
 - Maintaining the security of your ComfyUI servers
 - Ensuring you have the right to use and access the servers you connect to
 - Understanding and complying with the terms of service of any third-party servers you use
 
 ### Content and Usage
+
 - All content you generate or process through connected servers
 - Ensuring you have the right to use any images, prompts, or other content you process
 - Using the App in compliance with all applicable laws and regulations
 - Not using the App for any illegal or unauthorized purposes
 
 ### Data Management
+
 - Backing up your data regularly, including workflows and settings
 - Managing your device's storage space
 - Securing your local data and server connection information
 - Understanding that we cannot recover your local data if lost
 
 ### Network Usage
+
 - All data charges and fees from your mobile carrier or internet service provider
 - Ensuring stable network connectivity for server communications
 - Any costs associated with running or connecting to ComfyUI servers
 
 ### Security
+
 - Maintaining the security of your device and app data
 - Protecting your server connection information
 - Reporting any security vulnerabilities you discover
@@ -123,6 +114,7 @@ You are responsible for:
 ## 6. AI Content Generation
 
 Users must understand and agree that:
+
 - AI generated content may be subject to certain rights or restrictions
 - You are responsible for:
   - Reviewing and moderating all AI generated content
@@ -146,6 +138,7 @@ Users must understand and agree that:
 ## 8. Third-Party Services
 
 ### Server Connections
+
 - The App connects to ComfyUI servers that you configure
 - We are not responsible for:
   - The availability or performance of these servers
@@ -154,6 +147,7 @@ Users must understand and agree that:
   - Content generated through these servers
 
 ### Other Services
+
 - The App may use our web services for displaying documentation
 - System-level services (like crash reporting) are handled by your device's operating system
 - You must comply with applicable third-party terms when using the App
@@ -169,12 +163,14 @@ Users must understand and agree that:
 ## 10. Warranty and Refunds
 
 The App is provided "as is" without warranties of any kind, either express or implied, including but not limited to:
+
 - Server connection reliability
 - Content generation results
 - Compatibility with specific ComfyUI versions
 - Suitability for your specific needs
 
 In the event of any failure of the App to conform to any applicable warranty:
+
 - You may notify Apple, and Apple will refund the purchase price of the App
 - To the maximum extent permitted by law, Apple will have no other warranty obligation
 - Any other claims, losses, liabilities, damages, costs, or expenses will be our sole responsibility
@@ -182,6 +178,7 @@ In the event of any failure of the App to conform to any applicable warranty:
 ## 11. Product Claims
 
 We, not Apple, are responsible for addressing any claims relating to the App or your use of it, including but not limited to:
+
 - Product liability claims
 - Any claim that the App fails to conform to legal or regulatory requirements
 - Claims arising under consumer protection, privacy, or similar legislation
@@ -190,6 +187,7 @@ We, not Apple, are responsible for addressing any claims relating to the App or 
 ## 12. Legal Compliance
 
 You represent and warrant that:
+
 - You are not located in a country subject to a U.S. Government embargo
 - You are not listed on any U.S. Government list of prohibited or restricted parties
 - You will comply with all applicable third-party terms of agreement when using the App
@@ -197,6 +195,7 @@ You represent and warrant that:
 ## 13. Limitation of Liability
 
 We shall not be liable for:
+
 - Any indirect, incidental, or consequential damages
 - Loss of data or content
 - Server connection issues
@@ -209,18 +208,21 @@ We shall not be liable for:
 ## 14. Subscriptions and Payments
 
 ### Subscription Terms
+
 - Subscription features and pricing will be clearly indicated in the App
 - Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period
 - Payment will be charged to your Apple ID account at confirmation of purchase
 - Your account will be charged for renewal within 24 hours prior to the end of the current period
 
 ### Subscription Management
+
 - You can manage and cancel your subscription through your Apple ID account settings
 - Cancellation will take effect at the end of the current subscription period
 - No refunds will be provided for the unused portion of the current subscription period
 - Any unused portion of a free trial period will be forfeited when purchasing a subscription
 
 ### Price Changes
+
 - We reserve the right to change subscription prices
 - Price changes will be notified to users in advance
 - Price changes will take effect at the next subscription renewal
@@ -229,21 +231,27 @@ We shall not be liable for:
 ## 15. Termination
 
 ### Our Termination Rights
+
 We may terminate or suspend your access to the App immediately, without prior notice or liability, for any reason including, but not limited to:
+
 - Violation of these Terms
 - Suspected illegal, fraudulent, or abusive activity
 - Upon request by law enforcement or government agencies
 - Technical or security issues
 
 ### Effects of Termination
+
 Upon termination:
+
 - Your right to use the App will immediately cease
 - You are responsible for backing up your local data
 - You may lose access to any subscription features
 - Certain provisions of these Terms will continue to remain in effect
 
 ### Surviving Provisions
+
 The following sections survive termination:
+
 - Intellectual Property
 - Limitation of Liability
 - Governing Law
@@ -252,6 +260,7 @@ The following sections survive termination:
 ## 16. Modifications to Service
 
 We reserve the right to:
+
 - Modify or discontinue the App at any time
 - Update these terms of service
 - Require you to accept updated terms to continue using the App
@@ -264,6 +273,7 @@ You acknowledge and agree that Apple and its subsidiaries are third-party benefi
 ## 18. Severability
 
 If any provision of these Terms is found to be unenforceable or invalid:
+
 - Such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law
 - The remaining provisions will continue in full force and effect
 - The invalid or unenforceable portion will be deemed superseded by a valid, enforceable provision that most closely matches the intent of the original provision
@@ -282,8 +292,4 @@ For any questions, support, complaints, or claims regarding the App, please cont
 
 - **Email**: aiforsure66@gmail.com
 
-We will make our best effort to respond to your inquiries within 2 business days.`;
-      document.querySelector('.markdown-body').innerHTML = md.render(content);
-    </script>
-  </body>
-</html>
+We will make our best effort to respond to your inquiries within 2 business days.
