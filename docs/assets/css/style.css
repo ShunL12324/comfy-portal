@@ -1,9 +1,14 @@
 /* 基础样式 */
+html,
 body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
   background-color: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
+  html,
   body {
     background-color: #0d1117;
   }
