@@ -60,7 +60,7 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
     </View>
     <View className="h-full min-w-0 flex-1 items-start justify-start">
       <Text
-        className="text-base font-semibold text-primary-500"
+        className="text-base font-semibold text-typography-950"
         numberOfLines={1}
       >
         {name}
@@ -69,7 +69,7 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
         <View className="flex-row items-center gap-1">
           <Icon as={Globe} size="2xs" className="shrink-0 text-accent-500" />
           <Text
-            className="flex-shrink text-2xs text-primary-400"
+            className="flex-shrink text-2xs text-typography-400"
             numberOfLines={1}
           >
             {host}
@@ -77,13 +77,13 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
         </View>
         <View className="flex-row items-center gap-1">
           <Icon as={Hash} size="2xs" className="shrink-0 text-accent-500" />
-          <Text className="text-2xs text-primary-400" numberOfLines={1}>
+          <Text className="text-2xs text-typography-400" numberOfLines={1}>
             {port}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
           <Icon as={Layers} size="2xs" className="shrink-0 text-accent-500" />
-          <Text className="text-2xs text-primary-400" numberOfLines={1}>
+          <Text className="text-2xs text-typography-400" numberOfLines={1}>
             {models?.length || 'No'} models
           </Text>
         </View>
@@ -170,12 +170,12 @@ const DeleteAlert = ({
     <AlertDialogBackdrop onPress={onClose} />
     <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
       <AlertDialogHeader className="px-0">
-        <Text className="text-lg font-semibold text-primary-500">
+        <Text className="text-lg font-semibold text-typography-950">
           Delete Server
         </Text>
       </AlertDialogHeader>
       <AlertDialogBody className="px-0 py-4">
-        <Text className="text-sm text-primary-400">
+        <Text className="text-sm text-typography-400">
           Are you sure you want to delete this server? This action cannot be
           undone.
         </Text>
@@ -187,7 +187,9 @@ const DeleteAlert = ({
             onPress={onClose}
             className="flex-1 rounded-md bg-background-100"
           >
-            <ButtonText className="text-sm text-primary-400">Cancel</ButtonText>
+            <ButtonText className="text-sm text-typography-400">
+              Cancel
+            </ButtonText>
           </Button>
           <Button
             variant="solid"

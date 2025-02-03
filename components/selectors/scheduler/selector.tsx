@@ -1,12 +1,11 @@
-import React, { useCallback, useRef } from 'react';
+import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
-import { ChevronDown } from 'lucide-react-native';
-import { Icon } from '@/components/ui/icon';
-import { SearchableBottomSheet } from '../bottom-sheet';
-import { SCHEDULER_OPTIONS } from './constants';
-import { Scheduler } from './constants';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { ChevronDown } from 'lucide-react-native';
+import React, { useCallback, useRef } from 'react';
+import { SearchableBottomSheet } from '../bottom-sheet';
+import { Scheduler, SCHEDULER_OPTIONS } from './constants';
 
 interface SchedulerSelectorProps {
   value: Scheduler;
@@ -37,10 +36,10 @@ export function SchedulerSelector({ value, onChange }: SchedulerSelectorProps) {
         className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-base text-primary-900">
+        <Text className="text-base text-typography-950">
           {selectedOption?.label || value}
         </Text>
-        <Icon as={ChevronDown} size="sm" className="text-primary-300" />
+        <Icon as={ChevronDown} size="sm" className="text-typography-500" />
       </Pressable>
 
       <SearchableBottomSheet

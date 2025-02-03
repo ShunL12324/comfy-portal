@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Images } from 'lucide-react-native';
+import { Images, Wand2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,12 +16,11 @@ import { ComfyClient } from '@/utils/comfy-client';
 import { loadHistoryImages, saveGeneratedImage } from '@/utils/image-storage';
 
 import { AppBar } from '@/components/layout/app-bar';
-import { ParameterControls } from '@/components/pages/run/control-panel';
-import { GenerationButton } from '@/components/pages/run/generation-button';
 import { ServerStatus } from '@/components/pages/run/generation-status-indicator';
 import { HistoryDrawer } from '@/components/pages/run/history-drawer';
-import { ParallaxImage } from '@/components/pages/run/parallax-image';
 
+import ControlPanel from '@/components/pages/run/control-panel/control-panel';
+import { ParallaxImage } from '@/components/pages/run/parallax-image';
 import { GenerationParams } from '@/types/generation';
 
 interface GenerationState {
@@ -85,7 +84,7 @@ export default function RunPresetScreen() {
   const comfyClient = useRef<ComfyClient | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const imageHeight = screenHeight * 0.6;
+  const imageHeight = screenHeight * 0.5;
 
   const lastProgressUpdateRef = useRef(Date.now());
   const lastProgressValueRef = useRef(0);
@@ -312,10 +311,13 @@ export default function RunPresetScreen() {
   );
 
   const handleScroll = useCallback(
-    Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-      useNativeDriver: true,
-    }),
-    [scrollY],
+    (event: any) => {
+      const y = event.nativeEvent.contentOffset.y;
+      if (y < -imageHeight) {
+        scrollY.setValue(-imageHeight);
+      }
+    },
+    [imageHeight, scrollY],
   );
 
   const handleScrollEnd = useCallback(
@@ -339,34 +341,32 @@ export default function RunPresetScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background-200">
-      <View style={{ zIndex: 20 }}>
-        <AppBar
-          showBack
-          title={preset.name}
-          centerElement={
-            <ServerStatus
-              generating={generationState.status === 'generating'}
-              downloading={generationState.status === 'downloading'}
-              downloadProgress={generationState.downloadProgress}
-              generationProgress={generationState.progress}
-              name={server.name}
-            />
-          }
-          rightElement={
-            <Button
-              variant="link"
-              className="h-9 w-9 rounded-xl p-0"
-              onPress={() => setIsHistoryOpen(true)}
-            >
-              <Icon as={Images} size="md" className="text-primary-500" />
-            </Button>
-          }
-        />
-      </View>
+    <View className="z-0 flex-1 bg-background-0">
+      <AppBar
+        showBack
+        title={preset.name}
+        centerElement={
+          <ServerStatus
+            generating={generationState.status === 'generating'}
+            downloading={generationState.status === 'downloading'}
+            downloadProgress={generationState.downloadProgress}
+            generationProgress={generationState.progress}
+            name={server.name}
+          />
+        }
+        rightElement={
+          <Button
+            variant="link"
+            className="h-9 w-9 rounded-xl p-0"
+            onPress={() => setIsHistoryOpen(true)}
+          >
+            <Icon as={Images} size="md" className="text-primary-500" />
+          </Button>
+        }
+        className="z-10 bg-background-0/20"
+      />
 
-      <View style={{ flex: 1 }}>
-        <ParallaxImage
+      {/* <ParallaxImage
           scrollY={scrollY}
           imageHeight={imageHeight}
           imageUrl={generatedImage || undefined}
@@ -382,27 +382,52 @@ export default function RunPresetScreen() {
           onPreviewClose={() => setIsPreviewOpen(false)}
           presetId={preset.id}
           serverId={serverId as string}
-        />
+        /> */}
+      <View style={{ flex: 1, zIndex: 10 }} className="bg-background-0">
+        <View style={{ height: imageHeight, zIndex: 20 }}>
+          <ParallaxImage
+            scrollY={scrollY}
+            imageHeight={imageHeight}
+            imageUrl={generatedImage || undefined}
+            progress={
+              generationState.status === 'generating'
+                ? {
+                    current: generationState.progress.value,
+                    total: generationState.progress.max,
+                  }
+                : undefined
+            }
+            isPreviewOpen={isPreviewOpen}
+            onPreviewClose={() => setIsPreviewOpen(false)}
+            presetId={preset.id}
+            serverId={serverId as string}
+          />
+        </View>
 
         <Animated.ScrollView
-          className="z-10 flex-1"
           onScroll={handleScroll}
           scrollEventThrottle={16}
           bounces={true}
           contentContainerStyle={{
             minHeight: screenHeight,
           }}
-          style={{ zIndex: 10 }}
+          style={{
+            zIndex: 20,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
           onScrollEndDrag={handleScrollEnd}
-          scrollIndicatorInsets={{ top: imageHeight }}
           overScrollMode="never"
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
           {/* Placeholder for parallax image area */}
           <Pressable
+            // className="bg-red-500"
             style={{ height: imageHeight }}
-            className="z-10 w-full"
             disabled={!generatedImage}
             onPress={() => {
               if (generatedImage) {
@@ -411,23 +436,42 @@ export default function RunPresetScreen() {
             }}
           />
 
-          <View className="z-10 h-full pb-24">
-            <ParameterControls
+          <View className="flex-1">
+            {/* <ParameterControls
               params={params}
               onParamsChange={setParams}
               presetId={preset.id}
               serverId={serverId as string}
+            /> */}
+            {/* <View className="absolute left-0 top-0 z-50 h-full w-full flex-1 bg-blue-500" /> */}
+            <ControlPanel
+              serverId={serverId as string}
+              params={params}
+              onParamsChange={setParams}
+              presetId={preset.id}
             />
           </View>
         </Animated.ScrollView>
+      </View>
 
-        <View className="z-20">
-          <GenerationButton
-            onGenerate={handleGenerate}
-            isGenerating={generationState.status === 'generating'}
-            isServerOnline={true}
-          />
-        </View>
+      <View className="z-10">
+        <VStack className="border-t-[0.5px] border-outline-50 bg-transparent px-5 pb-6 pt-4">
+          <Button
+            size="xl"
+            variant="solid"
+            action="primary"
+            onPress={handleGenerate}
+            disabled={generationState.status === 'generating'}
+            className="rounded-lg bg-accent-600 active:bg-primary-600 disabled:opacity-50"
+          >
+            <Icon as={Wand2} size="sm" className="mr-2 text-typography-0" />
+            <Text className="text-md font-semibold text-typography-0">
+              {generationState.status === 'generating'
+                ? 'Generating...'
+                : 'Generate'}
+            </Text>
+          </Button>
+        </VStack>
       </View>
 
       <HistoryDrawer

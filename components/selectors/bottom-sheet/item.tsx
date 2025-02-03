@@ -1,12 +1,12 @@
-import React from 'react';
+import { Box } from '@/components/ui/box';
+import { HStack } from '@/components/ui/hstack';
+import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Check } from 'lucide-react-native';
-import { Icon } from '@/components/ui/icon';
+import React from 'react';
 import { SelectorOption } from '../types';
-import { HStack } from '@/components/ui/hstack';
-import { Box } from '@/components/ui/box';
 
 interface ItemProps {
   item: SelectorOption;
@@ -23,7 +23,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
       <Box
         className={`mx-4 mb-2 overflow-hidden rounded-xl ${
           isSelected
-            ? 'border-[0.5px] border-primary-500 bg-primary-500/5'
+            ? 'border-0 border-outline-200 bg-primary-200'
             : 'bg-background-50'
         }`}
       >
@@ -31,7 +31,9 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
           <VStack space="xs" className="flex-1">
             <Text
               className={`text-base ${
-                isSelected ? 'font-medium text-primary-500' : 'text-primary-900'
+                isSelected
+                  ? 'font-medium text-typography-950'
+                  : 'text-typography-500'
               }`}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -45,7 +47,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
             )}
           </VStack>
           {isSelected && (
-            <Icon as={Check} size="sm" className="text-primary-500" />
+            <Icon as={Check} size="sm" className="text-typography-950" />
           )}
         </HStack>
       </Box>

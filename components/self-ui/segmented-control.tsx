@@ -81,11 +81,11 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
 
   return (
     <View
-      className="h-10 flex-row overflow-hidden rounded-[10px] bg-background-300"
+      className="h-10 flex-row overflow-hidden rounded-[10px] bg-background-50"
       onLayout={onLayout}
     >
       <Animated.View
-        className="absolute left-1 top-1 h-8 rounded-lg bg-background-50"
+        className="absolute left-1 top-1 h-8 rounded-lg bg-background-200"
         style={sliderStyle}
       />
       {options.map((option) => (

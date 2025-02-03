@@ -1,12 +1,12 @@
-import React, { ReactNode } from 'react';
-import { View } from '@/components/ui/view';
-import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { VStack } from '../ui/vstack';
-import { HStack } from '../ui/hstack';
+import { Text } from '@/components/ui/text';
+import { View } from '@/components/ui/view';
 import { useThemeStore } from '@/store/theme';
+import { useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
+import React, { ReactNode } from 'react';
+import { HStack } from '../ui/hstack';
+import { VStack } from '../ui/vstack';
 
 interface AppBarProps {
   title: string;
@@ -15,6 +15,7 @@ interface AppBarProps {
   rightElement?: ReactNode;
   centerElement?: ReactNode;
   bottomElement?: ReactNode;
+  className?: string;
 }
 
 export function AppBar({
@@ -24,12 +25,13 @@ export function AppBar({
   rightElement,
   centerElement,
   bottomElement,
+  className,
 }: AppBarProps) {
   const router = useRouter();
   const { theme } = useThemeStore();
 
   return (
-    <View className={`w-full bg-background-0`}>
+    <View className={`w-full bg-background-0 ${className}`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="items-center justify-between">
           <HStack className="items-center">

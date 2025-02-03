@@ -78,7 +78,11 @@ export const PresetCard = ({
             />
           ) : (
             <View className="flex-1 items-center justify-center">
-              <ImageIcon size={32} className="text-primary-300" />
+              <Icon
+                as={ImageIcon}
+                size="xl"
+                className="h-8 w-8 text-accent-500"
+              />
             </View>
           )}
         </View>
@@ -86,7 +90,7 @@ export const PresetCard = ({
         {/* Bottom Info Section */}
         <View className="p-3">
           <Text
-            className="text-base font-semibold text-primary-500"
+            className="text-base font-semibold text-typography-950"
             numberOfLines={1}
           >
             {name}
@@ -94,10 +98,10 @@ export const PresetCard = ({
 
           <View className="mt-2 flex-row items-center justify-between">
             <View className="flex-1">
-              <Text className="text-xs text-primary-400" numberOfLines={1}>
+              <Text className="text-xs text-typography-400" numberOfLines={1}>
                 {params.model || 'No model selected'}
               </Text>
-              <Text className="mt-1 text-xs text-primary-400">
+              <Text className="mt-1 text-xs text-typography-400">
                 Last used:{' '}
                 {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
               </Text>
@@ -134,12 +138,12 @@ export const PresetCard = ({
         <AlertDialogBackdrop />
         <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <AlertDialogHeader className="px-0">
-            <Heading size="sm" className="text-primary-500">
+            <Heading size="sm" className="text-typography-950">
               Delete Preset
             </Heading>
           </AlertDialogHeader>
           <AlertDialogBody className="px-0 py-4">
-            <Text className="text-sm text-primary-400">
+            <Text className="text-sm text-typography-400">
               Are you sure you want to delete this preset? This action cannot be
               undone.
             </Text>
@@ -151,7 +155,7 @@ export const PresetCard = ({
                 onPress={() => setIsDeleteAlertOpen(false)}
                 className="flex-1 rounded-md bg-background-100"
               >
-                <ButtonText className="text-sm text-primary-400">
+                <ButtonText className="text-sm text-typography-400">
                   Cancel
                 </ButtonText>
               </Button>

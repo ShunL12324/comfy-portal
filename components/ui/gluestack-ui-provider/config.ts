@@ -1,337 +1,349 @@
 'use client';
+import { Colors } from '@/constants/Colors';
 import { vars } from 'nativewind';
+
+// Helper function to convert HEX to RGB
+function hexToRgb(hex: string) {
+  // Remove the # if present
+  hex = hex.replace('#', '');
+
+  // Parse the hex values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  return `${r} ${g} ${b}`;
+}
+
+// Convert all colors in a theme to RGB
+function convertThemeToRgb(theme: typeof Colors.light) {
+  const result: Record<string, Record<string, string>> = {};
+
+  for (const [category, colors] of Object.entries(theme)) {
+    result[category] = {};
+    for (const [shade, hex] of Object.entries(colors)) {
+      result[category][shade] = hexToRgb(hex);
+    }
+  }
+
+  return result;
+}
+
+// Convert colors to RGB format
+const lightColors = convertThemeToRgb(Colors.light);
+const darkColors = convertThemeToRgb(Colors.dark);
 
 export const config = {
   light: vars({
-    '--color-primary-0': '179 179 179',
-    '--color-primary-50': '153 153 153',
-    '--color-primary-100': '128 128 128',
-    '--color-primary-200': '115 115 115',
-    '--color-primary-300': '102 102 102',
-    '--color-primary-400': '82 82 82',
-    '--color-primary-500': '51 51 51',
-    '--color-primary-600': '41 41 41',
-    '--color-primary-700': '31 31 31',
-    '--color-primary-800': '13 13 13',
-    '--color-primary-900': '10 10 10',
-    '--color-primary-950': '8 8 8',
+    '--color-primary-0': lightColors.primary['0'],
+    '--color-primary-50': lightColors.primary['50'],
+    '--color-primary-100': lightColors.primary['100'],
+    '--color-primary-200': lightColors.primary['200'],
+    '--color-primary-300': lightColors.primary['300'],
+    '--color-primary-400': lightColors.primary['400'],
+    '--color-primary-500': lightColors.primary['500'],
+    '--color-primary-600': lightColors.primary['600'],
+    '--color-primary-700': lightColors.primary['700'],
+    '--color-primary-800': lightColors.primary['800'],
+    '--color-primary-900': lightColors.primary['900'],
+    '--color-primary-950': lightColors.primary['950'],
 
-    /* Secondary  */
-    '--color-secondary-0': '253 253 253',
-    '--color-secondary-50': '251 251 251',
-    '--color-secondary-100': '246 246 246',
-    '--color-secondary-200': '242 242 242',
-    '--color-secondary-300': '237 237 237',
-    '--color-secondary-400': '230 230 231',
-    '--color-secondary-500': '217 217 219',
-    '--color-secondary-600': '198 199 199',
-    '--color-secondary-700': '189 189 189',
-    '--color-secondary-800': '177 177 177',
-    '--color-secondary-900': '165 164 164',
-    '--color-secondary-950': '157 157 157',
+    '--color-secondary-0': lightColors.secondary['0'],
+    '--color-secondary-50': lightColors.secondary['50'],
+    '--color-secondary-100': lightColors.secondary['100'],
+    '--color-secondary-200': lightColors.secondary['200'],
+    '--color-secondary-300': lightColors.secondary['300'],
+    '--color-secondary-400': lightColors.secondary['400'],
+    '--color-secondary-500': lightColors.secondary['500'],
+    '--color-secondary-600': lightColors.secondary['600'],
+    '--color-secondary-700': lightColors.secondary['700'],
+    '--color-secondary-800': lightColors.secondary['800'],
+    '--color-secondary-900': lightColors.secondary['900'],
+    '--color-secondary-950': lightColors.secondary['950'],
 
-    /* Tertiary */
-    '--color-tertiary-0': '255 250 245',
-    '--color-tertiary-50': '255 242 229',
-    '--color-tertiary-100': '255 233 213',
-    '--color-tertiary-200': '254 209 170',
-    '--color-tertiary-300': '253 180 116',
-    '--color-tertiary-400': '251 157 75',
-    '--color-tertiary-500': '231 129 40',
-    '--color-tertiary-600': '215 117 31',
-    '--color-tertiary-700': '180 98 26',
-    '--color-tertiary-800': '130 73 23',
-    '--color-tertiary-900': '108 61 19',
-    '--color-tertiary-950': '84 49 18',
+    '--color-tertiary-0': lightColors.tertiary['0'],
+    '--color-tertiary-50': lightColors.tertiary['50'],
+    '--color-tertiary-100': lightColors.tertiary['100'],
+    '--color-tertiary-200': lightColors.tertiary['200'],
+    '--color-tertiary-300': lightColors.tertiary['300'],
+    '--color-tertiary-400': lightColors.tertiary['400'],
+    '--color-tertiary-500': lightColors.tertiary['500'],
+    '--color-tertiary-600': lightColors.tertiary['600'],
+    '--color-tertiary-700': lightColors.tertiary['700'],
+    '--color-tertiary-800': lightColors.tertiary['800'],
+    '--color-tertiary-900': lightColors.tertiary['900'],
+    '--color-tertiary-950': lightColors.tertiary['950'],
 
-    /* Error */
-    '--color-error-0': '254 233 233',
-    '--color-error-50': '254 226 226',
-    '--color-error-100': '254 202 202',
-    '--color-error-200': '252 165 165',
-    '--color-error-300': '248 113 113',
-    '--color-error-400': '239 68 68',
-    '--color-error-500': '230 53 53',
-    '--color-error-600': '220 38 38',
-    '--color-error-700': '185 28 28',
-    '--color-error-800': '153 27 27',
-    '--color-error-900': '127 29 29',
-    '--color-error-950': '83 19 19',
+    '--color-error-0': lightColors.error['0'],
+    '--color-error-50': lightColors.error['50'],
+    '--color-error-100': lightColors.error['100'],
+    '--color-error-200': lightColors.error['200'],
+    '--color-error-300': lightColors.error['300'],
+    '--color-error-400': lightColors.error['400'],
+    '--color-error-500': lightColors.error['500'],
+    '--color-error-600': lightColors.error['600'],
+    '--color-error-700': lightColors.error['700'],
+    '--color-error-800': lightColors.error['800'],
+    '--color-error-900': lightColors.error['900'],
+    '--color-error-950': lightColors.error['950'],
 
-    /* Success */
-    '--color-success-0': '228 255 244',
-    '--color-success-50': '202 255 232',
-    '--color-success-100': '162 241 192',
-    '--color-success-200': '132 211 162',
-    '--color-success-300': '102 181 132',
-    '--color-success-400': '72 151 102',
-    '--color-success-500': '52 131 82',
-    '--color-success-600': '42 121 72',
-    '--color-success-700': '32 111 62',
-    '--color-success-800': '22 101 52',
-    '--color-success-900': '20 83 45',
-    '--color-success-950': '27 50 36',
+    '--color-success-0': lightColors.success['0'],
+    '--color-success-50': lightColors.success['50'],
+    '--color-success-100': lightColors.success['100'],
+    '--color-success-200': lightColors.success['200'],
+    '--color-success-300': lightColors.success['300'],
+    '--color-success-400': lightColors.success['400'],
+    '--color-success-500': lightColors.success['500'],
+    '--color-success-600': lightColors.success['600'],
+    '--color-success-700': lightColors.success['700'],
+    '--color-success-800': lightColors.success['800'],
+    '--color-success-900': lightColors.success['900'],
+    '--color-success-950': lightColors.success['950'],
 
-    /* Warning */
-    '--color-warning-0': '255 249 245',
-    '--color-warning-50': '255 244 236',
-    '--color-warning-100': '255 231 213',
-    '--color-warning-200': '254 205 170',
-    '--color-warning-300': '253 173 116',
-    '--color-warning-400': '251 149 75',
-    '--color-warning-500': '231 120 40',
-    '--color-warning-600': '215 108 31',
-    '--color-warning-700': '180 90 26',
-    '--color-warning-800': '130 68 23',
-    '--color-warning-900': '108 56 19',
-    '--color-warning-950': '84 45 18',
+    '--color-warning-0': lightColors.warning['0'],
+    '--color-warning-50': lightColors.warning['50'],
+    '--color-warning-100': lightColors.warning['100'],
+    '--color-warning-200': lightColors.warning['200'],
+    '--color-warning-300': lightColors.warning['300'],
+    '--color-warning-400': lightColors.warning['400'],
+    '--color-warning-500': lightColors.warning['500'],
+    '--color-warning-600': lightColors.warning['600'],
+    '--color-warning-700': lightColors.warning['700'],
+    '--color-warning-800': lightColors.warning['800'],
+    '--color-warning-900': lightColors.warning['900'],
+    '--color-warning-950': lightColors.warning['950'],
 
-    /* Info */
-    '--color-info-0': '236 248 254',
-    '--color-info-50': '199 235 252',
-    '--color-info-100': '162 221 250',
-    '--color-info-200': '124 207 248',
-    '--color-info-300': '87 194 246',
-    '--color-info-400': '50 180 244',
-    '--color-info-500': '13 166 242',
-    '--color-info-600': '11 141 205',
-    '--color-info-700': '9 115 168',
-    '--color-info-800': '7 90 131',
-    '--color-info-900': '5 64 93',
-    '--color-info-950': '3 38 56',
+    '--color-info-0': lightColors.info['0'],
+    '--color-info-50': lightColors.info['50'],
+    '--color-info-100': lightColors.info['100'],
+    '--color-info-200': lightColors.info['200'],
+    '--color-info-300': lightColors.info['300'],
+    '--color-info-400': lightColors.info['400'],
+    '--color-info-500': lightColors.info['500'],
+    '--color-info-600': lightColors.info['600'],
+    '--color-info-700': lightColors.info['700'],
+    '--color-info-800': lightColors.info['800'],
+    '--color-info-900': lightColors.info['900'],
+    '--color-info-950': lightColors.info['950'],
 
-    /* Typography */
-    '--color-typography-0': '254 254 255',
-    '--color-typography-50': '245 245 245',
-    '--color-typography-100': '229 229 229',
-    '--color-typography-200': '219 219 220',
-    '--color-typography-300': '212 212 212',
-    '--color-typography-400': '163 163 163',
-    '--color-typography-500': '140 140 140',
-    '--color-typography-600': '115 115 115',
-    '--color-typography-700': '82 82 82',
-    '--color-typography-800': '64 64 64',
-    '--color-typography-900': '38 38 39',
-    '--color-typography-950': '23 23 23',
+    '--color-typography-0': lightColors.typography['0'],
+    '--color-typography-50': lightColors.typography['50'],
+    '--color-typography-100': lightColors.typography['100'],
+    '--color-typography-200': lightColors.typography['200'],
+    '--color-typography-300': lightColors.typography['300'],
+    '--color-typography-400': lightColors.typography['400'],
+    '--color-typography-500': lightColors.typography['500'],
+    '--color-typography-600': lightColors.typography['600'],
+    '--color-typography-700': lightColors.typography['700'],
+    '--color-typography-800': lightColors.typography['800'],
+    '--color-typography-900': lightColors.typography['900'],
+    '--color-typography-950': lightColors.typography['950'],
 
-    /* Outline */
-    '--color-outline-0': '253 254 254',
-    '--color-outline-50': '243 243 243',
-    '--color-outline-100': '230 230 230',
-    '--color-outline-200': '221 220 219',
-    '--color-outline-300': '211 211 211',
-    '--color-outline-400': '165 163 163',
-    '--color-outline-500': '140 141 141',
-    '--color-outline-600': '115 116 116',
-    '--color-outline-700': '83 82 82',
-    '--color-outline-800': '65 65 65',
-    '--color-outline-900': '39 38 36',
-    '--color-outline-950': '26 23 23',
+    '--color-outline-0': lightColors.outline['0'],
+    '--color-outline-50': lightColors.outline['50'],
+    '--color-outline-100': lightColors.outline['100'],
+    '--color-outline-200': lightColors.outline['200'],
+    '--color-outline-300': lightColors.outline['300'],
+    '--color-outline-400': lightColors.outline['400'],
+    '--color-outline-500': lightColors.outline['500'],
+    '--color-outline-600': lightColors.outline['600'],
+    '--color-outline-700': lightColors.outline['700'],
+    '--color-outline-800': lightColors.outline['800'],
+    '--color-outline-900': lightColors.outline['900'],
+    '--color-outline-950': lightColors.outline['950'],
 
-    /* Background */
-    '--color-background-0': '255 255 255', // rgb(255, 255, 255)
-    '--color-background-50': '246 246 246', // rgb(246, 246, 246)
-    '--color-background-100': '242 241 241', // rgb(242, 241, 241)
-    '--color-background-200': '235 235 235', // rgb(235, 235, 235)
-    '--color-background-300': '213 212 212', // rgb(213, 212, 212)
-    '--color-background-400': '162 163 163', // rgb(162, 163, 163)
-    '--color-background-500': '142 142 142', // rgb(142, 142, 142)
-    '--color-background-600': '116 116 116', // rgb(116, 116, 116)
-    '--color-background-700': '83 82 82', // rgb(83, 82, 82)
-    '--color-background-800': '65 64 64', // rgb(65, 64, 64)
-    '--color-background-900': '39 38 37', // rgb(39, 38, 37)
-    '--color-background-950': '18 18 18', // rgb(18, 18, 18)
+    '--color-background-0': lightColors.background['0'],
+    '--color-background-50': lightColors.background['50'],
+    '--color-background-100': lightColors.background['100'],
+    '--color-background-200': lightColors.background['200'],
+    '--color-background-300': lightColors.background['300'],
+    '--color-background-400': lightColors.background['400'],
+    '--color-background-500': lightColors.background['500'],
+    '--color-background-600': lightColors.background['600'],
+    '--color-background-700': lightColors.background['700'],
+    '--color-background-800': lightColors.background['800'],
+    '--color-background-900': lightColors.background['900'],
+    '--color-background-950': lightColors.background['950'],
+
+    '--color-accent-0': lightColors.accent['0'],
+    '--color-accent-50': lightColors.accent['50'],
+    '--color-accent-100': lightColors.accent['100'],
+    '--color-accent-200': lightColors.accent['200'],
+    '--color-accent-300': lightColors.accent['300'],
+    '--color-accent-400': lightColors.accent['400'],
+    '--color-accent-500': lightColors.accent['500'],
+    '--color-accent-600': lightColors.accent['600'],
+    '--color-accent-700': lightColors.accent['700'],
+    '--color-accent-800': lightColors.accent['800'],
+    '--color-accent-900': lightColors.accent['900'],
+    '--color-accent-950': lightColors.accent['950'],
 
     /* Background Special */
-    '--color-background-error': '254 241 241',
-    '--color-background-warning': '255 243 234',
-    '--color-background-success': '237 252 242',
-    '--color-background-muted': '247 248 247',
-    '--color-background-info': '235 248 254',
+    '--color-background-error': lightColors.error['50'],
+    '--color-background-warning': lightColors.warning['50'],
+    '--color-background-success': lightColors.success['50'],
+    '--color-background-info': lightColors.info['50'],
+    '--color-background-muted': lightColors.background['100'],
 
     /* Focus Ring Indicator  */
-    '--color-indicator-primary': '55 55 55',
-    '--color-indicator-info': '83 153 236',
-    '--color-indicator-error': '185 28 28',
-
-    /* Accent Colors */
-    '--color-accent-0': '255 255 255', // rgb(255, 255, 255) - Pure white
-    '--color-accent-50': '250 250 250', // rgb(250, 250, 250)
-    '--color-accent-100': '244 244 245', // rgb(244, 244, 245)
-    '--color-accent-200': '228 228 231', // rgb(228, 228, 231)
-    '--color-accent-300': '212 212 216', // rgb(212, 212, 216)
-    '--color-accent-400': '161 161 170', // rgb(161, 161, 170)
-    '--color-accent-500': '113 113 122', // rgb(113, 113, 122) - Primary gray
-    '--color-accent-600': '82 82 91', // rgb(82, 82, 91)
-    '--color-accent-700': '63 63 70', // rgb(63, 63, 70)
-    '--color-accent-800': '39 39 42', // rgb(39, 39, 42)
-    '--color-accent-900': '24 24 27', // rgb(24, 24, 27)
-    '--color-accent-950': '9 9 11', // rgb(9, 9, 11) - Almost black
+    '--color-indicator-primary': lightColors.primary['500'],
+    '--color-indicator-info': lightColors.info['500'],
+    '--color-indicator-error': lightColors.error['500'],
   }),
   dark: vars({
-    '--color-primary-0': '166 166 166', // rgb(166, 166, 166)
-    '--color-primary-50': '175 175 175', // rgb(175, 175, 175)
-    '--color-primary-100': '186 186 186', // rgb(186, 186, 186)
-    '--color-primary-200': '197 197 197', // rgb(197, 197, 197)
-    '--color-primary-300': '212 212 212', // rgb(212, 212, 212)
-    '--color-primary-400': '221 221 221', // rgb(221, 221, 221)
-    '--color-primary-500': '230 230 230', // rgb(230, 230, 230)
-    '--color-primary-600': '240 240 240', // rgb(240, 240, 240)
-    '--color-primary-700': '250 250 250', // rgb(250, 250, 250)
-    '--color-primary-800': '253 253 253', // rgb(253, 253, 253)
-    '--color-primary-900': '254 249 249', // rgb(254, 249, 249)
-    '--color-primary-950': '253 252 252', // rgb(253, 252, 252)
+    '--color-primary-0': darkColors.primary['0'],
+    '--color-primary-50': darkColors.primary['50'],
+    '--color-primary-100': darkColors.primary['100'],
+    '--color-primary-200': darkColors.primary['200'],
+    '--color-primary-300': darkColors.primary['300'],
+    '--color-primary-400': darkColors.primary['400'],
+    '--color-primary-500': darkColors.primary['500'],
+    '--color-primary-600': darkColors.primary['600'],
+    '--color-primary-700': darkColors.primary['700'],
+    '--color-primary-800': darkColors.primary['800'],
+    '--color-primary-900': darkColors.primary['900'],
+    '--color-primary-950': darkColors.primary['950'],
 
-    /* Secondary  */
-    '--color-secondary-0': '20 20 20', // rgb(20, 20, 20)
-    '--color-secondary-50': '23 23 23', // rgb(23, 23, 23)
-    '--color-secondary-100': '31 31 31', // rgb(31, 31, 31)
-    '--color-secondary-200': '39 39 39', // rgb(39, 39, 39)
-    '--color-secondary-300': '44 44 44', // rgb(44, 44, 44)
-    '--color-secondary-400': '56 57 57', // rgb(56, 57, 57)
-    '--color-secondary-500': '63 64 64', // rgb(63, 64, 64)
-    '--color-secondary-600': '86 86 86', // rgb(86, 86, 86)
-    '--color-secondary-700': '110 110 110', // rgb(110, 110, 110)
-    '--color-secondary-800': '135 135 135', // rgb(135, 135, 135)
-    '--color-secondary-900': '150 150 150', // rgb(150, 150, 150)
-    '--color-secondary-950': '164 164 164', // rgb(164, 164, 164)
+    '--color-secondary-0': darkColors.secondary['0'],
+    '--color-secondary-50': darkColors.secondary['50'],
+    '--color-secondary-100': darkColors.secondary['100'],
+    '--color-secondary-200': darkColors.secondary['200'],
+    '--color-secondary-300': darkColors.secondary['300'],
+    '--color-secondary-400': darkColors.secondary['400'],
+    '--color-secondary-500': darkColors.secondary['500'],
+    '--color-secondary-600': darkColors.secondary['600'],
+    '--color-secondary-700': darkColors.secondary['700'],
+    '--color-secondary-800': darkColors.secondary['800'],
+    '--color-secondary-900': darkColors.secondary['900'],
+    '--color-secondary-950': darkColors.secondary['950'],
 
-    /* Tertiary */
-    '--color-tertiary-0': '84 49 18', // rgb(84, 49, 18)
-    '--color-tertiary-50': '108 61 19', // rgb(108, 61, 19)
-    '--color-tertiary-100': '130 73 23', // rgb(130, 73, 23)
-    '--color-tertiary-200': '180 98 26', // rgb(180, 98, 26)
-    '--color-tertiary-300': '215 117 31', // rgb(215, 117, 31)
-    '--color-tertiary-400': '231 129 40', // rgb(231, 129, 40)
-    '--color-tertiary-500': '251 157 75', // rgb(251, 157, 75)
-    '--color-tertiary-600': '253 180 116', // rgb(253, 180, 116)
-    '--color-tertiary-700': '254 209 170', // rgb(254, 209, 170)
-    '--color-tertiary-800': '255 233 213', // rgb(255, 233, 213)
-    '--color-tertiary-900': '255 242 229', // rgb(255, 242, 229)
-    '--color-tertiary-950': '255 250 245', // rgb(255, 250, 245)
+    '--color-tertiary-0': darkColors.tertiary['0'],
+    '--color-tertiary-50': darkColors.tertiary['50'],
+    '--color-tertiary-100': darkColors.tertiary['100'],
+    '--color-tertiary-200': darkColors.tertiary['200'],
+    '--color-tertiary-300': darkColors.tertiary['300'],
+    '--color-tertiary-400': darkColors.tertiary['400'],
+    '--color-tertiary-500': darkColors.tertiary['500'],
+    '--color-tertiary-600': darkColors.tertiary['600'],
+    '--color-tertiary-700': darkColors.tertiary['700'],
+    '--color-tertiary-800': darkColors.tertiary['800'],
+    '--color-tertiary-900': darkColors.tertiary['900'],
+    '--color-tertiary-950': darkColors.tertiary['950'],
 
-    /* Error */
-    '--color-error-0': '83 19 19', // rgb(83, 19, 19)
-    '--color-error-50': '127 29 29', // rgb(127, 29, 29)
-    '--color-error-100': '153 27 27', // rgb(153, 27, 27)
-    '--color-error-200': '185 28 28', // rgb(185, 28, 28)
-    '--color-error-300': '220 38 38', // rgb(220, 38, 38)
-    '--color-error-400': '230 53 53', // rgb(230, 53, 53)
-    '--color-error-500': '239 68 68', // rgb(239, 68, 68)
-    '--color-error-600': '249 97 96', // rgb(249, 97, 96)
-    '--color-error-700': '229 91 90', // rgb(229, 91, 90)
-    '--color-error-800': '254 202 202', // rgb(254, 202, 202)
-    '--color-error-900': '254 226 226', // rgb(254, 226, 226)
-    '--color-error-950': '254 233 233', // rgb(254, 233, 233)
+    '--color-error-0': darkColors.error['0'],
+    '--color-error-50': darkColors.error['50'],
+    '--color-error-100': darkColors.error['100'],
+    '--color-error-200': darkColors.error['200'],
+    '--color-error-300': darkColors.error['300'],
+    '--color-error-400': darkColors.error['400'],
+    '--color-error-500': darkColors.error['500'],
+    '--color-error-600': darkColors.error['600'],
+    '--color-error-700': darkColors.error['700'],
+    '--color-error-800': darkColors.error['800'],
+    '--color-error-900': darkColors.error['900'],
+    '--color-error-950': darkColors.error['950'],
 
-    /* Success */
-    '--color-success-0': '27 50 36', // rgb(27, 50, 36)
-    '--color-success-50': '20 83 45', // rgb(20, 83, 45)
-    '--color-success-100': '22 101 52', // rgb(22, 101, 52)
-    '--color-success-200': '32 111 62', // rgb(32, 111, 62)
-    '--color-success-300': '42 121 72', // rgb(42, 121, 72)
-    '--color-success-400': '52 131 82', // rgb(52, 131, 82)
-    '--color-success-500': '72 151 102', // rgb(72, 151, 102)
-    '--color-success-600': '102 181 132', // rgb(102, 181, 132)
-    '--color-success-700': '132 211 162', // rgb(132, 211, 162)
-    '--color-success-800': '162 241 192', // rgb(162, 241, 192)
-    '--color-success-900': '202 255 232', // rgb(202, 255, 232)
-    '--color-success-950': '228 255 244', // rgb(228, 255, 244)
+    '--color-success-0': darkColors.success['0'],
+    '--color-success-50': darkColors.success['50'],
+    '--color-success-100': darkColors.success['100'],
+    '--color-success-200': darkColors.success['200'],
+    '--color-success-300': darkColors.success['300'],
+    '--color-success-400': darkColors.success['400'],
+    '--color-success-500': darkColors.success['500'],
+    '--color-success-600': darkColors.success['600'],
+    '--color-success-700': darkColors.success['700'],
+    '--color-success-800': darkColors.success['800'],
+    '--color-success-900': darkColors.success['900'],
+    '--color-success-950': darkColors.success['950'],
 
-    /* Warning */
-    '--color-warning-0': '84 45 18', // rgb(84, 45, 18)
-    '--color-warning-50': '108 56 19', // rgb(108, 56, 19)
-    '--color-warning-100': '130 68 23', // rgb(130, 68, 23)
-    '--color-warning-200': '180 90 26', // rgb(180, 90, 26)
-    '--color-warning-300': '215 108 31', // rgb(215, 108, 31)
-    '--color-warning-400': '231 120 40', // rgb(231, 120, 40)
-    '--color-warning-500': '251 149 75', // rgb(251, 149, 75)
-    '--color-warning-600': '253 173 116', // rgb(253, 173, 116)
-    '--color-warning-700': '254 205 170', // rgb(254, 205, 170)
-    '--color-warning-800': '255 231 213', // rgb(255, 231, 213)
-    '--color-warning-900': '255 244 237', // rgb(255, 244, 237)
-    '--color-warning-950': '255 249 245', // rgb(255, 249, 245)
+    '--color-warning-0': darkColors.warning['0'],
+    '--color-warning-50': darkColors.warning['50'],
+    '--color-warning-100': darkColors.warning['100'],
+    '--color-warning-200': darkColors.warning['200'],
+    '--color-warning-300': darkColors.warning['300'],
+    '--color-warning-400': darkColors.warning['400'],
+    '--color-warning-500': darkColors.warning['500'],
+    '--color-warning-600': darkColors.warning['600'],
+    '--color-warning-700': darkColors.warning['700'],
+    '--color-warning-800': darkColors.warning['800'],
+    '--color-warning-900': darkColors.warning['900'],
+    '--color-warning-950': darkColors.warning['950'],
 
-    /* Info */
-    '--color-info-0': '3 38 56', // rgb(3, 38, 56)
-    '--color-info-50': '5 64 93', // rgb(5, 64, 93)
-    '--color-info-100': '7 90 131', // rgb(7, 90, 131)
-    '--color-info-200': '9 115 168', // rgb(9, 115, 168)
-    '--color-info-300': '11 141 205', // rgb(11, 141, 205)
-    '--color-info-400': '13 166 242', // rgb(13, 166, 242)
-    '--color-info-500': '50 180 244', // rgb(50, 180, 244)
-    '--color-info-600': '87 194 246', // rgb(87, 194, 246)
-    '--color-info-700': '124 207 248', // rgb(124, 207, 248)
-    '--color-info-800': '162 221 250', // rgb(162, 221, 250)
-    '--color-info-900': '199 235 252', // rgb(199, 235, 252)
-    '--color-info-950': '236 248 254', // rgb(236, 248, 254)
+    '--color-info-0': darkColors.info['0'],
+    '--color-info-50': darkColors.info['50'],
+    '--color-info-100': darkColors.info['100'],
+    '--color-info-200': darkColors.info['200'],
+    '--color-info-300': darkColors.info['300'],
+    '--color-info-400': darkColors.info['400'],
+    '--color-info-500': darkColors.info['500'],
+    '--color-info-600': darkColors.info['600'],
+    '--color-info-700': darkColors.info['700'],
+    '--color-info-800': darkColors.info['800'],
+    '--color-info-900': darkColors.info['900'],
+    '--color-info-950': darkColors.info['950'],
 
-    /* Typography */
-    '--color-typography-0': '23 23 23', // rgb(23, 23, 23)
-    '--color-typography-50': '38 38 39', // rgb(38, 38, 39)
-    '--color-typography-100': '64 64 64', // rgb(64, 64, 64)
-    '--color-typography-200': '82 82 82', // rgb(82, 82, 82)
-    '--color-typography-300': '115 115 115', // rgb(115, 115, 115)
-    '--color-typography-400': '140 140 140', // rgb(140, 140, 140)
-    '--color-typography-500': '163 163 163', // rgb(163, 163, 163)
-    '--color-typography-600': '212 212 212', // rgb(212, 212, 212)
-    '--color-typography-700': '219 219 220', // rgb(219, 219, 220)
-    '--color-typography-800': '229 229 229', // rgb(229, 229, 229)
-    '--color-typography-900': '245 245 245', // rgb(245, 245, 245)
-    '--color-typography-950': '254 254 255', // rgb(254, 254, 255)
+    '--color-typography-0': darkColors.typography['0'],
+    '--color-typography-50': darkColors.typography['50'],
+    '--color-typography-100': darkColors.typography['100'],
+    '--color-typography-200': darkColors.typography['200'],
+    '--color-typography-300': darkColors.typography['300'],
+    '--color-typography-400': darkColors.typography['400'],
+    '--color-typography-500': darkColors.typography['500'],
+    '--color-typography-600': darkColors.typography['600'],
+    '--color-typography-700': darkColors.typography['700'],
+    '--color-typography-800': darkColors.typography['800'],
+    '--color-typography-900': darkColors.typography['900'],
+    '--color-typography-950': darkColors.typography['950'],
 
-    /* Outline */
-    '--color-outline-0': '26 23 23', // rgb(26, 23, 23)
-    '--color-outline-50': '39 38 36', // rgb(39, 38, 36)
-    '--color-outline-100': '65 65 65', // rgb(65, 65, 65)
-    '--color-outline-200': '83 82 82', // rgb(83, 82, 82)
-    '--color-outline-300': '115 116 116', // rgb(115, 116, 116)
-    '--color-outline-400': '140 141 141', // rgb(140, 141, 141)
-    '--color-outline-500': '165 163 163', // rgb(165, 163, 163)
-    '--color-outline-600': '211 211 211', // rgb(211, 211, 211)
-    '--color-outline-700': '221 220 219', // rgb(221, 220, 219)
-    '--color-outline-800': '230 230 230', // rgb(230, 230, 230)
-    '--color-outline-900': '243 243 243', // rgb(243, 243, 243)
-    '--color-outline-950': '253 254 254', // rgb(253, 254, 254)
+    '--color-outline-0': darkColors.outline['0'],
+    '--color-outline-50': darkColors.outline['50'],
+    '--color-outline-100': darkColors.outline['100'],
+    '--color-outline-200': darkColors.outline['200'],
+    '--color-outline-300': darkColors.outline['300'],
+    '--color-outline-400': darkColors.outline['400'],
+    '--color-outline-500': darkColors.outline['500'],
+    '--color-outline-600': darkColors.outline['600'],
+    '--color-outline-700': darkColors.outline['700'],
+    '--color-outline-800': darkColors.outline['800'],
+    '--color-outline-900': darkColors.outline['900'],
+    '--color-outline-950': darkColors.outline['950'],
 
-    /* Background */
-    '--color-background-0': '13 13 13', // rgb(13, 13, 13) - Deepest background
-    '--color-background-50': '18 18 18', // rgb(18, 18, 18) - App background
-    '--color-background-100': '24 24 24', // rgb(24, 24, 24) - Subtle element background
-    '--color-background-200': '32 32 32', // rgb(32, 32, 32) - Card background
-    '--color-background-300': '42 42 42', // rgb(42, 42, 42) - Hover state
-    '--color-background-400': '54 54 54', // rgb(54, 54, 54) - Active state
-    '--color-background-500': '68 68 68', // rgb(68, 68, 68) - Disabled state
-    '--color-background-600': '84 84 84', // rgb(84, 84, 84) - Border color
-    '--color-background-700': '115 115 115', // rgb(115, 115, 115) - Muted text background
-    '--color-background-800': '145 145 145', // rgb(145, 145, 145) - Light text background
-    '--color-background-900': '180 180 180', // rgb(180, 180, 180) - Lighter elements
-    '--color-background-950': '220 220 220', // rgb(220, 220, 220) - Lightest elements
+    '--color-background-0': darkColors.background['0'],
+    '--color-background-50': darkColors.background['50'],
+    '--color-background-100': darkColors.background['100'],
+    '--color-background-200': darkColors.background['200'],
+    '--color-background-300': darkColors.background['300'],
+    '--color-background-400': darkColors.background['400'],
+    '--color-background-500': darkColors.background['500'],
+    '--color-background-600': darkColors.background['600'],
+    '--color-background-700': darkColors.background['700'],
+    '--color-background-800': darkColors.background['800'],
+    '--color-background-900': darkColors.background['900'],
+    '--color-background-950': darkColors.background['950'],
+
+    '--color-accent-0': darkColors.accent['0'],
+    '--color-accent-50': darkColors.accent['50'],
+    '--color-accent-100': darkColors.accent['100'],
+    '--color-accent-200': darkColors.accent['200'],
+    '--color-accent-300': darkColors.accent['300'],
+    '--color-accent-400': darkColors.accent['400'],
+    '--color-accent-500': darkColors.accent['500'],
+    '--color-accent-600': darkColors.accent['600'],
+    '--color-accent-700': darkColors.accent['700'],
+    '--color-accent-800': darkColors.accent['800'],
+    '--color-accent-900': darkColors.accent['900'],
+    '--color-accent-950': darkColors.accent['950'],
 
     /* Background Special */
-    '--color-background-error': '66 43 43', // rgb(66, 43, 43)
-    '--color-background-warning': '65 47 35', // rgb(65, 47, 35)
-    '--color-background-success': '28 43 33', // rgb(28, 43, 33)
-    '--color-background-muted': '51 51 51', // rgb(51, 51, 51)
-    '--color-background-info': '26 40 46', // rgb(26, 40, 46)
+    '--color-background-error': darkColors.error['950'],
+    '--color-background-warning': darkColors.warning['950'],
+    '--color-background-success': darkColors.success['950'],
+    '--color-background-info': darkColors.info['950'],
+    '--color-background-muted': darkColors.background['100'],
 
     /* Focus Ring Indicator  */
-    '--color-indicator-primary': '247 247 247', // rgb(247, 247, 247)
-    '--color-indicator-info': '161 199 245', // rgb(161, 199, 245)
-    '--color-indicator-error': '232 70 69', // rgb(232, 70, 69)
-
-    /* Accent Colors */
-    '--color-accent-0': '9 9 11', // rgb(9, 9, 11) - Almost black
-    '--color-accent-50': '24 24 27', // rgb(24, 24, 27)
-    '--color-accent-100': '39 39 42', // rgb(39, 39, 42)
-    '--color-accent-200': '63 63 70', // rgb(63, 63, 70)
-    '--color-accent-300': '82 82 91', // rgb(82, 82, 91)
-    '--color-accent-400': '113 113 122', // rgb(113, 113, 122)
-    '--color-accent-500': '161 161 170', // rgb(161, 161, 170) - Primary gray
-    '--color-accent-600': '212 212 216', // rgb(212, 212, 216)
-    '--color-accent-700': '228 228 231', // rgb(228, 228, 231)
-    '--color-accent-800': '244 244 245', // rgb(244, 244, 245)
-    '--color-accent-900': '250 250 250', // rgb(250, 250, 250)
-    '--color-accent-950': '255 255 255', // rgb(255, 255, 255) - Pure white
+    '--color-indicator-primary': darkColors.primary['500'],
+    '--color-indicator-info': darkColors.info['500'],
+    '--color-indicator-error': darkColors.error['500'],
   }),
 };

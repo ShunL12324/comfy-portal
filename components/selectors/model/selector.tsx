@@ -6,19 +6,18 @@ import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { Server } from '@/types/server';
+import { useServersStore } from '@/store/servers';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
 import {
   Check,
   ChevronDown,
   ImageIcon,
-  Minus,
-  Plus,
   Sliders,
   Trash2,
 } from 'lucide-react-native';
 import React, { useCallback, useRef } from 'react';
+import { View } from 'react-native';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { SelectorOption } from '../types';
 import { createModelOptions } from './constants';
@@ -26,7 +25,6 @@ import { createModelOptions } from './constants';
 interface ModelSelectorProps {
   value: string;
   onChange: (value: string) => void;
-  servers: Server[];
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
@@ -62,38 +60,15 @@ function StrengthControl({
         </Text>
       </HStack>
       <HStack space="sm" className="mt-2 items-center">
-        <Button
-          className="h-6 w-6 rounded-lg bg-background-200 p-0"
-          onPress={() => {
-            const newValue = Math.max(0, value - 0.05);
-            onChange(newValue);
-            onChangeEnd?.(newValue);
-          }}
-        >
-          <Icon as={Minus} size="xs" className="text-primary-500" />
-        </Button>
         <SmoothSlider
           value={value}
-          showValue={false}
           minValue={0}
           maxValue={2}
           step={0.05}
           onChange={onChange}
           onChangeEnd={onChangeEnd}
-          thumbSize={16}
-          trackHeight={14}
           className="flex-1"
         />
-        <Button
-          className="h-6 w-6 rounded-lg bg-background-200 p-0"
-          onPress={() => {
-            const newValue = Math.min(2, value + 0.05);
-            onChange(newValue);
-            onChangeEnd?.(newValue);
-          }}
-        >
-          <Icon as={Plus} size="xs" className="text-primary-500" />
-        </Button>
       </HStack>
     </>
   );
@@ -103,7 +78,7 @@ function ModelPreview({ image, label }: { image?: string; label: string }) {
   if (!image) {
     return (
       <Box className="h-full w-full items-center justify-center bg-background-200">
-        <Icon as={ImageIcon} size="sm" className="text-primary-300" />
+        <Icon as={ImageIcon} size="sm" className="text-typography-400" />
       </Box>
     );
   }
@@ -121,7 +96,6 @@ function ModelPreview({ image, label }: { image?: string; label: string }) {
 export function ModelSelector({
   value,
   onChange,
-  servers,
   onRefresh,
   isRefreshing,
   onDelete,
@@ -154,6 +128,7 @@ export function ModelSelector({
     bottomSheetRef.current?.dismiss();
   }, []);
 
+  const servers = useServersStore((state) => state.servers);
   const options = createModelOptions(servers, type);
 
   const renderTrigger = useCallback(
@@ -170,18 +145,18 @@ export function ModelSelector({
               </Box>
               <VStack space="xs" className="flex-1">
                 <Text
-                  className="text-sm font-medium text-primary-500"
+                  className="text-sm font-medium text-typography-950"
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {option?.label || 'Select model'}
                 </Text>
-                <Text className="text-xs text-background-400">
+                <Text className="text-xs text-typography-400">
                   {option?.serverName || 'Choose a model'}
                 </Text>
               </VStack>
             </HStack>
-            <Icon as={ChevronDown} size="sm" className="text-background-400" />
+            <Icon as={ChevronDown} size="sm" className="text-typography-400" />
           </HStack>
         </Pressable>
         {type === 'loras' && (
@@ -199,17 +174,18 @@ export function ModelSelector({
               onChangeEnd={onLoraClipStrengthChange}
             />
             {onDelete && (
-              <Pressable onPress={onDelete} className="active:opacity-80">
-                <HStack
-                  space="xs"
-                  className="items-center justify-center rounded-lg border-[0.5px] border-error-500 py-2"
+              <View className="pt-2">
+                <Button
+                  size="md"
+                  variant="outline"
+                  action="negative"
+                  onPress={onDelete}
+                  className="rounded-lg border-error-500 active:bg-error-500/10"
                 >
-                  <Icon as={Trash2} size="xs" className="text-error-500" />
-                  <Text className="text-xs font-medium text-error-500">
-                    Remove LoRA
-                  </Text>
-                </HStack>
-              </Pressable>
+                  <Icon as={Trash2} size="sm" className="text-error-500" />
+                  <Text className="text-sm text-error-500">Remove LoRA</Text>
+                </Button>
+              </View>
             )}
           </VStack>
         )}

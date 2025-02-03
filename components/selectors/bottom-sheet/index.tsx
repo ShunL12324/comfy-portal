@@ -1,22 +1,20 @@
-import React, { useCallback, useMemo, useState, forwardRef } from 'react';
-import {
-  BottomSheetModal,
-  BottomSheetFlatList,
-  BottomSheetBackdrop,
-  BottomSheetBackdropProps,
-  BottomSheetHandle,
-} from '@gorhom/bottom-sheet';
-import { SearchableBottomSheetProps, SelectorOption } from '../types';
-import { SearchHeader } from './search-header';
-import { Item } from './item';
-import { ListRenderItem, View } from 'react-native';
-import { useThemeStore } from '@/store/theme';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { RefreshCw } from 'lucide-react-native';
 import { Spinner } from '@/components/ui/spinner';
-import { Box } from '@/components/ui/box';
-import { HStack } from '@/components/ui/hstack';
+import { Colors } from '@/constants/Colors';
+import { useThemeStore } from '@/store/theme';
+import {
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
+  BottomSheetFlatList,
+  BottomSheetModal,
+} from '@gorhom/bottom-sheet';
+import { RefreshCw } from 'lucide-react-native';
+import React, { forwardRef, useCallback, useMemo, useState } from 'react';
+import { ListRenderItem, View } from 'react-native';
+import { SearchableBottomSheetProps, SelectorOption } from '../types';
+import { Item } from './item';
+import { SearchHeader } from './search-header';
 
 export const SearchableBottomSheet = forwardRef<
   BottomSheetModal,
@@ -42,10 +40,6 @@ export const SearchableBottomSheet = forwardRef<
 ) {
   const [searchQuery, setSearchQuery] = useState('');
   const theme = useThemeStore((state) => state.theme);
-
-  // Get background color based on theme
-  const backgroundColor =
-    theme === 'dark' ? 'rgb(18, 18, 18)' : 'rgb(255, 255, 255)';
 
   const filteredOptions = useMemo(
     () =>
@@ -79,14 +73,11 @@ export const SearchableBottomSheet = forwardRef<
 
   const renderHandle = useCallback(
     () => (
-      <View
-        style={{ backgroundColor }}
-        className="-mb-1 h-8 items-center justify-center rounded-t-[24px]"
-      >
+      <View className="-mb-1 h-8 items-center justify-center rounded-t-[24px] bg-background-0">
         <View className="h-1 w-12 rounded-full bg-background-300" />
       </View>
     ),
-    [backgroundColor],
+    [],
   );
 
   const selectedOption = options.find((option) => option.value === value);
@@ -103,7 +94,10 @@ export const SearchableBottomSheet = forwardRef<
         backdropComponent={renderBackdrop}
         handleComponent={renderHandle}
         backgroundStyle={{
-          backgroundColor,
+          backgroundColor:
+            theme === 'dark'
+              ? Colors.dark.background[0]
+              : Colors.light.background[0],
         }}
       >
         <SearchHeader

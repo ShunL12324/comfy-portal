@@ -5,14 +5,16 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { ChevronDown } from 'lucide-react-native';
 import React, { useCallback, useRef } from 'react';
 import { SearchableBottomSheet } from '../bottom-sheet';
-import { Sampler, SAMPLER_OPTIONS } from './constants';
+import { OptionSelectorProps } from './types';
 
-interface SamplerSelectorProps {
-  value: Sampler;
-  onChange: (value: Sampler) => void;
-}
-
-export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
+export function OptionSelector<T extends string>({
+  value,
+  onChange,
+  options,
+  title = 'Select Option',
+  showSearch = false,
+  searchPlaceholder,
+}: OptionSelectorProps<T>) {
   const [isVisible, setIsVisible] = React.useState(false);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
@@ -26,20 +28,18 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
     bottomSheetRef.current?.dismiss();
   }, []);
 
-  const selectedOption = SAMPLER_OPTIONS.find(
-    (option) => option.value === value,
-  );
+  const selectedOption = options.find((option) => option.value === value);
 
   return (
     <>
       <Pressable
-        className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
+        className="flex-row items-center justify-between rounded-xl bg-background-200 px-4 py-3"
         onPress={handlePress}
       >
         <Text className="text-sm text-typography-900">
           {selectedOption?.label || value}
         </Text>
-        <Icon as={ChevronDown} size="sm" className="text-typography-500" />
+        <Icon as={ChevronDown} size="sm" className="text-typography-950" />
       </Pressable>
 
       <SearchableBottomSheet
@@ -47,13 +47,14 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
         isVisible={isVisible}
         onClose={handleClose}
         onSelect={(newValue) => {
-          onChange(newValue as Sampler);
+          onChange(newValue as T);
           handleClose();
         }}
-        title="Select Sampler"
-        options={SAMPLER_OPTIONS}
+        title={title}
+        options={options}
         value={value}
-        showSearch={false}
+        showSearch={showSearch}
+        searchPlaceholder={searchPlaceholder}
       />
     </>
   );
