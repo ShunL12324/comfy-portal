@@ -269,7 +269,7 @@ export const ImagePreview = memo(function ImagePreview({
   };
 
   return (
-    <Box className="relative h-full w-full overflow-hidden border-0 p-0">
+    <Box className="relative h-full w-full border-0 p-0">
       {imageUrl && imageUrl.length > 0 ? (
         <Center className="h-full w-full">
           <Box className="relative h-full w-full">
@@ -364,7 +364,7 @@ export const ImagePreview = memo(function ImagePreview({
                     }}
                     className="absolute bottom-16 left-0 right-0 items-center justify-center"
                   >
-                    <Text className="text-base font-medium text-white/70">
+                    <Text className="text-sm font-medium text-white/70">
                       Long press to open menu
                     </Text>
                   </MotiView>
@@ -422,9 +422,9 @@ export const ImagePreview = memo(function ImagePreview({
       ) : (
         <Center className="h-full w-full bg-background-0">
           <VStack space="md" className="items-center">
-            <Icon as={ImageIcon} size="lg" className="text-typography-300" />
+            <Icon as={ImageIcon} size="xl" className="text-typography-500" />
             <VStack space="xs" className="items-center">
-              <Text className="text-base text-typography-500">
+              <Text className="text-sm text-typography-500">
                 No image generated yet
               </Text>
               {progress && progress.current > 0 && (

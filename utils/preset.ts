@@ -3,7 +3,7 @@ import { GenerationParams, LoraConfig } from '@/types/generation';
 const DEFAULT_PRESET = {
   "1": {
     "inputs": {
-      "ckpt_name": "STOIQOAfroditeFLUXXL_F1DAlpha.safetensors"
+      "ckpt_name": ""
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -13,9 +13,9 @@ const DEFAULT_PRESET = {
   "2": {
     "inputs": {
       "seed": 284011923044208,
-      "steps": 20,
+      "steps": 30,
       "cfg": 8,
-      "sampler_name": "euler",
+      "sampler_name": "euler_ancestral",
       "scheduler": "normal",
       "denoise": 1,
       "model": [

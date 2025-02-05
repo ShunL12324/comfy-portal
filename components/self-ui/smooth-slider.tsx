@@ -1,13 +1,15 @@
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Colors } from '@/constants/Colors';
 import { useThemeStore } from '@/store/theme';
-import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
-import React, { useCallback } from 'react';
-import { TouchableOpacity, View } from 'react-native';
-import { useSharedValue, withSpring } from 'react-native-reanimated';
+import React, { useCallback, useEffect } from 'react';
+import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { Icon } from '../ui/icon';
 
 /**
@@ -33,7 +35,34 @@ interface SmoothSliderProps {
   showButtons?: boolean;
   /** 小数位数（默认自动根据step计算） */
   decimalPlaces?: number;
+  /** Thumb size in pixels (default: 32) */
+  thumbSize?: number;
+  /** Track height in pixels (default: 4) */
+  trackHeight?: number;
+  /** Space between elements in pixels (default: 16) */
+  space?: number;
 }
+
+// Constants
+const THUMB_SIZE = 32; // 8 * 4 = 32px
+const TRACK_HEIGHT = 4; // 1 * 4 = 4px
+
+// Styles
+const styles = {
+  container: 'flex-row items-center',
+  button: {
+    base: 'items-center justify-center rounded-lg bg-background-200',
+    disabled: 'opacity-50',
+  },
+  icon: 'text-typography-400',
+  track: {
+    container: 'relative w-full justify-center',
+    background: 'absolute w-full rounded-full bg-background-100',
+    active: 'absolute rounded-l-full bg-background-600',
+  },
+  thumb:
+    'absolute items-center justify-center rounded-full bg-primary-400 shadow-sm',
+} as const;
 
 /**
  * A smooth, animated slider component with haptic feedback
@@ -50,13 +79,103 @@ export function SmoothSlider({
   className = '',
   showButtons = true,
   decimalPlaces,
+  thumbSize = 24,
+  trackHeight = 12,
+  space = 24,
 }: SmoothSliderProps) {
-  const animatedValue = useSharedValue(value);
   const { theme } = useThemeStore();
+  const sliderWidth = useSharedValue(0);
+  const position = useSharedValue(0);
+  const isDragging = useSharedValue(false);
+  const startPosition = useSharedValue(0);
+
+  const valueToPosition = useCallback(
+    (val: number) => {
+      'worklet';
+      const range = maxValue - minValue;
+      const percentage = (val - minValue) / range;
+      return percentage * sliderWidth.value;
+    },
+    [maxValue, minValue, sliderWidth.value],
+  );
+
+  const positionToValue = useCallback(
+    (pos: number) => {
+      'worklet';
+      const range = maxValue - minValue;
+      const percentage = pos / sliderWidth.value;
+      const rawValue = percentage * range + minValue;
+      const precision =
+        decimalPlaces ?? (step.toString().split('.')[1] || '').length;
+      const steppedValue =
+        Math.round((rawValue - minValue) / step) * step + minValue;
+      return Number(steppedValue.toFixed(precision));
+    },
+    [maxValue, minValue, step, sliderWidth.value, decimalPlaces],
+  );
+
+  useEffect(() => {
+    if (!isDragging.value) {
+      position.value = withTiming(valueToPosition(value), {
+        duration: 150,
+      });
+    }
+  }, [value, valueToPosition]);
+
+  const onLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      'worklet';
+      sliderWidth.value = event.nativeEvent.layout.width;
+      position.value = valueToPosition(value);
+    },
+    [valueToPosition, value],
+  );
+
+  const handleHapticFeedback = useCallback(() => {
+    'worklet';
+    runOnJS(Haptics.selectionAsync)();
+  }, []);
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      'worklet';
+      startPosition.value = position.value;
+      isDragging.value = true;
+      handleHapticFeedback();
+    })
+    .onUpdate((e) => {
+      'worklet';
+      const newPosition = Math.max(
+        0,
+        Math.min(startPosition.value + e.translationX, sliderWidth.value),
+      );
+      position.value = newPosition;
+      const newValue = positionToValue(newPosition);
+      if (onChange) {
+        runOnJS(onChange)(newValue);
+      }
+    })
+    .onEnd(() => {
+      'worklet';
+      isDragging.value = false;
+      const finalValue = positionToValue(position.value);
+      if (onChangeEnd) {
+        runOnJS(onChangeEnd)(finalValue);
+      }
+      handleHapticFeedback();
+    });
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: position.value - thumbSize / 2 }],
+  }));
+
+  const trackActiveStyle = useAnimatedStyle(() => ({
+    width: position.value,
+  }));
 
   const adjustValue = useCallback(
     (delta: number) => {
-      // 优先使用传入的小数位数参数，否则自动计算
+      'worklet';
       const precision =
         decimalPlaces ?? (step.toString().split('.')[1] || '').length;
       const newValue = Number(
@@ -65,87 +184,103 @@ export function SmoothSlider({
         ),
       );
       if (newValue !== value) {
-        animatedValue.value = withSpring(newValue);
-        onChange?.(newValue);
-        onChangeEnd?.(newValue);
-        Haptics.selectionAsync();
+        position.value = withTiming(valueToPosition(newValue), {
+          duration: 150,
+        });
+        if (onChange) {
+          runOnJS(onChange)(newValue);
+        }
+        if (onChangeEnd) {
+          runOnJS(onChangeEnd)(newValue);
+        }
+        handleHapticFeedback();
       }
     },
-    [
-      value,
-      minValue,
-      maxValue,
-      onChange,
-      onChangeEnd,
-      animatedValue,
-      step,
-      decimalPlaces,
-    ],
+    [value, minValue, maxValue, onChange, onChangeEnd, step, decimalPlaces],
   );
 
   return (
-    <VStack space="sm" className={className}>
-      <HStack className="items-center" space="md">
-        {showButtons && (
-          <TouchableOpacity
-            onPress={() => adjustValue(-step)}
-            disabled={value <= minValue}
-            className={`p-1 ${value <= minValue ? 'opacity-50' : ''}`}
+    <View
+      className={`${styles.container} ${className}`}
+      style={{ height: thumbSize }}
+    >
+      {showButtons && (
+        <TouchableOpacity
+          onPress={() => adjustValue(-step)}
+          disabled={value <= minValue}
+          className={value <= minValue ? styles.button.disabled : undefined}
+          style={{ marginRight: space }}
+        >
+          <View
+            className={styles.button.base}
+            style={{ width: thumbSize, height: thumbSize }}
           >
-            <View className="h-6 w-6 items-center justify-center rounded-lg bg-background-200">
-              <Icon as={Minus} size="xs" className="text-typography-400" />
-            </View>
-          </TouchableOpacity>
-        )}
+            <Icon as={Minus} size="sm" className={styles.icon} />
+          </View>
+        </TouchableOpacity>
+      )}
 
-        <View className="flex-1">
-          <Slider
-            value={value}
-            minimumValue={minValue}
-            maximumValue={maxValue}
-            step={step}
-            onValueChange={(val) => {
-              const precision =
-                decimalPlaces ?? (step.toString().split('.')[1] || '').length;
-              const fixedVal = Number(val.toFixed(precision));
-              animatedValue.value = fixedVal;
-              onChange?.(fixedVal);
+      <View style={{ flex: 1, height: thumbSize }}>
+        <View
+          onLayout={onLayout}
+          className={styles.track.container}
+          style={{ height: thumbSize }}
+        >
+          <View
+            className={styles.track.background}
+            style={{
+              height: trackHeight,
+              top: '50%',
+              marginTop: -trackHeight / 2,
+              zIndex: 1,
             }}
-            onSlidingComplete={(val) => {
-              Haptics.selectionAsync();
-              onChangeEnd?.(val);
-            }}
-            minimumTrackTintColor={
-              theme === 'light'
-                ? Colors.light.background[600]
-                : Colors.dark.background[600]
-            }
-            maximumTrackTintColor={
-              theme === 'light'
-                ? Colors.light.background[100]
-                : Colors.dark.background[100]
-            }
-            thumbTintColor={
-              theme === 'light'
-                ? Colors.light.primary[400]
-                : Colors.dark.primary[400]
-            }
-            style={{ height: 40 }}
           />
+          <Animated.View
+            className={`${styles.track.active} rounded-l-full`}
+            style={[
+              {
+                height: trackHeight,
+                top: '50%',
+                marginTop: -trackHeight / 2,
+                zIndex: 2,
+              },
+              trackActiveStyle,
+            ]}
+          />
+          <GestureDetector gesture={panGesture}>
+            <Animated.View
+              className={styles.thumb}
+              style={[
+                {
+                  width: thumbSize,
+                  height: thumbSize,
+                  position: 'absolute',
+                  top: '50%',
+                  marginTop: -thumbSize / 2,
+                  zIndex: 3,
+                },
+                thumbStyle,
+              ]}
+            />
+          </GestureDetector>
         </View>
+      </View>
 
-        {showButtons && (
-          <TouchableOpacity
-            onPress={() => adjustValue(step)}
-            disabled={value >= maxValue}
-            className={`p-1 ${value >= maxValue ? 'opacity-50' : ''}`}
+      {showButtons && (
+        <TouchableOpacity
+          onPress={() => adjustValue(step)}
+          disabled={value >= maxValue}
+          className={value >= maxValue ? styles.button.disabled : undefined}
+          style={{ marginLeft: space }}
+        >
+          <View
+            className={styles.button.base}
+            style={{ width: thumbSize, height: thumbSize }}
           >
-            <View className="h-6 w-6 items-center justify-center rounded-lg bg-background-200">
-              <Icon as={Plus} size="xs" className="text-typography-400" />
-            </View>
-          </TouchableOpacity>
-        )}
-      </HStack>
-    </VStack>
+            <Icon as={Plus} size="sm" className={styles.icon} />
+          </View>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }

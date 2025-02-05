@@ -47,7 +47,7 @@ export default function TabModel({ serverId, presetId }: TabModelProps) {
   return (
     <ScrollView
       className="flex-1 bg-background-0"
-      contentContainerStyle={{ gap: 16, padding: 16, paddingBottom: 48 }}
+      contentContainerStyle={{ gap: 16, padding: 16 }}
     >
       <View className="flex-row items-center justify-between">
         <Text size="sm" bold>

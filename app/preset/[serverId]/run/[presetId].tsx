@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Wand2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions, View } from 'react-native';
@@ -19,9 +19,8 @@ import { AppBar } from '@/components/layout/app-bar';
 import { ServerStatus } from '@/components/pages/run/generation-status-indicator';
 import { HistoryDrawer } from '@/components/pages/run/history-drawer';
 
-import ControlPanel from '@/components/pages/run/control-panel/control-panel';
+import ControlPanel from '@/components/pages/run/control-panel';
 import { ParallaxImage } from '@/components/pages/run/parallax-image';
-import { GenerationParams } from '@/types/generation';
 
 interface GenerationState {
   status: 'idle' | 'generating' | 'downloading';
@@ -29,21 +28,6 @@ interface GenerationState {
   nodeProgress: { completed: number; total: number };
   downloadProgress: number;
 }
-
-const DEFAULT_PARAMS: GenerationParams = {
-  model: '',
-  prompt: '',
-  negativePrompt: '',
-  steps: 30,
-  cfg: 7,
-  seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
-  width: 768,
-  height: 1024,
-  stopAtClipLayer: -2,
-  sampler: 'euler_ancestral',
-  scheduler: 'sgm_uniform',
-  useRandomSeed: true,
-};
 
 /**
  * Screen component for running image generation presets
@@ -55,6 +39,7 @@ const DEFAULT_PARAMS: GenerationParams = {
  */
 export default function RunPresetScreen() {
   const { serverId, presetId } = useLocalSearchParams();
+  const router = useRouter();
   const server = useServersStore((state) =>
     state.servers.find((s) => s.id === serverId),
   );
@@ -62,17 +47,16 @@ export default function RunPresetScreen() {
     state.presets.find((p) => p.id === presetId),
   );
 
+  if (!preset) {
+    router.back();
+  }
+
   const [generationState, setGenerationState] = useState<GenerationState>({
     status: 'idle',
     progress: { value: 0, max: 0 },
     nodeProgress: { completed: 0, total: 0 },
     downloadProgress: 0,
   });
-
-  const [params, setParams] = useState<GenerationParams>(() => ({
-    ...DEFAULT_PARAMS,
-    ...(preset?.params || {}),
-  }));
 
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -84,7 +68,13 @@ export default function RunPresetScreen() {
   const comfyClient = useRef<ComfyClient | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const imageHeight = screenHeight * 0.5;
+  const [imageHeight, setImageHeight] = useState(
+    Math.min(screenHeight * 0.6, preset?.params.height || 1024),
+  );
+
+  useEffect(() => {
+    setImageHeight(Math.min(screenHeight * 0.6, preset?.params.height || 1024));
+  }, [preset?.params.height, screenHeight]);
 
   const lastProgressUpdateRef = useRef(Date.now());
   const lastProgressValueRef = useRef(0);
@@ -134,12 +124,6 @@ export default function RunPresetScreen() {
       downloadProgress: 0,
     });
   }, []);
-
-  useEffect(() => {
-    if (preset?.params) {
-      setParams(preset.params);
-    }
-  }, [preset?.params]);
 
   useEffect(() => {
     if (server) {
@@ -198,7 +182,7 @@ export default function RunPresetScreen() {
         }
       }
 
-      await comfyClient.current.generate(params, {
+      await comfyClient.current.generate(preset.params, {
         onProgress: (value, max) => {
           updateProgressDebounced('progress', value, max);
           if (value > max * 0.9 && value < max) {
@@ -244,7 +228,7 @@ export default function RunPresetScreen() {
               serverId: serverId as string,
               presetId: preset.id,
               imageUrl: images[0],
-              params: params,
+              params: preset.params,
             });
 
             if (result) {
@@ -300,14 +284,14 @@ export default function RunPresetScreen() {
               serverId: serverId as string,
               presetId: preset.id,
               imageUrl: url,
-              params,
+              params: preset.params,
               delete: true,
             }),
           ),
         );
       }
     },
-    [generatedImage, historyImages, params, preset, serverId],
+    [generatedImage, historyImages, preset, serverId],
   );
 
   const handleScroll = useCallback(
@@ -366,23 +350,6 @@ export default function RunPresetScreen() {
         className="z-10 bg-background-0/20"
       />
 
-      {/* <ParallaxImage
-          scrollY={scrollY}
-          imageHeight={imageHeight}
-          imageUrl={generatedImage || undefined}
-          progress={
-            generationState.status === 'generating'
-              ? {
-                  current: generationState.progress.value,
-                  total: generationState.progress.max,
-                }
-              : undefined
-          }
-          isPreviewOpen={isPreviewOpen}
-          onPreviewClose={() => setIsPreviewOpen(false)}
-          presetId={preset.id}
-          serverId={serverId as string}
-        /> */}
       <View style={{ flex: 1, zIndex: 10 }} className="bg-background-0">
         <View style={{ height: imageHeight, zIndex: 20 }}>
           <ParallaxImage
@@ -437,19 +404,7 @@ export default function RunPresetScreen() {
           />
 
           <View className="flex-1">
-            {/* <ParameterControls
-              params={params}
-              onParamsChange={setParams}
-              presetId={preset.id}
-              serverId={serverId as string}
-            /> */}
-            {/* <View className="absolute left-0 top-0 z-50 h-full w-full flex-1 bg-blue-500" /> */}
-            <ControlPanel
-              serverId={serverId as string}
-              params={params}
-              onParamsChange={setParams}
-              presetId={preset.id}
-            />
+            <ControlPanel serverId={serverId as string} presetId={preset.id} />
           </View>
         </Animated.ScrollView>
       </View>
@@ -462,7 +417,7 @@ export default function RunPresetScreen() {
             action="primary"
             onPress={handleGenerate}
             disabled={generationState.status === 'generating'}
-            className="rounded-lg bg-accent-600 active:bg-primary-600 disabled:opacity-50"
+            className="rounded-lg active:bg-primary-600 disabled:opacity-50"
           >
             <Icon as={Wand2} size="sm" className="mr-2 text-typography-0" />
             <Text className="text-md font-semibold text-typography-0">

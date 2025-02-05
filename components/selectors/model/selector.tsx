@@ -1,6 +1,5 @@
 import { SmoothSlider } from '@/components/self-ui/smooth-slider';
 import { Box } from '@/components/ui/box';
-import { Button } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
@@ -17,7 +16,7 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import React, { useCallback, useRef } from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { SelectorOption } from '../types';
 import { createModelOptions } from './constants';
@@ -50,7 +49,7 @@ function StrengthControl({
 }: StrengthControlProps) {
   return (
     <>
-      <HStack space="xs" className="items-center justify-between">
+      <HStack space="xs" className="mt-2 items-center justify-between">
         <HStack space="xs" className="items-center">
           <Icon as={Sliders} size="xs" className="text-typography-900" />
           <Text className="text-xs text-typography-900">{label}</Text>
@@ -174,18 +173,13 @@ export function ModelSelector({
               onChangeEnd={onLoraClipStrengthChange}
             />
             {onDelete && (
-              <View className="pt-2">
-                <Button
-                  size="md"
-                  variant="outline"
-                  action="negative"
-                  onPress={onDelete}
-                  className="rounded-lg border-error-500 active:bg-error-500/10"
-                >
-                  <Icon as={Trash2} size="sm" className="text-error-500" />
-                  <Text className="text-sm text-error-500">Remove LoRA</Text>
-                </Button>
-              </View>
+              <TouchableOpacity
+                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg bg-error-0 p-3"
+                onPress={onDelete}
+              >
+                <Icon as={Trash2} size="xs" className="text-typography-950" />
+                <Text className="text-xs text-typography-950">Remove LoRA</Text>
+              </TouchableOpacity>
             )}
           </VStack>
         )}

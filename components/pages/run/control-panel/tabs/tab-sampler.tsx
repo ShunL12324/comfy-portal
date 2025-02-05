@@ -7,10 +7,12 @@ import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { usePresetsStore } from '@/store/presets';
-import { Dice2 } from 'lucide-react-native';
-import { useState } from 'react';
+import * as Crypto from 'expo-crypto';
+import { Dice2, Info } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import { useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { TabItem } from './common';
 
 interface TabSamplerProps {
   serverId: string;
@@ -18,12 +20,15 @@ interface TabSamplerProps {
 }
 
 export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
-  const [useRandomSeed, setUseRandomSeed] = useState(false);
   // data
   const preset = usePresetsStore((state) =>
     state.presets.find((p) => p.id === presetId),
   );
 
+  // actions
+  const updatePreset = usePresetsStore((state) => state.updatePreset);
+
+  // local state
   const [sampler, setSampler] = useState<Sampler>(
     preset?.params.sampler || 'euler_ancestral',
   );
@@ -31,55 +36,56 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
     preset?.params.scheduler || 'normal',
   );
   const [steps, setSteps] = useState(preset?.params.steps || 25);
-  const [cfgScale, setCfgScale] = useState(preset?.params.cfg || 7.5);
-  const [seed, setSeed] = useState(preset?.params.seed);
+  const [cfg, setCfg] = useState(preset?.params.cfg || 7.5);
+  const [useRandomSeed, setUseRandomSeed] = useState(false);
+  const [seed, setSeed] = useState(preset?.params.seed || 0);
 
-  // actions
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  // handlers
+  useEffect(() => {
+    if (!preset) return;
+    updatePreset(presetId, {
+      params: {
+        ...preset?.params,
+        sampler,
+        scheduler,
+        steps,
+        cfg,
+        seed,
+      },
+    });
+  }, [sampler, scheduler, steps, cfg, seed]);
 
   return (
     <ScrollView
       className="flex-1 bg-background-0"
-      contentContainerStyle={{ gap: 16, padding: 16, paddingBottom: 100 }}
+      contentContainerStyle={{ gap: 16, padding: 16 }}
     >
-      <View className="flex-col gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text size="sm" bold>
-            Sampler
-          </Text>
-        </View>
+      <TabItem title="Sampler">
         <SamplerSelector
           value={sampler}
           onChange={(value) => {
             setSampler(value);
           }}
         />
-      </View>
-      <View className="flex-col gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text size="sm" bold>
-            Scheduler
-          </Text>
-        </View>
+      </TabItem>
+      <TabItem title="Scheduler">
         <SchedulerSelector
           value={scheduler}
           onChange={(value) => {
             setScheduler(value);
           }}
         />
-      </View>
-      <View className="flex-col gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text size="sm" bold>
-            Steps
-          </Text>
+      </TabItem>
+      <TabItem
+        title="Steps"
+        titleRight={
           <View className="flex-row items-center justify-between rounded-lg bg-background-100 px-2 py-1">
             <Text size="sm" bold>
               {steps}
             </Text>
           </View>
-        </View>
-
+        }
+      >
         <SmoothSlider
           value={steps}
           minValue={1}
@@ -89,48 +95,46 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
           className="flex-1"
           showButtons={true}
         />
-      </View>
-      <View className="flex-col gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text size="sm" bold>
-            CFG Scale
-          </Text>
+      </TabItem>
+      <TabItem
+        title="CFG Scale"
+        titleRight={
           <View className="flex-row items-center justify-between rounded-lg bg-background-100 px-2 py-1">
             <Text size="sm" bold>
-              {cfgScale}
+              {cfg}
             </Text>
           </View>
-        </View>
+        }
+      >
         <SmoothSlider
-          value={cfgScale}
+          value={cfg}
           minValue={1}
           maxValue={30}
           step={0.5}
-          onChange={setCfgScale}
+          onChange={setCfg}
           className="flex-1"
           showButtons={true}
           decimalPlaces={1}
         />
-      </View>
-      <View className="flex-col gap-2">
-        <View className="flex-row items-center justify-between">
-          <Text size="sm" bold>
-            Seed
-          </Text>
-        </View>
+      </TabItem>
+      <TabItem title="Seed">
         <SegmentedControl
           options={['Random', 'Fixed']}
           value={useRandomSeed ? 'Random' : 'Fixed'}
           onChange={(value: string) => setUseRandomSeed(value === 'Random')}
         />
-        {useRandomSeed && (
-          <Animated.View
-            className={`flex-row items-center justify-between gap-2 overflow-hidden ${
-              useRandomSeed ? 'h-0' : 'h-10'
-            }`}
-            entering={FadeIn}
-            exiting={FadeOut}
-          >
+        <MotiView
+          animate={{
+            opacity: !useRandomSeed ? 1 : 0,
+            scale: !useRandomSeed ? 1 : 0.95,
+          }}
+          transition={{
+            type: 'timing',
+            duration: 200,
+          }}
+          className="flex-col gap-1 overflow-hidden"
+        >
+          <View className="flex-row items-center justify-between gap-2">
             <Input
               variant="outline"
               size="md"
@@ -143,18 +147,31 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
                 placeholder="Custom Seed"
                 value={seed?.toString() || ''}
                 onChangeText={(text) => setSeed(Number(text))}
+                keyboardType="numeric"
+                className="text-sm"
               />
             </Input>
             <TouchableOpacity
-              onPress={() => setSeed(Math.floor(Math.random() * 1000000))}
+              onPress={() => {
+                // Generate a random 32-bit integer (-2147483648 to 2147483647)
+                const buffer = new Int32Array(1);
+                Crypto.getRandomValues(buffer);
+                setSeed(buffer[0]);
+              }}
             >
               <View className="h-10 w-10 items-center justify-center rounded-lg bg-background-50">
                 <Icon as={Dice2} size="sm" className="text-typography-500" />
               </View>
             </TouchableOpacity>
-          </Animated.View>
-        )}
-      </View>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Icon as={Info} size="xs" className="text-typography-500" />
+            <Text size="sm" className="text-xs text-typography-500">
+              Using the same seed will not trigger image generation again.
+            </Text>
+          </View>
+        </MotiView>
+      </TabItem>
     </ScrollView>
   );
 }

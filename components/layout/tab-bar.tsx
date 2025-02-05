@@ -1,4 +1,3 @@
-import { useThemeStore } from '@/store/theme';
 import { Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
@@ -43,14 +42,11 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
 };
 
 export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
-  const { theme } = useThemeStore();
   return (
-    <VStack
-      className={`border-t border-secondary-200 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}
-    >
+    <VStack className={`border-t border-outline-0 bg-background-0`}>
       <HStack space="xs" className="relative">
         <MotiView
-          className="absolute h-0.5 bg-primary-900"
+          className="absolute h-0.5 rounded-xl bg-primary-900"
           style={{ width: TAB_WIDTH - 80 }}
           animate={{
             translateX: activeTab === 'server' ? 40 : TAB_WIDTH + 40,
