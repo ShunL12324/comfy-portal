@@ -12,6 +12,9 @@ export default function TermsScreen() {
         cacheEnabled={false}
         cacheMode="LOAD_NO_CACHE"
         incognito={true}
+        style={{
+          backgroundColor: 'transparent',
+        }}
       />
     </View>
   );

@@ -1,8 +1,8 @@
-import { GenerationParams } from '@/types/generation';
+import { GenerationParams } from '@/types/preset';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
+import { createApiCall } from './api-call';
 import { buildServerUrl, isLocalOrLanIP } from './network';
-import { createPreset } from './preset';
 
 /**
  * Configuration options for the ComfyUI client
@@ -304,7 +304,7 @@ export class ComfyClient {
    * @private
    */
   private async queuePrompt(params: GenerationParams): Promise<string> {
-    const workflow = createPreset(params);
+    const workflow = createApiCall(params);
     const payload = { prompt: workflow, client_id: this.clientId };
     const url = await buildServerUrl(this.host, this.port, '/prompt');
 

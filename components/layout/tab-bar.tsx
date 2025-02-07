@@ -32,7 +32,7 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
         {icon}
         <Text
           size="xs"
-          className={`mt-0.5 ${isActive ? 'text-primary-900' : 'text-secondary-500'}`}
+          className={`mt-0.5 ${isActive ? 'text-typography-950' : 'text-typography-400'}`}
         >
           {label}
         </Text>
@@ -46,7 +46,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
     <VStack className={`border-t border-outline-0 bg-background-0`}>
       <HStack space="xs" className="relative">
         <MotiView
-          className="absolute h-0.5 rounded-xl bg-primary-900"
+          className="absolute h-0.5 rounded-xl bg-typography-950"
           style={{ width: TAB_WIDTH - 80 }}
           animate={{
             translateX: activeTab === 'server' ? 40 : TAB_WIDTH + 40,
@@ -63,8 +63,8 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
               size="lg"
               className={`${
                 activeTab === 'server'
-                  ? 'text-primary-900'
-                  : 'text-secondary-500'
+                  ? 'text-typography-950'
+                  : 'text-typography-400'
               }`}
             />
           }
@@ -79,8 +79,8 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
               size="lg"
               className={`${
                 activeTab === 'setting'
-                  ? 'text-primary-900'
-                  : 'text-secondary-500'
+                  ? 'text-typography-950'
+                  : 'text-typography-400'
               }`}
             />
           }

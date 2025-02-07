@@ -1,7 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Wand2 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, useWindowDimensions, View } from 'react-native';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +26,10 @@ import { ServerStatus } from '@/components/pages/run/generation-status-indicator
 import { HistoryDrawer } from '@/components/pages/run/history-drawer';
 
 import ControlPanel from '@/components/pages/run/control-panel';
-import { ParallaxImage } from '@/components/pages/run/parallax-image';
+import { ImagePreview } from '@/components/pages/run/image-preview';
+import { Colors } from '@/constants/Colors';
+import { useThemeStore } from '@/store/theme';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 
 interface GenerationState {
   status: 'idle' | 'generating' | 'downloading';
@@ -40,6 +49,7 @@ interface GenerationState {
 export default function RunPresetScreen() {
   const { serverId, presetId } = useLocalSearchParams();
   const router = useRouter();
+  const { theme } = useThemeStore();
   const server = useServersStore((state) =>
     state.servers.find((s) => s.id === serverId),
   );
@@ -66,15 +76,6 @@ export default function RunPresetScreen() {
   >([]);
 
   const comfyClient = useRef<ComfyClient | null>(null);
-  const { height: screenHeight } = useWindowDimensions();
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const [imageHeight, setImageHeight] = useState(
-    Math.min(screenHeight * 0.6, preset?.params.height || 1024),
-  );
-
-  useEffect(() => {
-    setImageHeight(Math.min(screenHeight * 0.6, preset?.params.height || 1024));
-  }, [preset?.params.height, screenHeight]);
 
   const lastProgressUpdateRef = useRef(Date.now());
   const lastProgressValueRef = useRef(0);
@@ -83,6 +84,9 @@ export default function RunPresetScreen() {
   const progressCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const insets = useSafeAreaInsets();
+
+  const snapPoints = useMemo(() => ['40%', '60%'], []);
+  const sheetRef = useRef<BottomSheet>(null);
 
   const updateProgressDebounced = useCallback(
     (type: 'progress' | 'nodeProgress', value: number, max: number) => {
@@ -294,26 +298,6 @@ export default function RunPresetScreen() {
     [generatedImage, historyImages, preset, serverId],
   );
 
-  const handleScroll = useCallback(
-    (event: any) => {
-      const y = event.nativeEvent.contentOffset.y;
-      if (y < -imageHeight) {
-        scrollY.setValue(-imageHeight);
-      }
-    },
-    [imageHeight, scrollY],
-  );
-
-  const handleScrollEnd = useCallback(
-    (event: any) => {
-      const y = event.nativeEvent.contentOffset.y;
-      if (y < -imageHeight) {
-        scrollY.setValue(-imageHeight);
-      }
-    },
-    [imageHeight, scrollY],
-  );
-
   if (!server || !preset) {
     return (
       <VStack className="flex-1 items-center justify-center">
@@ -347,70 +331,57 @@ export default function RunPresetScreen() {
             <Icon as={Images} size="md" className="text-primary-500" />
           </Button>
         }
-        className="z-10 bg-background-0/20"
+        className="relative z-30 bg-background-0"
       />
 
-      <View style={{ flex: 1, zIndex: 10 }} className="bg-background-0">
-        <View style={{ height: imageHeight, zIndex: 20 }}>
-          <ParallaxImage
-            scrollY={scrollY}
-            imageHeight={imageHeight}
-            imageUrl={generatedImage || undefined}
-            progress={
-              generationState.status === 'generating'
-                ? {
-                    current: generationState.progress.value,
-                    total: generationState.progress.max,
-                  }
-                : undefined
-            }
-            isPreviewOpen={isPreviewOpen}
-            onPreviewClose={() => setIsPreviewOpen(false)}
-            presetId={preset.id}
-            serverId={serverId as string}
-          />
-        </View>
-
-        <Animated.ScrollView
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          bounces={true}
-          contentContainerStyle={{
-            minHeight: screenHeight,
-          }}
-          style={{
-            zIndex: 20,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-          onScrollEndDrag={handleScrollEnd}
-          overScrollMode="never"
-          showsVerticalScrollIndicator={false}
-          automaticallyAdjustKeyboardInsets
-        >
-          {/* Placeholder for parallax image area */}
-          <Pressable
-            // className="bg-red-500"
-            style={{ height: imageHeight }}
-            disabled={!generatedImage}
-            onPress={() => {
-              if (generatedImage) {
-                setIsPreviewOpen(true);
+      <ImagePreview
+        imageUrl={generatedImage || undefined}
+        progress={
+          generationState.status === 'generating'
+            ? {
+                current: generationState.progress.value,
+                total: generationState.progress.max,
               }
-            }}
-          />
+            : undefined
+        }
+        isPreviewOpen={isPreviewOpen}
+        onPreviewClose={() => setIsPreviewOpen(false)}
+        presetId={preset.id}
+        serverId={serverId as string}
+      />
 
-          <View className="flex-1">
-            <ControlPanel serverId={serverId as string} presetId={preset.id} />
-          </View>
-        </Animated.ScrollView>
-      </View>
+      <BottomSheet
+        ref={sheetRef}
+        index={1}
+        snapPoints={snapPoints}
+        enableDynamicSizing={false}
+        backgroundStyle={{
+          backgroundColor:
+            theme === 'light'
+              ? Colors.light.background[0]
+              : Colors.dark.background[0],
+        }}
+        handleComponent={() => (
+          <View className="-mb-1 h-4 items-center justify-center rounded-t-[24px] bg-background-0" />
+        )}
+      >
+        <BottomSheetView
+          style={{
+            flex: 1,
+            height: '100%',
+            backgroundColor:
+              theme === 'light'
+                ? Colors.light.background[0]
+                : Colors.dark.background[0],
+            paddingBottom: 100,
+          }}
+        >
+          <ControlPanel serverId={serverId as string} presetId={preset.id} />
+        </BottomSheetView>
+      </BottomSheet>
 
-      <View className="z-10">
-        <VStack className="border-t-[0.5px] border-outline-50 bg-transparent px-5 pb-6 pt-4">
+      <View className="relative z-30">
+        <VStack className="border-t-[0.5px] border-outline-50 bg-background-0 px-5 pb-6 pt-4">
           <Button
             size="xl"
             variant="solid"

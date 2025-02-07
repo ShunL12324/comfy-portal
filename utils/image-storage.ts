@@ -1,4 +1,4 @@
-import { GenerationParams } from '@/types/generation';
+import { GenerationParams } from '@/types/preset';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
 
@@ -100,7 +100,7 @@ export async function getGeneratedImages(serverId: string, presetId: string) {
       }),
     );
   } catch (error) {
-    console.error('Failed to get generated images:', error);
+    console.error('failed to get generated images:', error);
     return [];
   }
 }
@@ -117,7 +117,7 @@ export async function loadHistoryImages(serverId: string, presetId: string) {
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
-    console.error('Failed to load history images:', error);
+    console.error('failed to load history images:', error);
     return [];
   }
 }
@@ -203,7 +203,7 @@ export async function savePresetThumbnail({
       path: filePath,
     };
   } catch (error) {
-    console.error('Failed to save/delete preset thumbnail:', error);
+    console.error('failed to save/delete preset thumbnail:', error);
     throw error;
   }
 }
@@ -214,7 +214,7 @@ export async function cleanupServerData(serverId: string) {
     const serverDir = `${FileSystem.documentDirectory}server/${serverId}`;
     await FileSystem.deleteAsync(serverDir).catch(() => { });
   } catch (error) {
-    console.error('Failed to cleanup server data:', error);
+    console.error('failed to cleanup server data:', error);
   }
 }
 
@@ -224,6 +224,6 @@ export async function cleanupPresetData(serverId: string, presetId: string) {
     const presetDir = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}`;
     await FileSystem.deleteAsync(presetDir).catch(() => { });
   } catch (error) {
-    console.error('Failed to cleanup preset data:', error);
+    console.error('failed to cleanup preset data:', error);
   }
 } 

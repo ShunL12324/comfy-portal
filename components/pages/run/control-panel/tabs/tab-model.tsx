@@ -3,8 +3,7 @@ import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { AddIcon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { usePresetsStore } from '@/store/presets';
-import { useServersStore } from '@/store/servers';
-import { LoraConfig } from '@/types/generation';
+import { LoraConfig } from '@/types/preset';
 import { randomUUID } from 'expo-crypto';
 import { ScrollView, View } from 'react-native';
 
@@ -15,7 +14,6 @@ interface TabModelProps {
 
 export default function TabModel({ serverId, presetId }: TabModelProps) {
   // store values
-  const servers = useServersStore((state) => state.servers);
   const preset = usePresetsStore((state) =>
     state.presets.find((p) => p.id === presetId),
   );
@@ -32,8 +30,8 @@ export default function TabModel({ serverId, presetId }: TabModelProps) {
     const lora: LoraConfig = {
       id: randomUUID(),
       name: '',
-      strengthClip: 0.5,
-      strengthModel: 0.5,
+      strengthClip: 1,
+      strengthModel: 1,
     };
     if (!preset?.params) return;
     updatePreset(presetId, {
@@ -55,6 +53,7 @@ export default function TabModel({ serverId, presetId }: TabModelProps) {
         </Text>
       </View>
       <ModelSelector
+        serverId={serverId}
         value={model || ''}
         onChange={(value) => {
           if (preset?.params) {
@@ -79,6 +78,7 @@ export default function TabModel({ serverId, presetId }: TabModelProps) {
       {loras?.map((lora) => (
         <ModelSelector
           key={lora.id}
+          serverId={serverId}
           value={lora.name}
           onChange={(value) => {
             if (!preset?.params) return;
@@ -92,6 +92,8 @@ export default function TabModel({ serverId, presetId }: TabModelProps) {
             });
           }}
           type="loras"
+          initialClipStrength={lora.strengthClip}
+          initialModelStrength={lora.strengthModel}
           onLoraClipStrengthChange={(value) => {
             if (!preset?.params) return;
             updatePreset(presetId, {

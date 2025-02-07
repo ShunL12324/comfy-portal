@@ -1,24 +1,28 @@
 import { useThemeStore } from '@/store/theme';
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { Icon } from '../ui/icon';
+import { Text } from '../ui/text';
+
+const AnimatedText = Animated.createAnimatedComponent(Text);
 
 /**
  * Props for the SmoothSlider component
  * @interface SmoothSliderProps
  */
 interface SmoothSliderProps {
-  /** Current value of the slider */
-  value: number;
+  /** Initial value of the slider */
+  initialValue: number;
   /** Minimum value of the slider (default: 0) */
   minValue?: number;
   /** Maximum value of the slider (default: 100) */
@@ -70,7 +74,7 @@ const styles = {
  * @returns {JSX.Element} The rendered slider component
  */
 export function SmoothSlider({
-  value,
+  initialValue,
   minValue = 0,
   maxValue = 100,
   step = 1,
@@ -88,47 +92,90 @@ export function SmoothSlider({
   const position = useSharedValue(0);
   const isDragging = useSharedValue(false);
   const startPosition = useSharedValue(0);
+  const animatedValue = useSharedValue(initialValue ?? 0);
+  const lastUpdate = useSharedValue(0);
+  const [displayValue, setDisplayValue] = useState(initialValue ?? 0);
+
+  // 缓存精度计算
+  const precision = useCallback(() => {
+    'worklet';
+    return decimalPlaces ?? (step.toString().split('.')[1] || '').length;
+  }, [decimalPlaces, step]);
+
+  // 缓存格式化函数
+  const formatValue = useCallback(
+    (value: number) => {
+      'worklet';
+      return value.toFixed(precision());
+    },
+    [precision],
+  );
+
+  // 使用 useAnimatedReaction 来批量处理值的更新，减少重绘
+  useAnimatedReaction(
+    () => {
+      return {
+        value: animatedValue.value,
+        isDragging: isDragging.value,
+        time: Date.now(),
+      };
+    },
+    (current, previous) => {
+      if (!previous || current.value !== previous.value) {
+        // 如果正在拖动，则降低更新频率（每50ms更新一次）
+        if (!current.isDragging || current.time - lastUpdate.value > 50) {
+          lastUpdate.value = current.time;
+          runOnJS(setDisplayValue)(current.value);
+          if (onChange) {
+            runOnJS(onChange)(current.value);
+          }
+        }
+      }
+    },
+    [onChange],
+  );
 
   const valueToPosition = useCallback(
     (val: number) => {
       'worklet';
+      if (sliderWidth.value === 0) return 0;
       const range = maxValue - minValue;
+      if (range === 0) return 0;
       const percentage = (val - minValue) / range;
-      return percentage * sliderWidth.value;
+      return Math.max(
+        0,
+        Math.min(percentage * sliderWidth.value, sliderWidth.value),
+      );
     },
-    [maxValue, minValue, sliderWidth.value],
+    [maxValue, minValue],
   );
 
   const positionToValue = useCallback(
     (pos: number) => {
       'worklet';
+      if (sliderWidth.value === 0) return minValue;
       const range = maxValue - minValue;
+      if (range === 0) return minValue;
       const percentage = pos / sliderWidth.value;
       const rawValue = percentage * range + minValue;
-      const precision =
-        decimalPlaces ?? (step.toString().split('.')[1] || '').length;
       const steppedValue =
         Math.round((rawValue - minValue) / step) * step + minValue;
-      return Number(steppedValue.toFixed(precision));
+      return Number(formatValue(steppedValue));
     },
-    [maxValue, minValue, step, sliderWidth.value, decimalPlaces],
+    [maxValue, minValue, step, formatValue],
   );
-
-  useEffect(() => {
-    if (!isDragging.value) {
-      position.value = withTiming(valueToPosition(value), {
-        duration: 150,
-      });
-    }
-  }, [value, valueToPosition]);
 
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {
       'worklet';
-      sliderWidth.value = event.nativeEvent.layout.width;
-      position.value = valueToPosition(value);
+      const width = event.nativeEvent.layout.width;
+      sliderWidth.value = width;
+      // Calculate initial position based on initialValue
+      const range = maxValue - minValue;
+      const percentage = (initialValue - minValue) / range;
+      position.value = percentage * width;
     },
-    [valueToPosition, value],
+    [initialValue, maxValue, minValue],
   );
 
   const handleHapticFeedback = useCallback(() => {
@@ -143,144 +190,169 @@ export function SmoothSlider({
       isDragging.value = true;
       handleHapticFeedback();
     })
-    .onUpdate((e) => {
+    .onChange((event) => {
       'worklet';
       const newPosition = Math.max(
         0,
-        Math.min(startPosition.value + e.translationX, sliderWidth.value),
+        Math.min(startPosition.value + event.translationX, sliderWidth.value),
       );
+
+      // 使用 requestAnimationFrame 来限制更新频率
       position.value = newPosition;
-      const newValue = positionToValue(newPosition);
-      if (onChange) {
-        runOnJS(onChange)(newValue);
-      }
+      animatedValue.value = positionToValue(newPosition);
     })
     .onEnd(() => {
       'worklet';
       isDragging.value = false;
+      // 结束时强制更新一次确保最终值准确
       const finalValue = positionToValue(position.value);
+      animatedValue.value = finalValue;
+      runOnJS(setDisplayValue)(finalValue);
       if (onChangeEnd) {
         runOnJS(onChangeEnd)(finalValue);
       }
       handleHapticFeedback();
     });
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: position.value - thumbSize / 2 }],
-  }));
+  // 优化动画样式，减少计算量
+  const thumbStyle = useAnimatedStyle(
+    () => ({
+      transform: [{ translateX: position.value - thumbSize / 2 }],
+    }),
+    [thumbSize],
+  );
 
   const trackActiveStyle = useAnimatedStyle(() => ({
     width: position.value,
   }));
 
+  const valueDisplayStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: position.value - 24 }],
+  }));
+
   const adjustValue = useCallback(
     (delta: number) => {
       'worklet';
-      const precision =
-        decimalPlaces ?? (step.toString().split('.')[1] || '').length;
       const newValue = Number(
-        Math.min(Math.max(value + delta, minValue), maxValue).toFixed(
-          precision,
-        ),
+        Math.min(
+          Math.max(animatedValue.value + delta, minValue),
+          maxValue,
+        ).toFixed(precision()),
       );
-      if (newValue !== value) {
-        position.value = withTiming(valueToPosition(newValue), {
-          duration: 150,
-        });
-        if (onChange) {
-          runOnJS(onChange)(newValue);
-        }
-        if (onChangeEnd) {
-          runOnJS(onChangeEnd)(newValue);
-        }
-        handleHapticFeedback();
-      }
+      animatedValue.value = newValue;
+      position.value = withTiming(valueToPosition(newValue), {
+        duration: 150,
+      });
+      handleHapticFeedback();
     },
-    [value, minValue, maxValue, onChange, onChangeEnd, step, decimalPlaces],
+    [minValue, maxValue, precision, valueToPosition, handleHapticFeedback],
   );
 
   return (
-    <View
-      className={`${styles.container} ${className}`}
-      style={{ height: thumbSize }}
-    >
-      {showButtons && (
-        <TouchableOpacity
-          onPress={() => adjustValue(-step)}
-          disabled={value <= minValue}
-          className={value <= minValue ? styles.button.disabled : undefined}
-          style={{ marginRight: space }}
-        >
-          <View
-            className={styles.button.base}
-            style={{ width: thumbSize, height: thumbSize }}
-          >
-            <Icon as={Minus} size="sm" className={styles.icon} />
+    <View className="flex-1 flex-col gap-2">
+      <View
+        className={`${styles.container} ${className}`}
+        style={{ height: thumbSize + 32 }}
+      >
+        {showButtons && (
+          <View style={{ marginTop: 32 }}>
+            <TouchableOpacity
+              onPress={() => adjustValue(-step)}
+              disabled={displayValue <= minValue}
+              className={
+                displayValue <= minValue ? styles.button.disabled : undefined
+              }
+              style={{ marginRight: space }}
+            >
+              <View
+                className={styles.button.base}
+                style={{ width: thumbSize, height: thumbSize }}
+              >
+                <Icon as={Minus} size="sm" className={styles.icon} />
+              </View>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      )}
+        )}
 
-      <View style={{ flex: 1, height: thumbSize }}>
-        <View
-          onLayout={onLayout}
-          className={styles.track.container}
-          style={{ height: thumbSize }}
-        >
-          <View
-            className={styles.track.background}
-            style={{
-              height: trackHeight,
-              top: '50%',
-              marginTop: -trackHeight / 2,
-              zIndex: 1,
-            }}
-          />
+        <View className="flex-1" style={{ height: thumbSize + 32 }}>
           <Animated.View
-            className={`${styles.track.active} rounded-l-full`}
-            style={[
-              {
+            className="absolute top-0 items-center justify-center"
+            style={[{ width: 48 }, valueDisplayStyle]}
+          >
+            <View className="rounded-lg bg-background-100 px-2 py-1">
+              <Text size="sm" bold className="text-typography-900">
+                {displayValue.toFixed(
+                  decimalPlaces ?? (step.toString().split('.')[1] || '').length,
+                )}
+              </Text>
+            </View>
+          </Animated.View>
+
+          <View
+            onLayout={onLayout}
+            className="flex-1"
+            style={{ height: thumbSize, marginTop: 32 }}
+          >
+            <View
+              className={styles.track.background}
+              style={{
                 height: trackHeight,
                 top: '50%',
                 marginTop: -trackHeight / 2,
-                zIndex: 2,
-              },
-              trackActiveStyle,
-            ]}
-          />
-          <GestureDetector gesture={panGesture}>
+                zIndex: 1,
+              }}
+            />
             <Animated.View
-              className={styles.thumb}
+              className={styles.track.active}
               style={[
                 {
-                  width: thumbSize,
-                  height: thumbSize,
-                  position: 'absolute',
+                  height: trackHeight,
                   top: '50%',
-                  marginTop: -thumbSize / 2,
-                  zIndex: 3,
+                  marginTop: -trackHeight / 2,
+                  zIndex: 2,
                 },
-                thumbStyle,
+                trackActiveStyle,
               ]}
             />
-          </GestureDetector>
-        </View>
-      </View>
-
-      {showButtons && (
-        <TouchableOpacity
-          onPress={() => adjustValue(step)}
-          disabled={value >= maxValue}
-          className={value >= maxValue ? styles.button.disabled : undefined}
-          style={{ marginLeft: space }}
-        >
-          <View
-            className={styles.button.base}
-            style={{ width: thumbSize, height: thumbSize }}
-          >
-            <Icon as={Plus} size="sm" className={styles.icon} />
+            <GestureDetector gesture={panGesture}>
+              <Animated.View
+                className={styles.thumb}
+                style={[
+                  {
+                    width: thumbSize,
+                    height: thumbSize,
+                    position: 'absolute',
+                    top: '50%',
+                    marginTop: -thumbSize / 2,
+                    zIndex: 3,
+                  },
+                  thumbStyle,
+                ]}
+              />
+            </GestureDetector>
           </View>
-        </TouchableOpacity>
-      )}
+        </View>
+
+        {showButtons && (
+          <View style={{ marginTop: 32 }}>
+            <TouchableOpacity
+              onPress={() => adjustValue(step)}
+              disabled={displayValue >= maxValue}
+              className={
+                displayValue >= maxValue ? styles.button.disabled : undefined
+              }
+              style={{ marginLeft: space }}
+            >
+              <View
+                className={styles.button.base}
+                style={{ width: thumbSize, height: thumbSize }}
+              >
+                <Icon as={Plus} size="sm" className={styles.icon} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }

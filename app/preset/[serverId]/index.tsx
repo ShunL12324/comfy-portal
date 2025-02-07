@@ -52,7 +52,7 @@ const PresetsScreen = () => {
             variant="solid"
             action="primary"
             size="md"
-            className="mt-2 h-11 rounded-xl bg-background-200 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+            className="mt-2 h-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
             onPress={handleAddPreset}
           >
             <HStack space="sm" className="items-center justify-center">

@@ -53,7 +53,7 @@ export const PresetCard = ({
   return (
     <>
       <Pressable
-        className="active:scale-98 overflow-hidden rounded-xl bg-background-200 active:opacity-80"
+        className="active:scale-98 overflow-hidden rounded-xl bg-background-50 active:opacity-80"
         onPress={onPress}
       >
         {/* Top Image Section */}

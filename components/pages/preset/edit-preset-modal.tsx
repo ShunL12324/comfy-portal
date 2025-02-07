@@ -18,7 +18,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { usePresetsStore } from '@/store/presets';
-import { GenerationParams } from '@/types/generation';
+import { GenerationParams } from '@/types/preset';
 import { savePresetThumbnail } from '@/utils/image-storage';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';

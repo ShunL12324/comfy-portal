@@ -5,7 +5,6 @@ import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { useServersStore } from '@/store/servers';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
 import {
@@ -28,6 +27,7 @@ interface ModelSelectorProps {
   onDelete?: () => void;
   isRefreshing?: boolean;
   type?: string;
+  serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
   initialClipStrength?: number;
@@ -54,19 +54,17 @@ function StrengthControl({
           <Icon as={Sliders} size="xs" className="text-typography-900" />
           <Text className="text-xs text-typography-900">{label}</Text>
         </HStack>
-        <Text className="text-xs font-medium text-typography-900">
-          {value.toFixed(2)}
-        </Text>
       </HStack>
-      <HStack space="sm" className="mt-2 items-center">
+      <HStack space="sm" className="mt-2 w-full items-center">
         <SmoothSlider
-          value={value}
+          initialValue={value}
           minValue={0}
           maxValue={2}
           step={0.05}
           onChange={onChange}
           onChangeEnd={onChangeEnd}
-          className="flex-1"
+          className="w-full flex-1"
+          decimalPlaces={2}
         />
       </HStack>
     </>
@@ -99,6 +97,7 @@ export function ModelSelector({
   isRefreshing,
   onDelete,
   type = 'checkpoints',
+  serverId,
   onLoraClipStrengthChange,
   onLoraModelStrengthChange,
   initialClipStrength = 1,
@@ -127,8 +126,7 @@ export function ModelSelector({
     bottomSheetRef.current?.dismiss();
   }, []);
 
-  const servers = useServersStore((state) => state.servers);
-  const options = createModelOptions(servers, type);
+  const options = createModelOptions(serverId, type);
 
   const renderTrigger = useCallback(
     (option: SelectorOption | undefined) => (
@@ -174,11 +172,11 @@ export function ModelSelector({
             />
             {onDelete && (
               <TouchableOpacity
-                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg bg-error-0 p-3"
+                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg border-[0.5px] border-error-300 bg-background-50 p-3"
                 onPress={onDelete}
               >
-                <Icon as={Trash2} size="xs" className="text-typography-950" />
-                <Text className="text-xs text-typography-950">Remove LoRA</Text>
+                <Icon as={Trash2} size="xs" className="text-error-300" />
+                <Text className="text-xs text-error-300">Remove LoRA</Text>
               </TouchableOpacity>
             )}
           </VStack>
@@ -200,14 +198,12 @@ export function ModelSelector({
       >
         <Box
           className={`relative overflow-hidden rounded-xl ${
-            isSelected
-              ? 'border-[3.5px] border-primary-500 bg-primary-500/5'
-              : 'bg-background-50'
+            isSelected ? 'border-[3px] border-outline-600' : 'bg-background-50'
           }`}
         >
           {isSelected && (
             <Box className="absolute right-2 top-2 z-10 rounded-full bg-primary-500 p-1">
-              <Icon as={Check} size="sm" className="text-background-0" />
+              <Icon as={Check} size="sm" className="text-typography-950" />
             </Box>
           )}
           <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-background-100">

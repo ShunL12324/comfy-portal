@@ -8,7 +8,7 @@ import { useThemeStore } from '@/store/theme';
 import { showToast } from '@/utils/toast';
 import { Info, X } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabItem } from './common';
@@ -79,17 +79,6 @@ export default function TabGeneration({
       });
     }, 100);
   };
-
-  const [stopAtClipLayer, setStopAtClipLayer] = useState(
-    preset?.params.stopAtClipLayer || -1,
-  );
-
-  useEffect(() => {
-    updatePreset(presetId, {
-      ...preset,
-      params: { ...preset.params, stopAtClipLayer },
-    });
-  }, [stopAtClipLayer]);
 
   return (
     <Pressable onPress={Keyboard.dismiss} className="flex-1">
@@ -238,24 +227,20 @@ export default function TabGeneration({
             </View>
           </MotiView>
         </TabItem>
-        <TabItem
-          title="Stop At Clip Layer"
-          titleRight={
-            <View className="flex-row items-center justify-between rounded-lg bg-background-100 px-2 py-1">
-              <Text size="sm" bold>
-                {stopAtClipLayer}
-              </Text>
-            </View>
-          }
-        >
+        <TabItem title="Stop At Clip Layer" titleRight={null}>
           <SmoothSlider
-            value={stopAtClipLayer}
+            initialValue={preset?.params.stopAtClipLayer ?? -1}
             minValue={-24}
-            maxValue={0}
+            maxValue={-1}
             step={1}
-            onChange={(value) => {
-              setStopAtClipLayer(value);
+            onChangeEnd={(value) => {
+              updatePreset(presetId, {
+                ...preset,
+                params: { ...preset.params, stopAtClipLayer: value },
+              });
             }}
+            className="flex-1"
+            showButtons={true}
           />
           <View className="flex-row items-start gap-2 px-1">
             <Icon as={Info} size="xs" className="mt-1 text-typography-500" />

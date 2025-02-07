@@ -247,7 +247,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         <TouchableOpacity
           onPress={handlePress}
           activeOpacity={0.8}
-          className="overflow-hidden rounded-xl bg-background-200"
+          className="overflow-hidden rounded-xl bg-background-50"
         >
           <View className="flex-row items-center justify-between p-3.5">
             <ServerInfo name={name} host={host} port={port} models={models} />

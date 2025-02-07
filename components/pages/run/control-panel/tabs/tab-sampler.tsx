@@ -1,5 +1,4 @@
-import { Sampler, SamplerSelector } from '@/components/selectors/sampler';
-import { Scheduler } from '@/components/selectors/scheduler';
+import { SamplerSelector } from '@/components/selectors/sampler';
 import { SchedulerSelector } from '@/components/selectors/scheduler/selector';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { SmoothSlider } from '@/components/self-ui/smooth-slider';
@@ -10,7 +9,6 @@ import { usePresetsStore } from '@/store/presets';
 import * as Crypto from 'expo-crypto';
 import { Dice2, Info } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import { useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { TabItem } from './common';
 
@@ -24,36 +22,10 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
   const preset = usePresetsStore((state) =>
     state.presets.find((p) => p.id === presetId),
   );
+  if (!preset) return null;
 
   // actions
   const updatePreset = usePresetsStore((state) => state.updatePreset);
-
-  // local state
-  const [sampler, setSampler] = useState<Sampler>(
-    preset?.params.sampler || 'euler_ancestral',
-  );
-  const [scheduler, setScheduler] = useState<Scheduler>(
-    preset?.params.scheduler || 'normal',
-  );
-  const [steps, setSteps] = useState(preset?.params.steps || 25);
-  const [cfg, setCfg] = useState(preset?.params.cfg || 7.5);
-  const [useRandomSeed, setUseRandomSeed] = useState(false);
-  const [seed, setSeed] = useState(preset?.params.seed || 0);
-
-  // handlers
-  useEffect(() => {
-    if (!preset) return;
-    updatePreset(presetId, {
-      params: {
-        ...preset?.params,
-        sampler,
-        scheduler,
-        steps,
-        cfg,
-        seed,
-      },
-    });
-  }, [sampler, scheduler, steps, cfg, seed]);
 
   return (
     <ScrollView
@@ -62,56 +34,50 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
     >
       <TabItem title="Sampler">
         <SamplerSelector
-          value={sampler}
+          value={preset?.params.sampler || 'euler_ancestral'}
           onChange={(value) => {
-            setSampler(value);
+            updatePreset(presetId, {
+              params: { ...preset?.params, sampler: value },
+            });
           }}
         />
       </TabItem>
       <TabItem title="Scheduler">
         <SchedulerSelector
-          value={scheduler}
+          value={preset?.params.scheduler || 'normal'}
           onChange={(value) => {
-            setScheduler(value);
+            updatePreset(presetId, {
+              params: { ...preset?.params, scheduler: value },
+            });
           }}
         />
       </TabItem>
-      <TabItem
-        title="Steps"
-        titleRight={
-          <View className="flex-row items-center justify-between rounded-lg bg-background-100 px-2 py-1">
-            <Text size="sm" bold>
-              {steps}
-            </Text>
-          </View>
-        }
-      >
+      <TabItem title="Steps" titleRight={null}>
         <SmoothSlider
-          value={steps}
+          initialValue={preset?.params.steps || 25}
           minValue={1}
           maxValue={100}
           step={1}
-          onChange={setSteps}
+          onChangeEnd={(value) => {
+            updatePreset(presetId, {
+              params: { ...preset?.params, steps: value },
+            });
+          }}
           className="flex-1"
           showButtons={true}
         />
       </TabItem>
-      <TabItem
-        title="CFG Scale"
-        titleRight={
-          <View className="flex-row items-center justify-between rounded-lg bg-background-100 px-2 py-1">
-            <Text size="sm" bold>
-              {cfg}
-            </Text>
-          </View>
-        }
-      >
+      <TabItem title="CFG Scale" titleRight={null}>
         <SmoothSlider
-          value={cfg}
+          initialValue={preset?.params.cfg || 7.5}
           minValue={1}
           maxValue={30}
           step={0.5}
-          onChange={setCfg}
+          onChangeEnd={(value) => {
+            updatePreset(presetId, {
+              params: { ...preset?.params, cfg: value },
+            });
+          }}
           className="flex-1"
           showButtons={true}
           decimalPlaces={1}
@@ -120,13 +86,17 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
       <TabItem title="Seed">
         <SegmentedControl
           options={['Random', 'Fixed']}
-          value={useRandomSeed ? 'Random' : 'Fixed'}
-          onChange={(value: string) => setUseRandomSeed(value === 'Random')}
+          value={preset?.params.useRandomSeed ? 'Random' : 'Fixed'}
+          onChange={(value: string) =>
+            updatePreset(presetId, {
+              params: { ...preset?.params, useRandomSeed: value === 'Random' },
+            })
+          }
         />
         <MotiView
           animate={{
-            opacity: !useRandomSeed ? 1 : 0,
-            scale: !useRandomSeed ? 1 : 0.95,
+            opacity: !preset?.params.useRandomSeed ? 1 : 0,
+            scale: !preset?.params.useRandomSeed ? 1 : 0.95,
           }}
           transition={{
             type: 'timing',
@@ -145,8 +115,12 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
             >
               <InputField
                 placeholder="Custom Seed"
-                value={seed?.toString() || ''}
-                onChangeText={(text) => setSeed(Number(text))}
+                value={preset?.params.seed?.toString() || ''}
+                onChangeText={(text) =>
+                  updatePreset(presetId, {
+                    params: { ...preset?.params, seed: Number(text) },
+                  })
+                }
                 keyboardType="numeric"
                 className="text-sm"
               />
@@ -156,7 +130,9 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
                 // Generate a random 32-bit integer (-2147483648 to 2147483647)
                 const buffer = new Int32Array(1);
                 Crypto.getRandomValues(buffer);
-                setSeed(buffer[0]);
+                updatePreset(presetId, {
+                  params: { ...preset?.params, seed: buffer[0] },
+                });
               }}
             >
               <View className="h-10 w-10 items-center justify-center rounded-lg bg-background-50">

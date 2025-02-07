@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/Colors';
 import { useThemeStore } from '@/store/theme';
 import React, { useState } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { Route, TabBar, TabBarItem, TabView } from 'react-native-tab-view';
 import TabGeneration from './tabs/tab-generation';
 import TabModel from './tabs/tab-model';
@@ -15,8 +16,10 @@ export default function ControlPanel({
   serverId,
   presetId,
 }: ControlPanelProps) {
+  const { height: screenHeight } = useWindowDimensions();
+
   const [index, setIndex] = useState(0);
-  const routes: Route[] = [
+  const [routes, setRoutes] = useState<Route[]>([
     {
       key: 'model',
       title: 'Model',
@@ -33,7 +36,7 @@ export default function ControlPanel({
       key: 'generation',
       title: 'Generation',
     },
-  ];
+  ]);
 
   const renderScene = ({ route }: { route: Route }) => {
     switch (route.key) {
@@ -107,11 +110,12 @@ export default function ControlPanel({
         />
       )}
       pagerStyle={{
+        flex: 1,
         backgroundColor:
           theme === 'dark'
             ? Colors.dark.background['0']
             : Colors.light.background['0'],
-        flex: 1,
+        height: screenHeight,
       }}
     />
   );

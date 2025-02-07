@@ -63,7 +63,7 @@ const ImageItem = React.memo(
   }: ImageItemProps) {
     return (
       <Pressable onPress={onPress} className="relative mb-4">
-        <Box className="aspect-square overflow-hidden rounded-xl border-[0.5px] border-background-100">
+        <Box className="aspect-square overflow-hidden rounded-xl border-outline-50">
           <Image
             source={url}
             alt={`Generated image ${index + 1}`}
@@ -207,10 +207,10 @@ export function HistoryDrawer({
                 </Text>
               </View>
               <Button
-                variant="link"
+                variant="outline"
                 size="sm"
                 onPress={handleToggleEditMode}
-                className="h-8 w-[88px] items-center justify-center overflow-hidden rounded-lg border-[0.5px] border-background-100 bg-background-0"
+                className="h-8 w-[88px] items-center justify-center overflow-hidden rounded-lg border-outline-50 bg-background-0"
               >
                 <MotiView
                   animate={{

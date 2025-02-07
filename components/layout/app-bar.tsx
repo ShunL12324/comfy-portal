@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { ReactNode } from 'react';
 import { HStack } from '../ui/hstack';
+import { Icon } from '../ui/icon';
 import { VStack } from '../ui/vstack';
 
 interface AppBarProps {
@@ -41,15 +42,19 @@ export function AppBar({
                 className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0"
                 onPress={() => router.back()}
               >
-                <ChevronLeft size={24} className="text-primary-500" />
+                <Icon
+                  as={ChevronLeft}
+                  size="xl"
+                  className="text-typography-950"
+                />
               </Button>
             )}
             <VStack>
-              <Text className="text-lg font-semibold text-primary-500">
+              <Text className="text-lg font-semibold text-typography-950">
                 {title}
               </Text>
               {subtitle && (
-                <Text className="text-sm text-primary-300">{subtitle}</Text>
+                <Text className="text-sm text-typography-500">{subtitle}</Text>
               )}
             </VStack>
           </HStack>
