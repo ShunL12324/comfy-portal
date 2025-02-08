@@ -8,14 +8,7 @@ import {
 } from '@/components/ui/form-control';
 import { HStack } from '@/components/ui/hstack';
 import { Input, InputField } from '@/components/ui/input';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from '@/components/ui/modal';
+import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
@@ -80,15 +73,10 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     }
     // 允许 IP 地址或域名
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    const domainRegex =
-      /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
     const localhostRegex = /^localhost$/;
 
-    if (
-      !ipRegex.test(value) &&
-      !domainRegex.test(value) &&
-      !localhostRegex.test(value)
-    ) {
+    if (!ipRegex.test(value) && !domainRegex.test(value) && !localhostRegex.test(value)) {
       return 'Invalid host or IP address';
     }
 
@@ -165,22 +153,15 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
         <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <VStack space="md">
             <ModalHeader>
-              <Text className="text-lg font-semibold text-primary-500">
-                Add Server
-              </Text>
+              <Text className="text-lg font-semibold text-primary-500">Add Server</Text>
             </ModalHeader>
             <ModalBody scrollEnabled={false}>
               <VStack space="md">
                 <FormControl isInvalid={!!nameError} size="md">
                   <FormControlLabel>
-                    <FormControlLabelText className="text-sm font-medium text-primary-400">
-                      Name
-                    </FormControlLabelText>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">Name</FormControlLabelText>
                   </FormControlLabel>
-                  <Input
-                    size="md"
-                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
-                  >
+                  <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       onChangeText={(value) => {
                         setName(value);
@@ -193,23 +174,16 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </Input>
                   {nameError && (
                     <FormControlError>
-                      <FormControlErrorText className="mt-1 text-xs text-error-600">
-                        {nameError}
-                      </FormControlErrorText>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">{nameError}</FormControlErrorText>
                     </FormControlError>
                   )}
                 </FormControl>
 
                 <FormControl isInvalid={!!hostError} size="md">
                   <FormControlLabel>
-                    <FormControlLabelText className="text-sm font-medium text-primary-400">
-                      Host
-                    </FormControlLabelText>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">Host</FormControlLabelText>
                   </FormControlLabel>
-                  <Input
-                    size="md"
-                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
-                  >
+                  <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       onChangeText={(value) => {
                         setHost(value);
@@ -221,23 +195,16 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </Input>
                   {hostError && (
                     <FormControlError>
-                      <FormControlErrorText className="mt-1 text-xs text-error-600">
-                        {hostError}
-                      </FormControlErrorText>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">{hostError}</FormControlErrorText>
                     </FormControlError>
                   )}
                 </FormControl>
 
                 <FormControl isInvalid={!!portError} size="md">
                   <FormControlLabel>
-                    <FormControlLabelText className="text-sm font-medium text-primary-400">
-                      Port
-                    </FormControlLabelText>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">Port</FormControlLabelText>
                   </FormControlLabel>
-                  <Input
-                    size="md"
-                    className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
-                  >
+                  <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
                       onChangeText={(value) => {
                         setPort(value);
@@ -250,9 +217,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </Input>
                   {portError && (
                     <FormControlError>
-                      <FormControlErrorText className="mt-1 text-xs text-error-600">
-                        {portError}
-                      </FormControlErrorText>
+                      <FormControlErrorText className="mt-1 text-xs text-error-600">{portError}</FormControlErrorText>
                     </FormControlError>
                   )}
                 </FormControl>
@@ -260,18 +225,10 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
             </ModalBody>
             <ModalFooter>
               <HStack space="sm">
-                <Button
-                  variant="outline"
-                  onPress={handleClose}
-                  className="flex-1 rounded-md bg-background-100"
-                >
+                <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
                   <ButtonText className="text-primary-400">Cancel</ButtonText>
                 </Button>
-                <Button
-                  variant="solid"
-                  onPress={handleSave}
-                  className="flex-1 rounded-md bg-primary-500"
-                >
+                <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-primary-500">
                   <ButtonText className="text-background-0">Add</ButtonText>
                 </Button>
               </HStack>

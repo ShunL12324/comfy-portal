@@ -41,9 +41,7 @@ export function ServerStatus({
   if (generating) {
     color = 'warning';
     if (generationProgress) {
-      const progress =
-        Math.round((generationProgress.value / generationProgress.max) * 100) ||
-        0;
+      const progress = Math.round((generationProgress.value / generationProgress.max) * 100) || 0;
       status = `Generating ${progress}%`;
     } else {
       status = 'Generating';
@@ -56,22 +54,14 @@ export function ServerStatus({
   return (
     <VStack space="sm" className="items-center">
       <Text className="text-xs text-primary-300">{name}</Text>
-      <Box
-        className={`rounded-full bg-${color}-100 dark:bg-${color}-900/30 p-0.2`}
-      >
+      <Box className={`rounded-full bg-${color}-100 dark:bg-${color}-900/30 p-0.2`}>
         <Box className={`flex-row items-center rounded-full px-2 py-0.5`}>
           <Box className={`mr-1 h-1.5 w-1.5 rounded-full bg-${color}-500`}>
             {(generating || downloading) && (
-              <Box
-                className={`absolute h-1.5 w-1.5 rounded-full bg-${color}-500 animate-ping`}
-              />
+              <Box className={`absolute h-1.5 w-1.5 rounded-full bg-${color}-500 animate-ping`} />
             )}
           </Box>
-          <Text
-            className={`text-2xs font-medium text-${color}-700 dark:text-${color}-300`}
-          >
-            {status}
-          </Text>
+          <Text className={`text-2xs font-medium text-${color}-700 dark:text-${color}-300`}>{status}</Text>
         </Box>
       </Box>
     </VStack>

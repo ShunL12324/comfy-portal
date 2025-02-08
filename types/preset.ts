@@ -25,7 +25,7 @@ export interface LoraConfig {
 
 export interface GenerationParams {
   model: string;
-  prompt: string;
+  positivePrompt: string;
   negativePrompt: string;
   steps: number;
   cfg: number;
@@ -78,10 +78,10 @@ export interface GenerationParams {
   | 'kl_optimal';
   useRandomSeed: boolean;
   loras?: LoraConfig[];
-  templateType?: TemplateType;
+  templateType: TemplateType;
 }
 
-export type TemplateType = 'default' | 'flux_1d' | 'sdxl';
+export type TemplateType = 'sd_15_sdxl' | 'flux_dev_all_in_one' | 'flux_dev_unet';
 
 export interface ApiCallTemplate {
   getTemplate(): ApiCall;

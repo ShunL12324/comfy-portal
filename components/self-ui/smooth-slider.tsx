@@ -64,8 +64,7 @@ const styles = {
     background: 'absolute w-full rounded-full bg-background-100',
     active: 'absolute rounded-l-full bg-background-600',
   },
-  thumb:
-    'absolute items-center justify-center rounded-full bg-primary-400 shadow-sm',
+  thumb: 'absolute items-center justify-center rounded-full bg-primary-400 shadow-sm',
 } as const;
 
 /**
@@ -142,10 +141,7 @@ export function SmoothSlider({
       const range = maxValue - minValue;
       if (range === 0) return 0;
       const percentage = (val - minValue) / range;
-      return Math.max(
-        0,
-        Math.min(percentage * sliderWidth.value, sliderWidth.value),
-      );
+      return Math.max(0, Math.min(percentage * sliderWidth.value, sliderWidth.value));
     },
     [maxValue, minValue],
   );
@@ -158,8 +154,7 @@ export function SmoothSlider({
       if (range === 0) return minValue;
       const percentage = pos / sliderWidth.value;
       const rawValue = percentage * range + minValue;
-      const steppedValue =
-        Math.round((rawValue - minValue) / step) * step + minValue;
+      const steppedValue = Math.round((rawValue - minValue) / step) * step + minValue;
       return Number(formatValue(steppedValue));
     },
     [maxValue, minValue, step, formatValue],
@@ -192,10 +187,7 @@ export function SmoothSlider({
     })
     .onChange((event) => {
       'worklet';
-      const newPosition = Math.max(
-        0,
-        Math.min(startPosition.value + event.translationX, sliderWidth.value),
-      );
+      const newPosition = Math.max(0, Math.min(startPosition.value + event.translationX, sliderWidth.value));
 
       // 使用 requestAnimationFrame 来限制更新频率
       position.value = newPosition;
@@ -233,12 +225,7 @@ export function SmoothSlider({
   const adjustValue = useCallback(
     (delta: number) => {
       'worklet';
-      const newValue = Number(
-        Math.min(
-          Math.max(animatedValue.value + delta, minValue),
-          maxValue,
-        ).toFixed(precision()),
-      );
+      const newValue = Number(Math.min(Math.max(animatedValue.value + delta, minValue), maxValue).toFixed(precision()));
       animatedValue.value = newValue;
       position.value = withTiming(valueToPosition(newValue), {
         duration: 150,
@@ -250,24 +237,16 @@ export function SmoothSlider({
 
   return (
     <View className="flex-1 flex-col gap-2">
-      <View
-        className={`${styles.container} ${className}`}
-        style={{ height: thumbSize + 32 }}
-      >
+      <View className={`${styles.container} ${className}`} style={{ height: thumbSize + 32 }}>
         {showButtons && (
           <View style={{ marginTop: 32 }}>
             <TouchableOpacity
               onPress={() => adjustValue(-step)}
               disabled={displayValue <= minValue}
-              className={
-                displayValue <= minValue ? styles.button.disabled : undefined
-              }
+              className={displayValue <= minValue ? styles.button.disabled : undefined}
               style={{ marginRight: space }}
             >
-              <View
-                className={styles.button.base}
-                style={{ width: thumbSize, height: thumbSize }}
-              >
+              <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>
                 <Icon as={Minus} size="sm" className={styles.icon} />
               </View>
             </TouchableOpacity>
@@ -281,18 +260,12 @@ export function SmoothSlider({
           >
             <View className="rounded-lg bg-background-100 px-2 py-1">
               <Text size="sm" bold className="text-typography-900">
-                {displayValue.toFixed(
-                  decimalPlaces ?? (step.toString().split('.')[1] || '').length,
-                )}
+                {displayValue.toFixed(decimalPlaces ?? (step.toString().split('.')[1] || '').length)}
               </Text>
             </View>
           </Animated.View>
 
-          <View
-            onLayout={onLayout}
-            className="flex-1"
-            style={{ height: thumbSize, marginTop: 32 }}
-          >
+          <View onLayout={onLayout} className="flex-1" style={{ height: thumbSize, marginTop: 32 }}>
             <View
               className={styles.track.background}
               style={{
@@ -338,15 +311,10 @@ export function SmoothSlider({
             <TouchableOpacity
               onPress={() => adjustValue(step)}
               disabled={displayValue >= maxValue}
-              className={
-                displayValue >= maxValue ? styles.button.disabled : undefined
-              }
+              className={displayValue >= maxValue ? styles.button.disabled : undefined}
               style={{ marginLeft: space }}
             >
-              <View
-                className={styles.button.base}
-                style={{ width: thumbSize, height: thumbSize }}
-              >
+              <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>
                 <Icon as={Plus} size="sm" className={styles.icon} />
               </View>
             </TouchableOpacity>

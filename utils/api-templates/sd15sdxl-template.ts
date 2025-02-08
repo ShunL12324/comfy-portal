@@ -8,9 +8,6 @@ const DEFAULT_TEMPLATE = {
       "ckpt_name": ""
     },
     "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Checkpoint Loader (Simple)"
-    }
   },
   "2": {
     "inputs": {
@@ -38,9 +35,6 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "KSampler",
-    "_meta": {
-      "title": "KSampler"
-    }
   },
   "3": {
     "inputs": {
@@ -51,9 +45,6 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "CLIPSetLastLayer",
-    "_meta": {
-      "title": "Set CLIP Last Layer"
-    }
   },
   "4": {
     "inputs": {
@@ -64,9 +55,6 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode"
-    }
   },
   "5": {
     "inputs": {
@@ -77,9 +65,6 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode"
-    }
   },
   "6": {
     "inputs": {
@@ -88,9 +73,6 @@ const DEFAULT_TEMPLATE = {
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
-    "_meta": {
-      "title": "Empty Latent Image"
-    }
   },
   "7": {
     "inputs": {
@@ -104,9 +86,6 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "VAEDecode",
-    "_meta": {
-      "title": "VAE Decode"
-    }
   },
   "8": {
     "inputs": {
@@ -116,17 +95,15 @@ const DEFAULT_TEMPLATE = {
       ]
     },
     "class_type": "PreviewImage",
-    "_meta": {
-      "title": "Preview Image"
-    }
   }
 } as const;
 
-export class DefaultApiCallTemplate extends BaseApiCallTemplate {
+export class SD15SDXLApiCallTemplate extends BaseApiCallTemplate {
+
   protected getInitialNodeIds(): { modelNodeId: string; clipNodeId: string; startLoraNodeId: number; } {
     return {
-      modelNodeId: "1", // CheckpointLoaderSimple
-      clipNodeId: "3",  // CLIPSetLastLayer
+      modelNodeId: "1",
+      clipNodeId: "3",
       startLoraNodeId: 9
     };
   }
@@ -162,7 +139,7 @@ export class DefaultApiCallTemplate extends BaseApiCallTemplate {
     apiCall[2].inputs.scheduler = params.scheduler;
 
     // Update prompts
-    apiCall[4].inputs.text = params.prompt;
+    apiCall[4].inputs.text = params.positivePrompt;
     apiCall[5].inputs.text = params.negativePrompt;
 
     // Update image dimensions

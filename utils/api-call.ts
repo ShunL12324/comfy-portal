@@ -13,6 +13,6 @@ export type ApiCall = Record<string, node>;
 
 export function createApiCall(params: GenerationParams): ApiCall {
   const factory = ApiCallTemplateFactory.getInstance();
-  const template = factory.getTemplate(params.templateType || 'default');
+  const template = factory.getTemplate(params.templateType || 'sd_15_sdxl');
   return template.fillTemplate(params);
 }

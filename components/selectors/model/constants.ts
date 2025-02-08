@@ -1,9 +1,6 @@
 import { useServersStore } from '@/store/servers';
 import { SelectorOption } from '../types';
-export function createModelOptions(
-  serverId: string,
-  type: string = 'checkpoints',
-): SelectorOption[] {
+export function createModelOptions(serverId: string, type: string = 'checkpoints'): SelectorOption[] {
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
 
   return (server?.models || [])
@@ -20,8 +17,5 @@ export function createModelOptions(
       serverName: server?.name,
       key: `${server?.id}_${model.type}_${modelIndex}_${model.name}`,
     }))
-    .filter(
-      (model, index, self) =>
-        index === self.findIndex((m) => m.label === model.label),
-    );
+    .filter((model, index, self) => index === self.findIndex((m) => m.label === model.label));
 }

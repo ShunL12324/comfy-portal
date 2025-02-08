@@ -27,16 +27,11 @@ const RESOLUTION_OPTIONS = [
 
 type ResolutionOption = (typeof RESOLUTION_OPTIONS)[number]['label'];
 
-export default function TabGeneration({
-  serverId,
-  presetId,
-}: TabGenerationProps) {
+export default function TabGeneration({ serverId, presetId }: TabGenerationProps) {
   const insects = useSafeAreaInsets();
 
   // store data
-  const preset = usePresetsStore((state) =>
-    state.presets.find((p) => p.id === presetId),
-  );
+  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
   const { theme } = useThemeStore();
 
   if (!preset) return null;
@@ -44,29 +39,18 @@ export default function TabGeneration({
   // store actions
   const updatePreset = usePresetsStore((state) => state.updatePreset);
 
-  const [selectedResolution, setSelectedResolution] =
-    useState<ResolutionOption>(
-      RESOLUTION_OPTIONS.find(
-        (option) =>
-          'width' in option &&
-          option.width === preset?.params.width &&
-          option.height === preset?.params.height,
-      )?.label ?? 'Custom',
-    );
+  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(
+    RESOLUTION_OPTIONS.find(
+      (option) => 'width' in option && option.width === preset?.params.width && option.height === preset?.params.height,
+    )?.label ?? 'Custom',
+  );
 
   const handleResolutionChange = (value: ResolutionOption) => {
     setSelectedResolution(value);
     if (!preset || value === 'Custom') return;
 
-    const selectedOption = RESOLUTION_OPTIONS.find(
-      (option) => option.label === value,
-    );
-    if (
-      !selectedOption ||
-      !('width' in selectedOption) ||
-      !('height' in selectedOption)
-    )
-      return;
+    const selectedOption = RESOLUTION_OPTIONS.find((option) => option.label === value);
+    if (!selectedOption || !('width' in selectedOption) || !('height' in selectedOption)) return;
 
     setTimeout(() => {
       updatePreset(presetId, {
@@ -82,10 +66,7 @@ export default function TabGeneration({
 
   return (
     <Pressable onPress={Keyboard.dismiss} className="flex-1">
-      <ScrollView
-        className="flex-1 bg-background-0"
-        contentContainerStyle={{ gap: 16, padding: 16 }}
-      >
+      <ScrollView className="flex-1 bg-background-0" contentContainerStyle={{ gap: 16, padding: 16 }}>
         <TabItem title="Resolution">
           <SegmentedControl
             options={RESOLUTION_OPTIONS.map((option) => option.label)}
@@ -120,18 +101,10 @@ export default function TabGeneration({
             className="flex-row items-center gap-2 overflow-hidden pt-1"
           >
             <View className="flex-1 flex-col gap-2">
-              <Text
-                size="xs"
-                allowFontScaling={false}
-                className="pl-1 font-medium text-typography-950"
-              >
+              <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
                 Width
               </Text>
-              <Input
-                className="flex-1 rounded-md border-0 bg-background-50"
-                variant="outline"
-                size="sm"
-              >
+              <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
                 <InputField
                   placeholder="Width"
                   keyboardType="numeric"
@@ -140,10 +113,7 @@ export default function TabGeneration({
                     if (!preset) return;
 
                     const parsedValue = text === '' ? 0 : parseInt(text, 10);
-                    if (
-                      text === '' ||
-                      (!isNaN(parsedValue) && parsedValue > 0)
-                    ) {
+                    if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
                       updatePreset(presetId, {
                         ...preset,
                         params: {
@@ -155,10 +125,7 @@ export default function TabGeneration({
                   }}
                   onBlur={() => {
                     if (!preset) return;
-                    if (
-                      preset.params.width < 16 ||
-                      preset.params.width > 10240
-                    ) {
+                    if (preset.params.width < 16 || preset.params.width > 10240) {
                       updatePreset(presetId, {
                         ...preset,
                         params: { ...preset.params, width: 1024 },
@@ -175,18 +142,10 @@ export default function TabGeneration({
             </View>
             <Icon as={X} size="sm" className="h-4 w-4" />
             <View className="flex-1 flex-col gap-2">
-              <Text
-                size="xs"
-                allowFontScaling={false}
-                className="pl-1 font-medium text-typography-950"
-              >
+              <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
                 Height
               </Text>
-              <Input
-                className="flex-1 rounded-md border-0 bg-background-50"
-                variant="outline"
-                size="sm"
-              >
+              <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
                 <InputField
                   placeholder="Height"
                   keyboardType="numeric"
@@ -195,10 +154,7 @@ export default function TabGeneration({
                     if (!preset) return;
 
                     const parsedValue = text === '' ? 0 : parseInt(text, 10);
-                    if (
-                      text === '' ||
-                      (!isNaN(parsedValue) && parsedValue > 0)
-                    ) {
+                    if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
                       updatePreset(presetId, {
                         ...preset,
                         params: { ...preset.params, height: parsedValue },
@@ -207,10 +163,7 @@ export default function TabGeneration({
                   }}
                   onBlur={() => {
                     if (!preset) return;
-                    if (
-                      preset.params.height < 16 ||
-                      preset.params.height > 10240
-                    ) {
+                    if (preset.params.height < 16 || preset.params.height > 10240) {
                       updatePreset(presetId, {
                         ...preset,
                         params: { ...preset.params, height: 1024 },
@@ -245,9 +198,8 @@ export default function TabGeneration({
           <View className="flex-row items-start gap-2 px-1">
             <Icon as={Info} size="xs" className="mt-1 text-typography-500" />
             <Text className="flex-1 text-xs text-typography-500">
-              Controls which CLIP layer to stop at. Range from -24 to -1. The
-              value will affect how the model interprets your prompts. For
-              pony-based models, usually use -2 is recommended.
+              Controls which CLIP layer to stop at. Range from -24 to -1. The value will affect how the model interprets
+              your prompts. For pony-based models, usually use -2 is recommended.
             </Text>
           </View>
         </TabItem>

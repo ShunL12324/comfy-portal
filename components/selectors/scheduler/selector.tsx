@@ -26,9 +26,7 @@ export function SchedulerSelector({ value, onChange }: SchedulerSelectorProps) {
     bottomSheetRef.current?.dismiss();
   }, []);
 
-  const selectedOption = SCHEDULER_OPTIONS.find(
-    (option) => option.value === value,
-  );
+  const selectedOption = SCHEDULER_OPTIONS.find((option) => option.value === value);
 
   return (
     <>
@@ -36,9 +34,7 @@ export function SchedulerSelector({ value, onChange }: SchedulerSelectorProps) {
         className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-base text-typography-950">
-          {selectedOption?.label || value}
-        </Text>
+        <Text className="text-base text-typography-950">{selectedOption?.label || value}</Text>
         <Icon as={ChevronDown} size="sm" className="text-typography-500" />
       </Pressable>
 

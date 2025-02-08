@@ -30,10 +30,7 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
     <Pressable onPress={onPress} className="flex-1">
       <VStack space="xs" className="items-center pb-3 pt-4">
         {icon}
-        <Text
-          size="xs"
-          className={`mt-0.5 ${isActive ? 'text-typography-950' : 'text-typography-400'}`}
-        >
+        <Text size="xs" className={`mt-0.5 ${isActive ? 'text-typography-950' : 'text-typography-400'}`}>
           {label}
         </Text>
       </VStack>
@@ -61,11 +58,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
             <Icon
               as={Server}
               size="lg"
-              className={`${
-                activeTab === 'server'
-                  ? 'text-typography-950'
-                  : 'text-typography-400'
-              }`}
+              className={`${activeTab === 'server' ? 'text-typography-950' : 'text-typography-400'}`}
             />
           }
           label="Server"
@@ -77,11 +70,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
             <Icon
               as={Settings2}
               size="lg"
-              className={`${
-                activeTab === 'setting'
-                  ? 'text-typography-950'
-                  : 'text-typography-400'
-              }`}
+              className={`${activeTab === 'setting' ? 'text-typography-950' : 'text-typography-400'}`}
             />
           }
           label="Setting"

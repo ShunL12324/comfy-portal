@@ -1,39 +1,29 @@
-import { MotiView } from 'moti';
-import { memo, useMemo } from 'react';
+import { memo, useEffect } from 'react';
 import { Platform } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 interface ProgressOverlayProps {
   current: number;
   total: number;
 }
 
-export const ProgressOverlay = memo(function ProgressOverlay({
-  current,
-  total,
-}: ProgressOverlayProps) {
-  const progressPercentage = useMemo(
-    () => Math.round((current / total) * 100),
-    [current, total],
-  );
+export const ProgressOverlay = memo(function ProgressOverlay({ current, total }: ProgressOverlayProps) {
+  const progress = useSharedValue(0);
 
-  const animationConfig = Platform.select({
-    ios: {
-      type: 'timing' as const,
-      duration: 300,
-    },
-    android: {
-      type: 'timing' as const,
-      duration: 200,
-    },
-  });
+  useEffect(() => {
+    const percentage = (current / total) * 100;
+    progress.value = withTiming(percentage, {
+      duration: Platform.select({
+        ios: 300,
+        android: 200,
+      }),
+      easing: Easing.bezier(0.4, 0, 0.2, 1),
+    });
+  }, [current, total]);
 
-  return (
-    <MotiView
-      className="absolute bottom-0 h-full bg-black/50 backdrop-blur-sm"
-      animate={{
-        width: `${progressPercentage}%`,
-      }}
-      transition={animationConfig}
-    />
-  );
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: `${progress.value}%`,
+  }));
+
+  return <Animated.View className="absolute bottom-0 h-full bg-black/50 backdrop-blur-sm" style={animatedStyle} />;
 });

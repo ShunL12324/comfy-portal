@@ -7,14 +7,7 @@ import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { usePresetsStore } from '@/store/presets';
 import { Tag } from '@/types/preset';
 import * as Crypto from 'expo-crypto';
-import {
-  ArrowDown,
-  ArrowUp,
-  Check,
-  Minus,
-  Plus,
-  Trash2,
-} from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
@@ -140,9 +133,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
       tag.id === tagId
         ? {
             ...tag,
-            strength: Number(
-              Math.max(0.1, Math.min(2.5, newStrength)).toFixed(1),
-            ),
+            strength: Number(Math.max(0.1, Math.min(2.5, newStrength)).toFixed(1)),
           }
         : tag,
     );
@@ -211,12 +202,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
       titleRight={
         <View className="flex-row items-center gap-2">
           <Text className="text-sm text-typography-500">Plain</Text>
-          <Switch
-            size="sm"
-            disabled={false}
-            value={tagMode}
-            onValueChange={handleTagModeChange}
-          />
+          <Switch size="sm" disabled={false} value={tagMode} onValueChange={handleTagModeChange} />
           <Text className="text-sm text-typography-500">Tag</Text>
         </View>
       }
@@ -229,11 +215,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
           isDisabled={false}
           className="w-full rounded-md border-0 bg-background-100"
         >
-          <TextareaInput
-            placeholder={`${title} goes here...`}
-            value={value}
-            onChangeText={onChangeValue}
-          />
+          <TextareaInput placeholder={`${title} goes here...`} value={value} onChangeText={onChangeValue} />
         </Textarea>
       ) : (
         <View className="flex-col gap-4">
@@ -292,9 +274,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
               <ButtonIcon as={ArrowDown} />
             </Button>
             <TouchableOpacity
-              className={`rounded-md border-[0.5px] border-error-500 p-2 ${
-                selectedTagId === null ? 'opacity-60' : ''
-              }`}
+              className={`rounded-md border-[0.5px] border-error-500 p-2 ${selectedTagId === null ? 'opacity-60' : ''}`}
               disabled={selectedTagId === null}
               onPress={handleRemoveSelectedTag}
             >
@@ -303,10 +283,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
           </View>
           <Animated.View
             className="flex-row items-center gap-2"
-            layout={LinearTransition.springify()
-              .damping(10)
-              .stiffness(100)
-              .duration(100)}
+            layout={LinearTransition.springify().damping(10).stiffness(100).duration(100)}
           >
             <Input className="flex-1 rounded-md border-0 bg-background-100">
               <InputField
@@ -326,13 +303,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
                 duration: 200,
               }}
             >
-              <Button
-                size="sm"
-                variant="solid"
-                action="primary"
-                onPress={handleAddTag}
-                className="w-full"
-              >
+              <Button size="sm" variant="solid" action="primary" onPress={handleAddTag} className="w-full">
                 <ButtonIcon as={selectedTagId ? Check : Plus} />
                 <ButtonText>{selectedTagId ? 'Confirm' : 'Add'}</ButtonText>
               </Button>
@@ -346,9 +317,7 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
 
 export default function TabPrompt({ serverId, presetId }: TabPromptProps) {
   // data
-  const preset = usePresetsStore((state) =>
-    state.presets.find((p) => p.id === presetId),
-  );
+  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
 
   if (!preset) return null;
 
@@ -363,10 +332,10 @@ export default function TabPrompt({ serverId, presetId }: TabPromptProps) {
     >
       <PromptInput
         title="Positive Prompt"
-        value={preset.params.prompt}
+        value={preset.params.positivePrompt}
         onChangeValue={(value) =>
           updatePreset(presetId, {
-            params: { ...preset.params, prompt: value },
+            params: { ...preset.params, positivePrompt: value },
           })
         }
       />

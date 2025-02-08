@@ -4,10 +4,7 @@ import { Pressable } from 'react-native';
 import { View } from 'react-native';
 import React from 'react';
 import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import {
-  withStyleContext,
-  useStyleContext,
-} from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
 import { cssInterop } from 'nativewind';
 
@@ -151,23 +148,10 @@ const sliderFilledTrackStyle = tva({
   },
 });
 
-type ISliderProps = React.ComponentProps<typeof UISlider> &
-  VariantProps<typeof sliderStyle>;
+type ISliderProps = React.ComponentProps<typeof UISlider> & VariantProps<typeof sliderStyle>;
 
-const Slider = React.forwardRef<
-  React.ElementRef<typeof UISlider>,
-  ISliderProps
->(
-  (
-    {
-      className,
-      size = 'md',
-      orientation = 'horizontal',
-      isReversed = false,
-      ...props
-    },
-    ref,
-  ) => {
+const Slider = React.forwardRef<React.ElementRef<typeof UISlider>, ISliderProps>(
+  ({ className, size = 'md', orientation = 'horizontal', isReversed = false, ...props }, ref) => {
     return (
       <UISlider
         ref={ref}
@@ -185,82 +169,71 @@ const Slider = React.forwardRef<
   },
 );
 
-type ISliderThumbProps = React.ComponentProps<typeof UISlider.Thumb> &
-  VariantProps<typeof sliderThumbStyle>;
+type ISliderThumbProps = React.ComponentProps<typeof UISlider.Thumb> & VariantProps<typeof sliderThumbStyle>;
 
-const SliderThumb = React.forwardRef<
-  React.ElementRef<typeof UISlider.Thumb>,
-  ISliderThumbProps
->(({ className, size, ...props }, ref) => {
-  const { size: parentSize } = useStyleContext(SCOPE);
+const SliderThumb = React.forwardRef<React.ElementRef<typeof UISlider.Thumb>, ISliderThumbProps>(
+  ({ className, size, ...props }, ref) => {
+    const { size: parentSize } = useStyleContext(SCOPE);
 
-  return (
-    <UISlider.Thumb
-      ref={ref}
-      {...props}
-      className={sliderThumbStyle({
-        parentVariants: {
-          size: parentSize,
-        },
-        size,
-        class: className,
-      })}
-    />
-  );
-});
+    return (
+      <UISlider.Thumb
+        ref={ref}
+        {...props}
+        className={sliderThumbStyle({
+          parentVariants: {
+            size: parentSize,
+          },
+          size,
+          class: className,
+        })}
+      />
+    );
+  },
+);
 
-type ISliderTrackProps = React.ComponentProps<typeof UISlider.Track> &
-  VariantProps<typeof sliderTrackStyle>;
+type ISliderTrackProps = React.ComponentProps<typeof UISlider.Track> & VariantProps<typeof sliderTrackStyle>;
 
-const SliderTrack = React.forwardRef<
-  React.ElementRef<typeof UISlider.Track>,
-  ISliderTrackProps
->(({ className, ...props }, ref) => {
-  const {
-    orientation: parentOrientation,
-    size: parentSize,
-    isReversed,
-  } = useStyleContext(SCOPE);
+const SliderTrack = React.forwardRef<React.ElementRef<typeof UISlider.Track>, ISliderTrackProps>(
+  ({ className, ...props }, ref) => {
+    const { orientation: parentOrientation, size: parentSize, isReversed } = useStyleContext(SCOPE);
 
-  return (
-    <UISlider.Track
-      ref={ref}
-      {...props}
-      className={sliderTrackStyle({
-        parentVariants: {
-          orientation: parentOrientation,
-          size: parentSize,
-          isReversed,
-        },
-        class: className,
-      })}
-    />
-  );
-});
+    return (
+      <UISlider.Track
+        ref={ref}
+        {...props}
+        className={sliderTrackStyle({
+          parentVariants: {
+            orientation: parentOrientation,
+            size: parentSize,
+            isReversed,
+          },
+          class: className,
+        })}
+      />
+    );
+  },
+);
 
-type ISliderFilledTrackProps = React.ComponentProps<
-  typeof UISlider.FilledTrack
-> &
+type ISliderFilledTrackProps = React.ComponentProps<typeof UISlider.FilledTrack> &
   VariantProps<typeof sliderFilledTrackStyle>;
 
-const SliderFilledTrack = React.forwardRef<
-  React.ElementRef<typeof UISlider.FilledTrack>,
-  ISliderFilledTrackProps
->(({ className, ...props }, ref) => {
-  const { orientation: parentOrientation } = useStyleContext(SCOPE);
+const SliderFilledTrack = React.forwardRef<React.ElementRef<typeof UISlider.FilledTrack>, ISliderFilledTrackProps>(
+  ({ className, ...props }, ref) => {
+    const { orientation: parentOrientation } = useStyleContext(SCOPE);
 
-  return (
-    <UISlider.FilledTrack
-      ref={ref}
-      {...props}
-      className={sliderFilledTrackStyle({
-        parentVariants: {
-          orientation: parentOrientation,
-        },
-        class: className,
-      })}
-    />
-  );
-});
+    return (
+      <UISlider.FilledTrack
+        ref={ref}
+        {...props}
+        className={sliderFilledTrackStyle({
+          parentVariants: {
+            orientation: parentOrientation,
+          },
+          class: className,
+        })}
+      />
+    );
+  },
+);
 
 export { Slider, SliderThumb, SliderTrack, SliderFilledTrack };

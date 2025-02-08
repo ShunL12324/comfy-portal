@@ -1,19 +1,8 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import {
-  FormControl,
-  FormControlError,
-  FormControlLabel,
-} from '@/components/ui/form-control';
+import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from '@/components/ui/modal';
+import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -39,11 +28,7 @@ interface EditPresetModalProps {
   };
 }
 
-export function EditPresetModal({
-  isOpen,
-  onClose,
-  preset,
-}: EditPresetModalProps) {
+export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProps) {
   const [name, setName] = useState(preset.name);
   const [thumbnail, setThumbnail] = useState(preset.thumbnail || '');
   const [error, setError] = useState('');
@@ -86,10 +71,9 @@ export function EditPresetModal({
 
       try {
         // Create directories if they don't exist
-        await FileSystem.makeDirectoryAsync(
-          `${FileSystem.documentDirectory}presets/${preset.id}`,
-          { intermediates: true },
-        );
+        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}presets/${preset.id}`, {
+          intermediates: true,
+        });
 
         // Copy the file
         await FileSystem.copyAsync({
@@ -138,9 +122,7 @@ export function EditPresetModal({
         });
 
         if (savedImage) {
-          const localImageUri = savedImage.path.startsWith('file://')
-            ? savedImage.path
-            : `file://${savedImage.path}`;
+          const localImageUri = savedImage.path.startsWith('file://') ? savedImage.path : `file://${savedImage.path}`;
           setThumbnail(localImageUri);
         }
       } catch (error) {
@@ -172,24 +154,16 @@ export function EditPresetModal({
       >
         <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <ModalHeader>
-            <Text className="text-lg font-semibold text-primary-500">
-              Edit Preset
-            </Text>
+            <Text className="text-lg font-semibold text-primary-500">Edit Preset</Text>
           </ModalHeader>
 
           <ModalBody scrollEnabled={false}>
             <VStack space="md">
               <FormControl isInvalid={!!error}>
                 <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">
-                    Name
-                  </Text>
+                  <Text className="text-sm font-medium text-primary-400">Name</Text>
                 </FormControlLabel>
-                <Input
-                  variant="outline"
-                  size="md"
-                  className="mt-1 overflow-hidden rounded-md border-0 bg-background-0"
-                >
+                <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                   <InputField
                     onChangeText={(value) => {
                       setName(value);
@@ -202,21 +176,14 @@ export function EditPresetModal({
                 </Input>
                 {error && (
                   <FormControlError>
-                    <Text className="mt-1.5 text-xs text-error-600">
-                      {error}
-                    </Text>
+                    <Text className="mt-1.5 text-xs text-error-600">{error}</Text>
                   </FormControlError>
                 )}
               </FormControl>
 
               <VStack space="xs">
-                <Text className="text-sm font-medium text-primary-400">
-                  Thumbnail (Optional)
-                </Text>
-                <Pressable
-                  onPress={handleSelectImage}
-                  className="overflow-hidden rounded-md border-0 bg-background-0"
-                >
+                <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+                <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
                   {thumbnail ? (
                     <Image
                       source={{ uri: thumbnail }}
@@ -227,9 +194,7 @@ export function EditPresetModal({
                   ) : (
                     <VStack className="h-32 items-center justify-center">
                       <ImagePlus className="text-primary-300" />
-                      <Text className="mt-2 text-sm text-primary-300">
-                        Add thumbnail
-                      </Text>
+                      <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
                     </VStack>
                   )}
                 </Pressable>

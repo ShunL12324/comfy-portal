@@ -3,10 +3,7 @@ import React from 'react';
 import { createInput } from '@gluestack-ui/input';
 import { View, Pressable, TextInput } from 'react-native';
 import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import {
-  withStyleContext,
-  useStyleContext,
-} from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/icon';
@@ -101,8 +98,7 @@ const inputFieldStyle = tva({
   },
 });
 
-type IInputProps = React.ComponentProps<typeof UIInput> &
-  VariantProps<typeof inputStyle> & { className?: string };
+type IInputProps = React.ComponentProps<typeof UIInput> & VariantProps<typeof inputStyle> & { className?: string };
 const Input = React.forwardRef<React.ElementRef<typeof UIInput>, IInputProps>(
   ({ className, variant = 'outline', size = 'md', ...props }, ref) => {
     return (
@@ -123,88 +119,69 @@ type IInputIconProps = React.ComponentProps<typeof UIInput.Icon> &
     width?: number;
   };
 
-const InputIcon = React.forwardRef<
-  React.ElementRef<typeof UIInput.Icon>,
-  IInputIconProps
->(({ className, size, ...props }, ref) => {
-  const { size: parentSize } = useStyleContext(SCOPE);
+const InputIcon = React.forwardRef<React.ElementRef<typeof UIInput.Icon>, IInputIconProps>(
+  ({ className, size, ...props }, ref) => {
+    const { size: parentSize } = useStyleContext(SCOPE);
 
-  if (typeof size === 'number') {
+    if (typeof size === 'number') {
+      return <UIInput.Icon ref={ref} {...props} className={inputIconStyle({ class: className })} size={size} />;
+    } else if ((props.height !== undefined || props.width !== undefined) && size === undefined) {
+      return <UIInput.Icon ref={ref} {...props} className={inputIconStyle({ class: className })} />;
+    }
     return (
       <UIInput.Icon
         ref={ref}
         {...props}
-        className={inputIconStyle({ class: className })}
-        size={size}
+        className={inputIconStyle({
+          parentVariants: {
+            size: parentSize,
+          },
+          class: className,
+        })}
       />
     );
-  } else if (
-    (props.height !== undefined || props.width !== undefined) &&
-    size === undefined
-  ) {
-    return (
-      <UIInput.Icon
-        ref={ref}
-        {...props}
-        className={inputIconStyle({ class: className })}
-      />
-    );
-  }
-  return (
-    <UIInput.Icon
-      ref={ref}
-      {...props}
-      className={inputIconStyle({
-        parentVariants: {
-          size: parentSize,
-        },
-        class: className,
-      })}
-    />
-  );
-});
+  },
+);
 
 type IInputSlotProps = React.ComponentProps<typeof UIInput.Slot> &
   VariantProps<typeof inputSlotStyle> & { className?: string };
 
-const InputSlot = React.forwardRef<
-  React.ElementRef<typeof UIInput.Slot>,
-  IInputSlotProps
->(({ className, ...props }, ref) => {
-  return (
-    <UIInput.Slot
-      ref={ref}
-      {...props}
-      className={inputSlotStyle({
-        class: className,
-      })}
-    />
-  );
-});
+const InputSlot = React.forwardRef<React.ElementRef<typeof UIInput.Slot>, IInputSlotProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <UIInput.Slot
+        ref={ref}
+        {...props}
+        className={inputSlotStyle({
+          class: className,
+        })}
+      />
+    );
+  },
+);
 
 type IInputFieldProps = React.ComponentProps<typeof UIInput.Input> &
   VariantProps<typeof inputFieldStyle> & { className?: string };
 
-const InputField = React.forwardRef<
-  React.ElementRef<typeof UIInput.Input>,
-  IInputFieldProps
->(({ className, ...props }, ref) => {
-  const { variant: parentVariant, size: parentSize } = useStyleContext(SCOPE);
+const InputField = React.forwardRef<React.ElementRef<typeof UIInput.Input>, IInputFieldProps>(
+  ({ className, ...props }, ref) => {
+    const { variant: parentVariant, size: parentSize } = useStyleContext(SCOPE);
 
-  return (
-    <UIInput.Input
-      ref={ref}
-      {...props}
-      className={inputFieldStyle({
-        parentVariants: {
-          variant: parentVariant,
-          size: parentSize,
-        },
-        class: className,
-      })}
-    />
-  );
-});
+    return (
+      <UIInput.Input
+        ref={ref}
+        {...props}
+        className={inputFieldStyle({
+          parentVariants: {
+            variant: parentVariant,
+            size: parentSize,
+          },
+          class: className,
+        })}
+      />
+    );
+  },
+);
 
 Input.displayName = 'Input';
 InputIcon.displayName = 'InputIcon';

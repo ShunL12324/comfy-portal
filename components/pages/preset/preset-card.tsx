@@ -64,35 +64,23 @@ export const PresetCard = ({
               className="w-full flex-1"
               alt="Preset thumbnail"
               onError={(error) => {
-                console.error(
-                  '[PresetCard] Failed to load thumbnail:',
-                  error.nativeEvent.error,
-                );
+                console.error('[PresetCard] Failed to load thumbnail:', error.nativeEvent.error);
                 // Only clear invalid thumbnail if the file doesn't exist
                 if (error.nativeEvent.error.includes('no such file')) {
-                  usePresetsStore
-                    .getState()
-                    .updatePreset(id, { thumbnail: undefined });
+                  usePresetsStore.getState().updatePreset(id, { thumbnail: undefined });
                 }
               }}
             />
           ) : (
             <View className="flex-1 items-center justify-center">
-              <Icon
-                as={ImageIcon}
-                size="xl"
-                className="h-8 w-8 text-accent-500"
-              />
+              <Icon as={ImageIcon} size="xl" className="h-8 w-8 text-accent-500" />
             </View>
           )}
         </View>
 
         {/* Bottom Info Section */}
         <View className="p-3">
-          <Text
-            className="text-base font-semibold text-typography-950"
-            numberOfLines={1}
-          >
+          <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
             {name}
           </Text>
 
@@ -102,8 +90,7 @@ export const PresetCard = ({
                 {params.model || 'No model selected'}
               </Text>
               <Text className="mt-1 text-xs text-typography-400">
-                Last used:{' '}
-                {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
+                Last used: {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
               </Text>
             </View>
 
@@ -131,10 +118,7 @@ export const PresetCard = ({
         preset={{ id, name, createdAt, thumbnail, params, serverId }}
       />
 
-      <AlertDialog
-        isOpen={isDeleteAlertOpen}
-        onClose={() => setIsDeleteAlertOpen(false)}
-      >
+      <AlertDialog isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)}>
         <AlertDialogBackdrop />
         <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <AlertDialogHeader className="px-0">
@@ -144,8 +128,7 @@ export const PresetCard = ({
           </AlertDialogHeader>
           <AlertDialogBody className="px-0 py-4">
             <Text className="text-sm text-typography-400">
-              Are you sure you want to delete this preset? This action cannot be
-              undone.
+              Are you sure you want to delete this preset? This action cannot be undone.
             </Text>
           </AlertDialogBody>
           <AlertDialogFooter className="px-0">
@@ -155,18 +138,14 @@ export const PresetCard = ({
                 onPress={() => setIsDeleteAlertOpen(false)}
                 className="flex-1 rounded-md bg-background-100"
               >
-                <ButtonText className="text-sm text-typography-400">
-                  Cancel
-                </ButtonText>
+                <ButtonText className="text-sm text-typography-400">Cancel</ButtonText>
               </Button>
               <Button
                 variant="solid"
                 onPress={handleDelete}
                 className="flex-1 rounded-md bg-error-500 active:bg-error-600"
               >
-                <ButtonText className="text-sm text-typography-900">
-                  Delete
-                </ButtonText>
+                <ButtonText className="text-sm text-typography-900">Delete</ButtonText>
               </Button>
             </HStack>
           </AlertDialogFooter>

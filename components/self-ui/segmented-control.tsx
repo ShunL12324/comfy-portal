@@ -1,11 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Pressable } from '../ui/pressable';
 import { Text } from '../ui/text';
 
@@ -36,11 +31,7 @@ interface SegmentedControlProps {
  * A customizable segmented control component with smooth animations
  * @component
  */
-export const SegmentedControl: React.FC<SegmentedControlProps> = ({
-  options,
-  value,
-  onChange,
-}) => {
+export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, value, onChange }) => {
   const selectedIndex = options.indexOf(value);
   const translateX = useSharedValue(0);
   const width = useSharedValue(0);
@@ -51,10 +42,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   useEffect(() => {
     if (selectedIndex !== -1 && width.value !== 0) {
       ('worklet');
-      translateX.value = withTiming(
-        selectedIndex * (width.value / options.length),
-        TIMING_CONFIG,
-      );
+      translateX.value = withTiming(selectedIndex * (width.value / options.length), TIMING_CONFIG);
     }
   }, [selectedIndex, options.length, width.value]);
 
@@ -67,10 +55,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
       const newWidth = event.nativeEvent.layout.width;
       width.value = newWidth;
       if (selectedIndex !== -1) {
-        translateX.value = withTiming(
-          selectedIndex * (newWidth / options.length),
-          TIMING_CONFIG,
-        );
+        translateX.value = withTiming(selectedIndex * (newWidth / options.length), TIMING_CONFIG);
       }
     },
     [selectedIndex, options.length],
@@ -89,38 +74,23 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   });
 
   // Memoize container style
-  const containerStyle = useMemo(
-    () => 'h-10 flex-row overflow-hidden rounded-[10px] bg-background-50',
-    [],
-  );
+  const containerStyle = useMemo(() => 'h-10 flex-row overflow-hidden rounded-[10px] bg-background-50', []);
 
   // Memoize slider base style
-  const sliderBaseStyle = useMemo(
-    () => 'absolute left-1 top-1 h-8 rounded-lg bg-background-200',
-    [],
-  );
+  const sliderBaseStyle = useMemo(() => 'absolute left-1 top-1 h-8 rounded-lg bg-background-200', []);
 
   // Memoize pressable base style
-  const pressableBaseStyle = useMemo(
-    () => 'h-full flex-1 items-center justify-center px-1',
-    [],
-  );
+  const pressableBaseStyle = useMemo(() => 'h-full flex-1 items-center justify-center px-1', []);
 
   const getTextStyle = useCallback((isSelected: boolean) => {
-    return `text-[11px] font-medium ${
-      isSelected ? 'text-typography-900' : 'text-typography-500'
-    }`;
+    return `text-[11px] font-medium ${isSelected ? 'text-typography-900' : 'text-typography-500'}`;
   }, []);
 
   return (
     <View className={containerStyle} onLayout={onLayout}>
       <Animated.View className={sliderBaseStyle} style={sliderStyle} />
       {options.map((option) => (
-        <AnimatedPressable
-          key={option}
-          className={pressableBaseStyle}
-          onPress={() => onChange(option)}
-        >
+        <AnimatedPressable key={option} className={pressableBaseStyle} onPress={() => onChange(option)}>
           <Text className={getTextStyle(value === option)}>{option}</Text>
         </AnimatedPressable>
       ))}

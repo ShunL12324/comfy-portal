@@ -41,10 +41,7 @@ export function SearchHeader({
 
   return (
     <VStack space="md">
-      <Text
-        className="pb-2 pt-4 text-lg font-medium text-primary-500"
-        style={{ paddingHorizontal: 16 }}
-      >
+      <Text className="pb-2 pt-4 text-lg font-medium text-primary-500" style={{ paddingHorizontal: 16 }}>
         {title}
       </Text>
 
@@ -52,11 +49,7 @@ export function SearchHeader({
         <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
           <HStack space="sm" className="items-center">
             <Box className="flex-1">
-              <Input
-                variant="outline"
-                size="md"
-                className="overflow-hidden rounded-lg border-0 bg-background-50"
-              >
+              <Input variant="outline" size="md" className="overflow-hidden rounded-lg border-0 bg-background-50">
                 <InputSlot className="pl-3">
                   <InputIcon as={Search} className="text-background-400" />
                 </InputSlot>

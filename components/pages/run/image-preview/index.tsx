@@ -1,31 +1,13 @@
 import { Icon } from '@/components/ui/icon';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalBody,
-  ModalContent,
-} from '@/components/ui/modal';
+import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 import { ImageIcon, X } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useState } from 'react';
-import {
-  Pressable,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
-import Reanimated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { Pressable, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ImageActions } from './image-actions';
@@ -37,8 +19,6 @@ import { ProgressOverlay } from './progress-overlay';
 interface ParallaxImageProps {
   imageUrl?: string;
   progress?: { current: number; total: number };
-  isPreviewOpen: boolean;
-  onPreviewClose: () => void;
   presetId?: string;
   serverId?: string;
 }
@@ -49,13 +29,12 @@ interface ParallaxImageProps {
 export const ImagePreview = memo(function ParallaxImage({
   imageUrl,
   progress,
-  isPreviewOpen,
-  onPreviewClose,
   presetId,
   serverId,
 }: ParallaxImageProps) {
   const { width: screenWidth } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const safeAreaInsets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
@@ -79,10 +58,7 @@ export const ImagePreview = memo(function ParallaxImage({
       savedScale.value = previewScale.value;
     })
     .onUpdate((e) => {
-      previewScale.value = Math.min(
-        Math.max(savedScale.value * e.scale, 0.5),
-        3,
-      );
+      previewScale.value = Math.min(Math.max(savedScale.value * e.scale, 0.5), 3);
     })
     .onEnd(() => {
       if (previewScale.value < 1) {
@@ -101,10 +77,7 @@ export const ImagePreview = memo(function ParallaxImage({
       savedPreviewTranslateY.value = previewTranslateY.value;
     })
     .onUpdate((e) => {
-      const maxOffset = Math.max(
-        ((previewScale.value - 1) * screenWidth) / 2,
-        0,
-      );
+      const maxOffset = Math.max(((previewScale.value - 1) * screenWidth) / 2, 0);
       previewTranslateX.value = Math.min(
         Math.max(savedPreviewTranslateX.value + e.translationX, -maxOffset),
         maxOffset,
@@ -151,12 +124,13 @@ export const ImagePreview = memo(function ParallaxImage({
             contentFit="contain"
             contentPosition="top left"
             cachePolicy="memory-disk"
+            onTouchEnd={() => setIsPreviewOpen(true)}
           />
 
           <Modal
             isOpen={isPreviewOpen}
             onClose={() => {
-              onPreviewClose?.();
+              setIsPreviewOpen(false);
               resetPreviewValues();
             }}
             useRNModal={false}
@@ -188,12 +162,10 @@ export const ImagePreview = memo(function ParallaxImage({
               >
                 <GestureHandlerRootView className="h-full w-full">
                   <GestureDetector gesture={gesture}>
-                    <Reanimated.View
-                      style={[{ height: '100%', width: '100%' }, previewStyle]}
-                    >
+                    <Reanimated.View style={[{ height: '100%', width: '100%' }, previewStyle]}>
                       <Pressable
                         className="h-full w-full"
-                        onPress={onPreviewClose}
+                        onPress={() => setIsPreviewOpen(false)}
                         onLongPress={() => setShowActionsheet(true)}
                         delayLongPress={500}
                       >
@@ -224,14 +196,12 @@ export const ImagePreview = memo(function ParallaxImage({
                   }}
                   className="absolute bottom-16 left-0 right-0 items-center justify-center"
                 >
-                  <Text className="text-sm font-medium text-white/70">
-                    Long press to open menu
-                  </Text>
+                  <Text className="text-sm font-medium text-white/70">Long press to open menu</Text>
                 </MotiView>
 
                 <TouchableOpacity
                   activeOpacity={0.5}
-                  onPress={onPreviewClose}
+                  onPress={() => setIsPreviewOpen(false)}
                   style={{
                     position: 'absolute',
                     top: safeAreaInsets.top + 12,
@@ -253,13 +223,10 @@ export const ImagePreview = memo(function ParallaxImage({
           <View className="items-center gap-4">
             <Icon as={ImageIcon} size="xl" className="text-typography-500" />
             <View className="items-center gap-1">
-              <Text className="text-sm text-typography-500">
-                No image generated yet
-              </Text>
+              <Text className="text-sm text-typography-500">No image generated yet</Text>
               {progress && progress.current > 0 && (
                 <Text className="text-xs text-typography-400">
-                  Generating...{' '}
-                  {Math.round((progress.current / progress.total) * 100)}%
+                  Generating... {Math.round((progress.current / progress.total) * 100)}%
                 </Text>
               )}
             </View>
@@ -267,11 +234,9 @@ export const ImagePreview = memo(function ParallaxImage({
         </View>
       )}
 
-      {progress &&
-        progress.current > 0 &&
-        progress.current < progress.total && (
-          <ProgressOverlay current={progress.current} total={progress.total} />
-        )}
+      {progress && progress.current > 0 && progress.current < progress.total && (
+        <ProgressOverlay current={progress.current} total={progress.total} />
+      )}
 
       <ImageActions
         isOpen={showActionsheet}

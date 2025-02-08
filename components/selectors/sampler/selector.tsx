@@ -26,9 +26,7 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
     bottomSheetRef.current?.dismiss();
   }, []);
 
-  const selectedOption = SAMPLER_OPTIONS.find(
-    (option) => option.value === value,
-  );
+  const selectedOption = SAMPLER_OPTIONS.find((option) => option.value === value);
 
   return (
     <>
@@ -36,9 +34,7 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
         className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-sm text-typography-900">
-          {selectedOption?.label || value}
-        </Text>
+        <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>
         <Icon as={ChevronDown} size="sm" className="text-typography-500" />
       </Pressable>
 

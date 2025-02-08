@@ -36,9 +36,7 @@ export function OptionSelector<T extends string>({
         className="flex-row items-center justify-between rounded-xl bg-background-200 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-sm text-typography-900">
-          {selectedOption?.label || value}
-        </Text>
+        <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>
         <Icon as={ChevronDown} size="sm" className="text-typography-950" />
       </Pressable>
 

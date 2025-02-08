@@ -68,8 +68,7 @@ const menuItemLabelStyle = tva({
 
 const BackdropPressable = React.forwardRef<
   React.ElementRef<typeof Pressable>,
-  React.ComponentPropsWithoutRef<typeof Pressable> &
-    VariantProps<typeof menuBackdropStyle>
+  React.ComponentPropsWithoutRef<typeof Pressable> & VariantProps<typeof menuBackdropStyle>
 >(({ className, ...props }, ref) => {
   return (
     <Pressable
@@ -86,10 +85,7 @@ type IMenuItemProps = VariantProps<typeof menuItemStyle> & {
   className?: string;
 } & React.ComponentPropsWithoutRef<typeof Pressable>;
 
-const Item = React.forwardRef<
-  React.ElementRef<typeof Pressable>,
-  IMenuItemProps
->(({ className, ...props }, ref) => {
+const Item = React.forwardRef<React.ElementRef<typeof Pressable>, IMenuItemProps>(({ className, ...props }, ref) => {
   return (
     <Pressable
       ref={ref}
@@ -101,17 +97,9 @@ const Item = React.forwardRef<
   );
 });
 
-const Separator = React.forwardRef(
-  ({ className, ...props }: any, ref?: any) => {
-    return (
-      <View
-        ref={ref}
-        className={menuSeparatorStyle({ class: className })}
-        {...props}
-      />
-    );
-  },
-);
+const Separator = React.forwardRef(({ className, ...props }: any, ref?: any) => {
+  return <View ref={ref} className={menuSeparatorStyle({ class: className })} {...props} />;
+});
 export const UIMenu = createMenu({
   Root: Motion.View,
   Item: Item,
@@ -123,62 +111,42 @@ export const UIMenu = createMenu({
 
 cssInterop(Motion.View, { className: 'style' });
 
-type IMenuProps = React.ComponentProps<typeof UIMenu> &
-  VariantProps<typeof menuStyle> & { className?: string };
+type IMenuProps = React.ComponentProps<typeof UIMenu> & VariantProps<typeof menuStyle> & { className?: string };
 type IMenuItemLabelProps = React.ComponentProps<typeof UIMenu.ItemLabel> &
   VariantProps<typeof menuItemLabelStyle> & { className?: string };
 
-const Menu = React.forwardRef<React.ElementRef<typeof UIMenu>, IMenuProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <UIMenu
-        ref={ref}
-        initial={{
-          opacity: 0,
-          scale: 0.8,
-        }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-        }}
-        exit={{
-          opacity: 0,
-          scale: 0.8,
-        }}
-        transition={{
-          type: 'timing',
-          duration: 100,
-        }}
-        className={menuStyle({
-          class: className,
-        })}
-        {...props}
-      />
-    );
-  },
-);
+const Menu = React.forwardRef<React.ElementRef<typeof UIMenu>, IMenuProps>(({ className, ...props }, ref) => {
+  return (
+    <UIMenu
+      ref={ref}
+      initial={{
+        opacity: 0,
+        scale: 0.8,
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
+      exit={{
+        opacity: 0,
+        scale: 0.8,
+      }}
+      transition={{
+        type: 'timing',
+        duration: 100,
+      }}
+      className={menuStyle({
+        class: className,
+      })}
+      {...props}
+    />
+  );
+});
 
 const MenuItem = UIMenu.Item;
 
-const MenuItemLabel = React.forwardRef<
-  React.ElementRef<typeof UIMenu.ItemLabel>,
-  IMenuItemLabelProps
->(
-  (
-    {
-      className,
-      isTruncated,
-      bold,
-      underline,
-      strikeThrough,
-      size = 'md',
-      sub,
-      italic,
-      highlight,
-      ...props
-    },
-    ref,
-  ) => {
+const MenuItemLabel = React.forwardRef<React.ElementRef<typeof UIMenu.ItemLabel>, IMenuItemLabelProps>(
+  ({ className, isTruncated, bold, underline, strikeThrough, size = 'md', sub, italic, highlight, ...props }, ref) => {
     return (
       <UIMenu.ItemLabel
         ref={ref}

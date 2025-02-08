@@ -11,17 +11,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { useServersStore } from '@/store/servers';
 import { router } from 'expo-router';
-import {
-  Activity,
-  Edit2,
-  Globe,
-  Hash,
-  Layers,
-  Loader,
-  Server,
-  Trash2,
-  Unplug,
-} from 'lucide-react-native';
+import { Activity, Edit2, Globe, Hash, Layers, Loader, Server, Trash2, Unplug } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -59,19 +49,13 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
       <Icon as={Server} size="xl" className="text-accent-500" />
     </View>
     <View className="h-full min-w-0 flex-1 items-start justify-start">
-      <Text
-        className="text-base font-semibold text-typography-950"
-        numberOfLines={1}
-      >
+      <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
         {name}
       </Text>
       <View className="mt-2 flex-col gap-1">
         <View className="flex-row items-center gap-1">
           <Icon as={Globe} size="2xs" className="shrink-0 text-accent-500" />
-          <Text
-            className="flex-shrink text-2xs text-typography-400"
-            numberOfLines={1}
-          >
+          <Text className="flex-shrink text-2xs text-typography-400" numberOfLines={1}>
             {host}
           </Text>
         </View>
@@ -112,9 +96,7 @@ const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
 const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
   <TouchableOpacity
     disabled={isRefreshing}
-    className={`items-center rounded-md px-2 py-2 ${
-      status === 'online' ? 'bg-success-50' : 'bg-background-0'
-    }`}
+    className={`items-center rounded-md px-2 py-2 ${status === 'online' ? 'bg-success-50' : 'bg-background-0'}`}
   >
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
@@ -145,11 +127,7 @@ const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
         <Icon as={Unplug} size="sm" className="text-typography-400" />
       )}
       {!isRefreshing && (
-        <Text
-          className={`text-2xs font-medium ${
-            status === 'online' ? 'text-success-700' : 'text-typography-400'
-          }`}
-        >
+        <Text className={`text-2xs font-medium ${status === 'online' ? 'text-success-700' : 'text-typography-400'}`}>
           {status === 'online' ? `${latency?.toString()}ms` : 'Offline'}
         </Text>
       )}
@@ -157,48 +135,25 @@ const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
   </TouchableOpacity>
 );
 
-const DeleteAlert = ({
-  isOpen,
-  onClose,
-  onDelete,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onDelete: () => void;
-}) => (
+const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: () => void; onDelete: () => void }) => (
   <AlertDialog isOpen={isOpen} onClose={onClose}>
     <AlertDialogBackdrop onPress={onClose} />
     <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
       <AlertDialogHeader className="px-0">
-        <Text className="text-lg font-semibold text-typography-950">
-          Delete Server
-        </Text>
+        <Text className="text-lg font-semibold text-typography-950">Delete Server</Text>
       </AlertDialogHeader>
       <AlertDialogBody className="px-0 py-4">
         <Text className="text-sm text-typography-400">
-          Are you sure you want to delete this server? This action cannot be
-          undone.
+          Are you sure you want to delete this server? This action cannot be undone.
         </Text>
       </AlertDialogBody>
       <AlertDialogFooter className="px-0">
         <HStack space="sm" className="py-0">
-          <Button
-            variant="outline"
-            onPress={onClose}
-            className="flex-1 rounded-md bg-background-100"
-          >
-            <ButtonText className="text-sm text-typography-400">
-              Cancel
-            </ButtonText>
+          <Button variant="outline" onPress={onClose} className="flex-1 rounded-md bg-background-100">
+            <ButtonText className="text-sm text-typography-400">Cancel</ButtonText>
           </Button>
-          <Button
-            variant="solid"
-            onPress={onDelete}
-            className="flex-1 rounded-md bg-error-500 active:bg-error-600"
-          >
-            <ButtonText className="text-sm text-typography-900">
-              Delete
-            </ButtonText>
+          <Button variant="solid" onPress={onDelete} className="flex-1 rounded-md bg-error-500 active:bg-error-600">
+            <ButtonText className="text-sm text-typography-900">Delete</ButtonText>
           </Button>
         </HStack>
       </AlertDialogFooter>
@@ -212,9 +167,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const removeServer = useServersStore((state) => state.removeServer);
-  const server = useServersStore((state) =>
-    state.servers.find((s) => s.id === id),
-  );
+  const server = useServersStore((state) => state.servers.find((s) => s.id === id));
 
   if (!server) return null;
 
@@ -252,15 +205,8 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
           <View className="flex-row items-center justify-between p-3.5">
             <ServerInfo name={name} host={host} port={port} models={models} />
             <View className="ml-4 h-24 w-20 flex-col justify-between">
-              <ActionButtons
-                onEdit={() => setIsEditModalOpen(true)}
-                onDelete={() => setIsDeleteAlertOpen(true)}
-              />
-              <ServerStatus
-                status={status}
-                latency={latency}
-                isRefreshing={isRefreshing}
-              />
+              <ActionButtons onEdit={() => setIsEditModalOpen(true)} onDelete={() => setIsDeleteAlertOpen(true)} />
+              <ServerStatus status={status} latency={latency} isRefreshing={isRefreshing} />
             </View>
           </View>
         </TouchableOpacity>
@@ -272,11 +218,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         server={{ id, name, host, port, status, latency }}
       />
 
-      <DeleteAlert
-        isOpen={isDeleteAlertOpen}
-        onClose={() => setIsDeleteAlertOpen(false)}
-        onDelete={handleDelete}
-      />
+      <DeleteAlert isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)} onDelete={handleDelete} />
     </>
   );
 };

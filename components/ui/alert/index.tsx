@@ -2,10 +2,7 @@
 import { createAlert } from '@gluestack-ui/alert';
 import { View, Text } from 'react-native';
 import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import {
-  withStyleContext,
-  useStyleContext,
-} from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
 import React from 'react';
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
@@ -124,11 +121,7 @@ cssInterop(PrimitiveIcon, {
   },
 });
 
-type IAlertProps = Omit<
-  React.ComponentPropsWithoutRef<typeof UIAlert>,
-  'context'
-> &
-  VariantProps<typeof alertStyle>;
+type IAlertProps = Omit<React.ComponentPropsWithoutRef<typeof UIAlert>, 'context'> & VariantProps<typeof alertStyle>;
 
 const Alert = React.forwardRef<React.ElementRef<typeof UIAlert>, IAlertProps>(
   ({ className, variant = 'solid', action = 'muted', ...props }, ref) => {
@@ -143,28 +136,10 @@ const Alert = React.forwardRef<React.ElementRef<typeof UIAlert>, IAlertProps>(
   },
 );
 
-type IAlertTextProps = React.ComponentPropsWithoutRef<typeof UIAlert.Text> &
-  VariantProps<typeof alertTextStyle>;
+type IAlertTextProps = React.ComponentPropsWithoutRef<typeof UIAlert.Text> & VariantProps<typeof alertTextStyle>;
 
-const AlertText = React.forwardRef<
-  React.ElementRef<typeof UIAlert.Text>,
-  IAlertTextProps
->(
-  (
-    {
-      className,
-      isTruncated,
-      bold,
-      underline,
-      strikeThrough,
-      size = 'md',
-      sub,
-      italic,
-      highlight,
-      ...props
-    },
-    ref,
-  ) => {
+const AlertText = React.forwardRef<React.ElementRef<typeof UIAlert.Text>, IAlertTextProps>(
+  ({ className, isTruncated, bold, underline, strikeThrough, size = 'md', sub, italic, highlight, ...props }, ref) => {
     const { action: parentAction } = useStyleContext(SCOPE);
     return (
       <UIAlert.Text
@@ -195,47 +170,30 @@ type IAlertIconProps = React.ComponentPropsWithoutRef<typeof UIAlert.Icon> &
     width?: number;
   };
 
-const AlertIcon = React.forwardRef<
-  React.ElementRef<typeof UIAlert.Icon>,
-  IAlertIconProps
->(({ className, size = 'md', ...props }, ref) => {
-  const { action: parentAction } = useStyleContext(SCOPE);
+const AlertIcon = React.forwardRef<React.ElementRef<typeof UIAlert.Icon>, IAlertIconProps>(
+  ({ className, size = 'md', ...props }, ref) => {
+    const { action: parentAction } = useStyleContext(SCOPE);
 
-  if (typeof size === 'number') {
+    if (typeof size === 'number') {
+      return <UIAlert.Icon ref={ref} {...props} className={alertIconStyle({ class: className })} size={size} />;
+    } else if ((props.height !== undefined || props.width !== undefined) && size === undefined) {
+      return <UIAlert.Icon ref={ref} {...props} className={alertIconStyle({ class: className })} />;
+    }
     return (
       <UIAlert.Icon
-        ref={ref}
+        className={alertIconStyle({
+          parentVariants: {
+            action: parentAction,
+          },
+          size,
+          class: className,
+        })}
         {...props}
-        className={alertIconStyle({ class: className })}
-        size={size}
+        ref={ref}
       />
     );
-  } else if (
-    (props.height !== undefined || props.width !== undefined) &&
-    size === undefined
-  ) {
-    return (
-      <UIAlert.Icon
-        ref={ref}
-        {...props}
-        className={alertIconStyle({ class: className })}
-      />
-    );
-  }
-  return (
-    <UIAlert.Icon
-      className={alertIconStyle({
-        parentVariants: {
-          action: parentAction,
-        },
-        size,
-        class: className,
-      })}
-      {...props}
-      ref={ref}
-    />
-  );
-});
+  },
+);
 
 Alert.displayName = 'Alert';
 AlertText.displayName = 'AlertText';

@@ -19,19 +19,14 @@ interface TabSamplerProps {
 
 export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
   // data
-  const preset = usePresetsStore((state) =>
-    state.presets.find((p) => p.id === presetId),
-  );
+  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
   if (!preset) return null;
 
   // actions
   const updatePreset = usePresetsStore((state) => state.updatePreset);
 
   return (
-    <ScrollView
-      className="flex-1 bg-background-0"
-      contentContainerStyle={{ gap: 16, padding: 16 }}
-    >
+    <ScrollView className="flex-1 bg-background-0" contentContainerStyle={{ gap: 16, padding: 16 }}>
       <TabItem title="Sampler">
         <SamplerSelector
           value={preset?.params.sampler || 'euler_ancestral'}

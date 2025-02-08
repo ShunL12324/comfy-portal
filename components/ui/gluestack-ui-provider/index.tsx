@@ -7,10 +7,7 @@ import { colorScheme as colorSchemeNW } from 'nativewind';
 
 type ModeType = 'light' | 'dark' | 'system';
 
-const getColorSchemeName = (
-  colorScheme: ColorSchemeName,
-  mode: ModeType,
-): 'light' | 'dark' => {
+const getColorSchemeName = (colorScheme: ColorSchemeName, mode: ModeType): 'light' | 'dark' => {
   if (mode === 'system') {
     return colorScheme ?? 'light';
   }

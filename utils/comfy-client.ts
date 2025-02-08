@@ -399,27 +399,6 @@ export class ComfyClient {
    * @param callbacks - Callbacks for tracking generation progress
    * @returns Promise that resolves to an array of image URLs
    * @throws Error if generation fails at any stage
-   * 
-   * @example
-   * ```typescript
-   * const images = await client.generate(preset, {
-   *   onProgress: (value, max) => {
-   *     console.log(`Generation progress: ${value}/${max}`);
-   *   },
-   *   onNodeStart: (nodeId) => {
-   *     console.log(`Starting node: ${nodeId}`);
-   *   },
-   *   onNodeComplete: (nodeId, total, completed) => {
-   *     console.log(`Node complete: ${completed}/${total}`);
-   *   },
-   *   onComplete: (images) => {
-   *     console.log('Generated images:', images);
-   *   },
-   *   onError: (error) => {
-   *     console.error('Generation failed:', error);
-   *   },
-   * });
-   * ```
    */
   async generate(params: GenerationParams, callbacks: ProgressCallback): Promise<string[]> {
     try {

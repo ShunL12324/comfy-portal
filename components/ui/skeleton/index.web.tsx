@@ -48,18 +48,7 @@ type ISkeletonTextProps = React.ComponentPropsWithoutRef<'div'> &
   };
 
 const SkeletonText = React.forwardRef<HTMLDivElement, ISkeletonTextProps>(
-  (
-    {
-      className,
-      _lines,
-      isLoaded = false,
-      startColor = 'bg-background-200',
-      gap = 2,
-      children,
-      ...props
-    },
-    ref,
-  ) => {
+  ({ className, _lines, isLoaded = false, startColor = 'bg-background-200', gap = 2, children, ...props }, ref) => {
     if (!isLoaded) {
       if (_lines) {
         return (

@@ -12,10 +12,7 @@ interface ControlPanelProps {
   presetId: string;
 }
 
-export default function ControlPanel({
-  serverId,
-  presetId,
-}: ControlPanelProps) {
+export default function ControlPanel({ serverId, presetId }: ControlPanelProps) {
   const { height: screenHeight } = useWindowDimensions();
 
   const [index, setIndex] = useState(0);
@@ -63,36 +60,19 @@ export default function ControlPanel({
       style={{
         flex: 1,
         borderTopWidth: 1,
-        borderTopColor:
-          theme === 'dark'
-            ? Colors.dark.outline['50']
-            : Colors.light.outline['50'],
+        borderTopColor: theme === 'dark' ? Colors.dark.outline['50'] : Colors.light.outline['50'],
       }}
       renderTabBar={(props) => (
         <TabBar
           {...props}
           scrollEnabled={false}
           style={{
-            backgroundColor:
-              theme === 'dark'
-                ? Colors.dark.background['0']
-                : Colors.light.background['0'],
+            backgroundColor: theme === 'dark' ? Colors.dark.background['0'] : Colors.light.background['0'],
           }}
-          activeColor={
-            theme === 'dark'
-              ? Colors.dark.typography['950']
-              : Colors.light.typography['950']
-          }
-          inactiveColor={
-            theme === 'dark'
-              ? Colors.dark.typography['400']
-              : Colors.light.typography['400']
-          }
+          activeColor={theme === 'dark' ? Colors.dark.typography['950'] : Colors.light.typography['950']}
+          inactiveColor={theme === 'dark' ? Colors.dark.typography['400'] : Colors.light.typography['400']}
           indicatorStyle={{
-            backgroundColor:
-              theme === 'dark'
-                ? Colors.dark.typography['950']
-                : Colors.light.typography['950'],
+            backgroundColor: theme === 'dark' ? Colors.dark.typography['950'] : Colors.light.typography['950'],
           }}
           renderTabBarItem={(itemProps) => {
             const { key, ...otherProps } = itemProps;
@@ -111,10 +91,7 @@ export default function ControlPanel({
       )}
       pagerStyle={{
         flex: 1,
-        backgroundColor:
-          theme === 'dark'
-            ? Colors.dark.background['0']
-            : Colors.light.background['0'],
+        backgroundColor: theme === 'dark' ? Colors.dark.background['0'] : Colors.light.background['0'],
         height: screenHeight,
       }}
     />

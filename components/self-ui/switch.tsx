@@ -2,12 +2,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Colors } from '@/constants/Colors';
 import { useThemeStore } from '@/store/theme';
 import { useCallback } from 'react';
-import Animated, {
-  interpolateColor,
-  useAnimatedStyle,
-  useDerivedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedStyle, useDerivedValue, withSpring } from 'react-native-reanimated';
 
 interface SwitchProps {
   value: boolean;
@@ -34,12 +29,7 @@ const SIZES = {
   },
 };
 
-export default function Switch({
-  value,
-  onValueChange,
-  disabled = false,
-  size = 'md',
-}: SwitchProps) {
+export default function Switch({ value, onValueChange, disabled = false, size = 'md' }: SwitchProps) {
   const theme = useThemeStore((state) => state.theme);
   const isDark = theme === 'dark';
 
@@ -58,8 +48,7 @@ export default function Switch({
   // Animated styles for the thumb
   const thumbStyle = useAnimatedStyle(() => {
     const dimensions = SIZES[size];
-    const translateX =
-      progress.value * (dimensions.width - dimensions.thumbSize - 4);
+    const translateX = progress.value * (dimensions.width - dimensions.thumbSize - 4);
 
     return {
       transform: [{ translateX }],
@@ -70,20 +59,12 @@ export default function Switch({
 
   // Animated styles for the track
   const trackStyle = useAnimatedStyle(() => {
-    const activeColor = isDark
-      ? Colors.dark.primary[500]
-      : Colors.light.primary[500];
-    const inactiveColor = isDark
-      ? Colors.dark.background[50]
-      : Colors.light.background[50];
+    const activeColor = isDark ? Colors.dark.primary[500] : Colors.light.primary[500];
+    const inactiveColor = isDark ? Colors.dark.background[50] : Colors.light.background[50];
     const dimensions = SIZES[size];
 
     return {
-      backgroundColor: interpolateColor(
-        progress.value,
-        [0, 1],
-        [inactiveColor, activeColor],
-      ),
+      backgroundColor: interpolateColor(progress.value, [0, 1], [inactiveColor, activeColor]),
       width: dimensions.width,
       height: dimensions.height,
     };
@@ -96,15 +77,8 @@ export default function Switch({
   }, [disabled, onValueChange, value]);
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={{ opacity: disabled ? 0.5 : 1 }}
-      className="items-center justify-center"
-    >
-      <Animated.View
-        style={trackStyle}
-        className="rounded-full border-[0.5px] border-outline-200"
-      >
+    <Pressable onPress={handlePress} style={{ opacity: disabled ? 0.5 : 1 }} className="items-center justify-center">
+      <Animated.View style={trackStyle} className="rounded-full border-[0.5px] border-outline-200">
         <Animated.View
           style={[
             thumbStyle,

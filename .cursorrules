@@ -9,14 +9,6 @@
 - we use expo-crypto for generating UUIDs and other crypto operations (DO NOT use browser's crypto API)
 - we follow Modern Minimal design principles
 
-# Design Guidelines
-
-- Use solid backgrounds with thin borders (0.5px)
-- Keep consistent border radius (rounded-xl)
-- Use semantic colors (primary for actions, error for alerts)
-- Maintain clean typography and spacing
-- Keep interactions subtle and purposeful
-
 # Available Gluestack UI Components
 
 We have the following components from gluestack-ui:

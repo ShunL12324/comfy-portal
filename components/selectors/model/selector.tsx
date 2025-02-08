@@ -7,13 +7,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import {
-  Check,
-  ChevronDown,
-  ImageIcon,
-  Sliders,
-  Trash2,
-} from 'lucide-react-native';
+import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useRef } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { SearchableBottomSheet } from '../bottom-sheet';
@@ -41,12 +35,7 @@ interface StrengthControlProps {
   onChangeEnd?: (value: number) => void;
 }
 
-function StrengthControl({
-  label,
-  value,
-  onChange,
-  onChangeEnd,
-}: StrengthControlProps) {
+function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthControlProps) {
   return (
     <>
       <HStack space="xs" className="mt-2 items-center justify-between">
@@ -80,14 +69,7 @@ function ModelPreview({ image, label }: { image?: string; label: string }) {
     );
   }
 
-  return (
-    <Image
-      source={{ uri: image }}
-      alt={label}
-      style={{ height: '100%', width: '100%' }}
-      contentFit="cover"
-    />
-  );
+  return <Image source={{ uri: image }} alt={label} style={{ height: '100%', width: '100%' }} contentFit="cover" />;
 }
 
 export function ModelSelector({
@@ -104,10 +86,8 @@ export function ModelSelector({
   initialModelStrength = 1,
 }: ModelSelectorProps) {
   const [isVisible, setIsVisible] = React.useState(false);
-  const [localClipStrength, setLocalClipStrength] =
-    React.useState(initialClipStrength);
-  const [localModelStrength, setLocalModelStrength] =
-    React.useState(initialModelStrength);
+  const [localClipStrength, setLocalClipStrength] = React.useState(initialClipStrength);
+  const [localModelStrength, setLocalModelStrength] = React.useState(initialModelStrength);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   // Update local strength values when initialStrength changes
@@ -135,22 +115,13 @@ export function ModelSelector({
           <HStack space="sm" className="items-center justify-between p-3">
             <HStack space="sm" className="flex-1 items-center">
               <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-background-100">
-                <ModelPreview
-                  image={option?.image}
-                  label={option?.label || ''}
-                />
+                <ModelPreview image={option?.image} label={option?.label || ''} />
               </Box>
               <VStack space="xs" className="flex-1">
-                <Text
-                  className="text-sm font-medium text-typography-950"
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
+                <Text className="text-sm font-medium text-typography-950" numberOfLines={1} ellipsizeMode="tail">
                   {option?.label || 'Select model'}
                 </Text>
-                <Text className="text-xs text-typography-400">
-                  {option?.serverName || 'Choose a model'}
-                </Text>
+                <Text className="text-xs text-typography-400">{option?.serverName || 'Choose a model'}</Text>
               </VStack>
             </HStack>
             <Icon as={ChevronDown} size="sm" className="text-typography-400" />
@@ -211,17 +182,13 @@ export function ModelSelector({
           </Box>
           <VStack space="xs" className="p-3">
             <Text
-              className={`text-sm ${
-                isSelected ? 'font-medium text-primary-500' : 'text-primary-900'
-              }`}
+              className={`text-sm ${isSelected ? 'font-medium text-primary-500' : 'text-primary-900'}`}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {item.label}
             </Text>
-            <Text className="text-xs text-background-400">
-              {item.serverName}
-            </Text>
+            <Text className="text-xs text-background-400">{item.serverName}</Text>
           </VStack>
         </Box>
       </Pressable>

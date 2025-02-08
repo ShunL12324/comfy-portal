@@ -54,19 +54,11 @@ export const ImageActions = memo(function ImageActions({
       if (imageUrl) {
         await MediaLibrary.saveToLibraryAsync(imageUrl);
         onClose();
-        showToast.success(
-          'Image saved to your gallery',
-          undefined,
-          safeAreaInsets.top + 16,
-        );
+        showToast.success('Image saved to your gallery', undefined, safeAreaInsets.top + 16);
       }
     } catch (error) {
       console.error('Failed to save image:', error);
-      showToast.error(
-        'Failed to save image',
-        undefined,
-        safeAreaInsets.top + 16,
-      );
+      showToast.error('Failed to save image', undefined, safeAreaInsets.top + 16);
     }
   };
 
@@ -81,27 +73,17 @@ export const ImageActions = memo(function ImageActions({
       });
 
       if (savedImage) {
-        const localImageUri = savedImage.path.startsWith('file://')
-          ? savedImage.path
-          : `file://${savedImage.path}`;
+        const localImageUri = savedImage.path.startsWith('file://') ? savedImage.path : `file://${savedImage.path}`;
 
         usePresetsStore.getState().updatePreset(presetId, {
           thumbnail: localImageUri,
         });
 
-        showToast.success(
-          'Thumbnail updated',
-          undefined,
-          safeAreaInsets.top + 16,
-        );
+        showToast.success('Thumbnail updated', undefined, safeAreaInsets.top + 16);
       }
     } catch (error) {
       console.error('Failed to set thumbnail:', error);
-      showToast.error(
-        'Failed to set thumbnail',
-        undefined,
-        safeAreaInsets.top + 16,
-      );
+      showToast.error('Failed to set thumbnail', undefined, safeAreaInsets.top + 16);
     }
     onClose();
   };
@@ -113,18 +95,12 @@ export const ImageActions = memo(function ImageActions({
         <ActionsheetDragIndicatorWrapper>
           <ActionsheetDragIndicator />
         </ActionsheetDragIndicatorWrapper>
-        <ActionsheetItem
-          onPress={handleSaveToGallery}
-          className="flex-row items-center gap-3"
-        >
+        <ActionsheetItem onPress={handleSaveToGallery} className="flex-row items-center gap-3">
           <Icon as={Save} size="sm" />
           <ActionsheetItemText>Save Image</ActionsheetItemText>
         </ActionsheetItem>
         {presetId && (
-          <ActionsheetItem
-            onPress={handleSetAsThumbnail}
-            className="mb-8 flex-row items-center gap-3"
-          >
+          <ActionsheetItem onPress={handleSetAsThumbnail} className="mb-8 flex-row items-center gap-3">
             <Icon as={ImageIcon} size="sm" />
             <ActionsheetItemText>Set as Preset Thumbnail</ActionsheetItemText>
           </ActionsheetItem>

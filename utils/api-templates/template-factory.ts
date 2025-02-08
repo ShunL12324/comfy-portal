@@ -1,6 +1,6 @@
 import { TemplateType } from '@/types/preset';
-import { DefaultApiCallTemplate } from './default-template';
-import { Flux1DApiCallTemplate } from './flux-1d-template';
+import { FluxDevUnetApiCallTemplate } from './flux-dev-unet-template';
+import { SD15SDXLApiCallTemplate } from './sd15sdxl-template';
 
 export class ApiCallTemplateFactory {
   private static instance: ApiCallTemplateFactory;
@@ -8,8 +8,9 @@ export class ApiCallTemplateFactory {
 
   private constructor() {
     this.templates = new Map();
-    this.templates.set('default', new DefaultApiCallTemplate());
-    this.templates.set('flux_1d', new Flux1DApiCallTemplate());
+    this.templates.set('sd_15_sdxl', new SD15SDXLApiCallTemplate());
+    this.templates.set('flux_dev_all_in_one', new FluxDevUnetApiCallTemplate());
+    this.templates.set('flux_dev_unet', new FluxDevUnetApiCallTemplate());
   }
 
   public static getInstance(): ApiCallTemplateFactory {

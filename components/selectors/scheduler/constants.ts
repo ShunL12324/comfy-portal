@@ -14,9 +14,7 @@ export const SCHEDULERS = [
 
 export type Scheduler = (typeof SCHEDULERS)[number];
 
-export const SCHEDULER_OPTIONS: SelectorOption[] = SCHEDULERS.map(
-  (scheduler) => ({
-    value: scheduler,
-    label: scheduler,
-  }),
-);
+export const SCHEDULER_OPTIONS: SelectorOption[] = SCHEDULERS.map((scheduler) => ({
+  value: scheduler,
+  label: scheduler,
+}));

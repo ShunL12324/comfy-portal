@@ -3,10 +3,7 @@ import React from 'react';
 import { createProgress } from '@gluestack-ui/progress';
 import { View } from 'react-native';
 import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import {
-  withStyleContext,
-  useStyleContext,
-} from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
 
@@ -121,32 +118,29 @@ const progressFilledTrackStyle = tva({
   ],
 });
 
-type IProgressProps = VariantProps<typeof progressStyle> &
-  React.ComponentProps<typeof UIProgress>;
+type IProgressProps = VariantProps<typeof progressStyle> & React.ComponentProps<typeof UIProgress>;
 type IProgressFilledTrackProps = VariantProps<typeof progressFilledTrackStyle> &
   React.ComponentProps<typeof UIProgress.FilledTrack>;
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof UIProgress>,
-  IProgressProps
->(({ className, size = 'md', orientation = 'horizontal', ...props }, ref) => {
-  return (
-    <UIProgress
-      ref={ref}
-      {...props}
-      className={progressStyle({ size, orientation, class: className })}
-      context={{ size, orientation }}
-      orientation={orientation}
-    />
-  );
-});
+const Progress = React.forwardRef<React.ElementRef<typeof UIProgress>, IProgressProps>(
+  ({ className, size = 'md', orientation = 'horizontal', ...props }, ref) => {
+    return (
+      <UIProgress
+        ref={ref}
+        {...props}
+        className={progressStyle({ size, orientation, class: className })}
+        context={{ size, orientation }}
+        orientation={orientation}
+      />
+    );
+  },
+);
 
 const ProgressFilledTrack = React.forwardRef<
   React.ElementRef<typeof UIProgress.FilledTrack>,
   IProgressFilledTrackProps
 >(({ className, ...props }, ref) => {
-  const { size: parentSize, orientation: parentOrientation } =
-    useStyleContext(SCOPE);
+  const { size: parentSize, orientation: parentOrientation } = useStyleContext(SCOPE);
 
   return (
     <UIProgress.FilledTrack

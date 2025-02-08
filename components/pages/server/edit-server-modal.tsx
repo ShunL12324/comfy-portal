@@ -1,19 +1,8 @@
 import { Button, ButtonText } from '@/components/ui/button';
-import {
-  FormControl,
-  FormControlError,
-  FormControlLabel,
-} from '@/components/ui/form-control';
+import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
 import { HStack } from '@/components/ui/hstack';
 import { Input, InputField } from '@/components/ui/input';
-import {
-  Modal,
-  ModalBackdrop,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from '@/components/ui/modal';
+import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
@@ -32,11 +21,7 @@ const MIN_PORT = 1;
 const MAX_PORT = 65535;
 const KEYBOARD_OFFSET = Platform.OS === 'ios' ? 100 : 0;
 
-export const EditServerModal = ({
-  isOpen,
-  onClose,
-  server,
-}: EditServerModalProps) => {
+export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProps) => {
   const updateServer = useServersStore((state) => state.updateServer);
   const [name, setName] = React.useState(server.name);
   const [host, setHost] = React.useState(server.host);
@@ -98,15 +83,10 @@ export const EditServerModal = ({
     }
     // 允许 IP 地址或域名
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    const domainRegex =
-      /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
     const localhostRegex = /^localhost$/;
 
-    if (
-      !ipRegex.test(value) &&
-      !domainRegex.test(value) &&
-      !localhostRegex.test(value)
-    ) {
+    if (!ipRegex.test(value) && !domainRegex.test(value) && !localhostRegex.test(value)) {
       return 'Invalid host or IP address';
     }
 
@@ -187,17 +167,13 @@ export const EditServerModal = ({
         <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <VStack className="p-0">
             <ModalHeader className="px-0">
-              <Text className="text-lg font-semibold text-primary-500">
-                Edit Server
-              </Text>
+              <Text className="text-lg font-semibold text-primary-500">Edit Server</Text>
             </ModalHeader>
             <ModalBody scrollEnabled={false}>
               <VStack space="md">
                 <FormControl isInvalid={!!errors.name}>
                   <FormControlLabel>
-                    <Text className="text-sm font-medium text-primary-400">
-                      Name
-                    </Text>
+                    <Text className="text-sm font-medium text-primary-400">Name</Text>
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
@@ -213,18 +189,14 @@ export const EditServerModal = ({
                   </Input>
                   {errors.name && (
                     <FormControlError>
-                      <Text className="mt-1 text-xs text-error-600">
-                        {errors.name}
-                      </Text>
+                      <Text className="mt-1 text-xs text-error-600">{errors.name}</Text>
                     </FormControlError>
                   )}
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.host}>
                   <FormControlLabel>
-                    <Text className="text-sm font-medium text-primary-400">
-                      Host
-                    </Text>
+                    <Text className="text-sm font-medium text-primary-400">Host</Text>
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
@@ -239,18 +211,14 @@ export const EditServerModal = ({
                   </Input>
                   {errors.host && (
                     <FormControlError>
-                      <Text className="mt-1 text-xs text-error-600">
-                        {errors.host}
-                      </Text>
+                      <Text className="mt-1 text-xs text-error-600">{errors.host}</Text>
                     </FormControlError>
                   )}
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.port}>
                   <FormControlLabel>
-                    <Text className="text-sm font-medium text-primary-400">
-                      Port
-                    </Text>
+                    <Text className="text-sm font-medium text-primary-400">Port</Text>
                   </FormControlLabel>
                   <Input className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
@@ -266,9 +234,7 @@ export const EditServerModal = ({
                   </Input>
                   {errors.port && (
                     <FormControlError>
-                      <Text className="mt-1 text-xs text-error-600">
-                        {errors.port}
-                      </Text>
+                      <Text className="mt-1 text-xs text-error-600">{errors.port}</Text>
                     </FormControlError>
                   )}
                 </FormControl>
@@ -276,21 +242,11 @@ export const EditServerModal = ({
             </ModalBody>
             <ModalFooter className="px-0">
               <HStack space="sm" className="py-0">
-                <Button
-                  variant="outline"
-                  onPress={handleClose}
-                  className="flex-1 rounded-md bg-background-100"
-                >
+                <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
                   <ButtonText className="text-primary-400">Cancel</ButtonText>
                 </Button>
-                <Button
-                  variant="solid"
-                  onPress={handleSave}
-                  className="flex-1 rounded-md bg-primary-500"
-                >
-                  <ButtonText className="text-background-0">
-                    Save Changes
-                  </ButtonText>
+                <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-primary-500">
+                  <ButtonText className="text-background-0">Save Changes</ButtonText>
                 </Button>
               </HStack>
             </ModalFooter>

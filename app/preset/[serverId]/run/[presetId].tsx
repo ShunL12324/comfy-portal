@@ -9,8 +9,9 @@ import React, {
 } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDebouncedCallback } from 'use-debounce';
 
-import { Button } from '@/components/ui/button';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -19,7 +20,7 @@ import { showToast } from '@/utils/toast';
 import { usePresetsStore } from '@/store/presets';
 import { useServersStore } from '@/store/servers';
 import { ComfyClient } from '@/utils/comfy-client';
-import { loadHistoryImages, saveGeneratedImage } from '@/utils/image-storage';
+import { saveGeneratedImage } from '@/utils/image-storage';
 
 import { AppBar } from '@/components/layout/app-bar';
 import { ServerStatus } from '@/components/pages/run/generation-status-indicator';
@@ -70,50 +71,43 @@ export default function RunPresetScreen() {
 
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [historyImages, setHistoryImages] = useState<
-    Array<{ url: string; timestamp: number }>
-  >([]);
 
   const comfyClient = useRef<ComfyClient | null>(null);
 
-  const lastProgressUpdateRef = useRef(Date.now());
-  const lastProgressValueRef = useRef(0);
-  const lastNodeProgressUpdateRef = useRef(Date.now());
-  const lastNodeProgressValueRef = useRef(0);
   const progressCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const insets = useSafeAreaInsets();
 
-  const snapPoints = useMemo(() => ['40%', '60%'], []);
+  const snapPoints = useMemo(() => ['40%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
 
-  const updateProgressDebounced = useCallback(
-    (type: 'progress' | 'nodeProgress', value: number, max: number) => {
-      const now = Date.now();
-      const ref =
-        type === 'progress' ? lastProgressUpdateRef : lastNodeProgressUpdateRef;
-      const valueRef =
-        type === 'progress' ? lastProgressValueRef : lastNodeProgressValueRef;
-
-      const timeDiff = now - ref.current;
-      const percentage = (value / max) * 100;
-      const lastPercentage = (valueRef.current / max) * 100;
-      const progressDiff = Math.abs(percentage - lastPercentage);
-
-      if (timeDiff >= 200 && (progressDiff >= 1 || value === max)) {
-        setGenerationState((prev) => ({
-          ...prev,
-          [type]:
-            type === 'progress'
-              ? { value, max }
-              : { completed: value, total: max },
-        }));
-        ref.current = now;
-        valueRef.current = value;
-      }
+  const debouncedSetGenerationState = useDebouncedCallback(
+    (updates: Partial<GenerationState>) => {
+      setGenerationState((prev) => ({
+        ...prev,
+        ...updates,
+      }));
     },
-    [],
+    100,
+    { maxWait: 200 },
+  );
+
+  const handleProgress = useCallback(
+    (value: number, max: number) => {
+      debouncedSetGenerationState({
+        progress: { value, max },
+      });
+    },
+    [debouncedSetGenerationState],
+  );
+
+  const handleNodeProgress = useCallback(
+    (completed: number, total: number) => {
+      debouncedSetGenerationState({
+        nodeProgress: { completed, total },
+      });
+    },
+    [debouncedSetGenerationState],
   );
 
   const resetGeneration = useCallback(() => {
@@ -158,12 +152,6 @@ export default function RunPresetScreen() {
     };
   }, [server?.id]);
 
-  useEffect(() => {
-    if (preset) {
-      loadHistoryImages(serverId as string, preset.id).then(setHistoryImages);
-    }
-  }, [preset, serverId]);
-
   const handleGenerate = async () => {
     if (!comfyClient.current || !preset || !server) return;
 
@@ -187,23 +175,11 @@ export default function RunPresetScreen() {
       }
 
       await comfyClient.current.generate(preset.params, {
-        onProgress: (value, max) => {
-          updateProgressDebounced('progress', value, max);
-          if (value > max * 0.9 && value < max) {
-            if (progressCompleteTimeoutRef.current) {
-              clearTimeout(progressCompleteTimeoutRef.current);
-            }
-            progressCompleteTimeoutRef.current = setTimeout(() => {
-              setGenerationState((prev) => ({
-                ...prev,
-                progress: { value: max, max },
-              }));
-            }, 500);
-          }
-        },
+        onProgress: handleProgress,
         onNodeStart: () => {},
-        onNodeComplete: (_, total, completed) =>
-          updateProgressDebounced('nodeProgress', completed, total),
+        onNodeComplete: (node, completed, total) => {
+          handleNodeProgress(completed, total);
+        },
         onDownloadProgress: (_, progress) => {
           if (progress === 0) {
             setGenerationState((prev) => ({
@@ -241,11 +217,6 @@ export default function RunPresetScreen() {
                 : `file://${result.path}`;
 
               setGeneratedImage(localImageUrl);
-              const newHistoryImages = await loadHistoryImages(
-                serverId as string,
-                preset.id,
-              );
-              setHistoryImages(newHistoryImages);
             } else {
               console.error('Failed to save generated image');
               showToast.error(
@@ -269,34 +240,6 @@ export default function RunPresetScreen() {
     setGeneratedImage(url);
     setIsHistoryOpen(false);
   }, []);
-
-  const handleDeleteImages = useCallback(
-    async (urls: string[]) => {
-      const newHistoryImages = historyImages.filter(
-        (img) => !urls.includes(img.url),
-      );
-      setHistoryImages(newHistoryImages);
-
-      if (generatedImage && urls.includes(generatedImage)) {
-        setGeneratedImage(null);
-      }
-
-      if (preset) {
-        await Promise.all(
-          urls.map((url) =>
-            saveGeneratedImage({
-              serverId: serverId as string,
-              presetId: preset.id,
-              imageUrl: url,
-              params: preset.params,
-              delete: true,
-            }),
-          ),
-        );
-      }
-    },
-    [generatedImage, historyImages, preset, serverId],
-  );
 
   if (!server || !preset) {
     return (
@@ -344,8 +287,6 @@ export default function RunPresetScreen() {
               }
             : undefined
         }
-        isPreviewOpen={isPreviewOpen}
-        onPreviewClose={() => setIsPreviewOpen(false)}
         presetId={preset.id}
         serverId={serverId as string}
       />
@@ -373,39 +314,37 @@ export default function RunPresetScreen() {
               theme === 'light'
                 ? Colors.light.background[0]
                 : Colors.dark.background[0],
-            paddingBottom: 100,
+            paddingBottom: 80,
           }}
         >
           <ControlPanel serverId={serverId as string} presetId={preset.id} />
         </BottomSheetView>
       </BottomSheet>
 
-      <View className="relative z-30">
-        <VStack className="border-t-[0.5px] border-outline-50 bg-background-0 px-5 pb-6 pt-4">
-          <Button
-            size="xl"
-            variant="solid"
-            action="primary"
-            onPress={handleGenerate}
-            disabled={generationState.status === 'generating'}
-            className="rounded-lg active:bg-primary-600 disabled:opacity-50"
-          >
-            <Icon as={Wand2} size="sm" className="mr-2 text-typography-0" />
-            <Text className="text-md font-semibold text-typography-0">
-              {generationState.status === 'generating'
-                ? 'Generating...'
-                : 'Generate'}
-            </Text>
-          </Button>
-        </VStack>
+      <View className="relative z-30 h-20 bg-background-0 px-4">
+        <Button
+          size="xl"
+          variant="solid"
+          action="primary"
+          onPress={handleGenerate}
+          disabled={generationState.status === 'generating'}
+          className="rounded-lg active:bg-primary-600 disabled:opacity-50"
+        >
+          <ButtonIcon as={Wand2} size="sm" />
+          <ButtonText className="text-md font-semibold">
+            {generationState.status === 'generating'
+              ? 'Generating...'
+              : 'Generate'}
+          </ButtonText>
+        </Button>
       </View>
 
       <HistoryDrawer
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
-        images={historyImages}
+        serverId={serverId as string}
+        presetId={preset?.id}
         onSelectImage={handleSelectHistoryImage}
-        onDeleteImages={handleDeleteImages}
       />
     </View>
   );

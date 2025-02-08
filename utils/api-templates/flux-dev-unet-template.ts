@@ -2,7 +2,7 @@ import { GenerationParams } from '@/types/preset';
 import { ApiCall } from '../api-call';
 import { BaseApiCallTemplate } from './base-template';
 
-const FLUX_1D_TEMPLATE = {
+const FLUX_DEV_UNET_TEMPLATE = {
   "6": {
     "inputs": {
       "text": "",
@@ -118,7 +118,7 @@ const FLUX_1D_TEMPLATE = {
   }
 } as const;
 
-export class Flux1DApiCallTemplate extends BaseApiCallTemplate {
+export class FluxDevUnetApiCallTemplate extends BaseApiCallTemplate {
   protected getInitialNodeIds(): { modelNodeId: string; clipNodeId: string; startLoraNodeId: number; } {
     return {
       modelNodeId: "36", // UNETLoader
@@ -128,7 +128,7 @@ export class Flux1DApiCallTemplate extends BaseApiCallTemplate {
   }
 
   getTemplate(): ApiCall {
-    return JSON.parse(JSON.stringify(FLUX_1D_TEMPLATE));
+    return JSON.parse(JSON.stringify(FLUX_DEV_UNET_TEMPLATE));
   }
 
   fillTemplate(params: GenerationParams): ApiCall {
@@ -155,7 +155,7 @@ export class Flux1DApiCallTemplate extends BaseApiCallTemplate {
     apiCall[28].inputs.scheduler = params.scheduler;
 
     // Update prompts
-    apiCall[6].inputs.text = params.prompt;
+    apiCall[6].inputs.text = params.positivePrompt;
     apiCall[29].inputs.text = params.negativePrompt;
 
     // Update image dimensions

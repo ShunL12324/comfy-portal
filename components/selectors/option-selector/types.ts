@@ -9,4 +9,4 @@ export interface OptionSelectorProps<T extends string> {
   title?: string;
   showSearch?: boolean;
   searchPlaceholder?: string;
-} 
+}
