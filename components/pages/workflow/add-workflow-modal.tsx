@@ -6,33 +6,27 @@ import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { usePresetsStore } from '@/store/presets';
-import { GenerationParams } from '@/types/preset';
-import { savePresetThumbnail } from '@/utils/image-storage';
+import { useWorkflowStore } from '@/store/workflow';
+import { saveWorkflowThumbnail } from '@/utils/image-storage';
+import { parseWorkflowTemplate } from '@/utils/workflow-parser';
+import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Animated, Keyboard } from 'react-native';
 
-interface EditPresetModalProps {
+interface AddWorkflowModalProps {
   isOpen: boolean;
   onClose: () => void;
-  preset: {
-    id: string;
-    name: string;
-    createdAt: number;
-    thumbnail?: string;
-    params: GenerationParams;
-    serverId: string;
-  };
+  serverId: string;
 }
 
-export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProps) {
-  const [name, setName] = useState(preset.name);
-  const [thumbnail, setThumbnail] = useState(preset.thumbnail || '');
+export function AddWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
+  const [name, setName] = useState('');
+  const [thumbnail, setThumbnail] = useState('');
   const [error, setError] = useState('');
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const addWorkflow = useWorkflowStore((state) => state.addWorkflow);
   const translateY = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -58,20 +52,21 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
     };
   }, [translateY]);
 
-  const handleUpdate = async () => {
+  const handleAdd = async () => {
     if (!name.trim()) {
       setError('Name is required');
       return;
     }
 
-    let finalThumbnail = thumbnail;
-    if (thumbnail && thumbnail !== preset.thumbnail) {
+    const workflowId = Crypto.randomUUID();
+    let finalThumbnail = '';
+    if (thumbnail) {
       const ext = thumbnail.split('.').pop();
-      const newPath = `${FileSystem.documentDirectory}presets/${preset.id}/thumbnail.${ext}`;
+      const newPath = `${FileSystem.documentDirectory}workflows/${workflowId}/thumbnail.${ext}`;
 
       try {
         // Create directories if they don't exist
-        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}presets/${preset.id}`, {
+        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}workflows/${workflowId}`, {
           intermediates: true,
         });
 
@@ -87,13 +82,18 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
       }
     }
 
-    updatePreset(preset.id, {
+    addWorkflow({
       name: name.trim(),
+      serverId,
       thumbnail: finalThumbnail,
-      params: preset.params,
+      addMethod: 'preset',
+      data: parseWorkflowTemplate(require('@/tools/setu.json')),
     });
 
-    handleClose();
+    setName('');
+    setThumbnail('');
+    setError('');
+    onClose();
   };
 
   const handleSelectImage = async () => {
@@ -112,11 +112,12 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
       quality: 0.8,
     });
 
-    if (!result.canceled && preset) {
+    if (!result.canceled) {
       try {
-        const savedImage = await savePresetThumbnail({
-          serverId: preset.serverId,
-          presetId: preset.id,
+        const tempId = await Crypto.randomUUID();
+        const savedImage = await saveWorkflowThumbnail({
+          serverId,
+          workflowId: tempId,
           imageUri: result.assets[0].uri,
           mimeType: result.assets[0].mimeType,
         });
@@ -133,8 +134,8 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
   };
 
   const handleClose = () => {
-    setName(preset.name);
-    setThumbnail(preset.thumbnail || '');
+    setName('');
+    setThumbnail('');
     setError('');
     onClose();
   };
@@ -154,7 +155,7 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
       >
         <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <ModalHeader>
-            <Text className="text-lg font-semibold text-primary-500">Edit Preset</Text>
+            <Text className="text-lg font-semibold text-primary-500">Add Workflow</Text>
           </ModalHeader>
 
           <ModalBody scrollEnabled={false}>
@@ -169,8 +170,7 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
                       setName(value);
                       setError('');
                     }}
-                    defaultValue={name}
-                    placeholder="Enter preset name"
+                    placeholder="Enter workflow name"
                     className="px-3 py-2 text-sm text-primary-500 placeholder:text-primary-300"
                   />
                 </Input>
@@ -189,7 +189,7 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
                       source={{ uri: thumbnail }}
                       className="h-32 w-full"
                       resizeMode="cover"
-                      alt="Preset thumbnail"
+                      alt="Workflow thumbnail"
                     />
                   ) : (
                     <VStack className="h-32 items-center justify-center">
@@ -212,11 +212,11 @@ export function EditPresetModal({ isOpen, onClose, preset }: EditPresetModalProp
             </Button>
             <Button
               variant="solid"
-              onPress={handleUpdate}
+              onPress={handleAdd}
               className="flex-1 rounded-md border-0 bg-primary-500"
               disabled={!name.trim()}
             >
-              <ButtonText className="text-background-0">Save</ButtonText>
+              <ButtonText className="text-background-0">Add</ButtonText>
             </Button>
           </ModalFooter>
         </ModalContent>

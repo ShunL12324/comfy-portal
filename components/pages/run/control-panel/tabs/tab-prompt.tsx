@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
-import { usePresetsStore } from '@/store/presets';
+import { useWorkflowStore } from '@/store/workflow';
 import { Tag } from '@/types/preset';
 import * as Crypto from 'expo-crypto';
 import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from 'lucide-react-native';
@@ -317,12 +317,12 @@ function PromptInput({ value, onChangeValue, title }: PromptInputProps) {
 
 export default function TabPrompt({ serverId, presetId }: TabPromptProps) {
   // data
-  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
+  const preset = useWorkflowStore((state) => state.workflow.find((p) => p.id === presetId));
 
   if (!preset) return null;
 
   // actions
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const updatePreset = useWorkflowStore((state) => state.updateWorkflow);
 
   return (
     <ScrollView

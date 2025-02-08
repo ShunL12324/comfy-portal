@@ -1,4 +1,4 @@
-import { SmoothSlider } from '@/components/self-ui/smooth-slider';
+import { NumberSlider } from '@/components/self-ui/slider';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -20,7 +20,7 @@ interface ModelSelectorProps {
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
-  type?: string;
+  type?: 'checkpoints' | 'loras' | 'embeddings';
   serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
@@ -45,14 +45,13 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
         </HStack>
       </HStack>
       <HStack space="sm" className="mt-2 w-full items-center">
-        <SmoothSlider
-          initialValue={value}
+        <NumberSlider
+          defaultValue={value}
           minValue={0}
           maxValue={2}
           step={0.05}
           onChange={onChange}
           onChangeEnd={onChangeEnd}
-          className="w-full flex-1"
           decimalPlaces={2}
         />
       </HStack>
@@ -169,11 +168,11 @@ export function ModelSelector({
       >
         <Box
           className={`relative overflow-hidden rounded-xl ${
-            isSelected ? 'border-[3px] border-outline-600' : 'bg-background-50'
+            isSelected ? 'border-[3px] border-outline-400' : 'bg-background-50'
           }`}
         >
           {isSelected && (
-            <Box className="absolute right-2 top-2 z-10 rounded-full bg-primary-500 p-1">
+            <Box className="absolute right-2 top-2 z-10 rounded-full bg-background-50 p-1">
               <Icon as={Check} size="sm" className="text-typography-950" />
             </Box>
           )}

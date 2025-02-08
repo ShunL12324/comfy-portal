@@ -32,11 +32,10 @@ export const ImagePreview = memo(function ParallaxImage({
   presetId,
   serverId,
 }: ParallaxImageProps) {
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const safeAreaInsets = useSafeAreaInsets();
-  const { height: screenHeight } = useWindowDimensions();
 
   // Preview gesture values
   const previewScale = useSharedValue(1);
@@ -118,11 +117,12 @@ export const ImagePreview = memo(function ParallaxImage({
           <Image
             source={{ uri: imageUrl }}
             style={{
-              width: '100%',
-              height: '100%',
+              width: screenWidth,
+              height: screenHeight,
+              aspectRatio: undefined,
             }}
             contentFit="contain"
-            contentPosition="top left"
+            contentPosition="top"
             cachePolicy="memory-disk"
             onTouchEnd={() => setIsPreviewOpen(true)}
           />
@@ -242,7 +242,7 @@ export const ImagePreview = memo(function ParallaxImage({
         isOpen={showActionsheet}
         onClose={() => setShowActionsheet(false)}
         imageUrl={imageUrl}
-        presetId={presetId}
+        workflowId={presetId}
         serverId={serverId}
       />
     </View>

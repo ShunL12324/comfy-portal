@@ -1,10 +1,10 @@
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { SmoothSlider } from '@/components/self-ui/smooth-slider';
+import { Slider } from '@/components/self-ui/slider';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { usePresetsStore } from '@/store/presets';
 import { useThemeStore } from '@/store/theme';
+import { useWorkflowStore } from '@/store/workflow';
 import { showToast } from '@/utils/toast';
 import { Info, X } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -31,13 +31,13 @@ export default function TabGeneration({ serverId, presetId }: TabGenerationProps
   const insects = useSafeAreaInsets();
 
   // store data
-  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
+  const preset = useWorkflowStore((state) => state.workflow.find((p) => p.id === presetId));
   const { theme } = useThemeStore();
 
   if (!preset) return null;
 
   // store actions
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const updatePreset = useWorkflowStore((state) => state.updateWorkflow);
 
   const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(
     RESOLUTION_OPTIONS.find(
@@ -181,7 +181,7 @@ export default function TabGeneration({ serverId, presetId }: TabGenerationProps
           </MotiView>
         </TabItem>
         <TabItem title="Stop At Clip Layer" titleRight={null}>
-          <SmoothSlider
+          <Slider
             initialValue={preset?.params.stopAtClipLayer ?? -1}
             minValue={-24}
             maxValue={-1}

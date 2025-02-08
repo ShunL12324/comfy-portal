@@ -1,7 +1,6 @@
-import React from 'react';
 import { Tabs } from 'expo-router';
+import React from 'react';
 import { TabBar } from '../../components/layout/tab-bar';
-import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
   return (

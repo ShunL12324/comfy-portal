@@ -177,15 +177,6 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
     setIsRefreshing(server.status === 'refreshing');
   }, [server]);
 
-  const handlePress = () => {
-    router.push(`/preset/${id}`);
-  };
-
-  const handleDelete = () => {
-    removeServer(id);
-    setIsDeleteAlertOpen(false);
-  };
-
   return (
     <>
       <MotiView
@@ -198,7 +189,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         }}
       >
         <TouchableOpacity
-          onPress={handlePress}
+          onPress={() => router.push(`/workflow/${id}`)}
           activeOpacity={0.8}
           className="overflow-hidden rounded-xl bg-background-50"
         >
@@ -218,7 +209,14 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         server={{ id, name, host, port, status, latency }}
       />
 
-      <DeleteAlert isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)} onDelete={handleDelete} />
+      <DeleteAlert
+        isOpen={isDeleteAlertOpen}
+        onClose={() => setIsDeleteAlertOpen(false)}
+        onDelete={() => {
+          removeServer(id);
+          setIsDeleteAlertOpen(false);
+        }}
+      />
     </>
   );
 };

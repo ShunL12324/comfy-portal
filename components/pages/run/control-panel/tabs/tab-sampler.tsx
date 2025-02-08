@@ -1,11 +1,11 @@
 import { SamplerSelector } from '@/components/selectors/sampler';
 import { SchedulerSelector } from '@/components/selectors/scheduler/selector';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { SmoothSlider } from '@/components/self-ui/smooth-slider';
+import { Slider } from '@/components/self-ui/slider';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { usePresetsStore } from '@/store/presets';
+import { useWorkflowStore } from '@/store/workflow';
 import * as Crypto from 'expo-crypto';
 import { Dice2, Info } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -19,11 +19,11 @@ interface TabSamplerProps {
 
 export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
   // data
-  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
+  const preset = useWorkflowStore((state) => state.workflow.find((p) => p.id === presetId));
   if (!preset) return null;
 
   // actions
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const updatePreset = useWorkflowStore((state) => state.updateWorkflow);
 
   return (
     <ScrollView className="flex-1 bg-background-0" contentContainerStyle={{ gap: 16, padding: 16 }}>
@@ -48,7 +48,7 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
         />
       </TabItem>
       <TabItem title="Steps" titleRight={null}>
-        <SmoothSlider
+        <Slider
           initialValue={preset?.params.steps || 25}
           minValue={1}
           maxValue={100}
@@ -63,7 +63,7 @@ export default function TabSampler({ serverId, presetId }: TabSamplerProps) {
         />
       </TabItem>
       <TabItem title="CFG Scale" titleRight={null}>
-        <SmoothSlider
+        <Slider
           initialValue={preset?.params.cfg || 7.5}
           minValue={1}
           maxValue={30}

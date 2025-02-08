@@ -8,8 +8,8 @@ import {
   ActionsheetItemText,
 } from '@/components/ui/actionsheet';
 import { Icon } from '@/components/ui/icon';
-import { usePresetsStore } from '@/store/presets';
-import { savePresetThumbnail } from '@/utils/image-storage';
+import { useWorkflowStore } from '@/store/workflow';
+import { saveWorkflowThumbnail } from '@/utils/image-storage';
 import { showToast } from '@/utils/toast';
 import * as MediaLibrary from 'expo-media-library';
 import { ImageIcon, Save } from 'lucide-react-native';
@@ -24,7 +24,7 @@ interface ImageActionsProps {
   /** URL of the image */
   imageUrl?: string;
   /** Current preset ID */
-  presetId?: string;
+  workflowId?: string;
   /** Current server ID */
   serverId?: string;
 }
@@ -36,7 +36,7 @@ export const ImageActions = memo(function ImageActions({
   isOpen,
   onClose,
   imageUrl,
-  presetId,
+  workflowId,
   serverId,
 }: ImageActionsProps) {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
@@ -63,19 +63,19 @@ export const ImageActions = memo(function ImageActions({
   };
 
   const handleSetAsThumbnail = async () => {
-    if (!imageUrl || !presetId || !serverId) return;
+    if (!imageUrl || !workflowId || !serverId) return;
 
     try {
-      const savedImage = await savePresetThumbnail({
+      const savedImage = await saveWorkflowThumbnail({
         serverId,
-        presetId,
+        workflowId,
         imageUri: imageUrl,
       });
 
       if (savedImage) {
         const localImageUri = savedImage.path.startsWith('file://') ? savedImage.path : `file://${savedImage.path}`;
 
-        usePresetsStore.getState().updatePreset(presetId, {
+        useWorkflowStore.getState().updateWorkflow(workflowId, {
           thumbnail: localImageUri,
         });
 
@@ -99,7 +99,7 @@ export const ImageActions = memo(function ImageActions({
           <Icon as={Save} size="sm" />
           <ActionsheetItemText>Save Image</ActionsheetItemText>
         </ActionsheetItem>
-        {presetId && (
+        {workflowId && (
           <ActionsheetItem onPress={handleSetAsThumbnail} className="mb-8 flex-row items-center gap-3">
             <Icon as={ImageIcon} size="sm" />
             <ActionsheetItemText>Set as Preset Thumbnail</ActionsheetItemText>

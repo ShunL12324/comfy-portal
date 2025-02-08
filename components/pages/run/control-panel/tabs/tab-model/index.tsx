@@ -1,7 +1,7 @@
 import { ModelSelector } from '@/components/selectors/model';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { AddIcon } from '@/components/ui/icon';
-import { usePresetsStore } from '@/store/presets';
+import { useWorkflowStore } from '@/store/workflow';
 import { LoraConfig } from '@/types/preset';
 import { randomUUID } from 'expo-crypto';
 import React from 'react';
@@ -66,11 +66,11 @@ interface TabModelProps {
 
 export default function TabModel({ serverId, presetId }: TabModelProps) {
   // store values
-  const preset = usePresetsStore((state) => state.presets.find((p) => p.id === presetId));
-  const loras = usePresetsStore((state) => state.presets.find((p) => p.id === presetId)?.params.loras);
+  const preset = useWorkflowStore((state) => state.workflow.find((p) => p.id === presetId));
+  const loras = useWorkflowStore((state) => state.workflow.find((p) => p.id === presetId)?.params.loras);
 
   // store actions
-  const updatePreset = usePresetsStore((state) => state.updatePreset);
+  const updatePreset = useWorkflowStore((state) => state.updateWorkflow);
 
   const handleAddLora = () => {
     const lora: LoraConfig = {

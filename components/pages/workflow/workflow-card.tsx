@@ -1,4 +1,4 @@
-import { EditPresetModal } from '@/components/pages/preset/edit-preset-modal';
+import { EditWorkflowModal } from '@/components/pages/workflow/edit-workflow-modal';
 import {
   AlertDialog,
   AlertDialogBackdrop,
@@ -13,40 +13,28 @@ import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Image } from '@/components/ui/image';
 import { Text } from '@/components/ui/text';
-import { usePresetsStore } from '@/store/presets';
+import { useWorkflowStore } from '@/store/workflow';
+import { useRouter } from 'expo-router';
 import { Edit2, ImageIcon, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, TouchableOpacity, View } from 'react-native';
 
-interface PresetCardProps {
+interface WorkflowCardProps {
   id: string;
-  name: string;
-  createdAt: number;
-  thumbnail?: string;
-  lastUsed?: number;
-  params: any;
-  serverId: string;
-  onPress: () => void;
-  index?: number;
 }
 
-export const PresetCard = ({
-  id,
-  name,
-  createdAt,
-  thumbnail,
-  lastUsed,
-  params,
-  serverId,
-  onPress,
-  index = 0,
-}: PresetCardProps) => {
+export const WorkflowCard = ({ id }: WorkflowCardProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
-  const removePreset = usePresetsStore((state) => state.removePreset);
+  const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
+  const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === id));
+
+  if (!workflowRecord) return null;
+
+  const router = useRouter();
 
   const handleDelete = () => {
-    removePreset(id);
+    removeWorkflow(id);
     setIsDeleteAlertOpen(false);
   };
 
@@ -54,20 +42,20 @@ export const PresetCard = ({
     <>
       <Pressable
         className="active:scale-98 overflow-hidden rounded-xl bg-background-50 active:opacity-80"
-        onPress={onPress}
+        onPress={() => router.push(`/workflow/${workflowRecord?.serverId}/run/${workflowRecord?.id}`)}
       >
         {/* Top Image Section */}
         <View className="h-64 w-full bg-background-100">
-          {thumbnail ? (
+          {workflowRecord?.thumbnail ? (
             <Image
-              source={{ uri: thumbnail }}
+              source={{ uri: workflowRecord?.thumbnail }}
               className="w-full flex-1"
-              alt="Preset thumbnail"
+              alt="Workflow thumbnail"
               onError={(error) => {
-                console.error('[PresetCard] Failed to load thumbnail:', error.nativeEvent.error);
+                console.error('[WorkflowCard] Failed to load thumbnail:', error.nativeEvent.error);
                 // Only clear invalid thumbnail if the file doesn't exist
                 if (error.nativeEvent.error.includes('no such file')) {
-                  usePresetsStore.getState().updatePreset(id, { thumbnail: undefined });
+                  useWorkflowStore.getState().updateWorkflow(id, { thumbnail: undefined });
                 }
               }}
             />
@@ -81,17 +69,15 @@ export const PresetCard = ({
         {/* Bottom Info Section */}
         <View className="p-3">
           <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
-            {name}
+            {workflowRecord.name}
           </Text>
 
           <View className="mt-2 flex-row items-center justify-between">
             <View className="flex-1">
               <Text className="text-xs text-typography-400" numberOfLines={1}>
-                {params.model || 'No model selected'}
+                {'No model selected'}
               </Text>
-              <Text className="mt-1 text-xs text-typography-400">
-                Last used: {lastUsed ? new Date(lastUsed).toLocaleDateString() : 'Never'}
-              </Text>
+              <Text className="mt-1 text-xs text-typography-400">Last used: {'Never'}</Text>
             </View>
 
             <View className="ml-2 flex-row gap-2">
@@ -112,23 +98,19 @@ export const PresetCard = ({
         </View>
       </Pressable>
 
-      <EditPresetModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        preset={{ id, name, createdAt, thumbnail, params, serverId }}
-      />
+      <EditWorkflowModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} workflowId={id} />
 
       <AlertDialog isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)}>
         <AlertDialogBackdrop />
         <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
           <AlertDialogHeader className="px-0">
             <Heading size="sm" className="text-typography-950">
-              Delete Preset
+              Delete Workflow
             </Heading>
           </AlertDialogHeader>
           <AlertDialogBody className="px-0 py-4">
             <Text className="text-sm text-typography-400">
-              Are you sure you want to delete this preset? This action cannot be undone.
+              Are you sure you want to delete this workflow? This action cannot be undone.
             </Text>
           </AlertDialogBody>
           <AlertDialogFooter className="px-0">
