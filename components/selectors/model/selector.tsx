@@ -53,6 +53,7 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
           onChange={onChange}
           onChangeEnd={onChangeEnd}
           decimalPlaces={2}
+          space={12}
         />
       </HStack>
     </>

@@ -23,7 +23,7 @@ interface KSamplerAdvancedProps {
   workflowId: string;
 }
 
-const generateRandomSeed = () => {
+export const generateRandomSeed = () => {
   const buffer = new Uint32Array(1);
   Crypto.getRandomValues(buffer);
   return buffer[0];
@@ -104,8 +104,8 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
               </View>
             </TouchableOpacity>
           </View>
-          <View className="flex-row items-center gap-2">
-            <Icon as={Info} size="xs" className="text-typography-500" />
+          <View className="flex-row items-start justify-end gap-2">
+            <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
             <Text size="sm" className="text-xs text-typography-500">
               Using the same seed will not trigger image generation again.
             </Text>

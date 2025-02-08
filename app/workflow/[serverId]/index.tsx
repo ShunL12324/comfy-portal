@@ -1,5 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
-import { AddWorkflowModal } from '@/components/pages/workflow/add-workflow-modal';
+import { ImportWorkflowModal } from '@/components/pages/workflow/import-workflow-modal';
 import { WorkflowCard } from '@/components/pages/workflow/workflow-card';
 import { Button } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
@@ -49,7 +49,7 @@ const WorkflowsScreen = () => {
           >
             <HStack space="sm" className="items-center justify-center">
               <Icon as={AddIcon} size="md" className="text-accent-500" />
-              <Text className="text-sm font-medium text-typography-900">Add Workflow</Text>
+              <Text className="text-sm font-medium text-typography-900">Import Workflow</Text>
             </HStack>
           </Button>
         }
@@ -63,7 +63,7 @@ const WorkflowsScreen = () => {
         </VStack>
       </ScrollView>
 
-      <AddWorkflowModal
+      <ImportWorkflowModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         serverId={serverId as string}

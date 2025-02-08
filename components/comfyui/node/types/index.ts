@@ -7,7 +7,9 @@ import CLIPTextEncode from './base/CLIPTextEncode';
 import EmptyLatentImage from './base/EmptyLatentImage';
 import KSampler from './base/KSampler';
 import KSamplerAdvanced from './base/KSamplerAdvanced';
+import LoraLoader from './base/LoraLoader';
 import PreviewImage from './base/PreviewImage';
+import SaveImage from './base/SaveImage';
 import VAEDecode from './base/VAEDecode';
 interface NodeContentProps {
   node: Node;
@@ -24,6 +26,8 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'EmptyLatentImage': EmptyLatentImage,
   'VAEDecode': VAEDecode,
   'PreviewImage': PreviewImage,
+  'SaveImage': SaveImage,
+  'LoraLoader': LoraLoader,
   // add more node types here
 };
 

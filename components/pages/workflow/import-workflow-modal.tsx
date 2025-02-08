@@ -1,4 +1,4 @@
-import { Button, ButtonText } from '@/components/ui/button';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
@@ -9,12 +9,14 @@ import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/store/workflow';
 import { saveWorkflowThumbnail } from '@/utils/image-storage';
 import { parseWorkflowTemplate } from '@/utils/workflow-parser';
+import * as ExpoClipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
+import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { ImagePlus } from 'lucide-react-native';
+import { Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Animated, Keyboard } from 'react-native';
+import { Alert, Animated, Keyboard } from 'react-native';
 
 interface AddWorkflowModalProps {
   isOpen: boolean;
@@ -22,7 +24,7 @@ interface AddWorkflowModalProps {
   serverId: string;
 }
 
-export function AddWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
+export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
   const [name, setName] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [error, setError] = useState('');
@@ -140,6 +142,82 @@ export function AddWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModal
     onClose();
   };
 
+  const handleImportFromFile = async () => {
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const workflowData = JSON.parse(fileContent);
+
+      // Here you would validate the workflow data and process it
+      addWorkflow({
+        name: name.trim(),
+        serverId,
+        thumbnail: thumbnail,
+        addMethod: 'file',
+        data: parseWorkflowTemplate(workflowData),
+      });
+
+      handleClose();
+    } catch (error) {
+      console.error('Failed to import workflow file:', error);
+      Alert.alert('Error', 'Failed to import workflow file. Please make sure it is a valid workflow JSON file.');
+    }
+  };
+
+  const handleImportFromClipboard = async () => {
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    try {
+      const hasClipboardText = await ExpoClipboard.hasStringAsync();
+      if (!hasClipboardText) {
+        Alert.alert('Error', 'No text content found in clipboard.');
+        return;
+      }
+
+      const clipboardContent = await ExpoClipboard.getStringAsync();
+      if (!clipboardContent) {
+        Alert.alert('Error', 'Clipboard is empty.');
+        return;
+      }
+
+      const workflowData = JSON.parse(clipboardContent);
+
+      // Here you would validate the workflow data and process it
+      addWorkflow({
+        name: name.trim(),
+        serverId,
+        thumbnail: thumbnail,
+        addMethod: 'clipboard',
+        data: parseWorkflowTemplate(workflowData),
+      });
+
+      handleClose();
+    } catch (error) {
+      console.error('Failed to import workflow from clipboard:', error);
+      Alert.alert(
+        'Error',
+        'Failed to import workflow from clipboard. Please make sure you have copied a valid workflow JSON.',
+      );
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick>
       <ModalBackdrop onPress={handleClose} />
@@ -180,6 +258,27 @@ export function AddWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModal
                   </FormControlError>
                 )}
               </FormControl>
+
+              <VStack space="sm">
+                <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
+                <Pressable
+                  onPress={handleImportFromFile}
+                  className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-background-0"
+                >
+                  <VStack space="sm" className="items-center">
+                    <FileJson size={24} className="text-primary-300" />
+                    <VStack space="xs" className="items-center">
+                      <Text className="text-sm font-medium text-primary-400">Click to select workflow file</Text>
+                      <Text className="text-xs text-primary-300">Supports JSON format</Text>
+                    </VStack>
+                  </VStack>
+                </Pressable>
+
+                <Button variant="solid" onPress={handleImportFromClipboard} className="w-full rounded-md">
+                  <ButtonIcon as={Clipboard} size="md" />
+                  <ButtonText className="text-typography-0">Import from Clipboard</ButtonText>
+                </Button>
+              </VStack>
 
               <VStack space="xs">
                 <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
