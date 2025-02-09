@@ -1,6 +1,6 @@
 # Comfy Portal
 
-<img src="assets/images/icon.png" width="120" alt="Comfy Portal Logo" />
+![Comfy Portal Logo](assets/images/icon.png)
 
 [![Platform - iOS](https://img.shields.io/badge/platform-iOS-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
 [![iOS 15.1+](https://img.shields.io/badge/iOS-15.1%2B-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
@@ -23,13 +23,9 @@ Comfy Portal is a modern iOS client application built with React Native for Comf
 
 ## Screenshots
 
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-    <img src="repo-assets/demo.gif" width="200" alt="App Demo" />
-    <img src="repo-assets/screenshot-1.png" width="200" alt="Screenshot 1" />
-    <img src="repo-assets/screenshot-2.png" width="200" alt="Screenshot 2" />
-    <img src="repo-assets/screenshot-3.png" width="200" alt="Screenshot 3" />
-    <img src="repo-assets/screenshot-4.jpg" width="200" alt="Screenshot 4" />
-</div>
+|       ![App Demo](repo-assets/demo.gif)       | ![Screenshot 1](repo-assets/screenshot-1.png) | ![Screenshot 2](repo-assets/screenshot-2.png) |
+| :-------------------------------------------: | :-------------------------------------------: | :-------------------------------------------: |
+| ![Screenshot 3](repo-assets/screenshot-3.png) | ![Screenshot 4](repo-assets/screenshot-4.jpg) |                                               |
 
 ## Installation
 
