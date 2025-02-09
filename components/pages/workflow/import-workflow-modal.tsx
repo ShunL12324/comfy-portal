@@ -1,22 +1,23 @@
+import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
+import { HStack } from '@/components/ui/hstack';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
-import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/store/workflow';
 import { saveWorkflowThumbnail } from '@/utils/image-storage';
+import { showToast } from '@/utils/toast';
 import { parseWorkflowTemplate } from '@/utils/workflow-parser';
 import * as ExpoClipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
+import { CheckCircle, Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Animated, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AddWorkflowModalProps {
   isOpen: boolean;
@@ -25,38 +26,22 @@ interface AddWorkflowModalProps {
 }
 
 export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [error, setError] = useState('');
+  const [workflowData, setWorkflowData] = useState<any>(null);
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const addWorkflow = useWorkflowStore((state) => state.addWorkflow);
-  const translateY = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardWillShow', () => {
-      Animated.timing(translateY, {
-        toValue: -120,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, [translateY]);
 
   const handleAdd = async () => {
     if (!name.trim()) {
       setError('Name is required');
+      return;
+    }
+
+    if (!workflowData) {
+      setError('Please import a workflow first');
       return;
     }
 
@@ -67,17 +52,13 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       const newPath = `${FileSystem.documentDirectory}workflows/${workflowId}/thumbnail.${ext}`;
 
       try {
-        // Create directories if they don't exist
         await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}workflows/${workflowId}`, {
           intermediates: true,
         });
-
-        // Copy the file
         await FileSystem.copyAsync({
           from: thumbnail,
           to: newPath,
         });
-
         finalThumbnail = newPath;
       } catch (error) {
         console.error('Failed to save thumbnail:', error);
@@ -88,14 +69,11 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       name: name.trim(),
       serverId,
       thumbnail: finalThumbnail,
-      addMethod: 'preset',
-      data: parseWorkflowTemplate(require('@/tools/setu.json')),
+      addMethod: workflowData.addMethod,
+      data: workflowData.data,
     });
 
-    setName('');
-    setThumbnail('');
-    setError('');
-    onClose();
+    handleClose();
   };
 
   const handleSelectImage = async () => {
@@ -139,15 +117,12 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
     setName('');
     setThumbnail('');
     setError('');
+    setWorkflowData(null);
+    setUploadedFileName('');
     onClose();
   };
 
   const handleImportFromFile = async () => {
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
@@ -160,166 +135,141 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       }
 
       const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
-      const workflowData = JSON.parse(fileContent);
+      const jsonData = JSON.parse(fileContent);
 
-      // Here you would validate the workflow data and process it
-      addWorkflow({
-        name: name.trim(),
-        serverId,
-        thumbnail: thumbnail,
+      setWorkflowData({
         addMethod: 'file',
-        data: parseWorkflowTemplate(workflowData),
+        data: parseWorkflowTemplate(jsonData),
       });
-
-      handleClose();
+      setUploadedFileName(result.assets[0].name);
     } catch (error) {
       console.error('Failed to import workflow file:', error);
-      Alert.alert('Error', 'Failed to import workflow file. Please make sure it is a valid workflow JSON file.');
+      showToast.error('Import Failed', 'Please make sure it is a valid workflow JSON file.', insets.top);
     }
   };
 
   const handleImportFromClipboard = async () => {
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
     try {
       const hasClipboardText = await ExpoClipboard.hasStringAsync();
       if (!hasClipboardText) {
-        Alert.alert('Error', 'No text content found in clipboard.');
+        showToast.error('Import Failed', 'No text content found in clipboard.', insets.top);
         return;
       }
 
       const clipboardContent = await ExpoClipboard.getStringAsync();
       if (!clipboardContent) {
-        Alert.alert('Error', 'Clipboard is empty.');
+        showToast.error('Import Failed', 'Clipboard is empty.', insets.top);
         return;
       }
 
-      const workflowData = JSON.parse(clipboardContent);
+      const jsonData = JSON.parse(clipboardContent);
 
-      // Here you would validate the workflow data and process it
-      addWorkflow({
-        name: name.trim(),
-        serverId,
-        thumbnail: thumbnail,
+      setWorkflowData({
         addMethod: 'clipboard',
-        data: parseWorkflowTemplate(workflowData),
+        data: parseWorkflowTemplate(jsonData),
       });
-
-      handleClose();
+      setUploadedFileName('Imported from clipboard');
     } catch (error) {
       console.error('Failed to import workflow from clipboard:', error);
-      Alert.alert(
-        'Error',
-        'Failed to import workflow from clipboard. Please make sure you have copied a valid workflow JSON.',
-      );
+      showToast.error('Import Failed', 'Please make sure you have copied a valid workflow JSON.', insets.top);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick>
-      <ModalBackdrop onPress={handleClose} />
-      <Animated.View
-        style={[
-          {
-            width: '100%',
-            transform: [{ translateY }],
-          },
-        ]}
-        className="flex-1 items-center justify-center px-5"
-        pointerEvents="box-none"
-      >
-        <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
-          <ModalHeader>
-            <Text className="text-lg font-semibold text-primary-500">Add Workflow</Text>
-          </ModalHeader>
+    <KeyboardModal isOpen={isOpen} onClose={handleClose}>
+      <KeyboardModal.Header>
+        <Text className="text-lg font-semibold text-primary-500">Import Workflow</Text>
+      </KeyboardModal.Header>
 
-          <ModalBody scrollEnabled={false}>
-            <VStack space="md">
-              <FormControl isInvalid={!!error}>
-                <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">Name</Text>
-                </FormControlLabel>
-                <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-                  <InputField
-                    onChangeText={(value) => {
-                      setName(value);
-                      setError('');
-                    }}
-                    placeholder="Enter workflow name"
-                    className="px-3 py-2 text-sm text-primary-500"
-                  />
-                </Input>
-                {error && (
-                  <FormControlError>
-                    <Text className="mt-1.5 text-xs text-error-600">{error}</Text>
-                  </FormControlError>
-                )}
-              </FormControl>
+      <KeyboardModal.Body scrollEnabled={false}>
+        <VStack space="md">
+          <KeyboardModal.Item title="Name" error={error}>
+            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <InputField
+                onChangeText={(value) => {
+                  setName(value);
+                  setError('');
+                }}
+                placeholder="Enter workflow name"
+                className="px-3 py-2 text-sm text-primary-500"
+              />
+            </Input>
+          </KeyboardModal.Item>
 
-              <VStack space="sm">
-                <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
-                <Pressable
-                  onPress={handleImportFromFile}
-                  className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-background-0"
-                >
-                  <VStack space="sm" className="items-center">
-                    <FileJson size={24} className="text-primary-300" />
-                    <VStack space="xs" className="items-center">
+          <VStack space="sm">
+            <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
+            <Pressable
+              onPress={handleImportFromFile}
+              className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-background-0"
+            >
+              <VStack space="sm" className="items-center">
+                <FileJson size={24} className={workflowData ? 'text-primary-500' : 'text-primary-300'} />
+                <VStack space="xs" className="items-center">
+                  {uploadedFileName ? (
+                    <>
+                      <Text className="text-sm font-medium text-primary-500">{uploadedFileName}</Text>
+                      <Text className="text-xs text-primary-300">Click to change file</Text>
+                    </>
+                  ) : (
+                    <>
                       <Text className="text-sm font-medium text-primary-400">Click to select workflow file</Text>
                       <Text className="text-xs text-primary-300">Supports JSON format</Text>
-                    </VStack>
-                  </VStack>
-                </Pressable>
-
-                <Button variant="solid" onPress={handleImportFromClipboard} className="w-full rounded-md">
-                  <ButtonIcon as={Clipboard} size="md" />
-                  <ButtonText className="text-typography-0">Import from Clipboard</ButtonText>
-                </Button>
-              </VStack>
-
-              <VStack space="xs">
-                <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
-                <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
-                  {thumbnail ? (
-                    <Image
-                      source={{ uri: thumbnail }}
-                      className="h-32 w-full"
-                      resizeMode="cover"
-                      alt="Workflow thumbnail"
-                    />
-                  ) : (
-                    <VStack className="h-32 items-center justify-center">
-                      <ImagePlus className="text-primary-300" />
-                      <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
-                    </VStack>
+                    </>
                   )}
-                </Pressable>
+                </VStack>
               </VStack>
-            </VStack>
-          </ModalBody>
+            </Pressable>
 
-          <ModalFooter>
-            <Button
-              variant="outline"
-              onPress={handleClose}
-              className="mr-3 flex-1 rounded-md border-0 bg-background-100"
-            >
-              <ButtonText className="text-primary-400">Cancel</ButtonText>
-            </Button>
             <Button
               variant="solid"
-              onPress={handleAdd}
-              className="flex-1 rounded-md border-0 bg-primary-500"
-              disabled={!name.trim()}
+              onPress={handleImportFromClipboard}
+              className={`w-full rounded-md ${workflowData?.addMethod === 'clipboard' ? 'bg-success-500' : ''}`}
             >
-              <ButtonText className="text-background-0">Add</ButtonText>
+              <ButtonIcon as={workflowData?.addMethod === 'clipboard' ? CheckCircle : Clipboard} size="md" />
+              <ButtonText className="text-typography-0">
+                {workflowData?.addMethod === 'clipboard' ? 'Imported from Clipboard' : 'Import from Clipboard'}
+              </ButtonText>
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Animated.View>
-    </Modal>
+          </VStack>
+
+          <VStack space="xs">
+            <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+              {thumbnail ? (
+                <Image
+                  source={{ uri: thumbnail }}
+                  className="h-32 w-full"
+                  resizeMode="cover"
+                  alt="Workflow thumbnail"
+                />
+              ) : (
+                <VStack className="h-32 items-center justify-center">
+                  <ImagePlus className="text-primary-300" />
+                  <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                </VStack>
+              )}
+            </Pressable>
+          </VStack>
+        </VStack>
+      </KeyboardModal.Body>
+
+      <KeyboardModal.Footer>
+        <HStack space="sm">
+          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
+            <ButtonText className="text-primary-400">Cancel</ButtonText>
+          </Button>
+          <Button
+            variant="solid"
+            onPress={handleAdd}
+            className={`flex-1 rounded-md ${
+              !name.trim() || !workflowData ? 'bg-primary-300 opacity-50' : 'bg-primary-500'
+            }`}
+            disabled={!name.trim() || !workflowData}
+          >
+            <ButtonText className="text-background-0">Add</ButtonText>
+          </Button>
+        </HStack>
+      </KeyboardModal.Footer>
+    </KeyboardModal>
   );
 }

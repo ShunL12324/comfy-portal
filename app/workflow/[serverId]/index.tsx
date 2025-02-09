@@ -1,28 +1,26 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { AddWorkflowModal } from '@/components/pages/workflow/add-workflow-modal';
 import { ImportWorkflowModal } from '@/components/pages/workflow/import-workflow-modal';
 import { WorkflowCard } from '@/components/pages/workflow/workflow-card';
 import { Button } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
-import { AddIcon, Icon } from '@/components/ui/icon';
+import { Icon } from '@/components/ui/icon';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
 import { useWorkflowStore } from '@/store/workflow';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { Import, Plus } from 'lucide-react-native';
 import React, { useState } from 'react';
 
 const WorkflowsScreen = () => {
   const { serverId } = useLocalSearchParams();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflows = useWorkflowStore((state) => state.workflow);
-  const router = useRouter();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  const handleAddWorkflow = () => {
-    setIsAddModalOpen(true);
-  };
 
   if (!server) {
     return (
@@ -40,18 +38,28 @@ const WorkflowsScreen = () => {
         title="Workflows"
         showBack
         bottomElement={
-          <Button
-            variant="solid"
-            action="primary"
-            size="md"
-            className="mt-2 h-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
-            onPress={handleAddWorkflow}
-          >
-            <HStack space="sm" className="items-center justify-center">
-              <Icon as={AddIcon} size="md" className="text-accent-500" />
-              <Text className="text-sm font-medium text-typography-900">Import Workflow</Text>
-            </HStack>
-          </Button>
+          <HStack space="sm" className="items-center">
+            <Button
+              variant="solid"
+              action="primary"
+              size="md"
+              className="h-11 flex-1 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+              onPress={() => setIsImportModalOpen(true)}
+            >
+              <Icon as={Import} size="md" className="mr-2 text-primary-500" />
+              <Text className="text-sm font-medium text-typography-900">Import</Text>
+            </Button>
+            <Button
+              variant="solid"
+              action="secondary"
+              size="md"
+              className="h-11 flex-1 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+              onPress={() => setIsAddModalOpen(true)}
+            >
+              <Icon as={Plus} size="md" className="text-primary-500" />
+              <Text className="text-sm font-medium text-typography-900">Use Preset</Text>
+            </Button>
+          </HStack>
         }
       />
 
@@ -64,6 +72,11 @@ const WorkflowsScreen = () => {
       </ScrollView>
 
       <ImportWorkflowModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        serverId={serverId as string}
+      />
+      <AddWorkflowModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         serverId={serverId as string}

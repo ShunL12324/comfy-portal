@@ -41,7 +41,7 @@ export default function BaseNode({ node, children, badges }: BaseNodeProps) {
         <Text size="sm" bold>
           {node._meta?.title || node.class_type}
         </Text>
-        {badges && <View className="flex-row gap-1">{badges}</View>}
+        {badges && <View className="flex-row items-center gap-1">{badges}</View>}
       </View>
       {children}
     </MotiView>

@@ -15,7 +15,7 @@ import { Image } from '@/components/ui/image';
 import { Text } from '@/components/ui/text';
 import { useWorkflowStore } from '@/store/workflow';
 import { useRouter } from 'expo-router';
-import { Edit2, ImageIcon, Trash2 } from 'lucide-react-native';
+import { ImageIcon, Settings2, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, TouchableOpacity, View } from 'react-native';
 
@@ -83,13 +83,13 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
             <View className="ml-2 flex-row gap-2">
               <TouchableOpacity
                 onPress={() => setIsEditModalOpen(true)}
-                className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
+                className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
               >
-                <Icon as={Edit2} size="sm" className="text-accent-500" />
+                <Icon as={Settings2} size="sm" className="text-primary-500" />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setIsDeleteAlertOpen(true)}
-                className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
+                className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
               >
                 <Icon as={Trash2} size="sm" className="text-error-600" />
               </TouchableOpacity>

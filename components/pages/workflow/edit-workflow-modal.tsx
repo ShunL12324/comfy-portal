@@ -1,8 +1,8 @@
+import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
 import { Button, ButtonText } from '@/components/ui/button';
-import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
+import { HStack } from '@/components/ui/hstack';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
-import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -12,7 +12,6 @@ import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Animated, Keyboard } from 'react-native';
 
 interface EditWorkflowModalProps {
   isOpen: boolean;
@@ -26,32 +25,8 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const [thumbnail, setThumbnail] = useState(workflow?.thumbnail || '');
   const [error, setError] = useState('');
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
-  const translateY = React.useRef(new Animated.Value(0)).current;
 
   if (!workflow) return null;
-
-  React.useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardWillShow', () => {
-      Animated.timing(translateY, {
-        toValue: -120,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, [translateY]);
 
   const handleUpdate = async () => {
     if (!name.trim()) {
@@ -65,17 +40,13 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
       const newPath = `${FileSystem.documentDirectory}workflows/${workflow.id}/thumbnail.${ext}`;
 
       try {
-        // Create directories if they don't exist
         await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}workflows/${workflow.id}`, {
           intermediates: true,
         });
-
-        // Copy the file
         await FileSystem.copyAsync({
           from: thumbnail,
           to: newPath,
         });
-
         finalThumbnail = newPath;
       } catch (error) {
         console.error('Failed to save thumbnail:', error);
@@ -92,7 +63,6 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   };
 
   const handleSelectImage = async () => {
-    // Request permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
@@ -135,87 +105,58 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick>
-      <ModalBackdrop onPress={handleClose} />
-      <Animated.View
-        style={[
-          {
-            width: '100%',
-            transform: [{ translateY }],
-          },
-        ]}
-        className="flex-1 items-center justify-center px-5"
-        pointerEvents="box-none"
-      >
-        <ModalContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
-          <ModalHeader>
-            <Text className="text-lg font-semibold text-primary-500">Edit Workflow</Text>
-          </ModalHeader>
+    <KeyboardModal isOpen={isOpen} onClose={handleClose}>
+      <KeyboardModal.Header>
+        <Text className="text-lg font-semibold text-primary-500">Edit Workflow</Text>
+      </KeyboardModal.Header>
 
-          <ModalBody scrollEnabled={false}>
-            <VStack space="md">
-              <FormControl isInvalid={!!error}>
-                <FormControlLabel>
-                  <Text className="text-sm font-medium text-primary-400">Name</Text>
-                </FormControlLabel>
-                <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-                  <InputField
-                    onChangeText={(value) => {
-                      setName(value);
-                      setError('');
-                    }}
-                    defaultValue={name}
-                    placeholder="Enter workflow name"
-                    className="px-3 py-2 text-sm text-primary-500 placeholder:text-primary-300"
-                  />
-                </Input>
-                {error && (
-                  <FormControlError>
-                    <Text className="mt-1.5 text-xs text-error-600">{error}</Text>
-                  </FormControlError>
-                )}
-              </FormControl>
+      <KeyboardModal.Body scrollEnabled={false}>
+        <VStack space="md">
+          <KeyboardModal.Item title="Name" error={error}>
+            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <InputField
+                onChangeText={(value) => {
+                  setName(value);
+                  setError('');
+                }}
+                defaultValue={name}
+                placeholder="Enter workflow name"
+                className="px-3 py-2 text-sm text-primary-500"
+              />
+            </Input>
+          </KeyboardModal.Item>
 
-              <VStack space="xs">
-                <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
-                <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
-                  {thumbnail ? (
-                    <Image
-                      source={{ uri: thumbnail }}
-                      className="h-32 w-full"
-                      resizeMode="cover"
-                      alt="Workflow thumbnail"
-                    />
-                  ) : (
-                    <VStack className="h-32 items-center justify-center">
-                      <ImagePlus className="text-primary-300" />
-                      <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
-                    </VStack>
-                  )}
-                </Pressable>
-              </VStack>
-            </VStack>
-          </ModalBody>
+          <VStack space="xs">
+            <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+              {thumbnail ? (
+                <Image
+                  source={{ uri: thumbnail }}
+                  className="h-32 w-full"
+                  resizeMode="cover"
+                  alt="Workflow thumbnail"
+                />
+              ) : (
+                <VStack className="h-32 items-center justify-center">
+                  <ImagePlus className="text-primary-300" />
+                  <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                </VStack>
+              )}
+            </Pressable>
+          </VStack>
+        </VStack>
+      </KeyboardModal.Body>
 
-          <ModalFooter>
-            <Button
-              variant="outline"
-              onPress={handleClose}
-              className="mr-3 flex-1 rounded-md border-0 bg-background-100"
-            >
-              <ButtonText className="text-primary-400">Cancel</ButtonText>
-            </Button>
-            <Button
-              variant="solid"
-              onPress={handleUpdate}
-              className="flex-1 rounded-md border-0 bg-primary-500"
-              disabled={!name.trim()}
-            >
-              <ButtonText className="text-background-0">Save</ButtonText>
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Animated.View>
-    </Modal>
+      <KeyboardModal.Footer>
+        <HStack space="sm">
+          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
+            <ButtonText className="text-primary-400">Cancel</ButtonText>
+          </Button>
+          <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-primary-500">
+            <ButtonText className="text-background-0">Save Changes</ButtonText>
+          </Button>
+        </HStack>
+      </KeyboardModal.Footer>
+    </KeyboardModal>
   );
 }

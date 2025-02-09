@@ -1,4 +1,5 @@
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
+import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Text } from '@/components/ui/text';
@@ -6,7 +7,9 @@ import { VStack } from '@/components/ui/vstack';
 import { useGenerationNodeState } from '@/context/generation-context';
 import { useWorkflowStore } from '@/store/workflow';
 import { Node } from '@/types/workflow';
-import { AlertCircle } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
+import { AlertCircle, GitPullRequest } from 'lucide-react-native';
+import { TouchableOpacity } from 'react-native';
 import BaseNode from './base-node';
 import SubItem from './sub-item';
 
@@ -23,6 +26,19 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
 
   // 过滤出非数组类型的输入
   const displayableInputs = Object.entries(inputs).filter(([_, value]) => !Array.isArray(value));
+
+  const handleRequestSupport = () => {
+    const title = encodeURIComponent(`Node Support Request: ${node.class_type}`);
+    const body = encodeURIComponent(
+      `## Node Information\n` +
+        `- Node Type: \`${node.class_type}\`\n` +
+        `- Input Parameters:\n\`\`\`json\n${JSON.stringify(inputs, null, 2)}\n\`\`\`\n\n` +
+        `## Additional Information\n` +
+        `Please provide any additional context about how this node is used in your workflow.`,
+    );
+    const url = `https://github.com/ShunL12324/comfy-portal/issues/new?title=${title}&body=${body}&labels=node-support`;
+    Linking.openURL(url);
+  };
 
   const renderInput = (key: string, value: any) => {
     if (typeof value === 'string') {
@@ -43,7 +59,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       // 其他字符串使用Input
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-background-0">
+          <Input className="rounded-lg border-0 bg-background-50">
             <InputField
               placeholder={key}
               value={value}
@@ -59,7 +75,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     if (typeof value === 'number') {
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-background-0">
+          <Input className="rounded-lg border-0 bg-background-50">
             <InputField
               placeholder={key}
               value={value.toString()}
@@ -101,10 +117,19 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     <BaseNode
       node={node}
       badges={
-        <Badge size="sm" variant="solid" action="warning">
-          <BadgeIcon as={AlertCircle} className="mr-1" />
-          <BadgeText>Compatibility Mode</BadgeText>
-        </Badge>
+        <>
+          <Badge size="sm" variant="solid" action="warning">
+            <BadgeIcon as={AlertCircle} className="mr-1" />
+            <BadgeText>Compat</BadgeText>
+          </Badge>
+          <TouchableOpacity
+            onPress={handleRequestSupport}
+            className="ml-1 flex-row items-center justify-center rounded-sm bg-background-50 px-2 py-1 active:bg-background-100"
+          >
+            <Icon as={GitPullRequest} size="sm" className="mr-1 text-blue-500" />
+            <Text className="text-xs text-blue-500">Request Support</Text>
+          </TouchableOpacity>
+        </>
       }
     >
       <VStack space="md" className="w-full p-2">
