@@ -61,7 +61,7 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
             />
           ) : (
             <View className="flex-1 items-center justify-center">
-              <Icon as={ImageIcon} size="xl" className="h-8 w-8 text-accent-500" />
+              <Icon as={ImageIcon} size="xl" className="h-8 w-8 text-primary-500" />
             </View>
           )}
         </View>

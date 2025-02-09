@@ -16,13 +16,15 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/store/workflow';
 import { saveWorkflowThumbnail } from '@/utils/image-storage';
+import { showToast } from '@/utils/toast';
 import { parseWorkflowTemplate } from '@/utils/workflow-parser';
 import { Asset } from 'expo-asset';
 import * as Crypto from 'expo-crypto';
 import * as ImagePicker from 'expo-image-picker';
 import { Circle, CircleCheck, ImagePlus, Scroll } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface WorkflowPreset {
   id: string;
@@ -70,6 +72,14 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
   const [customThumbnail, setCustomThumbnail] = useState('');
   const [error, setError] = useState('');
   const addWorkflow = useWorkflowStore((state) => state.addWorkflow);
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (name.trim().length > 50) {
+      setName(name.slice(0, 50));
+      showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
+    }
+  }, [name]);
 
   const handleSelectImage = async () => {
     // Request permission
@@ -182,6 +192,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
             <KeyboardModal.Item title="Name" error={error}>
               <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                 <InputField
+                  defaultValue={name}
                   onChangeText={(value) => {
                     setName(value);
                     setError('');
@@ -237,6 +248,12 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
                           const newPreset = selectedPreset?.id === preset.id ? null : preset;
                           setSelectedPreset(newPreset);
                           setCustomThumbnail('');
+                          if (newPreset) {
+                            setName(newPreset.title);
+                            setError('');
+                          } else {
+                            setName('');
+                          }
                         }}
                       >
                         <HStack className="w-full flex-row items-center justify-between">

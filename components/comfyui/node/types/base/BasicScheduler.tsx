@@ -15,7 +15,7 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   return (
     <BaseNode node={node}>
-      <SubItem title="scheduler">
+      <SubItem title="scheduler" node={node} dependencies={['scheduler']}>
         <SchedulerSelector
           value={node.inputs.scheduler}
           onChange={(value) => {
@@ -23,7 +23,7 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
           }}
         />
       </SubItem>
-      <SubItem title="steps">
+      <SubItem title="steps" node={node} dependencies={['steps']}>
         <NumberSlider
           defaultValue={node.inputs.steps}
           minValue={1}
@@ -31,9 +31,10 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
           space={12}
+          decimalPlaces={0}
         />
       </SubItem>
-      <SubItem title="denoise">
+      <SubItem title="denoise" node={node} dependencies={['denoise']}>
         <NumberSlider
           defaultValue={node.inputs.denoise}
           minValue={0}

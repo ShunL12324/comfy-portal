@@ -14,7 +14,7 @@ interface HistoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   serverId: string;
-  presetId?: string;
+  workflowId?: string;
   onSelectImage?: (url: string) => void;
   onImageDeleted?: () => void;
 }
@@ -25,7 +25,7 @@ export function HistoryDrawer({
   isOpen,
   onClose,
   serverId,
-  presetId,
+  workflowId,
   onSelectImage,
   onImageDeleted,
 }: HistoryDrawerProps) {
@@ -43,8 +43,8 @@ export function HistoryDrawer({
   useEffect(() => {
     let mounted = true;
 
-    if (isOpen && presetId) {
-      loadHistoryImages(serverId, presetId).then((newImages) => {
+    if (isOpen && workflowId) {
+      loadHistoryImages(serverId, workflowId).then((newImages) => {
         if (mounted) {
           setImages(newImages);
         }
@@ -54,7 +54,7 @@ export function HistoryDrawer({
     return () => {
       mounted = false;
     };
-  }, [isOpen, serverId, presetId]);
+  }, [isOpen, serverId, workflowId]);
 
   // Reset state when drawer closes
   useEffect(() => {
@@ -80,7 +80,7 @@ export function HistoryDrawer({
   }, [paginatedImages]);
 
   const handleDelete = useCallback(async () => {
-    if (selectedImages.length > 0 && presetId) {
+    if (selectedImages.length > 0 && workflowId) {
       try {
         // Delete both image files and their metadata files
         await Promise.all(
@@ -95,7 +95,7 @@ export function HistoryDrawer({
         );
 
         // Refresh images
-        const updatedImages = await loadHistoryImages(serverId, presetId);
+        const updatedImages = await loadHistoryImages(serverId, workflowId);
         setImages(updatedImages);
 
         setSelectedImages([]);
@@ -105,7 +105,7 @@ export function HistoryDrawer({
         console.error('Failed to delete images:', error);
       }
     }
-  }, [selectedImages, serverId, presetId, onImageDeleted]);
+  }, [selectedImages, serverId, workflowId, onImageDeleted]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (

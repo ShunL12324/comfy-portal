@@ -38,8 +38,14 @@ export default function BaseNode({ node, children, badges }: BaseNodeProps) {
       }}
     >
       <View className="mb-2 flex-row items-center justify-between">
-        <Text size="sm" bold>
-          {node._meta?.title || node.class_type}
+        <Text
+          size="sm"
+          bold={!!node._meta?.title || !!node.class_type}
+          className={`flex-1 truncate ${!node._meta?.title && !node.class_type ? 'text-error-500' : ''}`}
+          numberOfLines={1}
+          strikeThrough={!node._meta?.title && !node.class_type}
+        >
+          {node._meta?.title || node.class_type || 'UNKNOWN_NODE'}
         </Text>
         {badges && <View className="flex-row items-center gap-1">{badges}</View>}
       </View>

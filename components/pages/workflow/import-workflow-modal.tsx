@@ -17,7 +17,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { CheckCircle, Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AddWorkflowModalProps {
@@ -28,12 +28,19 @@ interface AddWorkflowModalProps {
 
 export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
   const insets = useSafeAreaInsets();
-  const [name, setName] = useState('');
+  const [name, setName] = useState('New Workflow');
   const [thumbnail, setThumbnail] = useState('');
   const [error, setError] = useState('');
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const addWorkflow = useWorkflowStore((state) => state.addWorkflow);
+
+  useEffect(() => {
+    if (name.trim().length > 50) {
+      setName(name.slice(0, 50));
+      showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
+    }
+  }, [name]);
 
   const handleAdd = async () => {
     if (!name.trim()) {
@@ -143,6 +150,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
         data: parseWorkflowTemplate(jsonData),
       });
       setUploadedFileName(result.assets[0].name);
+      setName(result.assets[0].name);
     } catch (error) {
       console.error('Failed to import workflow file:', error);
       showToast.error('Import Failed', 'Please make sure it is a valid workflow JSON file.', insets.top);
@@ -187,6 +195,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
           <KeyboardModal.Item title="Name" error={error}>
             <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
               <InputField
+                defaultValue={name}
                 onChangeText={(value) => {
                   setName(value);
                   setError('');

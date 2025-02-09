@@ -42,7 +42,9 @@ export function AppBar({
               </Button>
             )}
             <VStack>
-              <Text className="text-lg font-semibold text-typography-950">{title}</Text>
+              <Text className="max-w-24 truncate text-lg font-semibold text-typography-950" numberOfLines={1}>
+                {title}
+              </Text>
               {subtitle && <Text className="text-sm text-typography-500">{subtitle}</Text>}
             </VStack>
           </HStack>

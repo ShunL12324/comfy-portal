@@ -1,5 +1,5 @@
 import { WorkflowRecord } from '@/types/workflow';
-import { cleanupPresetData } from '@/utils/image-storage';
+import { cleanupWorkflowData } from '@/utils/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { create } from 'zustand';
@@ -35,7 +35,7 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
           const workflow = state.workflow.find((p) => p.id === id);
           if (workflow) {
             // Clean up preset data
-            cleanupPresetData(workflow.serverId, id).catch(console.error);
+            cleanupWorkflowData(workflow.serverId, id).catch(console.error);
           }
           return {
             workflow: state.workflow.filter((p) => p.id !== id),

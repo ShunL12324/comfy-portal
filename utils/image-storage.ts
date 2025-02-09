@@ -203,7 +203,7 @@ export async function saveWorkflowThumbnail({
       path: filePath,
     };
   } catch (error) {
-    console.error('failed to save/delete preset thumbnail:', error);
+    console.error('failed to save/delete workflow thumbnail:', error);
     throw error;
   }
 }
@@ -218,12 +218,12 @@ export async function cleanupServerData(serverId: string) {
   }
 }
 
-// Helper function to clean up preset data
-export async function cleanupPresetData(serverId: string, presetId: string) {
+// Helper function to clean up workflow data
+export async function cleanupWorkflowData(serverId: string, workflowId: string) {
   try {
-    const presetDir = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}`;
-    await FileSystem.deleteAsync(presetDir).catch(() => { });
+    const workflowDir = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}`;
+    await FileSystem.deleteAsync(workflowDir).catch(() => { });
   } catch (error) {
-    console.error('failed to cleanup preset data:', error);
+    console.error('failed to cleanup workflow data:', error);
   }
 } 

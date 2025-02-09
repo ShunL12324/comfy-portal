@@ -19,7 +19,7 @@ import { ProgressOverlay } from './progress-overlay';
 interface ParallaxImageProps {
   imageUrl?: string;
   progress?: { current: number; total: number };
-  presetId?: string;
+  workflowId?: string;
   serverId?: string;
 }
 
@@ -29,7 +29,7 @@ interface ParallaxImageProps {
 export const ImagePreview = memo(function ParallaxImage({
   imageUrl,
   progress,
-  presetId,
+  workflowId,
   serverId,
 }: ParallaxImageProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -242,7 +242,7 @@ export const ImagePreview = memo(function ParallaxImage({
         isOpen={showActionsheet}
         onClose={() => setShowActionsheet(false)}
         imageUrl={imageUrl}
-        workflowId={presetId}
+        workflowId={workflowId}
         serverId={serverId}
       />
     </View>

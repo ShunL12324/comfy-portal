@@ -36,6 +36,7 @@ const extractTagStrength = (tag: string) => {
 };
 
 const parsePromptToTags = (prompt: string): Tag[] => {
+  if (typeof prompt !== 'string') return [];
   return prompt
     .split(',')
     .map((tag) => tag.trim())
@@ -85,12 +86,10 @@ function TagItem({ tag, strength, selected, onSelect }: TagItemProps) {
         selected ? 'border-primary-700 bg-background-200' : 'border-transparent bg-background-50'
       }`}
     >
-      <Pressable onPress={onSelect} className="flex-row items-center">
-        <View className="flex-1">
-          <Text size="sm" className="text-typography-900" numberOfLines={1}>
-            {tag}
-          </Text>
-        </View>
+      <Pressable onPress={onSelect} className="max-w-[90%] flex-row items-center">
+        <Text size="sm" className="text-ellipsis px-2 py-1 text-typography-900">
+          {tag}
+        </Text>
         <Text size="sm" className={`${getStrengthColor(strength)} text-xs`} bold>
           {strength.toFixed(1)}
         </Text>
@@ -257,6 +256,8 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
             <Switch size="sm" value={tagMode} onValueChange={handleTagModeChange} />
           </View>
         }
+        node={node}
+        dependencies={['text']}
       >
         <MotiView
           from={{

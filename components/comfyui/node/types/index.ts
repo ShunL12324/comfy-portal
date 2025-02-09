@@ -6,13 +6,17 @@ import BasicScheduler from './base/BasicScheduler';
 import CheckpointLoaderSimple from './base/CheckpointLoaderSimple';
 import CLIPSetLastLayer from './base/CLIPSetLastLayer';
 import CLIPTextEncode from './base/CLIPTextEncode';
+import CLIPTextEncodeSDXL from './base/CLIPTextEncodeSDXL';
 import DualCLIPLoader from './base/DualCLIPLoader';
 import EmptyLatentImage from './base/EmptyLatentImage';
 import EmptySD3LatentImage from './base/EmptySD3LatentImage';
 import FluxGuidance from './base/FluxGuidance';
+import ImagePadForOutpaint from './base/ImagePadForOutpaint';
+import ImageScale from './base/ImageScale';
 import KSampler from './base/KSampler';
 import KSamplerAdvanced from './base/KSamplerAdvanced';
 import KSamplerSelect from './base/KSamplerSelect';
+import LoadImage from './base/LoadImage';
 import LoraLoader from './base/LoraLoader';
 import ModelSamplingFlux from './base/ModelSamplingFlux';
 import PreviewImage from './base/PreviewImage';
@@ -22,6 +26,7 @@ import SaveImage from './base/SaveImage';
 import UNETLoader from './base/UNETLoader';
 import VAEDecode from './base/VAEDecode';
 import VAEEncode from './base/VAEEncode';
+import VAEEncodeForInpaint from './base/VAEEncodeForInpaint';
 import VAELoader from './base/VAELoader';
 interface NodeContentProps {
   node: Node;
@@ -52,6 +57,11 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'EmptySD3LatentImage': EmptySD3LatentImage,
   'ModelSamplingFlux': ModelSamplingFlux,
   'VAEEncode': VAEEncode,
+  'LoadImage': LoadImage,
+  'ImageScale': ImageScale,
+  'CLIPTextEncodeSDXL': CLIPTextEncodeSDXL,
+  'VAEEncodeForInpaint': VAEEncodeForInpaint,
+  'ImagePadForOutpaint': ImagePadForOutpaint,
   // add more node types here
 };
 

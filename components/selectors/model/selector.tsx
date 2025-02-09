@@ -5,6 +5,8 @@ import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useServersStore } from '@/store/servers';
+import { scanServerModelsByFolder } from '@/utils/server-sync';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
 import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from 'lucide-react-native';
@@ -75,8 +77,8 @@ function ModelPreview({ image, label }: { image?: string; label: string }) {
 export function ModelSelector({
   value,
   onChange,
-  onRefresh,
-  isRefreshing,
+  onRefresh: customOnRefresh,
+  isRefreshing: customIsRefreshing,
   onDelete,
   type = 'checkpoints',
   serverId,
@@ -89,6 +91,41 @@ export function ModelSelector({
   const [localClipStrength, setLocalClipStrength] = React.useState(initialClipStrength);
   const [localModelStrength, setLocalModelStrength] = React.useState(initialModelStrength);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const updateServerStatus = useServersStore((state) => state.updateServerStatus);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Default refresh function that uses scanServerModelsByFolder
+  const defaultOnRefresh = async () => {
+    if (!server) return;
+    setIsRefreshing(true);
+    try {
+      const models = await scanServerModelsByFolder(server, type);
+      if (models.length > 0) {
+        const existingModels = server.models || [];
+        // Create a Map to store unique models, using name+type as key
+        const modelMap = new Map();
+
+        // Add existing models of different types
+        existingModels
+          .filter((model) => model.type !== type)
+          .forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
+
+        // Add new models, will automatically override any duplicates
+        models.forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
+
+        const updatedModels = Array.from(modelMap.values());
+        updateServerStatus(serverId, server.status, server.latency, updatedModels);
+      }
+    } catch (error) {
+      console.error('Failed to refresh models:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const onRefresh = customOnRefresh || defaultOnRefresh;
+  const finalIsRefreshing = customIsRefreshing ?? isRefreshing;
 
   // Update local strength values when initialStrength changes
   React.useEffect(() => {
@@ -208,7 +245,7 @@ export function ModelSelector({
       searchPlaceholder={`Search ${type}...`}
       showRefreshButton={!!onRefresh}
       onRefresh={onRefresh}
-      isRefreshing={isRefreshing}
+      isRefreshing={finalIsRefreshing}
       renderTrigger={renderTrigger}
       renderItem={renderItem}
       numColumns={2}

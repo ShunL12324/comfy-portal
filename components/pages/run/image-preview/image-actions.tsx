@@ -23,7 +23,7 @@ interface ImageActionsProps {
   onClose: () => void;
   /** URL of the image */
   imageUrl?: string;
-  /** Current preset ID */
+  /** Current workflow ID */
   workflowId?: string;
   /** Current server ID */
   serverId?: string;
@@ -102,7 +102,7 @@ export const ImageActions = memo(function ImageActions({
         {workflowId && (
           <ActionsheetItem onPress={handleSetAsThumbnail} className="mb-8 flex-row items-center gap-3">
             <Icon as={ImageIcon} size="sm" />
-            <ActionsheetItemText>Set as Preset Thumbnail</ActionsheetItemText>
+            <ActionsheetItemText>Set as Workflow Thumbnail</ActionsheetItemText>
           </ActionsheetItem>
         )}
       </ActionsheetContent>

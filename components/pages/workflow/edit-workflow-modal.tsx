@@ -8,10 +8,12 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/store/workflow';
 import { saveWorkflowThumbnail } from '@/utils/image-storage';
+import { showToast } from '@/utils/toast';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EditWorkflowModalProps {
   isOpen: boolean;
@@ -25,8 +27,15 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const [thumbnail, setThumbnail] = useState(workflow?.thumbnail || '');
   const [error, setError] = useState('');
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
-
+  const insets = useSafeAreaInsets();
   if (!workflow) return null;
+
+  useEffect(() => {
+    if (name.trim().length > 50) {
+      setName(name.slice(0, 50));
+      showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
+    }
+  }, [name]);
 
   const handleUpdate = async () => {
     if (!name.trim()) {

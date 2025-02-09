@@ -56,6 +56,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
             <InputField
               placeholder={key}
               value={value}
+              size="sm"
               onChangeText={(newValue: string) => {
                 updateNodeInput(workflowId, node.id, key, newValue);
               }}
@@ -73,6 +74,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
               placeholder={key}
               value={value.toString()}
               keyboardType="numeric"
+              size="sm"
               onChangeText={(newValue: string) => {
                 const numValue = parseFloat(newValue);
                 if (!isNaN(numValue)) {
@@ -125,11 +127,13 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         </>
       }
     >
-      <VStack space="md" className="w-full p-2">
+      <VStack space="md" className="w-full">
         {displayableInputs.length > 0 ? (
           displayableInputs.map(([key, value]) => renderInput(key, value))
         ) : (
-          <Text className="text-typography-500">This node has no adjustable parameters.</Text>
+          <Text size="sm" className="text-typography-500">
+            This node has no adjustable parameters.
+          </Text>
         )}
       </VStack>
     </BaseNode>

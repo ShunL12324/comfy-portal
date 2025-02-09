@@ -22,7 +22,7 @@ import { GenerationProvider, useGeneration } from '@/context/generation-context'
 import { useThemeStore } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
-function RunPresetScreenContent() {
+function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useThemeStore();
@@ -53,7 +53,7 @@ function RunPresetScreenContent() {
   if (!server || !workflowRecord) {
     return (
       <VStack className="flex-1 items-center justify-center">
-        <Text className="text-primary-300">{!server ? 'Server' : 'Preset'} not found</Text>
+        <Text className="text-primary-300">{!server ? 'Server' : 'Workflow'} not found</Text>
       </VStack>
     );
   }
@@ -90,7 +90,7 @@ function RunPresetScreenContent() {
               }
             : undefined
         }
-        presetId={workflowRecord.id}
+        workflowId={workflowRecord.id}
         serverId={serverId as string}
       />
 
@@ -149,17 +149,17 @@ function RunPresetScreenContent() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         serverId={serverId as string}
-        presetId={workflowRecord?.id}
+        workflowId={workflowRecord?.id}
         onSelectImage={handleSelectHistoryImage}
       />
     </View>
   );
 }
 
-export default function RunPresetScreen() {
+export default function RunWorkflowScreen() {
   return (
     <GenerationProvider>
-      <RunPresetScreenContent />
+      <RunWorkflowScreenContent />
     </GenerationProvider>
   );
 }
