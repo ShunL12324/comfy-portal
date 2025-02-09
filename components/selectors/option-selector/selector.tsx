@@ -33,7 +33,7 @@ export function OptionSelector<T extends string>({
   return (
     <>
       <Pressable
-        className="flex-row items-center justify-between rounded-xl bg-background-200 px-4 py-3"
+        className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
         <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>

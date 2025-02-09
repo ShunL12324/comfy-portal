@@ -20,7 +20,7 @@ interface ModelSelectorProps {
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
-  type?: 'checkpoints' | 'loras' | 'embeddings';
+  type?: 'checkpoints' | 'loras' | 'embeddings' | 'diffusion_models' | 'vae' | 'text_encoders';
   serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
@@ -110,7 +110,7 @@ export function ModelSelector({
 
   const renderTrigger = useCallback(
     (option: SelectorOption | undefined) => (
-      <Box className="overflow-hidden rounded-xl bg-background-50">
+      <Box className={`overflow-hidden rounded-xl bg-background-50`}>
         <Pressable onPress={handlePress}>
           <HStack space="sm" className="items-center justify-between p-3">
             <HStack space="sm" className="flex-1 items-center">

@@ -1,3 +1,4 @@
+import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { Button, ButtonText } from '@/components/ui/button';
 import { FormControl, FormControlError, FormControlLabel } from '@/components/ui/form-control';
 import { HStack } from '@/components/ui/hstack';
@@ -13,7 +14,7 @@ import { Animated, Keyboard, Platform } from 'react-native';
 interface EditServerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  server: Server;
+  serverId: string;
 }
 
 const MAX_NAME_LENGTH = 30;
@@ -21,11 +22,17 @@ const MIN_PORT = 1;
 const MAX_PORT = 65535;
 const KEYBOARD_OFFSET = Platform.OS === 'ios' ? 100 : 0;
 
-export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProps) => {
+export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalProps) => {
   const updateServer = useServersStore((state) => state.updateServer);
+  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  if (!server) {
+    return null;
+  }
+
   const [name, setName] = React.useState(server.name);
   const [host, setHost] = React.useState(server.host);
   const [port, setPort] = React.useState(server.port.toString());
+  const [useSSL, setUseSSL] = React.useState<Server['useSSL']>(server.useSSL);
   const [errors, setErrors] = React.useState({
     name: '',
     host: '',
@@ -135,6 +142,7 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
       name,
       host,
       port: parseInt(port, 10),
+      useSSL,
     });
     onClose();
   };
@@ -143,6 +151,7 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
     setName(server.name);
     setHost(server.host);
     setPort(server.port.toString());
+    setUseSSL(server.useSSL);
     setErrors({
       name: '',
       host: '',
@@ -184,7 +193,7 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
                       }}
                       placeholder="Server name"
                       maxLength={MAX_NAME_LENGTH}
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {errors.name && (
@@ -206,7 +215,7 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
                         setErrors((prev) => ({ ...prev, host: '' }));
                       }}
                       placeholder="Host or IP address"
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {errors.host && (
@@ -228,7 +237,7 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
                         setErrors((prev) => ({ ...prev, port: '' }));
                       }}
                       placeholder="Port number"
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                       keyboardType="numeric"
                     />
                   </Input>
@@ -237,6 +246,19 @@ export const EditServerModal = ({ isOpen, onClose, server }: EditServerModalProp
                       <Text className="mt-1 text-xs text-error-600">{errors.port}</Text>
                     </FormControlError>
                   )}
+                </FormControl>
+                <FormControl>
+                  <FormControlLabel>
+                    <Text className="text-sm font-medium text-primary-400">Use SSL</Text>
+                  </FormControlLabel>
+                  <SegmentedControl
+                    options={['Auto', 'Always', 'Never']}
+                    value={useSSL}
+                    onChange={(value) => {
+                      setUseSSL(value as Server['useSSL']);
+                    }}
+                    className="mt-1"
+                  />
                 </FormControl>
               </VStack>
             </ModalBody>

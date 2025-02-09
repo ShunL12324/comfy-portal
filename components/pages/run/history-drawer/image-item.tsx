@@ -18,7 +18,7 @@ export const ImageItem = React.memo(
   function ImageItem({ url, index, isEditMode, isSelected, onPress }: ImageItemProps) {
     return (
       <Pressable onPress={onPress} className="relative mb-4">
-        <Box className="aspect-square overflow-hidden rounded-xl border-outline-50">
+        <Box className="aspect-square overflow-hidden rounded-md border-outline-50">
           <Image
             source={url}
             alt={`Generated image ${index + 1}`}

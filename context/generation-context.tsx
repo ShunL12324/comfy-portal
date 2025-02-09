@@ -108,7 +108,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
       if (!comfyClient.current) {
         comfyClient.current = new ComfyClient({
-          serverAddress: `${server.host}:${server.port}`,
+          host: server.host,
+          port: server.port.toString(),
+          useSSL: server.useSSL,
         });
       }
 

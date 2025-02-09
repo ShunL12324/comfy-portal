@@ -1,3 +1,4 @@
+import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { Button, ButtonText } from '@/components/ui/button';
 import {
   FormControl,
@@ -12,6 +13,9 @@ import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
+import { Server } from '@/types/server';
+import { parseServerUrl, validateHost, validatePort } from '@/utils/network';
+import * as Clipboard from 'expo-clipboard';
 import React from 'react';
 import { Animated, Keyboard } from 'react-native';
 
@@ -29,6 +33,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
   const [name, setName] = React.useState('');
   const [host, setHost] = React.useState('');
   const [port, setPort] = React.useState('8188');
+  const [useSSL, setUseSSL] = React.useState<Server['useSSL']>('Auto');
   const [nameError, setNameError] = React.useState('');
   const [hostError, setHostError] = React.useState('');
   const [portError, setPortError] = React.useState('');
@@ -51,11 +56,37 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
       }).start();
     });
 
+    if (isOpen) {
+      checkClipboard();
+    }
+
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, [translateY]);
+  }, [isOpen]);
+
+  const checkClipboard = async () => {
+    try {
+      const text = await Clipboard.getStringAsync();
+      if (!text) return;
+
+      const parsed = parseServerUrl(text);
+      if (parsed) {
+        setHost(parsed.host);
+        setPort(parsed.port);
+        setUseSSL(parsed.useSSL);
+
+        // Try to generate a name from the host
+        const suggestedName = parsed.host.split('.')[0];
+        if (suggestedName && suggestedName.length <= MAX_NAME_LENGTH) {
+          setName(suggestedName);
+        }
+      }
+    } catch (error) {
+      // Silently fail if we can't access clipboard
+    }
+  };
 
   const validateName = (value: string) => {
     if (value.length === 0) {
@@ -63,45 +94,6 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     }
     if (value.length > MAX_NAME_LENGTH) {
       return `Name must be less than ${MAX_NAME_LENGTH} characters`;
-    }
-    return '';
-  };
-
-  const validateHost = (value: string) => {
-    if (value.length === 0) {
-      return 'Host is required';
-    }
-    // 允许 IP 地址或域名
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
-    const localhostRegex = /^localhost$/;
-
-    if (!ipRegex.test(value) && !domainRegex.test(value) && !localhostRegex.test(value)) {
-      return 'Invalid host or IP address';
-    }
-
-    if (ipRegex.test(value)) {
-      const parts = value.split('.');
-      for (const part of parts) {
-        const num = parseInt(part, 10);
-        if (num < 0 || num > 255) {
-          return 'Invalid IP address';
-        }
-      }
-    }
-    return '';
-  };
-
-  const validatePort = (value: string) => {
-    if (value.length === 0) {
-      return 'Port is required';
-    }
-    const portNum = parseInt(value, 10);
-    if (isNaN(portNum)) {
-      return 'Port must be a number';
-    }
-    if (portNum < MIN_PORT || portNum > MAX_PORT) {
-      return `Port must be between ${MIN_PORT} and ${MAX_PORT}`;
     }
     return '';
   };
@@ -123,6 +115,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
       name,
       host,
       port: parseInt(port, 10),
+      useSSL,
     });
     handleClose();
   };
@@ -131,6 +124,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     setName('');
     setHost('');
     setPort('8188');
+    setUseSSL('Auto');
     setNameError('');
     setHostError('');
     setPortError('');
@@ -163,13 +157,14 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </FormControlLabel>
                   <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
+                      defaultValue={name}
                       onChangeText={(value) => {
                         setName(value);
                         setNameError('');
                       }}
                       placeholder="Server name"
                       maxLength={MAX_NAME_LENGTH}
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {nameError && (
@@ -185,12 +180,13 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </FormControlLabel>
                   <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
+                      defaultValue={host}
                       onChangeText={(value) => {
                         setHost(value);
                         setHostError('');
                       }}
                       placeholder="Host or IP address"
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {hostError && (
@@ -206,13 +202,14 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                   </FormControlLabel>
                   <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
                     <InputField
+                      defaultValue={port}
                       onChangeText={(value) => {
                         setPort(value);
                         setPortError('');
                       }}
                       placeholder="Port number"
                       keyboardType="numeric"
-                      className="px-3 py-2 text-primary-500 placeholder:text-primary-300"
+                      className="px-3 py-2 text-primary-500"
                     />
                   </Input>
                   {portError && (
@@ -220,6 +217,22 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                       <FormControlErrorText className="mt-1 text-xs text-error-600">{portError}</FormControlErrorText>
                     </FormControlError>
                   )}
+                </FormControl>
+
+                <FormControl>
+                  <FormControlLabel>
+                    <FormControlLabelText className="text-sm font-medium text-primary-400">
+                      Use SSL
+                    </FormControlLabelText>
+                  </FormControlLabel>
+                  <SegmentedControl
+                    options={['Auto', 'Always', 'Never']}
+                    value={useSSL}
+                    onChange={(value) => {
+                      setUseSSL(value as Server['useSSL']);
+                    }}
+                    className="mt-1"
+                  />
                 </FormControl>
               </VStack>
             </ModalBody>

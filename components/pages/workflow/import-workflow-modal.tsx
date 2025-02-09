@@ -249,7 +249,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
                       setError('');
                     }}
                     placeholder="Enter workflow name"
-                    className="px-3 py-2 text-sm text-primary-500 placeholder:text-primary-300"
+                    className="px-3 py-2 text-sm text-primary-500"
                   />
                 </Input>
                 {error && (

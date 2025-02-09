@@ -101,9 +101,9 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     <BaseNode
       node={node}
       badges={
-        <Badge size="sm" variant="solid" action="error">
+        <Badge size="sm" variant="solid" action="warning">
           <BadgeIcon as={AlertCircle} className="mr-1" />
-          <BadgeText>Unsupported</BadgeText>
+          <BadgeText>Compatibility Mode</BadgeText>
         </Badge>
       }
     >

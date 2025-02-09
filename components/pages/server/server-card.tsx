@@ -203,11 +203,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         </TouchableOpacity>
       </MotiView>
 
-      <EditServerModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        server={{ id, name, host, port, status, latency }}
-      />
+      <EditServerModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} serverId={id} />
 
       <DeleteAlert
         isOpen={isDeleteAlertOpen}

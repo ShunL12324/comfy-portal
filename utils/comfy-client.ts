@@ -1,3 +1,4 @@
+import { Server } from '@/types/server';
 import { Workflow } from '@/types/workflow';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
@@ -7,11 +8,9 @@ import { buildServerUrl, isLocalOrLanIP } from './network';
  * Configuration options for the ComfyUI client
  */
 interface ComfyClientOptions {
-  /**
-   * The address of the ComfyUI server (e.g. "localhost:8188")
-   * Can be a local address or a remote server
-   */
-  serverAddress: string;
+  host: string;
+  port: string;
+  useSSL: Server['useSSL'];
 }
 
 /**
@@ -59,43 +58,23 @@ interface ProgressCallback {
   onDownloadProgress?: (filename: string, progress: number) => void;
 }
 
-/**
- * WebSocket connection status
- * - 'connected': Successfully connected to the server
- * - 'connecting': Attempting to establish connection
- * - 'disconnected': Not connected or connection lost
- */
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
-/**
- * Client for interacting with ComfyUI server.
- * Provides a high-level interface for:
- * - Managing WebSocket connections with automatic recovery
- * - Executing workflow presets
- * - Monitoring generation progress
- * - Retrieving generated images
- * 
- * Features:
- * - Automatic connection management with exponential backoff
- * - Connection monitoring with automatic recovery
- * - Progress tracking for workflow execution
- * - Image generation and retrieval
- */
 export class ComfyClient {
-  private serverAddress: string;
   private clientId: string;
   private ws: WebSocket | null = null;
   private host: string;
   private port: string;
-  private lastMessageTime: number = 0;
+  private useSSL: Server['useSSL'];
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   constructor(options: ComfyClientOptions) {
-    this.serverAddress = options.serverAddress;
+    this.host = options.host;
+    this.port = options.port;
+    this.useSSL = options.useSSL;
     this.clientId = Crypto.randomUUID();
-    [this.host, this.port] = this.serverAddress.split(':');
   }
 
   /**
@@ -119,10 +98,6 @@ export class ComfyClient {
 
       this.ws.onerror = (error) => {
         reject(error);
-      };
-
-      this.ws.onmessage = (event) => {
-        this.lastMessageTime = Date.now();
       };
     });
   }
@@ -160,8 +135,17 @@ export class ComfyClient {
 
     try {
       const isLocal = await isLocalOrLanIP(this.host);
-      const protocol = isLocal ? 'ws' : 'wss';
-      const wsUrl = `${protocol}://${this.serverAddress}/ws?clientId=${this.clientId}`;
+      let protocol = 'ws';
+      if (this.useSSL === 'Always') {
+        protocol = 'wss';
+      } else if (this.useSSL === 'Never') {
+        protocol = 'ws';
+      } else if (isLocal) {
+        protocol = 'ws';
+      } else {
+        protocol = 'wss';
+      }
+      const wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
       await this.setupWebSocket(wsUrl);
     } catch (error) {
       throw error;
@@ -218,16 +202,16 @@ export class ComfyClient {
 
       const handleMessage = (event: MessageEvent) => {
         try {
-          if (typeof event.data === 'string' && (
-            event.data.startsWith('o') ||
-            event.data === '[]' ||
-            event.data.startsWith('primus')
-          )) {
+          // Skip non-JSON messages
+          if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
             return;
           }
 
           const message = JSON.parse(event.data);
-          if (message.type === 'crystools.monitor' || message.type === 'status') {
+
+          // Only process whitelisted message types
+          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success'] as const;
+          if (!validMessageTypes.includes(message.type)) {
             return;
           }
 
@@ -287,7 +271,7 @@ export class ComfyClient {
    */
   private async queuePrompt(workflow: Workflow): Promise<string> {
     const payload = { prompt: workflow, client_id: this.clientId };
-    const url = await buildServerUrl(this.host, this.port, '/prompt');
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, '/prompt');
 
     const response = await fetch(url, {
       method: 'POST',
@@ -313,7 +297,7 @@ export class ComfyClient {
    * @private
    */
   private async getHistory(promptId: string): Promise<any> {
-    const url = await buildServerUrl(this.host, this.port, `/history/${promptId}`);
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, `/history/${promptId}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to get history');
@@ -337,6 +321,7 @@ export class ComfyClient {
     callbacks?: ProgressCallback
   ): Promise<string> {
     const url = await buildServerUrl(
+      this.useSSL,
       this.host,
       this.port,
       `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`,
