@@ -21,6 +21,7 @@ import SamplerCustomAdvanced from './base/SamplerCustomAdvanced';
 import SaveImage from './base/SaveImage';
 import UNETLoader from './base/UNETLoader';
 import VAEDecode from './base/VAEDecode';
+import VAEEncode from './base/VAEEncode';
 import VAELoader from './base/VAELoader';
 interface NodeContentProps {
   node: Node;
@@ -50,6 +51,7 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'RandomNoise': RandomNoise,
   'EmptySD3LatentImage': EmptySD3LatentImage,
   'ModelSamplingFlux': ModelSamplingFlux,
+  'VAEEncode': VAEEncode,
   // add more node types here
 };
 

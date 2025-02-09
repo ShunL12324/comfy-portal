@@ -29,14 +29,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
 
   const handleRequestSupport = () => {
     const title = encodeURIComponent(`Node Support Request: ${node.class_type}`);
-    const body = encodeURIComponent(
-      `## Node Information\n` +
-        `- Node Type: \`${node.class_type}\`\n` +
-        `- Input Parameters:\n\`\`\`json\n${JSON.stringify(inputs, null, 2)}\n\`\`\`\n\n` +
-        `## Additional Information\n` +
-        `Please provide any additional context about how this node is used in your workflow.`,
-    );
-    const url = `https://github.com/ShunL12324/comfy-portal/issues/new?title=${title}&body=${body}&labels=node-support`;
+    const url = `https://github.com/ShunL12324/comfy-portal/issues/new?template=node_support.yml&title=${title}&node-type=${encodeURIComponent(node.class_type)}`;
     Linking.openURL(url);
   };
 
