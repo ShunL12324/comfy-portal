@@ -69,7 +69,7 @@ export async function scanServerModelsByFolder(
   const models: Model[] = [];
 
   try {
-    const modelsUrl = await buildServerUrl(server.host, server.port, `/experiment/models/${folderName}`);
+    const modelsUrl = await buildServerUrl(server.useSSL, server.host, server.port, `/experiment/models/${folderName}`);
     const modelsResponse = await fetch(modelsUrl);
     if (!modelsResponse.ok) return [];
 
@@ -92,6 +92,7 @@ export async function scanServerModelsByFolder(
 
       try {
         const previewUrl = await buildServerUrl(
+          server.useSSL,
           server.host,
           server.port,
           `/experiment/models/preview/${folderName}/${model.pathIndex}/${model.name}`,
@@ -125,13 +126,13 @@ export async function scanServerModelsByFolder(
  * Scans and retrieves specific model types from a ComfyUI server
  */
 export async function scanServerModels(server: Server): Promise<Model[]> {
-  const targetFolders = ['checkpoints', 'loras'];
+  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders'];
   let models: Model[] = [];
 
   try {
     // First check system stats to determine OS type
     let isWindowsServer = false;
-    const statsUrl = await buildServerUrl(server.host, server.port, '/system_stats');
+    const statsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
 
     try {
       const statsResponse = await fetch(statsUrl);
@@ -143,7 +144,7 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
       console.warn('Failed to get system stats, assuming non-Windows OS:', error);
     }
 
-    const foldersUrl = await buildServerUrl(server.host, server.port, '/experiment/models');
+    const foldersUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/experiment/models');
     const foldersResponse = await fetch(foldersUrl);
     if (!foldersResponse.ok) throw new Error('Failed to get model folders');
 
@@ -184,7 +185,7 @@ export async function checkServerStatus(
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const url = await buildServerUrl(server.host, server.port, '/system_stats');
+    const url = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
     const startTime = Date.now();
     const response = await fetch(url, { method: 'GET', signal: controller.signal });
     const latency = Date.now() - startTime;

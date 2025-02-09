@@ -60,7 +60,7 @@ export default function Switch({ value, onValueChange, disabled = false, size = 
   // Animated styles for the track
   const trackStyle = useAnimatedStyle(() => {
     const activeColor = isDark ? Colors.dark.primary[500] : Colors.light.primary[500];
-    const inactiveColor = isDark ? Colors.dark.background[50] : Colors.light.background[50];
+    const inactiveColor = isDark ? Colors.dark.background[200] : Colors.light.background[200];
     const dimensions = SIZES[size];
 
     return {
@@ -78,7 +78,7 @@ export default function Switch({ value, onValueChange, disabled = false, size = 
 
   return (
     <Pressable onPress={handlePress} style={{ opacity: disabled ? 0.5 : 1 }} className="items-center justify-center">
-      <Animated.View style={trackStyle} className="rounded-full border-[0.5px] border-outline-200">
+      <Animated.View style={trackStyle} className="rounded-full">
         <Animated.View
           style={[
             thumbStyle,

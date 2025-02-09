@@ -1,24 +1,24 @@
-import { GenerationParams } from '@/types/preset';
+import { Workflow } from '@/types/workflow';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
 
 interface SaveImageOptions {
   serverId: string;
-  presetId: string;
+  workflowId: string;
   imageUrl: string;
-  params: GenerationParams;
+  workflow: Workflow;
   delete?: boolean;
 }
 
 export async function saveGeneratedImage({
   serverId,
-  presetId,
+  workflowId,
   imageUrl,
-  params,
+  workflow,
   delete: shouldDelete,
 }: SaveImageOptions) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/generated`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
 
     if (shouldDelete) {
       // Extract filename from path
@@ -47,7 +47,7 @@ export async function saveGeneratedImage({
     const metadataPath = `${dirPath}/${filename}.json`;
     const metadata = {
       timestamp,
-      params,
+      workflow,
       originalUrl: imageUrl,
     };
     await FileSystem.writeAsStringAsync(
@@ -65,9 +65,9 @@ export async function saveGeneratedImage({
   }
 }
 
-export async function getGeneratedImages(serverId: string, presetId: string) {
+export async function getGeneratedImages(serverId: string, workflowId: string) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/generated`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
 
     const fileInfo = await FileSystem.getInfoAsync(dirPath);
     if (!fileInfo.exists) {
@@ -105,12 +105,12 @@ export async function getGeneratedImages(serverId: string, presetId: string) {
   }
 }
 
-export async function loadHistoryImages(serverId: string, presetId: string) {
+export async function loadHistoryImages(serverId: string, workflowId: string) {
   try {
-    const images = await getGeneratedImages(serverId, presetId);
+    const images = await getGeneratedImages(serverId, workflowId);
 
     return images
-      .filter((image) => image.metadata) // Only include images with valid metadata
+      .filter((image) => image.metadata)
       .map((image) => ({
         url: image.path,
         timestamp: new Date(image.metadata.timestamp).getTime(),
@@ -122,21 +122,21 @@ export async function loadHistoryImages(serverId: string, presetId: string) {
   }
 }
 
-export async function savePresetThumbnail({
+export async function saveWorkflowThumbnail({
   serverId,
-  presetId,
+  workflowId,
   imageUri,
   delete: shouldDelete,
   mimeType,
 }: {
   serverId: string;
-  presetId: string;
+  workflowId: string;
   imageUri: string;
   delete?: boolean;
   mimeType?: string;
 }) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/presets/${presetId}/thumbnail`;
+    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/thumbnail`;
 
     if (shouldDelete) {
       await FileSystem.deleteAsync(dirPath).catch(() => { });

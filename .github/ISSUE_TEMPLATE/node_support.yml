@@ -1,0 +1,63 @@
+name: Node Support Request
+description: Request support for an unsupported ComfyUI node
+title: 'Node Support Request: '
+labels: ['node-support', 'enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to request node support!
+
+        ![Export Workflow](https://github.com/ShunL12324/comfy-portal/raw/workflow-exp/repo-assets/issue-template/export-workflow.png)
+
+        To help us better understand your request, please export your workflow:
+        1. Open ComfyUI in your web browser
+        2. Go to Menu > Workflow > Export
+        3. Save the workflow JSON file
+        4. Upload the JSON to a service like [Pastebin](https://pastebin.com) or [GitHub Gist](https://gist.github.com)
+        5. Share the link below
+
+  - type: input
+    id: node-type
+    attributes:
+      label: Node Type
+      description: The type/class name of the node
+      placeholder: 'Example: KSampler'
+    validations:
+      required: true
+
+  - type: textarea
+    id: node-inputs
+    attributes:
+      label: Node Inputs
+      description: The input parameters of the node
+      render: json
+    validations:
+      required: true
+
+  - type: input
+    id: workflow-link
+    attributes:
+      label: Workflow JSON Link
+      description: Link to your workflow JSON file (Pastebin, GitHub Gist, etc.)
+      placeholder: 'https://pastebin.com/...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: usage-context
+    attributes:
+      label: Usage Context
+      description: How is this node used in your workflow? What is its purpose?
+      placeholder: 'Example: This node is used for...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any additional context or information about this node
+      placeholder: 'Example: This node is part of the...'
+    validations:
+      required: false

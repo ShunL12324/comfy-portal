@@ -47,7 +47,7 @@ export function AppBar({
             </VStack>
           </HStack>
           {centerElement && <View className="absolute left-0 right-0 items-center">{centerElement}</View>}
-          {rightElement && <View className="z-10">{rightElement}</View>}
+          {rightElement && <View className="">{rightElement}</View>}
         </HStack>
         {bottomElement}
       </VStack>

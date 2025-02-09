@@ -1,4 +1,4 @@
-import { SmoothSlider } from '@/components/self-ui/smooth-slider';
+import { NumberSlider } from '@/components/self-ui/slider';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -20,7 +20,7 @@ interface ModelSelectorProps {
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
-  type?: string;
+  type?: 'checkpoints' | 'loras' | 'embeddings' | 'diffusion_models' | 'vae' | 'text_encoders';
   serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
@@ -45,15 +45,15 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
         </HStack>
       </HStack>
       <HStack space="sm" className="mt-2 w-full items-center">
-        <SmoothSlider
-          initialValue={value}
+        <NumberSlider
+          defaultValue={value}
           minValue={0}
           maxValue={2}
           step={0.05}
           onChange={onChange}
           onChangeEnd={onChangeEnd}
-          className="w-full flex-1"
           decimalPlaces={2}
+          space={12}
         />
       </HStack>
     </>
@@ -110,7 +110,7 @@ export function ModelSelector({
 
   const renderTrigger = useCallback(
     (option: SelectorOption | undefined) => (
-      <Box className="overflow-hidden rounded-xl bg-background-50">
+      <Box className={`overflow-hidden rounded-xl bg-background-50`}>
         <Pressable onPress={handlePress}>
           <HStack space="sm" className="items-center justify-between p-3">
             <HStack space="sm" className="flex-1 items-center">
@@ -169,11 +169,11 @@ export function ModelSelector({
       >
         <Box
           className={`relative overflow-hidden rounded-xl ${
-            isSelected ? 'border-[3px] border-outline-600' : 'bg-background-50'
+            isSelected ? 'border-[3px] border-outline-400' : 'bg-background-50'
           }`}
         >
           {isSelected && (
-            <Box className="absolute right-2 top-2 z-10 rounded-full bg-primary-500 p-1">
+            <Box className="absolute right-2 top-2 z-10 rounded-full bg-background-50 p-1">
               <Icon as={Check} size="sm" className="text-typography-950" />
             </Box>
           )}

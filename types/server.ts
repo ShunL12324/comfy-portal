@@ -10,6 +10,7 @@ export interface Server {
   name: string;
   host: string;
   port: number;
+  useSSL: 'Always' | 'Never' | 'Auto';
   status: 'online' | 'offline' | 'refreshing';
   latency?: number;
   models?: Model[];

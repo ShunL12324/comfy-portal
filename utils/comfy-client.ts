@@ -1,18 +1,16 @@
-import { GenerationParams } from '@/types/preset';
+import { Server } from '@/types/server';
+import { Workflow } from '@/types/workflow';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
-import { createApiCall } from './api-call';
 import { buildServerUrl, isLocalOrLanIP } from './network';
 
 /**
  * Configuration options for the ComfyUI client
  */
 interface ComfyClientOptions {
-  /**
-   * The address of the ComfyUI server (e.g. "localhost:8188")
-   * Can be a local address or a remote server
-   */
-  serverAddress: string;
+  host: string;
+  port: string;
+  useSSL: Server['useSSL'];
 }
 
 /**
@@ -60,61 +58,23 @@ interface ProgressCallback {
   onDownloadProgress?: (filename: string, progress: number) => void;
 }
 
-/**
- * WebSocket connection status
- * - 'connected': Successfully connected to the server
- * - 'connecting': Attempting to establish connection
- * - 'disconnected': Not connected or connection lost
- */
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
-/**
- * Client for interacting with ComfyUI server.
- * Provides a high-level interface for:
- * - Managing WebSocket connections with automatic recovery
- * - Executing workflow presets
- * - Monitoring generation progress
- * - Retrieving generated images
- * 
- * Features:
- * - Automatic connection management with exponential backoff
- * - Connection monitoring with automatic recovery
- * - Progress tracking for workflow execution
- * - Image generation and retrieval
- * 
- * @example
- * ```typescript
- * // Create and connect client
- * const client = new ComfyClient({ serverAddress: 'localhost:8188' });
- * await client.connect();
- * 
- * // Monitor connection status
- * client.setOnStatusChange((status) => {
- *   console.log('Connection status:', status);
- * });
- * 
- * // Generate images
- * const images = await client.generate(preset, {
- *   onProgress: (value, max) => console.log(`Progress: ${value}/${max}`),
- *   onComplete: (images) => console.log('Generated images:', images),
- * });
- * ```
- */
 export class ComfyClient {
-  private serverAddress: string;
   private clientId: string;
   private ws: WebSocket | null = null;
   private host: string;
   private port: string;
-  private lastMessageTime: number = 0;
+  private useSSL: Server['useSSL'];
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   constructor(options: ComfyClientOptions) {
-    this.serverAddress = options.serverAddress;
+    this.host = options.host;
+    this.port = options.port;
+    this.useSSL = options.useSSL;
     this.clientId = Crypto.randomUUID();
-    [this.host, this.port] = this.serverAddress.split(':');
   }
 
   /**
@@ -138,10 +98,6 @@ export class ComfyClient {
 
       this.ws.onerror = (error) => {
         reject(error);
-      };
-
-      this.ws.onmessage = (event) => {
-        this.lastMessageTime = Date.now();
       };
     });
   }
@@ -179,8 +135,17 @@ export class ComfyClient {
 
     try {
       const isLocal = await isLocalOrLanIP(this.host);
-      const protocol = isLocal ? 'ws' : 'wss';
-      const wsUrl = `${protocol}://${this.serverAddress}/ws?clientId=${this.clientId}`;
+      let protocol = 'ws';
+      if (this.useSSL === 'Always') {
+        protocol = 'wss';
+      } else if (this.useSSL === 'Never') {
+        protocol = 'ws';
+      } else if (isLocal) {
+        protocol = 'ws';
+      } else {
+        protocol = 'wss';
+      }
+      const wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
       await this.setupWebSocket(wsUrl);
     } catch (error) {
       throw error;
@@ -214,7 +179,7 @@ export class ComfyClient {
    * Monitors WebSocket messages for various execution events and updates progress through callbacks.
    * 
    * @param promptId - The ID of the prompt being executed
-   * @param params - The workflow parameters being executed
+   * @param workflow - The workflow being executed
    * @param callbacks - Callbacks for progress updates
    * @returns Promise that resolves to true if generation succeeds
    * @throws Error if WebSocket is not connected
@@ -222,7 +187,7 @@ export class ComfyClient {
    */
   private trackProgress(
     promptId: string,
-    params: GenerationParams,
+    workflow: Workflow,
     callbacks: ProgressCallback,
   ): Promise<boolean> {
     return new Promise((resolve, reject) => {
@@ -231,21 +196,22 @@ export class ComfyClient {
         return;
       }
 
-      const nodeIds = Object.keys(params);
+      // Get all node IDs from the workflow
+      const nodeIds = Object.keys(workflow);
       const finishedNodes: string[] = [];
 
       const handleMessage = (event: MessageEvent) => {
         try {
-          if (typeof event.data === 'string' && (
-            event.data.startsWith('o') ||
-            event.data === '[]' ||
-            event.data.startsWith('primus')
-          )) {
+          // Skip non-JSON messages
+          if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
             return;
           }
 
           const message = JSON.parse(event.data);
-          if (message.type === 'crystools.monitor' || message.type === 'status') {
+
+          // Only process whitelisted message types
+          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success'] as const;
+          if (!validMessageTypes.includes(message.type)) {
             return;
           }
 
@@ -296,17 +262,16 @@ export class ComfyClient {
   }
 
   /**
-   * Queues a workflow preset for execution on the ComfyUI server.
+   * Queues a workflow for execution on the ComfyUI server.
    * 
-   * @param params - The workflow parameters to execute
+   * @param workflow - The workflow to execute
    * @returns Promise that resolves to the prompt ID
    * @throws Error if queueing fails or server returns an error
    * @private
    */
-  private async queuePrompt(params: GenerationParams): Promise<string> {
-    const workflow = createApiCall(params);
+  private async queuePrompt(workflow: Workflow): Promise<string> {
     const payload = { prompt: workflow, client_id: this.clientId };
-    const url = await buildServerUrl(this.host, this.port, '/prompt');
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, '/prompt');
 
     const response = await fetch(url, {
       method: 'POST',
@@ -332,7 +297,7 @@ export class ComfyClient {
    * @private
    */
   private async getHistory(promptId: string): Promise<any> {
-    const url = await buildServerUrl(this.host, this.port, `/history/${promptId}`);
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, `/history/${promptId}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to get history');
@@ -356,6 +321,7 @@ export class ComfyClient {
     callbacks?: ProgressCallback
   ): Promise<string> {
     const url = await buildServerUrl(
+      this.useSSL,
       this.host,
       this.port,
       `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`,
@@ -383,7 +349,7 @@ export class ComfyClient {
   }
 
   /**
-   * Generates images using the provided workflow preset.
+   * Generates images using the provided workflow.
    * Handles the complete generation process including:
    * - Queueing the workflow
    * - Tracking execution progress
@@ -395,15 +361,15 @@ export class ComfyClient {
    * - Final image URLs
    * - Error notifications
    * 
-   * @param params - The workflow parameters to execute
+   * @param workflow - The workflow to execute
    * @param callbacks - Callbacks for tracking generation progress
    * @returns Promise that resolves to an array of image URLs
    * @throws Error if generation fails at any stage
    */
-  async generate(params: GenerationParams, callbacks: ProgressCallback): Promise<string[]> {
+  async generate(workflow: Workflow, callbacks: ProgressCallback): Promise<string[]> {
     try {
-      const promptId = await this.queuePrompt(params);
-      const success = await this.trackProgress(promptId, params, callbacks);
+      const promptId = await this.queuePrompt(workflow);
+      const success = await this.trackProgress(promptId, workflow, callbacks);
       if (!success) {
         throw new Error('Generation failed');
       }

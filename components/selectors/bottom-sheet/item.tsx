@@ -18,9 +18,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
   return (
     <Pressable onPress={() => onSelect(item.value)} className="active:opacity-80">
       <Box
-        className={`mx-4 mb-2 overflow-hidden rounded-xl ${
-          isSelected ? 'border-0 border-outline-200 bg-primary-200' : 'bg-background-50'
-        }`}
+        className={`mx-4 mb-2 overflow-hidden rounded-xl ${isSelected ? 'border-0 bg-background-200' : 'bg-background-50'}`}
       >
         <HStack space="sm" className="items-center justify-between p-3">
           <VStack space="xs" className="flex-1">

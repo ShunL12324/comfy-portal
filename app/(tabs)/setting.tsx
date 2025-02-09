@@ -7,15 +7,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useThemeStore } from '@/store/theme';
 import { Link } from 'expo-router';
-import {
-    BookOpen,
-    ChevronRight,
-    FileText,
-    GithubIcon,
-    Info,
-    Palette,
-    Shield,
-} from 'lucide-react-native';
+import { BookOpen, ChevronRight, FileText, GithubIcon, Info, Palette, Shield } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';
 
@@ -41,16 +33,10 @@ export default function SettingScreen() {
           {/* Theme Section */}
           <View className="py-4">
             <View className="mb-4 flex-row items-center">
-              <Icon as={Palette} size="lg" className="mr-3 text-accent-500" />
-              <Text className="text-base font-medium text-typography-900">
-                Theme
-              </Text>
+              <Icon as={Palette} size="lg" className="mr-3 text-primary-500" />
+              <Text className="text-base font-medium text-typography-900">Theme</Text>
             </View>
-            <SegmentedControl
-              options={['light', 'dark', 'system']}
-              value={currentTheme}
-              onChange={handleThemeChange}
-            />
+            <SegmentedControl options={['light', 'dark', 'system']} value={currentTheme} onChange={handleThemeChange} />
           </View>
 
           {/* Guide Section */}
@@ -58,20 +44,10 @@ export default function SettingScreen() {
             <Pressable className="py-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <Icon
-                    as={BookOpen}
-                    size="lg"
-                    className="mr-3 text-accent-500"
-                  />
-                  <Text className="text-base font-medium text-typography-900">
-                    Server Setup Guide
-                  </Text>
+                  <Icon as={BookOpen} size="lg" className="mr-3 text-primary-500" />
+                  <Text className="text-base font-medium text-typography-900">Server Setup Guide</Text>
                 </View>
-                <Icon
-                  as={ChevronRight}
-                  size="sm"
-                  className="text-typography-400"
-                />
+                <Icon as={ChevronRight} size="sm" className="text-typography-400" />
               </View>
             </Pressable>
           </Link>
@@ -81,20 +57,10 @@ export default function SettingScreen() {
             <Pressable className="py-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <Icon
-                    as={Shield}
-                    size="lg"
-                    className="mr-3 text-accent-500"
-                  />
-                  <Text className="text-base font-medium text-typography-900">
-                    Privacy Policy
-                  </Text>
+                  <Icon as={Shield} size="lg" className="mr-3 text-primary-500" />
+                  <Text className="text-base font-medium text-typography-900">Privacy Policy</Text>
                 </View>
-                <Icon
-                  as={ChevronRight}
-                  size="sm"
-                  className="text-typography-400"
-                />
+                <Icon as={ChevronRight} size="sm" className="text-typography-400" />
               </View>
             </Pressable>
           </Link>
@@ -103,20 +69,10 @@ export default function SettingScreen() {
             <Pressable className="py-4">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <Icon
-                    as={FileText}
-                    size="lg"
-                    className="mr-3 text-accent-500"
-                  />
-                  <Text className="text-base font-medium text-typography-900">
-                    Terms of Service
-                  </Text>
+                  <Icon as={FileText} size="lg" className="mr-3 text-primary-500" />
+                  <Text className="text-base font-medium text-typography-900">Terms of Service</Text>
                 </View>
-                <Icon
-                  as={ChevronRight}
-                  size="sm"
-                  className="text-typography-400"
-                />
+                <Icon as={ChevronRight} size="sm" className="text-typography-400" />
               </View>
             </Pressable>
           </Link>
@@ -128,21 +84,15 @@ export default function SettingScreen() {
               onPress={() => setIsAboutExpanded(!isAboutExpanded)}
             >
               <View className="flex-row items-center">
-                <Icon as={Info} size="lg" className="mr-3 text-accent-500" />
-                <Text className="text-base font-medium text-typography-900">
-                  About
-                </Text>
+                <Icon as={Info} size="lg" className="mr-3 text-primary-500" />
+                <Text className="text-base font-medium text-typography-900">About</Text>
               </View>
               <MotiView
                 animate={{
                   rotateZ: isAboutExpanded ? '90deg' : '0deg',
                 }}
               >
-                <Icon
-                  as={ChevronRight}
-                  size="sm"
-                  className="text-typography-400"
-                />
+                <Icon as={ChevronRight} size="sm" className="text-typography-400" />
               </MotiView>
             </Pressable>
 
@@ -163,28 +113,16 @@ export default function SettingScreen() {
                 className="mt-4"
               >
                 <Text className="mb-4 text-sm leading-5 text-typography-600">
-                  A mobile client for ComfyUI, designed to help you manage and
-                  run your ComfyUI workflows on the go. Built with modern
-                  technologies and focused on providing the best user
-                  experience.
+                  A mobile client for ComfyUI, designed to help you manage and run your ComfyUI workflows on the go.
+                  Built with modern technologies and focused on providing the best user experience.
                 </Text>
                 <Link href="https://github.com/ShunL12324/comfy-portal" asChild>
                   <Pressable className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
-                      <Icon
-                        as={GithubIcon}
-                        size="lg"
-                        className="mr-3 text-accent-500"
-                      />
-                      <Text className="text-base font-medium text-typography-900">
-                        GitHub
-                      </Text>
+                      <Icon as={GithubIcon} size="lg" className="mr-3 text-primary-500" />
+                      <Text className="text-base font-medium text-typography-900">GitHub</Text>
                     </View>
-                    <Icon
-                      as={ChevronRight}
-                      size="sm"
-                      className="text-typography-400"
-                    />
+                    <Icon as={ChevronRight} size="sm" className="text-typography-400" />
                   </Pressable>
                 </Link>
               </MotiView>

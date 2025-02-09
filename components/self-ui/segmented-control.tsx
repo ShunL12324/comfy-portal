@@ -25,13 +25,15 @@ interface SegmentedControlProps {
   value: string;
   /** Callback function when selection changes */
   onChange: (value: string) => void;
+  /** Custom class name for the container */
+  className?: string;
 }
 
 /**
  * A customizable segmented control component with smooth animations
  * @component
  */
-export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, value, onChange }) => {
+export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, value, onChange, className }) => {
   const selectedIndex = options.indexOf(value);
   const translateX = useSharedValue(0);
   const width = useSharedValue(0);
@@ -87,7 +89,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, val
   }, []);
 
   return (
-    <View className={containerStyle} onLayout={onLayout}>
+    <View className={`${containerStyle} ${className}`} onLayout={onLayout}>
       <Animated.View className={sliderBaseStyle} style={sliderStyle} />
       {options.map((option) => (
         <AnimatedPressable key={option} className={pressableBaseStyle} onPress={() => onChange(option)}>

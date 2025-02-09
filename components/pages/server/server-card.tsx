@@ -11,7 +11,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { useServersStore } from '@/store/servers';
 import { router } from 'expo-router';
-import { Activity, Edit2, Globe, Hash, Layers, Loader, Server, Trash2, Unplug } from 'lucide-react-native';
+import { Activity, Globe, Hash, Layers, Loader, Server, Settings2, Trash2, Unplug } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -46,7 +46,7 @@ interface ActionButtonsProps {
 const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
   <View className="h-full flex-1 flex-row items-center gap-4">
     <View className="h-24 w-24 items-center justify-center rounded-lg bg-background-0">
-      <Icon as={Server} size="xl" className="text-accent-500" />
+      <Icon as={Server} size="xl" className="text-primary-500" />
     </View>
     <View className="h-full min-w-0 flex-1 items-start justify-start">
       <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
@@ -54,19 +54,19 @@ const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
       </Text>
       <View className="mt-2 flex-col gap-1">
         <View className="flex-row items-center gap-1">
-          <Icon as={Globe} size="2xs" className="shrink-0 text-accent-500" />
+          <Icon as={Globe} size="2xs" className="shrink-0 text-primary-500" />
           <Text className="flex-shrink text-2xs text-typography-400" numberOfLines={1}>
             {host}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Icon as={Hash} size="2xs" className="shrink-0 text-accent-500" />
+          <Icon as={Hash} size="2xs" className="shrink-0 text-primary-500" />
           <Text className="text-2xs text-typography-400" numberOfLines={1}>
             {port}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <Icon as={Layers} size="2xs" className="shrink-0 text-accent-500" />
+          <Icon as={Layers} size="2xs" className="shrink-0 text-primary-500" />
           <Text className="text-2xs text-typography-400" numberOfLines={1}>
             {models?.length || 'No'} models
           </Text>
@@ -80,15 +80,15 @@ const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
   <View className="mb-auto flex-row items-center justify-between">
     <TouchableOpacity
       onPress={onEdit}
-      className="h-8 w-8 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
+      className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
     >
-      <Icon as={Edit2} size="xs" className="text-accent-500" />
+      <Icon as={Settings2} size="sm" className="text-primary-500" />
     </TouchableOpacity>
     <TouchableOpacity
       onPress={onDelete}
-      className="h-8 w-8 items-center justify-center rounded-lg bg-background-0 active:bg-background-100"
+      className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
     >
-      <Icon as={Trash2} size="xs" className="text-error-600" />
+      <Icon as={Trash2} size="sm" className="text-error-600" />
     </TouchableOpacity>
   </View>
 );
@@ -96,7 +96,7 @@ const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
 const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
   <TouchableOpacity
     disabled={isRefreshing}
-    className={`items-center rounded-md px-2 py-2 ${status === 'online' ? 'bg-success-50' : 'bg-background-0'}`}
+    className={`items-center rounded-md px-2 py-2 ${status === 'online' ? 'bg-success-100/50' : 'bg-background-0'}`}
   >
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
@@ -119,15 +119,15 @@ const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
             duration: 1000,
           }}
         >
-          <Icon as={Loader} size="sm" className="text-accent-500" />
+          <Icon as={Loader} size="sm" className="text-primary-500" />
         </MotiView>
       ) : status === 'online' ? (
-        <Icon as={Activity} size="sm" className="text-success-400" />
+        <Icon as={Activity} size="sm" className="text-success-500" />
       ) : (
         <Icon as={Unplug} size="sm" className="text-typography-400" />
       )}
       {!isRefreshing && (
-        <Text className={`text-2xs font-medium ${status === 'online' ? 'text-success-700' : 'text-typography-400'}`}>
+        <Text className={`text-2xs font-medium ${status === 'online' ? 'text-success-500' : 'text-typography-400'}`}>
           {status === 'online' ? `${latency?.toString()}ms` : 'Offline'}
         </Text>
       )}
@@ -177,15 +177,6 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
     setIsRefreshing(server.status === 'refreshing');
   }, [server]);
 
-  const handlePress = () => {
-    router.push(`/preset/${id}`);
-  };
-
-  const handleDelete = () => {
-    removeServer(id);
-    setIsDeleteAlertOpen(false);
-  };
-
   return (
     <>
       <MotiView
@@ -198,7 +189,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         }}
       >
         <TouchableOpacity
-          onPress={handlePress}
+          onPress={() => router.push(`/workflow/${id}`)}
           activeOpacity={0.8}
           className="overflow-hidden rounded-xl bg-background-50"
         >
@@ -212,13 +203,16 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         </TouchableOpacity>
       </MotiView>
 
-      <EditServerModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        server={{ id, name, host, port, status, latency }}
-      />
+      <EditServerModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} serverId={id} />
 
-      <DeleteAlert isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)} onDelete={handleDelete} />
+      <DeleteAlert
+        isOpen={isDeleteAlertOpen}
+        onClose={() => setIsDeleteAlertOpen(false)}
+        onDelete={() => {
+          removeServer(id);
+          setIsDeleteAlertOpen(false);
+        }}
+      />
     </>
   );
 };
