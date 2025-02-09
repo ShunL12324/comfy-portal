@@ -18,7 +18,8 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "NSPasteboardUsageDescription": "Allow $(PRODUCT_NAME) to access your clipboard to automatically detect and add server URLs"
       }
     },
     "android": {

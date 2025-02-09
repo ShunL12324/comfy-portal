@@ -18,6 +18,18 @@ For detailed port configuration instructions, see:
 
 ## 2. Start ComfyUI
 
+You can either start ComfyUI manually or use our automated setup script.
+
+### Option A: Automated Setup (Recommended)
+
+Run this command in your pod's terminal to automatically set up and start ComfyUI(Please note run this command in your volume directory, usually mount to /workspace):
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/ShunL12324/comfy-portal/c9f2c6753d4f9c7389037af43f1d40525172e681/repo-assets/server-setup-RunPod.sh)
+```
+
+### Option B: Manual Setup
+
 After your pod is running, start ComfyUI with network access enabled:
 
 ```bash
