@@ -1,6 +1,6 @@
 # Comfy Portal
 
-![Comfy Portal Logo](assets/images/icon.png)
+<img src="assets/images/icon.png" width="300" alt="Comfy Portal Logo">
 
 [![Platform - iOS](https://img.shields.io/badge/platform-iOS-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
 [![iOS 15.1+](https://img.shields.io/badge/iOS-15.1%2B-blue.svg)](https://apps.apple.com/us/app/comfy-portal/id6741044736)
