@@ -10,13 +10,16 @@ body:
 
         ![Export Workflow](https://github.com/ShunL12324/comfy-portal/raw/workflow-exp/repo-assets/issue-template/export-workflow.png)
 
-        To help us better understand your request, please export your workflow:
+        To help us better understand your request, please provide your workflow JSON file:
         1. Open ComfyUI in your web browser
         2. Go to Menu > Workflow > Export
         3. Save the workflow JSON file
         4. ⚠️ Please remove any sensitive information from the JSON file before sharing
-        5. Upload the JSON to a service like [Pastebin](https://pastebin.com) or [GitHub Gist](https://gist.github.com)
-        6. Share the link below
+        5. You can either:
+           - Drag and drop the JSON file directly into this issue
+           - Or upload it to [Pastebin](https://pastebin.com) / [GitHub Gist](https://gist.github.com) and share the link
+
+        > ℹ️ Without the workflow JSON file, we won't be able to add support for the node.
 
   - type: input
     id: node-type
@@ -30,20 +33,11 @@ body:
   - type: input
     id: workflow-link
     attributes:
-      label: Workflow JSON Link
-      description: Link to your workflow JSON file (Pastebin, GitHub Gist, etc.)
-      placeholder: 'https://pastebin.com/...'
+      label: Workflow JSON Link (Optional)
+      description: If you prefer, you can share a link to your workflow JSON file
+      placeholder: 'https://pastebin.com/... or drag & drop the file directly into the issue'
     validations:
       required: false
-
-  - type: textarea
-    id: usage-context
-    attributes:
-      label: Usage Context
-      description: How is this node used in your workflow? What is its purpose?
-      placeholder: 'Example: This node is used for...'
-    validations:
-      required: true
 
   - type: textarea
     id: additional-info
