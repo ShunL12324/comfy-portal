@@ -1,29 +1,28 @@
-import { SamplerSelector } from '@/components/selectors/sampler';
-import { SchedulerSelector } from '@/components/selectors/scheduler';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
-import { useGeneration } from '@/context/generation-context';
-import { useWorkflowStore } from '@/store/workflow';
 import { Node } from '@/types/workflow';
 import { Dice2, Info } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
+
+import { Text } from '@/components/ui/text';
+import { useGeneration } from '@/context/generation-context';
+import { useWorkflowStore } from '@/store/workflow';
+import { useEffect, useState } from 'react';
 import { generateRandomSeed } from './KSamplerAdvanced';
-interface KSamplerProps {
+
+interface RandomNoiseProps {
   node: Node;
   serverId: string;
   workflowId: string;
 }
-export default function KSampler({ node, serverId, workflowId }: KSamplerProps) {
-  const [randomSeed, setRandomSeed] = useState(true);
-  const [seed, setSeed] = useState<number | null>(node.inputs.seed);
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
 
+export default function RandomNoise({ node, serverId, workflowId }: RandomNoiseProps) {
+  const [randomSeed, setRandomSeed] = useState(true);
+  const [seed, setSeed] = useState<number | null>(node.inputs.noise_seed);
+  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const { registerNodeHooks, unregisterNodeHooks } = useGeneration();
 
   useEffect(() => {
@@ -32,7 +31,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
         onPre: () => {
           const newSeed = generateRandomSeed();
           setSeed(newSeed);
-          updateNodeInput(workflowId, node.id, 'seed', newSeed);
+          updateNodeInput(workflowId, node.id, 'noise_seed', newSeed);
         },
       });
     } else {
@@ -46,7 +45,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
 
   return (
     <BaseNode node={node}>
-      <SubItem title="Seed">
+      <SubItem title="Noise seed">
         <SegmentedControl
           options={['Random', 'Fixed']}
           value={randomSeed ? 'Random' : 'Fixed'}
@@ -83,57 +82,13 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
               </View>
             </TouchableOpacity>
           </View>
-          <View className="flex-row items-center justify-end gap-2">
-            <Icon as={Info} size="xs" className="text-typography-500" />
+          <View className="flex-row items-start justify-end gap-2">
+            <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
             <Text size="sm" className="text-xs text-typography-500">
               Using the same seed will not trigger image generation again.
             </Text>
           </View>
         </View>
-      </SubItem>
-      <SubItem title="Steps">
-        <NumberSlider
-          defaultValue={node.inputs.steps}
-          minValue={1}
-          maxValue={100}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-          space={12}
-        />
-      </SubItem>
-      <SubItem title="CFG">
-        <NumberSlider
-          defaultValue={node.inputs.cfg}
-          minValue={1}
-          maxValue={30}
-          step={0.5}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'cfg', Number(value))}
-          space={12}
-          decimalPlaces={1}
-        />
-      </SubItem>
-      <SubItem title="Sampler">
-        <SamplerSelector
-          value={node.inputs.sampler_name}
-          onChange={(value) => updateNodeInput(workflowId, node.id, 'sampler_name', value)}
-        />
-      </SubItem>
-      <SubItem title="Scheduler">
-        <SchedulerSelector
-          value={node.inputs.scheduler}
-          onChange={(value) => updateNodeInput(workflowId, node.id, 'scheduler', value)}
-        />
-      </SubItem>
-      <SubItem title="Denoise">
-        <NumberSlider
-          defaultValue={node.inputs.denoise}
-          minValue={0}
-          maxValue={1}
-          step={0.01}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'denoise', Number(value))}
-          space={12}
-          decimalPlaces={2}
-        />
       </SubItem>
     </BaseNode>
   );

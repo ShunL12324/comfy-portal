@@ -86,9 +86,11 @@ function TagItem({ tag, strength, selected, onSelect }: TagItemProps) {
       }`}
     >
       <Pressable onPress={onSelect} className="flex-row items-center">
-        <Text size="sm" className="px-2 py-1 text-typography-900">
-          {tag}
-        </Text>
+        <View className="flex-1">
+          <Text size="sm" className="text-typography-900" numberOfLines={1}>
+            {tag}
+          </Text>
+        </View>
         <Text size="sm" className={`${getStrengthColor(strength)} text-xs`} bold>
           {strength.toFixed(1)}
         </Text>

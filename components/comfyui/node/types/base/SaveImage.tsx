@@ -21,7 +21,7 @@ export default function SaveImage({ node, serverId, workflowId }: SaveImageProps
         <Input className="w-full rounded-lg border-0 bg-background-50">
           <InputField
             placeholder="Enter filename prefix"
-            className="w-full border-0 bg-background-50"
+            className="w-full border-0 bg-background-50 text-sm"
             defaultValue={node.inputs.filename_prefix}
             onChangeText={(value) => updateNodeInput(workflowId, node.id, 'filename_prefix', value)}
           />
