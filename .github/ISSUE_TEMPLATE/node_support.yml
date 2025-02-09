@@ -14,8 +14,9 @@ body:
         1. Open ComfyUI in your web browser
         2. Go to Menu > Workflow > Export
         3. Save the workflow JSON file
-        4. Upload the JSON to a service like [Pastebin](https://pastebin.com) or [GitHub Gist](https://gist.github.com)
-        5. Share the link below
+        4. ⚠️ Please remove any sensitive information from the JSON file before sharing
+        5. Upload the JSON to a service like [Pastebin](https://pastebin.com) or [GitHub Gist](https://gist.github.com)
+        6. Share the link below
 
   - type: input
     id: node-type
@@ -24,16 +25,7 @@ body:
       description: The type/class name of the node
       placeholder: 'Example: KSampler'
     validations:
-      required: true
-
-  - type: textarea
-    id: node-inputs
-    attributes:
-      label: Node Inputs
-      description: The input parameters of the node
-      render: json
-    validations:
-      required: true
+      required: false
 
   - type: input
     id: workflow-link
@@ -42,7 +34,7 @@ body:
       description: Link to your workflow JSON file (Pastebin, GitHub Gist, etc.)
       placeholder: 'https://pastebin.com/...'
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: usage-context
