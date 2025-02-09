@@ -132,12 +132,12 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
               {thumbnail ? (
                 <Image
                   source={{ uri: thumbnail }}
-                  className="h-32 w-full"
+                  className="h-40 w-full"
                   resizeMode="cover"
                   alt="Workflow thumbnail"
                 />
               ) : (
-                <VStack className="h-32 items-center justify-center">
+                <VStack className="h-40 items-center justify-center">
                   <ImagePlus className="text-primary-300" />
                   <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
                 </VStack>

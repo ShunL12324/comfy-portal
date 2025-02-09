@@ -3,6 +3,7 @@ import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
+import { Link, LinkText } from '@/components/ui/link';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -197,7 +198,12 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
           </KeyboardModal.Item>
 
           <VStack space="sm">
-            <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
+            <HStack space="sm" className="items-center">
+              <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
+              <Link href="https://shunl12324.github.io/comfy-portal/guide/workflow-json">
+                <LinkText className="text-xs">Where to get my workflow file?</LinkText>
+              </Link>
+            </HStack>
             <Pressable
               onPress={handleImportFromFile}
               className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-background-0"
@@ -238,12 +244,12 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
               {thumbnail ? (
                 <Image
                   source={{ uri: thumbnail }}
-                  className="h-32 w-full"
+                  className="h-40 w-full"
                   resizeMode="cover"
                   alt="Workflow thumbnail"
                 />
               ) : (
-                <VStack className="h-32 items-center justify-center">
+                <VStack className="h-40 items-center justify-center">
                   <ImagePlus className="text-primary-300" />
                   <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
                 </VStack>

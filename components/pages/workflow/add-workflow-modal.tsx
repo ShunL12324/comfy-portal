@@ -197,14 +197,14 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
                 {customThumbnail ? (
                   <Image
                     source={{ uri: customThumbnail }}
-                    className="h-32 w-full"
+                    className="h-40 w-full"
                     resizeMode="cover"
                     alt="Workflow thumbnail"
                   />
                 ) : selectedPreset ? (
                   <Image
                     source={selectedPreset.thumbnailPath}
-                    className="h-32 w-full"
+                    className="h-40 w-full"
                     resizeMode="cover"
                     alt={`${selectedPreset.title} thumbnail`}
                   />
@@ -220,7 +220,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
 
           {/* Scrollable section */}
           <KeyboardModal.Item title="Select Preset">
-            <ScrollView className="h-64">
+            <ScrollView className="h-40">
               <Accordion type="single" className="w-full space-y-2 bg-background-200 shadow-none">
                 {WORKFLOW_PRESETS.map((preset) => (
                   <AccordionItem
