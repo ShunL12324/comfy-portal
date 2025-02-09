@@ -18,6 +18,10 @@ Welcome to the Comfy Portal server setup guides. Here you'll find detailed instr
 - [Remote Server Setup Guide](remote-server) - General guide for setting up ComfyUI on a remote server.
 - [RunPod Server Setup Guide](remote-server-runpod) - Specific instructions for setting up ComfyUI on RunPod.
 
+### Workflow Management
+
+- [Getting Workflow JSON](workflow-json) - Learn how to export workflows from ComfyUI in API format for importing into Comfy Portal.
+
 ## Getting Started
 
 Choose the guide that best fits your needs:
@@ -26,6 +30,7 @@ Choose the guide that best fits your needs:
 2. If you want to run ComfyUI on a remote server:
    - For general remote server setup, use the [Remote Server Setup Guide](remote-server)
    - For RunPod specific setup, use the [RunPod Server Setup Guide](remote-server-runpod)
+3. To import workflows, check the [Getting Workflow JSON](workflow-json) guide.
 
 ## Need Help?
 

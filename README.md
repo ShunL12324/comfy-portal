@@ -79,6 +79,7 @@ We provide detailed guides for setting up your ComfyUI server:
 - [Local Server Setup](https://shunl12324.github.io/comfy-portal/guide/local-server) - Run ComfyUI on your computer
 - [Remote Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server) - Host ComfyUI on a remote server
 - [RunPod Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod) - Deploy ComfyUI on RunPod
+- [Getting Workflow JSON](https://shunl12324.github.io/comfy-portal/guide/workflow-json) - Export workflows from ComfyUI in API format
 
 ## Key Features
 
