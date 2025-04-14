@@ -29,8 +29,6 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
 
 # typescript
 *.tsbuildinfo
@@ -41,15 +39,11 @@ app-example
 output/
 output/*.png
 
-# credentials
-credentials.json
 
 # andriod & ios
 android/
 ios/
 
-# tools
-tools/
 
 # .ipa
 *.ipa
