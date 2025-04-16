@@ -6,8 +6,9 @@ import { ScrollView } from '@/components/ui/scroll-view';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useThemeStore } from '@/store/theme';
+import * as Linking from 'expo-linking';
 import { Link } from 'expo-router';
-import { BookOpen, ChevronRight, FileText, GithubIcon, Info, Palette, Shield } from 'lucide-react-native';
+import { BookOpen, ChevronRight, FileText, GithubIcon, Info, Palette, Shield, Star } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';
 
@@ -24,6 +25,13 @@ export default function SettingScreen() {
   };
 
   const currentTheme = isSystemTheme ? 'system' : theme || 'light';
+
+  // App Store URL
+  const appStoreUrl = 'https://apps.apple.com/us/app/comfy-portal/id6741044736';
+
+  const openAppStore = () => {
+    Linking.openURL(appStoreUrl);
+  };
 
   return (
     <View className="flex-1 bg-background-0">
@@ -77,6 +85,17 @@ export default function SettingScreen() {
             </Pressable>
           </Link>
 
+          {/* Rate App Section */}
+          <Pressable className="py-4" onPress={openAppStore}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Icon as={Star} size="lg" className="mr-3 text-primary-500" />
+                <Text className="text-base font-medium text-typography-900">Enjoy this app? Rate us!</Text>
+              </View>
+              <Icon as={ChevronRight} size="sm" className="text-typography-400" />
+            </View>
+          </Pressable>
+
           {/* About Section */}
           <View className="py-4">
             <Pressable
@@ -112,12 +131,12 @@ export default function SettingScreen() {
                 }}
                 className="mt-4"
               >
-                <Text className="mb-4 text-sm leading-5 text-typography-600">
-                  A mobile client for ComfyUI, designed to help you manage and run your ComfyUI workflows on the go.
-                  Built with modern technologies and focused on providing the best user experience.
+                <Text className="mb-4 text-sm text-typography-600">
+                  A mobile client for ComfyUI, designed to help you manage and run your ComfyUI workflows on the go,
+                  focusing on providing a smooth and intuitive user experience.
                 </Text>
                 <Link href="https://github.com/ShunL12324/comfy-portal" asChild>
-                  <Pressable className="flex-row items-center justify-between">
+                  <Pressable className="mb-2 flex-row items-center justify-between">
                     <View className="flex-row items-center">
                       <Icon as={GithubIcon} size="lg" className="mr-3 text-primary-500" />
                       <Text className="text-base font-medium text-typography-900">GitHub</Text>
@@ -125,6 +144,9 @@ export default function SettingScreen() {
                     <Icon as={ChevronRight} size="sm" className="text-typography-400" />
                   </Pressable>
                 </Link>
+                <Text className="text-sm text-typography-500">
+                  This is an open-source project. If you find this app helpful, please consider starring it on GitHub!
+                </Text>
               </MotiView>
             )}
           </View>
