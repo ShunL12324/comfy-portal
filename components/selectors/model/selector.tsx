@@ -166,18 +166,22 @@ export function ModelSelector({
         </Pressable>
         {type === 'loras' && (
           <VStack className="px-4 pb-3">
-            <StrengthControl
-              label="Model Strength"
-              value={localModelStrength}
-              onChange={setLocalModelStrength}
-              onChangeEnd={onLoraModelStrengthChange}
-            />
-            <StrengthControl
-              label="Clip Strength"
-              value={localClipStrength}
-              onChange={setLocalClipStrength}
-              onChangeEnd={onLoraClipStrengthChange}
-            />
+            {onLoraModelStrengthChange && (
+              <StrengthControl
+                label="Model Strength"
+                value={localModelStrength}
+                onChange={setLocalModelStrength}
+                onChangeEnd={onLoraModelStrengthChange}
+              />
+            )}
+            {onLoraClipStrengthChange && (
+              <StrengthControl
+                label="Clip Strength"
+                value={localClipStrength}
+                onChange={setLocalClipStrength}
+                onChangeEnd={onLoraClipStrengthChange}
+              />
+            )}
             {onDelete && (
               <TouchableOpacity
                 className="mt-4 flex-row items-center justify-center gap-2 rounded-lg border-[0.5px] border-error-300 bg-background-50 p-3"

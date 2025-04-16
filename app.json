@@ -2,7 +2,7 @@
   "expo": {
     "name": "Comfy Portal",
     "slug": "comfy-portal",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "comfyportal",
@@ -28,7 +28,9 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sillyl12324.comfyportal",
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",

@@ -28,6 +28,7 @@ import VAEDecode from './base/VAEDecode';
 import VAEEncode from './base/VAEEncode';
 import VAEEncodeForInpaint from './base/VAEEncodeForInpaint';
 import VAELoader from './base/VAELoader';
+import LoraLoaderModelOnly from './base/LoraLoaderModelOnly';
 interface NodeContentProps {
   node: Node;
   serverId: string;
@@ -62,6 +63,7 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'CLIPTextEncodeSDXL': CLIPTextEncodeSDXL,
   'VAEEncodeForInpaint': VAEEncodeForInpaint,
   'ImagePadForOutpaint': ImagePadForOutpaint,
+  'LoraLoaderModelOnly': LoraLoaderModelOnly,
   // add more node types here
 };
 
