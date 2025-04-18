@@ -24,6 +24,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
   const [host, setHost] = React.useState('');
   const [port, setPort] = React.useState('8188');
   const [useSSL, setUseSSL] = React.useState<Server['useSSL']>('Auto');
+  const [token, setToken] = React.useState('');
   const [nameError, setNameError] = React.useState('');
   const [hostError, setHostError] = React.useState('');
   const [portError, setPortError] = React.useState('');
@@ -84,6 +85,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
       host,
       port: parseInt(port, 10),
       useSSL,
+      token: token || undefined,
     });
     handleClose();
   };
@@ -96,6 +98,7 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
     setNameError('');
     setHostError('');
     setPortError('');
+    setToken('');
     onClose();
   };
 
@@ -146,6 +149,18 @@ export const AddServerModal = ({ isOpen, onClose }: AddServerModalProps) => {
                 }}
                 placeholder="Port number"
                 keyboardType="numeric"
+                className="px-3 py-2 text-primary-500"
+              />
+            </Input>
+          </KeyboardModal.Item>
+
+          <KeyboardModal.Item title="Authorization Token (Optional)">
+            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <InputField
+                defaultValue={token}
+                onChangeText={setToken}
+                placeholder="Enter token (without 'Bearer')"
+                secureTextEntry={true}
                 className="px-3 py-2 text-primary-500"
               />
             </Input>

@@ -111,6 +111,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           host: server.host,
           port: server.port.toString(),
           useSSL: server.useSSL,
+          token: server.token,
         });
       }
 

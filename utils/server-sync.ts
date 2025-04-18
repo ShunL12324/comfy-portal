@@ -1,7 +1,6 @@
 import { Model, Server } from '@/types/server';
 import * as FileSystem from 'expo-file-system';
-import { fetch } from 'expo/fetch';
-import { buildServerUrl } from './network';
+import { buildServerUrl, fetchWithAuth } from './network';
 
 export interface ServerStatus {
   isOnline: boolean;
@@ -70,7 +69,7 @@ export async function scanServerModelsByFolder(
 
   try {
     const modelsUrl = await buildServerUrl(server.useSSL, server.host, server.port, `/experiment/models/${folderName}`);
-    const modelsResponse = await fetch(modelsUrl);
+    const modelsResponse = await fetchWithAuth(modelsUrl, server.token);
     if (!modelsResponse.ok) return [];
 
     const folderModels = (await modelsResponse.json()) as ModelResponse[];
@@ -97,7 +96,7 @@ export async function scanServerModelsByFolder(
           server.port,
           `/experiment/models/preview/${folderName}/${model.pathIndex}/${model.name}`,
         );
-        const previewResponse = await fetch(previewUrl);
+        const previewResponse = await fetchWithAuth(previewUrl, server.token);
 
         if (previewResponse.ok) {
           const previewPath = await savePreviewImage(previewResponse, server, folderName, model.name);
@@ -135,7 +134,7 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
     const statsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
 
     try {
-      const statsResponse = await fetch(statsUrl);
+      const statsResponse = await fetchWithAuth(statsUrl, server.token);
       if (statsResponse.ok) {
         const stats = await statsResponse.json() as SystemStats;
         isWindowsServer = stats.system?.os === 'nt';
@@ -145,7 +144,7 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
     }
 
     const foldersUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/experiment/models');
-    const foldersResponse = await fetch(foldersUrl);
+    const foldersResponse = await fetchWithAuth(foldersUrl, server.token);
     if (!foldersResponse.ok) throw new Error('Failed to get model folders');
 
     const folders = await foldersResponse.json();
@@ -187,7 +186,7 @@ export async function checkServerStatus(
   try {
     const url = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
     const startTime = Date.now();
-    const response = await fetch(url, { method: 'GET', signal: controller.signal });
+    const response = await fetchWithAuth(url, server.token, { method: 'GET', signal: controller.signal });
     const latency = Date.now() - startTime;
     clearTimeout(timeoutId);
 

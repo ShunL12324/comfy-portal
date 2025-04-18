@@ -11,6 +11,7 @@ export interface Server {
   host: string;
   port: number;
   useSSL: 'Always' | 'Never' | 'Auto';
+  token?: string;
   status: 'online' | 'offline' | 'refreshing';
   latency?: number;
   models?: Model[];

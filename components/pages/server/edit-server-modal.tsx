@@ -29,6 +29,7 @@ export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalPr
   const [host, setHost] = React.useState(server.host);
   const [port, setPort] = React.useState(server.port.toString());
   const [useSSL, setUseSSL] = React.useState<Server['useSSL']>(server.useSSL);
+  const [token, setToken] = React.useState(server.token || '');
   const [errors, setErrors] = React.useState({
     name: '',
     host: '',
@@ -65,6 +66,7 @@ export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalPr
       host,
       port: parseInt(port, 10),
       useSSL,
+      token: token || undefined,
     });
     onClose();
   };
@@ -79,6 +81,7 @@ export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalPr
       host: '',
       port: '',
     });
+    setToken(server.token || '');
     onClose();
   };
 
@@ -129,6 +132,18 @@ export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalPr
                 }}
                 placeholder="Port number"
                 keyboardType="numeric"
+                className="px-3 py-2 text-primary-500"
+              />
+            </Input>
+          </KeyboardModal.Item>
+
+          <KeyboardModal.Item title="Authorization Token (Optional)">
+            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <InputField
+                defaultValue={token}
+                onChangeText={setToken}
+                placeholder="Enter token (without 'Bearer')"
+                secureTextEntry={true}
                 className="px-3 py-2 text-primary-500"
               />
             </Input>

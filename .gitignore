@@ -56,3 +56,7 @@ docs/.jekyll-metadata
 docs/.jekyll-cache
 docs/vendor/
 .bundle/
+
+# .env
+.env*
+credentials.json

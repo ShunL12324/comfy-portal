@@ -1,6 +1,26 @@
 import { Server } from '@/types/server';
 import NetInfo from '@react-native-community/netinfo';
+import { fetch } from 'expo/fetch';
 import { Platform } from 'react-native';
+
+/**
+ * Helper function to make authenticated fetch requests.
+ * Adds Authorization header if a token is provided.
+ */
+export async function fetchWithAuth(
+  url: string,
+  token: string | undefined,
+  options?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(options?.headers);
+  if (token) {
+    headers.append('Authorization', `Bearer ${token}`);
+  }
+  return fetch(url, {
+    ...options,
+    headers,
+  } as any) as Promise<any>;
+}
 
 /**
  * Determines if a given host address is a local or LAN IP address.

@@ -2,7 +2,7 @@ import { Server } from '@/types/server';
 import { Workflow } from '@/types/workflow';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
-import { buildServerUrl, isLocalOrLanIP } from './network';
+import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
 
 /**
  * Configuration options for the ComfyUI client
@@ -11,6 +11,7 @@ interface ComfyClientOptions {
   host: string;
   port: string;
   useSSL: Server['useSSL'];
+  token?: string;
 }
 
 /**
@@ -66,6 +67,7 @@ export class ComfyClient {
   private host: string;
   private port: string;
   private useSSL: Server['useSSL'];
+  private token?: string;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
@@ -75,6 +77,7 @@ export class ComfyClient {
     this.port = options.port;
     this.useSSL = options.useSSL;
     this.clientId = Crypto.randomUUID();
+    this.token = options.token;
   }
 
   /**
@@ -145,7 +148,10 @@ export class ComfyClient {
       } else {
         protocol = 'wss';
       }
-      const wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
+      let wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
+      if (this.token) {
+        wsUrl += `&token=${this.token}`;
+      }
       await this.setupWebSocket(wsUrl);
     } catch (error) {
       throw error;
@@ -270,13 +276,15 @@ export class ComfyClient {
    * @private
    */
   private async queuePrompt(workflow: Workflow): Promise<string> {
-    const payload = { prompt: workflow, client_id: this.clientId };
-    const url = await buildServerUrl(this.useSSL, this.host, this.port, '/prompt');
-
-    const response = await fetch(url, {
+    let path = '/prompt';
+    if (this.token) {
+      path += `?token=${this.token}`;
+    }
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const response = await fetchWithAuth(url, this.token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ prompt: workflow, client_id: this.clientId }),
     });
 
     if (!response.ok) {
@@ -297,8 +305,12 @@ export class ComfyClient {
    * @private
    */
   private async getHistory(promptId: string): Promise<any> {
-    const url = await buildServerUrl(this.useSSL, this.host, this.port, `/history/${promptId}`);
-    const response = await fetch(url);
+    let path = `/history/${promptId}`;
+    if (this.token) {
+      path += `?token=${this.token}`;
+    }
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const response = await fetchWithAuth(url, this.token);
     if (!response.ok) {
       throw new Error('Failed to get history');
     }
@@ -320,32 +332,33 @@ export class ComfyClient {
     type: string,
     callbacks?: ProgressCallback
   ): Promise<string> {
-    const url = await buildServerUrl(
-      this.useSSL,
-      this.host,
-      this.port,
-      `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`,
-    );
+    // Append token to the path if it exists
+    let path = `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`;
+    if (this.token) {
+      path += `&token=${this.token}`;
+    }
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const response = await fetchWithAuth(url, this.token);
 
-    try {
-      const downloadResumable = FileSystem.createDownloadResumable(
-        url,
-        FileSystem.documentDirectory + filename,
-        {},
-        (downloadProgress) => {
-          if (callbacks?.onDownloadProgress) {
-            const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
-            callbacks.onDownloadProgress(filename, Math.round(progress));
-          }
-        }
-      );
-
-      const { uri } = await downloadResumable.downloadAsync() || {};
-      return uri || url;
-    } catch (error) {
-      console.warn(`Failed to download image ${filename}:`, error);
+    if (!response.ok) {
+      console.warn(`Failed to download image ${filename}:`, response.statusText);
       return url;
     }
+
+    const downloadResumable = FileSystem.createDownloadResumable(
+      url,
+      FileSystem.documentDirectory + filename,
+      {},
+      (downloadProgress) => {
+        if (callbacks?.onDownloadProgress) {
+          const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
+          callbacks.onDownloadProgress(filename, Math.round(progress));
+        }
+      }
+    );
+
+    const { uri } = await downloadResumable.downloadAsync() || {};
+    return uri || url;
   }
 
   /**
