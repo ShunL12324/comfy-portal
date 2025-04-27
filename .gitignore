@@ -38,6 +38,8 @@ app-example
 # test
 output/
 output/*.png
+test-assets/
+tools/
 
 
 # andriod & ios
@@ -60,3 +62,7 @@ docs/vendor/
 # .env
 .env*
 credentials.json
+
+# cursorrules
+.cursorrules*
+.cursor

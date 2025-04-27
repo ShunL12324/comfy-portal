@@ -1,4 +1,4 @@
-import { Server, Settings2 } from 'lucide-react-native';
+import { Compass, Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { Dimensions } from 'react-native';
@@ -9,9 +9,10 @@ import { Text } from '../ui/text';
 import { VStack } from '../ui/vstack';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_WIDTH = SCREEN_WIDTH / 2;
+const NUM_TABS = 3;
+const TAB_WIDTH = SCREEN_WIDTH / NUM_TABS;
 
-type TabRoute = 'server' | 'setting';
+export type TabRoute = 'server' | 'explore' | 'setting';
 
 interface TabItemProps {
   icon: React.ReactNode;
@@ -39,6 +40,19 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
 };
 
 export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
+  const getTranslateX = (tab: TabRoute) => {
+    switch (tab) {
+      case 'server':
+        return 40;
+      case 'explore':
+        return TAB_WIDTH + 40;
+      case 'setting':
+        return TAB_WIDTH * 2 + 40;
+      default:
+        return 40;
+    }
+  };
+
   return (
     <VStack className={`border-t border-outline-0 bg-background-0`}>
       <HStack space="xs" className="relative">
@@ -46,7 +60,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
           className="absolute h-0.5 rounded-xl bg-typography-950"
           style={{ width: TAB_WIDTH - 80 }}
           animate={{
-            translateX: activeTab === 'server' ? 40 : TAB_WIDTH + 40,
+            translateX: getTranslateX(activeTab),
           }}
           transition={{
             type: 'timing',
@@ -64,6 +78,18 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
           label="Server"
           isActive={activeTab === 'server'}
           onPress={() => onChangeTab('server')}
+        />
+        <TabItem
+          icon={
+            <Icon
+              as={Compass}
+              size="lg"
+              className={`${activeTab === 'explore' ? 'text-typography-950' : 'text-typography-400'}`}
+            />
+          }
+          label="Explore"
+          isActive={activeTab === 'explore'}
+          onPress={() => onChangeTab('explore')}
         />
         <TabItem
           icon={

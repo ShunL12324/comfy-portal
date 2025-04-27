@@ -1,5 +1,9 @@
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
+import { useThemeStore } from '@/store/theme';
+import { toastConfig } from '@/utils/toast';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,15 +12,38 @@ import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
-import { useThemeStore } from '@/store/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { toastConfig } from '@/utils/toast';
+
+// Initialize Sentry
+Sentry.init({
+  dsn: 'https://bd0ec56053142b228f923f7e2258e0dc@o4509226334683136.ingest.us.sentry.io/4509226336780288',
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
+  _experiments: {
+    // profilesSampleRate is relative to tracesSampleRate.
+    // Here, we'll capture profiles for 100% of transactions.
+    profilesSampleRate: 1.0,
+  },
+  // Session Replay
+  replaysSessionSampleRate: 0.1, // Set to 1.0 for testing
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [
+    Sentry.mobileReplayIntegration(),
+    // You can configure replay options here, for example:
+    // Sentry.mobileReplayIntegration({
+    //   maskAllText: true,
+    //   maskAllImages: true,
+    //   maskAllVectors: true,
+    // }),
+  ],
+});
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -27,7 +54,7 @@ configureReanimatedLogger({
   strict: false, // Reanimated runs in strict mode by default
 });
 
-export default function RootLayout() {
+function RootLayoutNav() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -78,3 +105,5 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default Sentry.wrap(RootLayoutNav);
