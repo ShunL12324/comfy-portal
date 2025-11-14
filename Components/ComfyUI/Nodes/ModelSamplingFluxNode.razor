@@ -1,0 +1,108 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Class="mr-1" />
+                Model Sampling Flux
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Configures sampling parameters for Flux model
+        </MudAlert>
+
+        <MudNumericField @bind-Value="_maxShift"
+                        Label="Max Shift"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="100.0"
+                        Step="0.1"
+                        HelperText="Maximum shift value" />
+
+        <MudNumericField @bind-Value="_baseShift"
+                        Label="Base Shift"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="100.0"
+                        Step="0.1"
+                        HelperText="Base shift value" />
+
+        <MudNumericField @bind-Value="_width"
+                        Label="Width"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="256"
+                        Max="8192"
+                        Step="64"
+                        HelperText="Target width for sampling" />
+
+        <MudNumericField @bind-Value="_height"
+                        Label="Height"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="256"
+                        Max="8192"
+                        Step="64"
+                        HelperText="Target height for sampling" />
+
+        @if (_hasModelInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to model
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No model connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private double _maxShift = 1.15;
+    private double _baseShift = 0.5;
+    private int _width = 1024;
+    private int _height = 1024;
+    private bool _hasModelInput;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("max_shift", out var maxShiftVal) && maxShiftVal.TryGetDouble(out var maxShift))
+            _maxShift = maxShift;
+
+        if (Node.Inputs.TryGetValue("base_shift", out var baseShiftVal) && baseShiftVal.TryGetDouble(out var baseShift))
+            _baseShift = baseShift;
+
+        if (Node.Inputs.TryGetValue("width", out var widthVal) && widthVal.TryGetInt32(out var width))
+            _width = width;
+
+        if (Node.Inputs.TryGetValue("height", out var heightVal) && heightVal.TryGetInt32(out var height))
+            _height = height;
+
+        // Check if model is connected
+        if (Node.Inputs.TryGetValue("model", out var modelVal) && modelVal.ValueKind == JsonValueKind.Array)
+            _hasModelInput = true;
+    }
+}

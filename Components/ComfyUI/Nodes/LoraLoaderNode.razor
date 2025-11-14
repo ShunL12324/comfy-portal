@@ -1,0 +1,99 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Layers" Size="Size.Small" Class="mr-1" />
+                Load LoRA
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudSelect @bind-Value="_selectedLora"
+                   Label="LoRA Model"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Required>
+            @foreach (var lora in _availableLoras)
+            {
+                <MudSelectItem Value="@lora">@lora</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudNumericField @bind-Value="_strengthModel"
+                        Label="Strength (Model)"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="2.0"
+                        Step="0.05"
+                        HelperText="LoRA strength for model" />
+
+        <MudNumericField @bind-Value="_strengthClip"
+                        Label="Strength (CLIP)"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="2.0"
+                        Step="0.05"
+                        HelperText="LoRA strength for CLIP" />
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    [Inject]
+    private IServerService ServerService { get; set; } = default!;
+
+    private List<string> _availableLoras = new();
+    private string _selectedLora = "";
+    private double _strengthModel = 1.0;
+    private double _strengthClip = 1.0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("lora_name", out var loraVal) && loraVal.ValueKind == JsonValueKind.String)
+        {
+            var loraStr = loraVal.GetString();
+            if (loraStr != null)
+                _selectedLora = loraStr;
+        }
+
+        if (Node.Inputs.TryGetValue("strength_model", out var strengthModelVal) && strengthModelVal.TryGetDouble(out var strengthModel))
+            _strengthModel = strengthModel;
+
+        if (Node.Inputs.TryGetValue("strength_clip", out var strengthClipVal) && strengthClipVal.TryGetDouble(out var strengthClip))
+            _strengthClip = strengthClip;
+
+        // Load available LoRAs from server
+        try
+        {
+            // Get server ID from workflow or use first available
+            var servers = await ServerService.GetAllServersAsync();
+            if (servers.Any())
+            {
+                var models = await ServerService.GetServerModelsAsync(servers.First().Id);
+                _availableLoras = models.Loras;
+
+                if (!_availableLoras.Contains(_selectedLora) && _availableLoras.Any())
+                    _selectedLora = _availableLoras.First();
+            }
+        }
+        catch
+        {
+            // Fallback to empty list if server fetch fails
+            _availableLoras = new List<string> { "example-lora.safetensors" };
+        }
+    }
+}

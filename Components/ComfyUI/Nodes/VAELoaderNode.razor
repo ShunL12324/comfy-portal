@@ -1,0 +1,71 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Dehaze" Size="Size.Small" Class="mr-1" />
+                Load VAE
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudSelect @bind-Value="_selectedVae"
+                   Label="VAE Model"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Required>
+            @foreach (var vae in _availableVaes)
+            {
+                <MudSelectItem Value="@vae">@vae</MudSelectItem>
+            }
+        </MudSelect>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    [Inject]
+    private IServerService ServerService { get; set; } = default!;
+
+    private List<string> _availableVaes = new();
+    private string _selectedVae = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("vae_name", out var vaeVal) && vaeVal.ValueKind == JsonValueKind.String)
+        {
+            var vaeStr = vaeVal.GetString();
+            if (vaeStr != null)
+                _selectedVae = vaeStr;
+        }
+
+        // Load available VAEs from server
+        try
+        {
+            // Get server ID from workflow or use first available
+            var servers = await ServerService.GetAllServersAsync();
+            if (servers.Any())
+            {
+                var models = await ServerService.GetServerModelsAsync(servers.First().Id);
+                _availableVaes = models.Vaes;
+
+                if (!_availableVaes.Contains(_selectedVae) && _availableVaes.Any())
+                    _selectedVae = _availableVaes.First();
+            }
+        }
+        catch
+        {
+            // Fallback to empty list if server fetch fails
+            _availableVaes = new List<string> { "vae-ft-mse-840000-ema-pruned.safetensors" };
+        }
+    }
+}

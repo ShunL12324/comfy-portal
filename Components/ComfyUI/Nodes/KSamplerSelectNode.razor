@@ -1,0 +1,51 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Enums
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Class="mr-1" />
+                KSampler Select
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudSelect @bind-Value="_sampler"
+                   Label="Sampler"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense">
+            @foreach (var sampler in Enum.GetValues<Sampler>())
+            {
+                <MudSelectItem Value="@sampler">@sampler.ToComfyUIString()</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+            Selects a sampler for advanced sampling workflows
+        </MudAlert>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private Sampler _sampler = Sampler.Euler;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("sampler_name", out var samplerVal) && samplerVal.ValueKind == JsonValueKind.String)
+        {
+            var samplerStr = samplerVal.GetString();
+            if (samplerStr != null)
+                _sampler = SamplerExtensions.FromComfyUIString(samplerStr);
+        }
+    }
+}

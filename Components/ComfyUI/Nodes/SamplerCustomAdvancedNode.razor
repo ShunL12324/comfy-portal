@@ -1,0 +1,127 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Build" Size="Size.Small" Class="mr-1" />
+                Sampler Custom Advanced
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Advanced custom sampler with full control
+        </MudAlert>
+
+        @if (_hasNoiseInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to noise
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No noise connected
+            </MudText>
+        }
+
+        @if (_hasGuiderInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to guider
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No guider connected
+            </MudText>
+        }
+
+        @if (_hasSamplerInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to sampler
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No sampler connected
+            </MudText>
+        }
+
+        @if (_hasSigmasInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to sigmas
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No sigmas connected
+            </MudText>
+        }
+
+        @if (_hasLatentInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to latent image
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No latent image connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private bool _hasNoiseInput;
+    private bool _hasGuiderInput;
+    private bool _hasSamplerInput;
+    private bool _hasSigmasInput;
+    private bool _hasLatentInput;
+
+    protected override void OnInitialized()
+    {
+        // Check if all required inputs are connected
+        if (Node.Inputs.TryGetValue("noise", out var noiseVal) && noiseVal.ValueKind == JsonValueKind.Array)
+            _hasNoiseInput = true;
+
+        if (Node.Inputs.TryGetValue("guider", out var guiderVal) && guiderVal.ValueKind == JsonValueKind.Array)
+            _hasGuiderInput = true;
+
+        if (Node.Inputs.TryGetValue("sampler", out var samplerVal) && samplerVal.ValueKind == JsonValueKind.Array)
+            _hasSamplerInput = true;
+
+        if (Node.Inputs.TryGetValue("sigmas", out var sigmasVal) && sigmasVal.ValueKind == JsonValueKind.Array)
+            _hasSigmasInput = true;
+
+        if (Node.Inputs.TryGetValue("latent_image", out var latentVal) && latentVal.ValueKind == JsonValueKind.Array)
+            _hasLatentInput = true;
+    }
+}

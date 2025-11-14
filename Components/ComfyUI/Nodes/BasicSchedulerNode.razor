@@ -1,0 +1,94 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Enums
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
+                Basic Scheduler
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudSelect @bind-Value="_scheduler"
+                   Label="Scheduler"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Density.Dense">
+            @foreach (var scheduler in Enum.GetValues<Scheduler>())
+            {
+                <MudSelectItem Value="@scheduler">@scheduler.ToComfyUIString()</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudNumericField @bind-Value="_steps"
+                        Label="Steps"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="1"
+                        Max="10000"
+                        HelperText="Number of sampling steps" />
+
+        <MudNumericField @bind-Value="_denoise"
+                        Label="Denoise"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="1.0"
+                        Step="0.01"
+                        HelperText="Denoising strength" />
+
+        @if (_hasModelInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to model
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No model connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private Scheduler _scheduler = Scheduler.Normal;
+    private int _steps = 20;
+    private double _denoise = 1.0;
+    private bool _hasModelInput;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("scheduler", out var schedVal) && schedVal.ValueKind == JsonValueKind.String)
+        {
+            var schedStr = schedVal.GetString();
+            if (schedStr != null)
+                _scheduler = SchedulerExtensions.FromComfyUIString(schedStr);
+        }
+
+        if (Node.Inputs.TryGetValue("steps", out var stepsVal) && stepsVal.TryGetInt32(out var steps))
+            _steps = steps;
+
+        if (Node.Inputs.TryGetValue("denoise", out var denoiseVal) && denoiseVal.TryGetDouble(out var denoise))
+            _denoise = denoise;
+
+        // Check if model is connected
+        if (Node.Inputs.TryGetValue("model", out var modelVal) && modelVal.ValueKind == JsonValueKind.Array)
+            _hasModelInput = true;
+    }
+}

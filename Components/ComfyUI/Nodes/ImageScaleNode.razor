@@ -1,0 +1,94 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.AspectRatio" Size="Size.Small" Class="mr-1" />
+                Scale Image
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudSelect @bind-Value="_upscaleMethod"
+                   Label="Upscale Method"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense">
+            <MudSelectItem Value="@("nearest-exact")">Nearest</MudSelectItem>
+            <MudSelectItem Value="@("bilinear")">Bilinear</MudSelectItem>
+            <MudSelectItem Value="@("area")">Area</MudSelectItem>
+            <MudSelectItem Value="@("bicubic")">Bicubic</MudSelectItem>
+            <MudSelectItem Value="@("lanczos")">Lanczos</MudSelectItem>
+        </MudSelect>
+
+        <MudNumericField @bind-Value="_width"
+                        Label="Width"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="64"
+                        Max="8192"
+                        HelperText="Target width" />
+
+        <MudNumericField @bind-Value="_height"
+                        Label="Height"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="64"
+                        Max="8192"
+                        HelperText="Target height" />
+
+        <MudSelect @bind-Value="_crop"
+                   Label="Crop"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            <MudSelectItem Value="@("disabled")">Disabled</MudSelectItem>
+            <MudSelectItem Value="@("center")">Center</MudSelectItem>
+        </MudSelect>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            Target Resolution: @_width × @_height
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private string _upscaleMethod = "nearest-exact";
+    private int _width = 512;
+    private int _height = 512;
+    private string _crop = "disabled";
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("upscale_method", out var methodVal) && methodVal.ValueKind == JsonValueKind.String)
+        {
+            var methodStr = methodVal.GetString();
+            if (methodStr != null)
+                _upscaleMethod = methodStr;
+        }
+
+        if (Node.Inputs.TryGetValue("width", out var widthVal) && widthVal.TryGetInt32(out var width))
+            _width = width;
+
+        if (Node.Inputs.TryGetValue("height", out var heightVal) && heightVal.TryGetInt32(out var height))
+            _height = height;
+
+        if (Node.Inputs.TryGetValue("crop", out var cropVal) && cropVal.ValueKind == JsonValueKind.String)
+        {
+            var cropStr = cropVal.GetString();
+            if (cropStr != null)
+                _crop = cropStr;
+        }
+    }
+}

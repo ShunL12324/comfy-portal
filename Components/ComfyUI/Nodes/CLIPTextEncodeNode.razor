@@ -1,0 +1,99 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.TextFields" Size="Size.Small" Class="mr-1" />
+                @(Node.ClassType == "CLIPTextEncodeSDXL" ? "CLIP Text Encode (SDXL)" : "CLIP Text Encode")
+            </MudText>
+            @if (Node.Meta?.Title != null)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@Node.Meta.Title</MudText>
+            }
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudTextField @bind-Value="_text"
+                     Label="@(_isPositive ? "Positive Prompt" : "Text")"
+                     Variant="Variant.Outlined"
+                     Lines="5"
+                     HelperText="Enter your prompt text"
+                     OnBlur="OnTextChanged" />
+
+        @if (Node.ClassType == "CLIPTextEncodeSDXL")
+        {
+            <MudNumericField @bind-Value="_width"
+                            Label="Width"
+                            Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
+                            Class="mt-2"
+                            Min="64"
+                            Step="8" />
+
+            <MudNumericField @bind-Value="_height"
+                            Label="Height"
+                            Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
+                            Class="mt-2"
+                            Min="64"
+                            Step="8" />
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private string _text = "";
+    private int _width = 1024;
+    private int _height = 1024;
+    private bool _isPositive = false;
+
+    protected override void OnInitialized()
+    {
+        // Determine if this is a positive or negative prompt based on metadata
+        _isPositive = Node.Meta?.Title?.ToLower().Contains("positive") ?? false;
+
+        // Load current value
+        if (Node.Inputs.TryGetValue("text", out var textValue) &&
+            textValue.ValueKind == JsonValueKind.String)
+        {
+            _text = textValue.GetString() ?? "";
+        }
+
+        if (Node.ClassType == "CLIPTextEncodeSDXL")
+        {
+            if (Node.Inputs.TryGetValue("width", out var widthValue) &&
+                widthValue.TryGetInt32(out var w))
+            {
+                _width = w;
+            }
+
+            if (Node.Inputs.TryGetValue("height", out var heightValue) &&
+                heightValue.TryGetInt32(out var h))
+            {
+                _height = h;
+            }
+        }
+    }
+
+    private async Task OnTextChanged()
+    {
+        Node.Inputs["text"] = JsonDocument.Parse($"\"{_text}\"").RootElement;
+
+        if (Node.ClassType == "CLIPTextEncodeSDXL")
+        {
+            Node.Inputs["width"] = JsonDocument.Parse(_width.ToString()).RootElement;
+            Node.Inputs["height"] = JsonDocument.Parse(_height.ToString()).RootElement;
+        }
+
+        await OnNodeChanged.InvokeAsync(Node);
+    }
+}
