@@ -48,17 +48,53 @@ public class GenerationState
 
     public bool IsGenerating => Status == GenerationStatus.Running || Status == GenerationStatus.Queued;
 
+    public void StartGeneration()
+    {
+        Status = GenerationStatus.Running;
+        Progress = new GenerationProgress { StartTime = DateTime.UtcNow };
+        NotifyStateChanged();
+    }
+
+    public void CompleteGeneration()
+    {
+        Status = GenerationStatus.Completed;
+        NotifyStateChanged();
+    }
+
+    public void FailGeneration(string? message = null)
+    {
+        Status = GenerationStatus.Failed;
+        if (message != null)
+        {
+            Progress.StatusMessage = message;
+        }
+        NotifyStateChanged();
+    }
+
+    public void InterruptGeneration()
+    {
+        Status = GenerationStatus.Interrupted;
+        NotifyStateChanged();
+    }
+
     public void UpdateProgress(string promptId, int currentNode, int totalNodes, int currentStep, int totalSteps, string? nodeName = null)
     {
         Progress = new GenerationProgress
         {
             PromptId = promptId,
-            CurrentNode = currentNode,
+            CurrentNodeIndex = currentNode,
             TotalNodes = totalNodes,
             CurrentStep = currentStep,
             TotalSteps = totalSteps,
-            CurrentNodeName = nodeName
+            CurrentNodeName = nodeName,
+            StartTime = Progress.StartTime
         };
+    }
+
+    public void UpdateProgressWithMessage(string message)
+    {
+        Progress.StatusMessage = message;
+        NotifyStateChanged();
     }
 
     public void AddGeneratedImage(ImageMetadata image)

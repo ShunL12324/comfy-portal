@@ -6,13 +6,20 @@ namespace ComfyPortal.Models;
 public class GenerationProgress
 {
     public string? PromptId { get; set; }
-    public int CurrentNode { get; set; }
+    public int CurrentNodeIndex { get; set; }
     public int TotalNodes { get; set; }
     public int CurrentStep { get; set; }
     public int TotalSteps { get; set; }
     public string? CurrentNodeName { get; set; }
+    public string? StatusMessage { get; set; }
+    public TimeSpan? EstimatedTimeRemaining { get; set; }
+    public DateTime StartTime { get; set; } = DateTime.UtcNow;
+
+    public int CompletedNodes => CurrentNodeIndex;
+    public string? CurrentNode => CurrentNodeName;
+
     public double ProgressPercentage => TotalNodes > 0
-        ? ((double)CurrentNode / TotalNodes + (double)CurrentStep / TotalSteps / TotalNodes) * 100
+        ? ((double)CurrentNodeIndex / TotalNodes + (double)CurrentStep / TotalSteps / TotalNodes) * 100
         : 0;
 }
 

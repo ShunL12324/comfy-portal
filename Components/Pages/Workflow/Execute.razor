@@ -1,0 +1,207 @@
+@page "/workflow/execute/{Id}"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Workflow
+@using ComfyPortal.Services.ComfyUI
+@using ComfyPortal.Services.State
+@using ComfyPortal.Enums
+@inject IWorkflowService WorkflowService
+@inject IComfyClient ComfyClient
+@inject GenerationState GenerationState
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>@(_workflow?.Name ?? "Execute Workflow") - Comfy Portal</PageTitle>
+
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading workflow..." />
+}
+else if (_workflow == null)
+{
+    <MudAlert Severity="Severity.Error">Workflow not found</MudAlert>
+    <MudButton Color="Color.Primary" OnClick="@(() => Navigation.NavigateTo("/workflows"))">
+        Back to Workflows
+    </MudButton>
+}
+else
+{
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">@_workflow.Name</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Configure and execute workflow
+            </MudText>
+        </div>
+
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Outlined"
+                      StartIcon="@Icons.Material.Filled.ArrowBack"
+                      OnClick="@(() => Navigation.NavigateTo($"/workflow/preview/{Id}"))">
+                Back to Preview
+            </MudButton>
+        </div>
+    </div>
+
+    @* Workflow Configuration Panel *@
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h6" GutterBottom>Workflow Nodes</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Configure node parameters before execution
+        </MudText>
+
+        <MudGrid>
+            @foreach (var node in _workflow.Data.Values.OrderBy(n => n.ClassType))
+            {
+                <MudItem xs="12" md="6" lg="4">
+                    <NodeRenderer Node="@node" OnNodeChanged="@HandleNodeChanged" />
+                </MudItem>
+            }
+        </MudGrid>
+    </MudPaper>
+
+    @* Execution Controls *@
+    <MudPaper Elevation="2" Class="pa-4">
+        @if (GenerationState.IsGenerating)
+        {
+            <ProgressMonitor />
+
+            <div class="d-flex gap-2 mt-4">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Error"
+                          StartIcon="@Icons.Material.Filled.Stop"
+                          OnClick="InterruptGeneration">
+                    Interrupt
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          Size="Size.Large"
+                          StartIcon="@Icons.Material.Filled.PlayArrow"
+                          OnClick="StartGeneration"
+                          Disabled="@(!_canExecute)">
+                    Start Generation
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                          StartIcon="@Icons.Material.Filled.Refresh"
+                          OnClick="ResetNodes">
+                    Reset
+                </MudButton>
+            </div>
+
+            @if (!_canExecute)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-2">
+                    Please ensure all required node parameters are configured
+                </MudAlert>
+            }
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    private Workflow? _workflow;
+    private bool _loading = true;
+    private bool _canExecute = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _workflow = await WorkflowService.GetWorkflowAsync(Id);
+            ValidateWorkflow();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load workflow: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        // Subscribe to generation state changes
+        GenerationState.OnChange += StateHasChanged;
+    }
+
+    private void HandleNodeChanged(WorkflowNode node)
+    {
+        // Update node in workflow
+        if (_workflow != null && _workflow.Data.ContainsKey(node.Id))
+        {
+            _workflow.Data[node.Id] = node;
+            ValidateWorkflow();
+        }
+    }
+
+    private void ValidateWorkflow()
+    {
+        // Basic validation - can be extended
+        _canExecute = _workflow != null && _workflow.Data.Any();
+    }
+
+    private async Task StartGeneration()
+    {
+        if (_workflow == null) return;
+
+        try
+        {
+            GenerationState.StartGeneration();
+
+            // Queue the prompt to ComfyUI
+            var promptId = await ComfyClient.QueuePromptAsync(_workflow.Data);
+
+            // Update workflow usage
+            _workflow.UsageCount++;
+            _workflow.LastUsed = DateTime.UtcNow;
+            await WorkflowService.UpdateWorkflowAsync(_workflow);
+
+            Snackbar.Add($"Generation started (ID: {promptId})", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            GenerationState.CompleteGeneration();
+            Snackbar.Add($"Failed to start generation: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task InterruptGeneration()
+    {
+        try
+        {
+            await ComfyClient.InterruptAsync();
+            GenerationState.InterruptGeneration();
+            Snackbar.Add("Generation interrupted", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to interrupt: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ResetNodes()
+    {
+        // Reload workflow to reset all node values
+        _loading = true;
+        InvokeAsync(async () =>
+        {
+            _workflow = await WorkflowService.GetWorkflowAsync(Id);
+            ValidateWorkflow();
+            _loading = false;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        GenerationState.OnChange -= StateHasChanged;
+    }
+}
