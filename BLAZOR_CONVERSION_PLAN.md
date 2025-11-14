@@ -2,34 +2,46 @@
 
 ## Executive Summary
 
-This document outlines the complete conversion plan for transforming the **Comfy Portal** React Native iOS application into a **Blazor Hybrid .NET MAUI** application. This approach maintains cross-platform mobile support while leveraging C# and Blazor's component model.
+This document outlines the complete conversion plan for transforming the **Comfy Portal** React Native iOS application into a **Blazor WebAssembly Progressive Web App (PWA)**. This approach enables true cross-platform deployment as an installable web app that can connect directly to ComfyUI instances from anywhere.
 
 ---
 
 ## 1. Technology Stack Decision
 
-### Recommended Approach: **Blazor Hybrid with .NET MAUI**
+### Recommended Approach: **Blazor WebAssembly + Progressive Web App (PWA)**
 
-**Why Blazor Hybrid?**
-- Native mobile app experience (iOS, Android, Windows, macOS)
-- Access to native device APIs (file system, storage, notifications)
-- Blazor component model for UI
-- Single C# codebase
-- WebView-based rendering with native performance optimizations
+**Why Blazor WebAssembly + PWA?**
+- **C# backend code**: All business logic written in C#, compiled to WebAssembly
+- **True cross-platform**: Works on any device with a modern browser (iOS, Android, Windows, macOS, Linux)
+- **Installable**: PWA allows installation to home screen/desktop without app stores
+- **Works offline**: Service workers enable offline functionality once cached
+- **Direct ComfyUI connection**: Web app connects directly to ComfyUI servers via WebSocket
+- **No C# backend required**: App runs entirely in browser, connects to ComfyUI instances anywhere
+- **Easy deployment**: Just host static files (GitHub Pages, Netlify, Vercel, etc.)
+- **No app store approval**: Deploy updates instantly
+- **Browser APIs**: Access to modern web APIs (IndexedDB, File System Access, Clipboard, etc.)
 
-**Alternative Considered:**
-- **Blazor WebAssembly**: Would lose native mobile capabilities, app store distribution
-- **Blazor Server**: Not suitable for mobile, requires constant server connection
+**Why NOT Blazor Server:**
+- Requires constant connection to .NET backend
+- Not suitable for connecting to arbitrary ComfyUI instances
+- Cannot work offline
+
+**Why NOT Blazor Hybrid MAUI:**
+- Requires separate iOS/Android builds
+- App store distribution complexity
+- Overkill for this use case
 
 ### Target Stack:
 ```
 - .NET 8+ (Latest LTS)
-- Blazor Hybrid
-- .NET MAUI (Multi-platform App UI)
-- MudBlazor or Radzen Blazor (Component library)
-- SQLite (local data persistence)
-- System.Net.WebSockets (ComfyUI communication)
-- CommunityToolkit.Maui (MAUI extensions)
+- Blazor WebAssembly (Standalone)
+- Progressive Web App (PWA)
+  - Service Worker for offline support
+  - Web App Manifest for installation
+- MudBlazor (Component library)
+- IndexedDB (via Blazored.LocalStorage or TG.Blazor.IndexedDB)
+- Browser WebSocket API (ComfyUI communication)
+- File System Access API (for file upload/download)
 ```
 
 ---
@@ -39,100 +51,132 @@ This document outlines the complete conversion plan for transforming the **Comfy
 ### Recommended Solution Architecture
 
 ```
-ComfyPortal.sln
+ComfyPortal/                                   # Single Blazor WebAssembly project
 │
-├── ComfyPortal.Core/                          # Shared business logic (.NET Standard 2.1)
-│   ├── Models/
-│   │   ├── Server.cs
-│   │   ├── Workflow.cs
-│   │   ├── Node/                              # 28 node types
-│   │   ├── ComfyUIModels.cs
-│   │   └── GenerationProgress.cs
-│   ├── Services/
+├── Models/                                    # Data models
+│   ├── Server.cs
+│   ├── Workflow.cs
+│   ├── Node/                                  # 28 node types
+│   │   ├── Base/
+│   │   │   └── WorkflowNode.cs               # Base class
+│   │   ├── Loaders/
+│   │   │   ├── CheckpointLoaderSimple.cs
+│   │   │   ├── LoraLoader.cs
+│   │   │   └── ... (7 loader types)
+│   │   ├── Encoders/
+│   │   ├── Samplers/
+│   │   ├── Generators/
+│   │   └── ...
+│   ├── ComfyUIModels.cs
+│   ├── GenerationProgress.cs
+│   └── ImageMetadata.cs
+│
+├── Services/                                  # Business logic services
+│   ├── ComfyUI/
 │   │   ├── IComfyClient.cs
-│   │   ├── ComfyClient.cs                     # WebSocket client
-│   │   ├── IServerService.cs
-│   │   ├── ServerService.cs
+│   │   ├── ComfyClient.cs                    # Browser WebSocket client
+│   │   └── ComfyApiClient.cs                 # HTTP API client
+│   ├── Storage/
+│   │   ├── IStorageService.cs
+│   │   ├── IndexedDBStorage.cs               # IndexedDB wrapper
+│   │   └── ImageStorageService.cs
+│   ├── Workflow/
 │   │   ├── IWorkflowService.cs
 │   │   ├── WorkflowService.cs
-│   │   ├── IImageStorageService.cs
-│   │   ├── ImageStorageService.cs
 │   │   └── WorkflowParser.cs
-│   ├── Enums/
-│   │   ├── ServerStatus.cs
-│   │   ├── NodeType.cs
-│   │   └── SamplerType.cs
-│   └── Constants/
-│       └── AppConstants.cs
+│   ├── Server/
+│   │   ├── IServerService.cs
+│   │   └── ServerService.cs
+│   ├── State/
+│   │   ├── GenerationState.cs                # Global generation state
+│   │   └── ThemeState.cs                     # Theme state
+│   └── Utilities/
+│       ├── FileService.cs                    # File System Access API
+│       └── ClipboardService.cs               # Clipboard API
 │
-├── ComfyPortal.Data/                          # Data access layer
-│   ├── Repositories/
-│   │   ├── IServerRepository.cs
-│   │   ├── ServerRepository.cs
-│   │   ├── IWorkflowRepository.cs
-│   │   └── WorkflowRepository.cs
-│   ├── DbContext/
-│   │   └── ComfyPortalDbContext.cs
-│   └── Migrations/
+├── Components/                                # Razor components
+│   ├── Layout/
+│   │   ├── MainLayout.razor
+│   │   ├── AppBar.razor
+│   │   ├── TabBar.razor
+│   │   └── NavMenu.razor
+│   ├── Pages/
+│   │   ├── Index.razor                       # Home page
+│   │   ├── Settings.razor
+│   │   ├── ServerManagement.razor
+│   │   ├── Workflow/
+│   │   │   ├── Import.razor
+│   │   │   ├── Execute.razor
+│   │   │   ├── Preview.razor
+│   │   │   └── ViewImage.razor
+│   │   ├── Guide/
+│   │   │   ├── LocalSetup.razor
+│   │   │   ├── RemoteSetup.razor
+│   │   │   ├── RunPodSetup.razor
+│   │   │   └── WorkflowExport.razor
+│   │   └── Legal/
+│   │       ├── Privacy.razor
+│   │       └── Terms.razor
+│   ├── ComfyUI/
+│   │   ├── Node/                             # 28 node components
+│   │   │   ├── CheckpointLoaderSimple.razor
+│   │   │   ├── KSampler.razor
+│   │   │   ├── CLIPTextEncode.razor
+│   │   │   └── ... (25 more)
+│   │   ├── WorkflowEditor.razor
+│   │   ├── ProgressMonitor.razor
+│   │   └── GenerationPanel.razor
+│   ├── Selectors/
+│   │   ├── ModelSelector.razor
+│   │   ├── SamplerSelector.razor
+│   │   ├── SchedulerSelector.razor
+│   │   └── ... (12 more)
+│   ├── Shared/
+│   │   ├── ImageViewer.razor
+│   │   ├── ImageGallery.razor
+│   │   ├── ServerCard.razor
+│   │   ├── WorkflowCard.razor
+│   │   ├── ProgressBar.razor
+│   │   └── LoadingSpinner.razor
+│   └── UI/                                   # Base UI components
+│       ├── Button.razor
+│       ├── Input.razor
+│       ├── Card.razor
+│       ├── Modal.razor
+│       └── Toast.razor
 │
-├── ComfyPortal.Maui/                          # Main MAUI Blazor Hybrid project
-│   ├── Components/
-│   │   ├── Layout/
-│   │   │   ├── MainLayout.razor
-│   │   │   ├── AppBar.razor
-│   │   │   ├── TabBar.razor
-│   │   │   └── NavMenu.razor
-│   │   ├── Pages/
-│   │   │   ├── Home.razor
-│   │   │   ├── Settings.razor
-│   │   │   ├── ServerManagement.razor
-│   │   │   ├── WorkflowExecution.razor
-│   │   │   ├── GuidePages/
-│   │   │   └── LegalPages/
-│   │   ├── ComfyUI/
-│   │   │   ├── Node/                          # 28 node components
-│   │   │   │   ├── CheckpointLoaderSimple.razor
-│   │   │   │   ├── KSampler.razor
-│   │   │   │   ├── CLIPTextEncode.razor
-│   │   │   │   └── ... (25 more)
-│   │   │   ├── WorkflowEditor.razor
-│   │   │   ├── ProgressMonitor.razor
-│   │   │   └── GenerationPanel.razor
-│   │   ├── Selectors/
-│   │   │   ├── ModelSelector.razor
-│   │   │   ├── SamplerSelector.razor
-│   │   │   ├── SchedulerSelector.razor
-│   │   │   └── LoraSelector.razor
-│   │   ├── Shared/
-│   │   │   ├── ImageViewer.razor
-│   │   │   ├── ImageGallery.razor
-│   │   │   ├── ServerCard.razor
-│   │   │   ├── WorkflowCard.razor
-│   │   │   ├── ProgressBar.razor
-│   │   │   └── LoadingSpinner.razor
-│   │   └── UI/                                # Base UI components
-│   │       ├── Button.razor
-│   │       ├── Input.razor
-│   │       ├── Card.razor
-│   │       ├── Modal.razor
-│   │       └── Toast.razor
-│   ├── wwwroot/
-│   │   ├── css/
-│   │   ├── js/
-│   │   ├── images/
-│   │   └── workflows/                         # Preset workflows
-│   ├── Platforms/                             # Platform-specific code
-│   │   ├── Android/
-│   │   ├── iOS/
-│   │   ├── Windows/
-│   │   └── MacCatalyst/
-│   ├── MauiProgram.cs
-│   └── ComfyPortal.Maui.csproj
+├── wwwroot/                                   # Static files
+│   ├── css/
+│   │   ├── app.css
+│   │   └── themes/
+│   │       ├── dark.css
+│   │       └── light.css
+│   ├── js/
+│   │   ├── app.js
+│   │   └── clipboard-interop.js              # JS interop
+│   ├── images/
+│   │   ├── icon-192.png                      # PWA icons
+│   │   ├── icon-512.png
+│   │   └── ...
+│   ├── workflows/                            # Preset workflow JSONs
+│   │   ├── txt2img-basic.json
+│   │   ├── img2img-basic.json
+│   │   └── ...
+│   ├── manifest.json                         # PWA manifest
+│   ├── service-worker.js                     # Service worker
+│   └── index.html
 │
-└── ComfyPortal.Tests/                         # Unit tests
-    ├── Services/
-    ├── Repositories/
-    └── Components/
+├── Enums/
+│   ├── ServerStatus.cs
+│   ├── NodeType.cs
+│   └── SamplerType.cs
+│
+├── Constants/
+│   └── AppConstants.cs
+│
+├── Program.cs                                 # App entry point
+├── App.razor                                  # Root component
+└── ComfyPortal.csproj                        # Project file
 ```
 
 ---
@@ -855,36 +899,90 @@ builder.Services.AddSingleton<ThemeService>();
 - **AsyncStorage** for key-value pairs
 - File system for images
 
-### Blazor Approach
+### Blazor WebAssembly Approach
 
-#### SQLite with Entity Framework Core
+#### IndexedDB for Structured Data
+Blazor WASM runs in the browser, so we use IndexedDB (browser database) instead of SQLite.
+
+**Option 1: Blazored.LocalStorage (Simpler)**
 ```csharp
-public class ComfyPortalDbContext : DbContext
-{
-    public DbSet<Server> Servers { get; set; }
-    public DbSet<Workflow> Workflows { get; set; }
-    public DbSet<ImageMetadata> Images { get; set; }
+@inject ILocalStorageService LocalStorage
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+// Save
+await LocalStorage.SetItemAsync("servers", serverList);
+
+// Load
+var servers = await LocalStorage.GetItemAsync<List<Server>>("servers");
+```
+
+**Option 2: TG.Blazor.IndexedDB (More powerful, recommended)**
+```csharp
+public class IndexedDBService
+{
+    private readonly IIndexedDbFactory _dbFactory;
+
+    public async Task SaveServerAsync(Server server)
     {
-        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "comfyportal.db");
-        optionsBuilder.UseSqlite($"Filename={dbPath}");
+        using var db = await _dbFactory.GetDbManager("comfyportal");
+        await db.AddRecord(new StoreRecord<Server>
+        {
+            StoreName = "servers",
+            Record = server
+        });
+    }
+
+    public async Task<List<Server>> GetAllServersAsync()
+    {
+        using var db = await _dbFactory.GetDbManager("comfyportal");
+        return await db.GetRecords<Server>("servers");
     }
 }
 ```
 
-#### Preferences API for Simple Settings
+#### LocalStorage for Simple Settings
 ```csharp
-Preferences.Set("theme", "dark");
-var theme = Preferences.Get("theme", "light");
+@inject IJSRuntime JSRuntime
+
+// Via JS interop
+await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", "dark");
+var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+```
+
+#### File System Access API for Images
+```csharp
+public class ImageStorageService
+{
+    // Store as base64 in IndexedDB or use File System Access API
+    public async Task<string> SaveImageAsync(byte[] imageData, string filename)
+    {
+        // Convert to base64 for IndexedDB storage
+        var base64 = Convert.ToBase64String(imageData);
+
+        await _indexedDB.AddRecord(new StoreRecord<ImageData>
+        {
+            StoreName = "images",
+            Record = new ImageData
+            {
+                Filename = filename,
+                Data = base64,
+                Timestamp = DateTime.UtcNow
+            }
+        });
+
+        return filename;
+    }
+}
 ```
 
 **Tasks:**
-- [ ] Set up SQLite database
-- [ ] Create EF Core migrations
-- [ ] Implement repository pattern
-- [ ] Use Preferences API for theme and simple settings
+- [ ] Install TG.Blazor.IndexedDB NuGet package
+- [ ] Configure IndexedDB schema (servers, workflows, images stores)
+- [ ] Implement IndexedDBService wrapper
+- [ ] Implement repository pattern over IndexedDB
+- [ ] Use LocalStorage for theme and simple settings
+- [ ] Implement image storage in IndexedDB (base64 encoded)
 - [ ] Implement data seeding for preset workflows
+- [ ] Add IndexedDB migrations/versioning
 
 ---
 
@@ -1019,17 +1117,26 @@ public class WorkflowParserTests
 ### Phase 1: Project Setup (Week 1)
 **Goal:** Create project structure and basic infrastructure
 
-- [ ] Create .NET MAUI Blazor Hybrid solution
-- [ ] Set up project structure (Core, Data, MAUI)
-- [ ] Install NuGet packages (MudBlazor, EF Core, SQLite)
-- [ ] Configure dependency injection
-- [ ] Set up SQLite database with EF Core
-- [ ] Create initial migrations
+- [ ] Create Blazor WebAssembly standalone project (`dotnet new blazorwasm`)
+- [ ] Set up project structure (Models, Services, Components)
+- [ ] Install NuGet packages
+  - [ ] MudBlazor (UI components)
+  - [ ] TG.Blazor.IndexedDB (browser database)
+  - [ ] Blazored.LocalStorage (simple storage)
+- [ ] Configure PWA
+  - [ ] Create `manifest.json` (app name, icons, theme colors)
+  - [ ] Create `service-worker.js` (offline caching)
+  - [ ] Add PWA icons (192x192, 512x512)
+  - [ ] Configure service worker registration
+- [ ] Configure dependency injection in `Program.cs`
+- [ ] Set up IndexedDB schema (servers, workflows, images stores)
 - [ ] Set up basic navigation and routing
-- [ ] Implement theme service and basic theming
-- [ ] Create `MainLayout.razor`
+- [ ] Implement theme service and basic theming (dark/light)
+- [ ] Create `MainLayout.razor` with MudBlazor
+- [ ] Create `App.razor` root component
+- [ ] Test PWA installation on mobile device
 
-**Deliverable:** Empty shell app with navigation and theming
+**Deliverable:** Installable PWA shell app with navigation, theming, and offline support
 
 ---
 
@@ -1291,30 +1398,43 @@ public class WorkflowParserTests
 
 ### Architecture Changes
 
-| Aspect | React Native | Blazor MAUI |
-|--------|--------------|-------------|
-| **Language** | TypeScript | C# |
+| Aspect | React Native | Blazor WebAssembly |
+|--------|--------------|-------------------|
+| **Language** | TypeScript | C# (compiled to WASM) |
+| **Runtime** | Native mobile | Browser (WebAssembly) |
 | **UI Framework** | React components | Razor components |
 | **State Management** | Zustand + Context | Services + DI |
-| **Data Persistence** | AsyncStorage | SQLite + EF Core |
-| **WebSocket** | `ws` library | `System.Net.WebSockets` |
+| **Data Persistence** | AsyncStorage | IndexedDB |
+| **WebSocket** | `ws` library | Browser WebSocket API |
 | **Navigation** | Expo Router | Blazor Router |
 | **Styling** | NativeWind (Tailwind) | MudBlazor + CSS |
-| **File System** | Expo FileSystem | MAUI FileSystem |
-| **Clipboard** | @react-native-clipboard | JS Interop |
-| **Platform APIs** | Expo modules | MAUI APIs |
+| **File System** | Expo FileSystem | File System Access API |
+| **Clipboard** | @react-native-clipboard | Clipboard API (JS Interop) |
+| **Platform APIs** | Expo modules | Browser Web APIs |
+| **Distribution** | App Store | Web hosting (any static host) |
+| **Installation** | App Store download | PWA install from browser |
 
 ### What Gets Easier
 - **Type safety**: C# is fully typed, no runtime type errors
-- **Database**: EF Core is more powerful than AsyncStorage
+- **Deployment**: Just deploy static files to any web host
+- **Updates**: Instant updates without app store approval
+- **Cross-platform**: Works on ANY device with a browser (including Linux)
 - **Dependency Injection**: Built-in DI system
 - **Testing**: C# has mature testing ecosystem
+- **Development**: No need for Xcode, can develop on any OS
+- **Distribution**: No app store fees or approval process
 
 ### What Gets Harder
-- **WebView rendering**: Blazor Hybrid uses WebView (may have performance concerns)
-- **Native APIs**: Some React Native modules don't have MAUI equivalents
-- **Animations**: Less mature than React Native animation libraries
-- **Community**: Smaller Blazor MAUI community vs React Native
+- **Initial load time**: WASM download and initialization (can be mitigated with lazy loading)
+- **File system access**: More limited than native (but sufficient for our needs)
+- **Performance**: Slightly slower than native for CPU-intensive tasks (not an issue for our use case)
+- **Offline features**: Requires service worker configuration (but very powerful once set up)
+
+### What Becomes Possible
+- **Truly universal**: Works on desktop, mobile, tablets - any device
+- **No backend needed**: Direct connection to ComfyUI from browser
+- **Easy sharing**: Just share a URL
+- **Instant access**: No installation required (but can be installed as PWA)
 
 ---
 
