@@ -1,4 +1,9 @@
 @page "/servers"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Server
+@inject IServerService ServerService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Servers - Comfy Portal</PageTitle>
 
@@ -7,15 +12,153 @@
     Manage your ComfyUI server connections
 </MudText>
 
-<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Class="mb-4">
+<MudButton Variant="Variant.Filled" Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
+           Class="mb-4"
+           OnClick="OpenAddServerDialog">
     Add Server
 </MudButton>
 
-<MudAlert Severity="Severity.Info">
-    Server management will be implemented in Phase 5.<br />
-    You'll be able to add local and remote ComfyUI servers, check status, and sync models.
-</MudAlert>
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading servers..." />
+}
+else if (!_servers.Any())
+{
+    <EmptyState Icon="@Icons.Material.Filled.Storage"
+                Title="No Servers Yet"
+                Description="Add your first ComfyUI server to get started"
+                ActionText="Add Server"
+                OnAction="OpenAddServerDialog" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var server in _servers)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <ServerCard Server="@server"
+                           OnConnect="@(async (s) => await ConnectToServer(s))"
+                           OnEdit="@(async (s) => await EditServer(s))"
+                           OnDelete="@(async (s) => await DeleteServer(s))" />
+            </MudItem>
+        }
+    </MudGrid>
+}
 
 @code {
+    private List<Server> _servers = new();
+    private bool _loading = true;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServers();
+    }
+
+    private async Task LoadServers()
+    {
+        _loading = true;
+        try
+        {
+            _servers = await ServerService.GetAllServersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load servers: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenAddServerDialog()
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AddServerDialog>("Add Server", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Server newServer)
+        {
+            try
+            {
+                await ServerService.AddServerAsync(newServer);
+                Snackbar.Add("Server added successfully", Severity.Success);
+                await LoadServers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to add server: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task EditServer(Server server)
+    {
+        var parameters = new DialogParameters { ["Server"] = server };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AddServerDialog>("Edit Server", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Server updatedServer)
+        {
+            try
+            {
+                await ServerService.UpdateServerAsync(updatedServer);
+                Snackbar.Add("Server updated successfully", Severity.Success);
+                await LoadServers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update server: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteServer(Server server)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Server",
+            $"Are you sure you want to delete '{server.Name}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ServerService.DeleteServerAsync(server.Id);
+                Snackbar.Add("Server deleted successfully", Severity.Success);
+                await LoadServers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete server: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ConnectToServer(Server server)
+    {
+        try
+        {
+            var status = await ServerService.CheckServerStatusAsync(server.Id);
+            if (status == Enums.ServerStatus.Online)
+            {
+                await ServerService.SyncServerModelsAsync(server.Id);
+                Snackbar.Add($"Connected to {server.Name}", Severity.Success);
+                await LoadServers();
+            }
+            else
+            {
+                Snackbar.Add($"Could not connect to {server.Name}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Connection error: {ex.Message}", Severity.Error);
+        }
+    }
 }

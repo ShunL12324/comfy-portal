@@ -1,0 +1,73 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Enums
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_name" Label="Server Name" Required="true" />
+        <MudTextField @bind-Value="_host" Label="Host" Required="true" Class="mt-3"
+                      Helper text="e.g., localhost or 192.168.1.100" />
+        <MudNumericField @bind-Value="_port" Label="Port" Required="true" Class="mt-3"
+                         Min="1" Max="65535" />
+
+        <MudSelect @bind-Value="_sslMode" Label="SSL Mode" Class="mt-3">
+            <MudSelectItem Value="@SslMode.Auto">Auto</MudSelectItem>
+            <MudSelectItem Value="@SslMode.Always">Always</MudSelectItem>
+            <MudSelectItem Value="@SslMode.Never">Never</MudSelectItem>
+        </MudSelect>
+
+        <MudTextField @bind-Value="_token" Label="Auth Token (Optional)" Class="mt-3"
+                      HelperText="Leave empty if no authentication required" />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">@(_isEdit ? "Update" : "Add")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public Server? Server { get; set; }
+
+    private bool _isEdit => Server != null;
+    private string _name = "";
+    private string _host = "";
+    private int _port = 8188;
+    private SslMode _sslMode = SslMode.Auto;
+    private string _token = "";
+
+    protected override void OnInitialized()
+    {
+        if (Server != null)
+        {
+            _name = Server.Name;
+            _host = Server.Host;
+            _port = Server.Port;
+            _sslMode = Server.UseSSL;
+            _token = Server.Token ?? "";
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Submit()
+    {
+        var server = new Server
+        {
+            Id = Server?.Id ?? Guid.NewGuid().ToString(),
+            Name = _name,
+            Host = _host,
+            Port = _port,
+            UseSSL = _sslMode,
+            Token = string.IsNullOrWhiteSpace(_token) ? null : _token
+        };
+
+        MudDialog.Close(DialogResult.Ok(server));
+    }
+}

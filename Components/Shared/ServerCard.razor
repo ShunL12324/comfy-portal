@@ -1,0 +1,80 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Enums
+
+@* Server card component *@
+
+<MudCard Elevation="2" Class="server-card @Class">
+    <MudCardContent>
+        <div class="d-flex justify-space-between align-center mb-2">
+            <MudText Typo="Typo.h6">@Server.Name</MudText>
+            <MudChip Size="Size.Small" Color="@GetStatusColor()">@Server.Status</MudChip>
+        </div>
+
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            <MudIcon Icon="@Icons.Material.Filled.Computer" Size="Size.Small" Class="mr-1" />
+            @Server.Host:@Server.Port
+        </MudText>
+
+        @if (Server.Latency.HasValue)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
+                <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Small" Class="mr-1" />
+                @Server.Latency ms
+            </MudText>
+        }
+
+        @if (Server.Models.Any())
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
+                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Class="mr-1" />
+                @Server.Models.Count models
+            </MudText>
+        }
+    </MudCardContent>
+
+    <MudCardActions>
+        <MudButton Size="Size.Small" OnClick="@(() => OnConnect.InvokeAsync(Server))">
+            Connect
+        </MudButton>
+        <MudButton Size="Size.Small" OnClick="@(() => OnEdit.InvokeAsync(Server))">
+            Edit
+        </MudButton>
+        <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => OnDelete.InvokeAsync(Server))">
+            Delete
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+<style>
+    .server-card {
+        height: 100%;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public required Server Server { get; set; }
+
+    [Parameter]
+    public EventCallback<Server> OnConnect { get; set; }
+
+    [Parameter]
+    public EventCallback<Server> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Server> OnDelete { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    private Color GetStatusColor()
+    {
+        return Server.Status switch
+        {
+            ServerStatus.Online => Color.Success,
+            ServerStatus.Offline => Color.Error,
+            ServerStatus.Refreshing => Color.Warning,
+            _ => Color.Default
+        };
+    }
+}

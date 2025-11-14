@@ -1,0 +1,87 @@
+@using ComfyPortal.Models
+
+@* Workflow card component *@
+
+<MudCard Elevation="2" Class="workflow-card @Class" @onclick="@(() => OnClick.InvokeAsync(Workflow))">
+    <MudCardMedia Image="@(Workflow.Thumbnail ?? "/images/workflow-placeholder.png")" Height="150" />
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Class="workflow-name">@Workflow.Name</MudText>
+
+        <div class="d-flex justify-space-between align-center mt-2">
+            <MudChip Size="Size.Small" Icon="@Icons.Material.Filled.Source">
+                @Workflow.AddMethod
+            </MudChip>
+
+            @if (Workflow.UsageCount > 0)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Used @Workflow.UsageCount times
+                </MudText>
+            }
+        </div>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            @Workflow.Data.Count nodes
+        </MudText>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Created @Workflow.CreatedAt.ToString("MMM dd, yyyy")
+        </MudText>
+
+        @if (Workflow.LastUsed.HasValue)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                Last used @Workflow.LastUsed.Value.ToString("MMM dd, yyyy")
+            </MudText>
+        }
+    </MudCardContent>
+
+    <MudCardActions>
+        <MudButton Size="Size.Small" Color="Color.Primary" OnClick="@(() => OnExecute.InvokeAsync(Workflow))">
+            Execute
+        </MudButton>
+        <MudButton Size="Size.Small" OnClick="@(() => OnEdit.InvokeAsync(Workflow))">
+            View
+        </MudButton>
+        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                       OnClick="@(() => OnDelete.InvokeAsync(Workflow))" />
+    </MudCardActions>
+</MudCard>
+
+<style>
+    .workflow-card {
+        height: 100%;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .workflow-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .workflow-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public required Workflow Workflow { get; set; }
+
+    [Parameter]
+    public EventCallback<Workflow> OnClick { get; set; }
+
+    [Parameter]
+    public EventCallback<Workflow> OnExecute { get; set; }
+
+    [Parameter]
+    public EventCallback<Workflow> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Workflow> OnDelete { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+}
