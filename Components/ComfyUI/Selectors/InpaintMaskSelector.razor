@@ -1,0 +1,92 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="mask-selector">
+    <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg" FilesChanged="HandleMaskSelected">
+        <ButtonTemplate>
+            <MudButton HtmlTag="label"
+                      Variant="@Variant"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.MasksOutlined"
+                      Disabled="@Disabled"
+                      for="@context">
+                @Label
+            </MudButton>
+        </ButtonTemplate>
+    </MudFileUpload>
+
+    @if (SelectedMask != null)
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">
+            Mask: @SelectedMask.Name (@(SelectedMask.Size / 1024)KB)
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(PreviewUrl))
+        {
+            <MudCard Class="mt-2" Elevation="1">
+                <MudCardContent>
+                    <MudImage Src="@PreviewUrl" Alt="Mask Preview" Style="max-width: 100%; max-height: 200px;" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Size="Size.Small" OnClick="ClearMask" StartIcon="@Icons.Material.Filled.Clear">
+                        Clear
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+    }
+
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+        Upload a mask image (white = keep, black = inpaint)
+    </MudText>
+</div>
+
+@code {
+    [Parameter]
+    public IBrowserFile? SelectedMask { get; set; }
+
+    [Parameter]
+    public EventCallback<IBrowserFile?> SelectedMaskChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Select Mask";
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
+
+    private string PreviewUrl = "";
+
+    private async Task HandleMaskSelected(IBrowserFile file)
+    {
+        SelectedMask = file;
+        await SelectedMaskChanged.InvokeAsync(file);
+
+        // Create preview URL
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: MaxFileSize);
+            var buffer = new byte[stream.Length];
+            await stream.ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            PreviewUrl = $"data:{file.ContentType};base64,{base64}";
+        }
+        catch
+        {
+            PreviewUrl = "";
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ClearMask()
+    {
+        SelectedMask = null;
+        PreviewUrl = "";
+        await SelectedMaskChanged.InvokeAsync(null);
+    }
+}
