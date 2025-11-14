@@ -70,6 +70,7 @@ builder.Services.AddScoped<IStorageService, IndexedDBStorageService>();
 // Business logic services
 builder.Services.AddScoped<IServerService, ServerService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<IImageStorageService, ImageStorageService>();
 builder.Services.AddScoped<WorkflowParser>();
 
 // ComfyUI client

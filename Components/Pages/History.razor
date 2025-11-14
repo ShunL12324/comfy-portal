@@ -1,0 +1,260 @@
+@page "/history"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Image
+@inject IImageStorageService ImageStorage
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>History - Comfy Portal</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <div>
+        <MudText Typo="Typo.h3">Image History</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">
+            View and manage your generated images
+        </MudText>
+    </div>
+
+    <div class="d-flex gap-2">
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadImages">
+            Refresh
+        </MudButton>
+        @if (_images.Any())
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.DeleteSweep"
+                       OnClick="ClearOldImages">
+                Clear Old
+            </MudButton>
+        }
+    </div>
+</div>
+
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading history..." />
+}
+else if (!_images.Any())
+{
+    <EmptyState Icon="@Icons.Material.Filled.History"
+                Title="No Images Yet"
+                Description="Generate images to see them here"
+                ActionText="Go to Workflows"
+                OnAction="@(() => Navigation.NavigateTo("/workflows"))" />
+}
+else
+{
+    <MudPaper Elevation="1" Class="pa-2 mb-4">
+        <div class="d-flex justify-space-between align-center">
+            <MudText Typo="Typo.body2">
+                <strong>@_images.Count</strong> images • <strong>@FormatBytes(_storageSize)</strong> storage
+            </MudText>
+            <MudButtonGroup Variant="Variant.Text" Size="Size.Small">
+                <MudButton StartIcon="@Icons.Material.Filled.GridView" OnClick="@(() => _viewMode = "grid")">
+                    Grid
+                </MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.ViewList" OnClick="@(() => _viewMode = "list")">
+                    List
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+    </MudPaper>
+
+    @if (_viewMode == "grid")
+    {
+        <MudGrid>
+            @foreach (var image in _images)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MudCard Elevation="2" Class="image-card">
+                        <MudCardMedia Image="@GetImageDataUrl(image)" Height="200" Style="cursor: pointer;" @onclick="@(() => ViewImage(image))" />
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="text-truncate">
+                                @image.Filename
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @image.GeneratedAt.ToString("MMM dd, yyyy HH:mm")
+                            </MudText>
+                            @if (image.Width > 0 && image.Height > 0)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @image.Width × @image.Height
+                                </MudText>
+                            }
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" OnClick="@(() => ViewImage(image))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" OnClick="@(() => DownloadImage(image))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteImage(image))" />
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+    else
+    {
+        <MudList>
+            @foreach (var image in _images)
+            {
+                <MudListItem>
+                    <div class="d-flex align-center gap-3" style="width: 100%;">
+                        <MudImage Src="@GetImageDataUrl(image)" Alt="@image.Filename" Width="80" Height="80" ObjectFit="ObjectFit.Cover" Style="cursor: pointer;" @onclick="@(() => ViewImage(image))" />
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.body1">@image.Filename</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @image.GeneratedAt.ToString("MMM dd, yyyy HH:mm") • @FormatBytes(image.FileSize)
+                                @if (image.Width > 0 && image.Height > 0)
+                                {
+                                    <span> • @image.Width × @image.Height</span>
+                                }
+                            </MudText>
+                            @if (!string.IsNullOrEmpty(image.PromptId))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    Prompt ID: @image.PromptId
+                                </MudText>
+                            }
+                        </div>
+                        <div class="d-flex gap-1">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => ViewImage(image))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="@(() => DownloadImage(image))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteImage(image))" />
+                        </div>
+                    </div>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+    }
+}
+
+@code {
+    private List<ImageMetadata> _images = new();
+    private bool _loading = true;
+    private long _storageSize = 0;
+    private string _viewMode = "grid";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadImages();
+    }
+
+    private async Task LoadImages()
+    {
+        _loading = true;
+        try
+        {
+            _images = await ImageStorage.GetImageHistoryAsync(100);
+            _storageSize = await ImageStorage.GetStorageSizeAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load images: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ViewImage(ImageMetadata image)
+    {
+        Navigation.NavigateTo($"/workflow/image/{image.Id}");
+    }
+
+    private async Task DownloadImage(ImageMetadata image)
+    {
+        try
+        {
+            // In a real implementation, use JS interop to trigger download
+            Snackbar.Add("Download functionality requires JS interop implementation", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to download image: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteImage(ImageMetadata image)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Image",
+            $"Are you sure you want to delete '{image.Filename}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ImageStorage.DeleteImageAsync(image.Id);
+                Snackbar.Add("Image deleted", Severity.Success);
+                await LoadImages();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete image: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ClearOldImages()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Clear Old Images",
+            "This will keep the 100 most recent images and delete the rest. Continue?",
+            yesText: "Clear", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ImageStorage.ClearOldImagesAsync(100);
+                Snackbar.Add("Old images cleared", Severity.Success);
+                await LoadImages();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to clear images: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private string GetImageDataUrl(ImageMetadata image)
+    {
+        if (!string.IsNullOrEmpty(image.ThumbnailBase64))
+            return $"data:image/png;base64,{image.ThumbnailBase64}";
+        if (!string.IsNullOrEmpty(image.ImageDataBase64))
+            return $"data:image/png;base64,{image.ImageDataBase64}";
+        return "/images/placeholder.png";
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+
+<style>
+    .image-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .image-card .mud-card-content {
+        flex-grow: 1;
+    }
+</style>
