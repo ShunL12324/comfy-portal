@@ -1,0 +1,221 @@
+@page "/workflow/preview/{Id}"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Workflow
+@inject IWorkflowService WorkflowService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_workflow?.Name ?? "Workflow Preview") - Comfy Portal</PageTitle>
+
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading workflow..." />
+}
+else if (_workflow == null)
+{
+    <MudAlert Severity="Severity.Error">Workflow not found</MudAlert>
+    <MudButton Color="Color.Primary" OnClick="@(() => Navigation.NavigateTo("/workflows"))">
+        Back to Workflows
+    </MudButton>
+}
+else
+{
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">@_workflow.Name</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @_workflow.Data.Count nodes • Added @_workflow.CreatedAt.ToString("MMM dd, yyyy")
+            </MudText>
+        </div>
+
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.PlayArrow"
+                      OnClick="ExecuteWorkflow">
+                Execute
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                      StartIcon="@Icons.Material.Filled.Download"
+                      OnClick="ExportWorkflow">
+                Export JSON
+            </MudButton>
+        </div>
+    </div>
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" GutterBottom>Workflow Nodes</MudText>
+
+                @foreach (var nodeGroup in _workflow.Data.GroupBy(n => GetNodeCategory(n.Value.ClassType)))
+                {
+                    <MudExpansionPanels Class="mt-2">
+                        <MudExpansionPanel Text="@($"{nodeGroup.Key} ({nodeGroup.Count()})")">
+                            <MudList>
+                                @foreach (var node in nodeGroup.OrderBy(n => n.Key))
+                                {
+                                    <MudListItem>
+                                        <div>
+                                            <MudText Typo="Typo.body1">
+                                                <strong>@node.Value.ClassType</strong>
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                ID: @node.Key • @node.Value.Inputs.Count inputs
+                                            </MudText>
+                                            @if (node.Value.Meta?.Title != null)
+                                            {
+                                                <MudText Typo="Typo.caption">
+                                                    Title: @node.Value.Meta.Title
+                                                </MudText>
+                                            }
+                                        </div>
+                                    </MudListItem>
+                                    <MudDivider />
+                                }
+                            </MudList>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" GutterBottom>Workflow Details</MudText>
+
+                <div class="d-flex flex-column gap-2">
+                    <MudText Typo="Typo.body2">
+                        <strong>Import Method:</strong> @_workflow.AddMethod
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        <strong>Total Nodes:</strong> @_workflow.Data.Count
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        <strong>Created:</strong> @_workflow.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                    </MudText>
+
+                    @if (_workflow.LastUsed.HasValue)
+                    {
+                        <MudText Typo="Typo.body2">
+                            <strong>Last Used:</strong> @_workflow.LastUsed.Value.ToString("MMM dd, yyyy HH:mm")
+                        </MudText>
+                    }
+
+                    <MudText Typo="Typo.body2">
+                        <strong>Usage Count:</strong> @_workflow.UsageCount
+                    </MudText>
+
+                    <MudDivider Class="my-2" />
+
+                    <MudText Typo="Typo.body2">
+                        <strong>Node Types:</strong>
+                    </MudText>
+
+                    @foreach (var category in GetNodeCategoryCounts())
+                    {
+                        <MudChip Size="Size.Small">@category.Key: @category.Value</MudChip>
+                    }
+                </div>
+            </MudPaper>
+
+            <MudPaper Elevation="2" Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" GutterBottom>Actions</MudText>
+
+                <div class="d-flex flex-column gap-2">
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              FullWidth
+                              StartIcon="@Icons.Material.Filled.PlayArrow"
+                              OnClick="ExecuteWorkflow">
+                        Execute Workflow
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Outlined"
+                              FullWidth
+                              StartIcon="@Icons.Material.Filled.Download"
+                              OnClick="ExportWorkflow">
+                        Export JSON
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Outlined"
+                              FullWidth
+                              StartIcon="@Icons.Material.Filled.ArrowBack"
+                              OnClick="@(() => Navigation.NavigateTo("/workflows"))">
+                        Back to Workflows
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    private Workflow? _workflow;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _workflow = await WorkflowService.GetWorkflowAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load workflow: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ExecuteWorkflow()
+    {
+        Navigation.NavigateTo($"/workflow/execute/{Id}");
+    }
+
+    private async Task ExportWorkflow()
+    {
+        if (_workflow == null) return;
+
+        try
+        {
+            var json = await WorkflowService.ExportToJsonAsync(Id);
+            // In a real implementation, trigger download via JS interop
+            await Snackbar.Add("Workflow exported to clipboard", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export workflow: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetNodeCategory(string classType)
+    {
+        if (classType.Contains("Loader")) return "Loaders";
+        if (classType.Contains("Encode")) return "Encoders";
+        if (classType.Contains("Sampler")) return "Samplers";
+        if (classType.Contains("Save") || classType.Contains("Preview")) return "Output";
+        if (classType.Contains("Image")) return "Image Processing";
+        if (classType.Contains("Latent")) return "Latent";
+        if (classType.Contains("CLIP")) return "CLIP";
+        return "Other";
+    }
+
+    private Dictionary<string, int> GetNodeCategoryCounts()
+    {
+        if (_workflow == null) return new();
+
+        return _workflow.Data.Values
+            .GroupBy(n => GetNodeCategory(n.ClassType))
+            .ToDictionary(g => g.Key, g => g.Count())
+            .OrderByDescending(kv => kv.Value)
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+}

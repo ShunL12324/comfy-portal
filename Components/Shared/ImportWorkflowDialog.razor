@@ -1,0 +1,248 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Workflow
+@using ComfyPortal.Services.Server
+@using Microsoft.AspNetCore.Components.Forms
+
+<MudDialog>
+    <DialogContent>
+        <MudTabs Elevation="2" Rounded="true" @bind-ActivePanelIndex="_activeTab">
+            <MudTabPanel Text="File" Icon="@Icons.Material.Filled.UploadFile">
+                <div class="pa-4">
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        Import a workflow JSON file from your device
+                    </MudText>
+
+                    <MudFileUpload T="IBrowserFile" Accept=".json" FilesChanged="HandleFileSelected">
+                        <ButtonTemplate>
+                            <MudButton HtmlTag="label"
+                                      Variant="Variant.Filled"
+                                      Color="Color.Primary"
+                                      StartIcon="@Icons.Material.Filled.CloudUpload"
+                                      for="@context">
+                                Select JSON File
+                            </MudButton>
+                        </ButtonTemplate>
+                    </MudFileUpload>
+
+                    @if (_selectedFile != null)
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-2">
+                            Selected: @_selectedFile.Name
+                        </MudText>
+                    }
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="URL" Icon="@Icons.Material.Filled.Link">
+                <div class="pa-4">
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        Import a workflow from a URL
+                    </MudText>
+
+                    <MudTextField @bind-Value="_url"
+                                 Label="Workflow URL"
+                                 Variant="Variant.Outlined"
+                                 HelperText="Enter the URL to a workflow JSON file" />
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Clipboard" Icon="@Icons.Material.Filled.ContentPaste">
+                <div class="pa-4">
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        Import a workflow from your clipboard
+                    </MudText>
+
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.ContentPaste"
+                              OnClick="PasteFromClipboard">
+                        Paste from Clipboard
+                    </MudButton>
+
+                    @if (!string.IsNullOrEmpty(_clipboardJson))
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                            ✓ Workflow JSON pasted (@_clipboardJson.Length characters)
+                        </MudText>
+                    }
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Presets" Icon="@Icons.Material.Filled.Stars">
+                <div class="pa-4">
+                    <MudText Typo="Typo.body2" Class="mb-4">
+                        Select from built-in workflow presets
+                    </MudText>
+
+                    <MudList Clickable="true">
+                        <MudListItem Text="Text to Image (Basic)"
+                                    Icon="@Icons.Material.Filled.Image"
+                                    OnClick="@(() => SelectPreset("txt2img-basic"))" />
+                        <MudListItem Text="Image to Image"
+                                    Icon="@Icons.Material.Filled.PhotoFilter"
+                                    OnClick="@(() => SelectPreset("img2img-basic"))" />
+                        <MudListItem Text="SDXL Text to Image"
+                                    Icon="@Icons.Material.Filled.HighQuality"
+                                    OnClick="@(() => SelectPreset("sdxl-txt2img"))" />
+                    </MudList>
+
+                    @if (_selectedPreset != null)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                            ✓ Selected: @_selectedPreset
+                        </MudText>
+                    }
+                </div>
+            </MudTabPanel>
+        </MudTabs>
+
+        <MudDivider Class="my-4" />
+
+        <MudSelect @bind-Value="_selectedServerId" Label="Target Server" Variant="Variant.Outlined" Required>
+            @foreach (var server in Servers)
+            {
+                <MudSelectItem Value="@server.Id">@server.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(!CanImport())">
+            Import
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public List<Server> Servers { get; set; } = new();
+
+    [Inject]
+    private IWorkflowService WorkflowService { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    private int _activeTab = 0;
+    private IBrowserFile? _selectedFile;
+    private string _url = "";
+    private string _clipboardJson = "";
+    private string? _selectedPreset;
+    private string _selectedServerId = "";
+
+    protected override void OnInitialized()
+    {
+        if (Servers.Any())
+        {
+            _selectedServerId = Servers.First().Id;
+        }
+    }
+
+    private void HandleFileSelected(IBrowserFile file)
+    {
+        _selectedFile = file;
+    }
+
+    private async Task PasteFromClipboard()
+    {
+        try
+        {
+            _clipboardJson = await JSRuntime.InvokeAsync<string>("comfyPortal.clipboard.readText");
+            if (string.IsNullOrWhiteSpace(_clipboardJson))
+            {
+                Snackbar.Add("Clipboard is empty", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to read clipboard: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void SelectPreset(string presetName)
+    {
+        _selectedPreset = presetName;
+    }
+
+    private bool CanImport()
+    {
+        if (string.IsNullOrEmpty(_selectedServerId))
+            return false;
+
+        return _activeTab switch
+        {
+            0 => _selectedFile != null,
+            1 => !string.IsNullOrWhiteSpace(_url),
+            2 => !string.IsNullOrWhiteSpace(_clipboardJson),
+            3 => _selectedPreset != null,
+            _ => false
+        };
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task Submit()
+    {
+        try
+        {
+            Workflow? workflow = null;
+
+            switch (_activeTab)
+            {
+                case 0: // File
+                    if (_selectedFile != null)
+                    {
+                        using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+                        workflow = await WorkflowService.ImportFromFileAsync(stream, _selectedServerId);
+                    }
+                    break;
+
+                case 1: // URL
+                    workflow = await WorkflowService.ImportFromUrlAsync(_url, _selectedServerId);
+                    break;
+
+                case 2: // Clipboard
+                    workflow = await WorkflowService.ImportFromJsonAsync(_clipboardJson, _selectedServerId, WorkflowImportMethod.Clipboard);
+                    break;
+
+                case 3: // Preset
+                    if (_selectedPreset != null)
+                    {
+                        // Load preset from wwwroot/workflows/
+                        var presetJson = await JSRuntime.InvokeAsync<string>("fetch", $"workflows/{_selectedPreset}.json")
+                            .ContinueWith(async t =>
+                            {
+                                var response = await t;
+                                return await JSRuntime.InvokeAsync<string>("response.text", response);
+                            }).Unwrap();
+
+                        workflow = await WorkflowService.ImportFromJsonAsync(presetJson, _selectedServerId, WorkflowImportMethod.Preset);
+                    }
+                    break;
+            }
+
+            if (workflow != null)
+            {
+                MudDialog.Close(DialogResult.Ok(workflow));
+            }
+            else
+            {
+                Snackbar.Add("Failed to import workflow", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Import failed: {ex.Message}", Severity.Error);
+        }
+    }
+}

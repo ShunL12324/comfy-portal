@@ -1,4 +1,13 @@
 @page "/workflows"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Workflow
+@using ComfyPortal.Services.Server
+@inject IWorkflowService WorkflowService
+@inject IServerService ServerService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Workflows - Comfy Portal</PageTitle>
 
@@ -7,15 +16,175 @@
     Import and manage your ComfyUI workflows
 </MudText>
 
-<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Class="mb-4">
-    Import Workflow
-</MudButton>
+<div class="d-flex gap-2 mb-4">
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenImportDialog">
+        Import Workflow
+    </MudButton>
 
-<MudAlert Severity="Severity.Info">
-    Workflow management will be implemented in Phase 6.<br />
-    You'll be able to import workflows from file, URL, clipboard, or use presets.
-</MudAlert>
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ContentPaste"
+               OnClick="ImportFromClipboard">
+        From Clipboard
+    </MudButton>
+
+    @if (_workflows.Any())
+    {
+        <MudSpacer />
+        <MudButton Variant="Variant.Text"
+                   StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadWorkflows">
+            Refresh
+        </MudButton>
+    }
+</div>
+
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading workflows..." />
+}
+else if (!_workflows.Any())
+{
+    <EmptyState Icon="@Icons.Material.Filled.AccountTree"
+                Title="No Workflows Yet"
+                Description="Import your first workflow from file, URL, clipboard, or use a preset"
+                ActionText="Import Workflow"
+                OnAction="OpenImportDialog" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var workflow in _workflows.OrderByDescending(w => w.LastUsed ?? w.CreatedAt))
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <WorkflowCard Workflow="@workflow"
+                             OnClick="@(async (w) => await ViewWorkflow(w))"
+                             OnExecute="@(async (w) => await ExecuteWorkflow(w))"
+                             OnEdit="@(async (w) => await ViewWorkflow(w))"
+                             OnDelete="@(async (w) => await DeleteWorkflow(w))" />
+            </MudItem>
+        }
+    </MudGrid>
+}
 
 @code {
+    private List<Workflow> _workflows = new();
+    private bool _loading = true;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWorkflows();
+    }
+
+    private async Task LoadWorkflows()
+    {
+        _loading = true;
+        try
+        {
+            _workflows = await WorkflowService.GetAllWorkflowsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load workflows: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenImportDialog()
+    {
+        var servers = await ServerService.GetAllServersAsync();
+        if (!servers.Any())
+        {
+            Snackbar.Add("Please add a server first", Severity.Warning);
+            Navigation.NavigateTo("/servers");
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            ["Servers"] = servers
+        };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ImportWorkflowDialog>("Import Workflow", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Workflow workflow)
+        {
+            Snackbar.Add($"Workflow '{workflow.Name}' imported successfully", Severity.Success);
+            await LoadWorkflows();
+        }
+    }
+
+    private async Task ImportFromClipboard()
+    {
+        try
+        {
+            var servers = await ServerService.GetAllServersAsync();
+            if (!servers.Any())
+            {
+                Snackbar.Add("Please add a server first", Severity.Warning);
+                Navigation.NavigateTo("/servers");
+                return;
+            }
+
+            var json = await JSRuntime.InvokeAsync<string>("comfyPortal.clipboard.readText");
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                Snackbar.Add("Clipboard is empty", Severity.Warning);
+                return;
+            }
+
+            var workflow = await WorkflowService.ImportFromJsonAsync(json, servers.First().Id, WorkflowImportMethod.Clipboard);
+            Snackbar.Add($"Workflow '{workflow.Name}' imported from clipboard", Severity.Success);
+            await LoadWorkflows();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import from clipboard: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ViewWorkflow(Workflow workflow)
+    {
+        Navigation.NavigateTo($"/workflow/preview/{workflow.Id}");
+    }
+
+    private async Task ExecuteWorkflow(Workflow workflow)
+    {
+        Navigation.NavigateTo($"/workflow/execute/{workflow.Id}");
+    }
+
+    private async Task DeleteWorkflow(Workflow workflow)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Workflow",
+            $"Are you sure you want to delete '{workflow.Name}'? This action cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await WorkflowService.DeleteWorkflowAsync(workflow.Id);
+                Snackbar.Add($"Workflow '{workflow.Name}' deleted", Severity.Success);
+                await LoadWorkflows();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete workflow: {ex.Message}", Severity.Error);
+            }
+        }
+    }
 }
