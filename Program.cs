@@ -8,6 +8,7 @@ using ComfyPortal.Services.Storage;
 using ComfyPortal.Services.Server;
 using ComfyPortal.Services.Workflow;
 using ComfyPortal.Services.State;
+using ComfyPortal.Services.ComfyUI;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -70,6 +71,9 @@ builder.Services.AddScoped<IStorageService, IndexedDBStorageService>();
 builder.Services.AddScoped<IServerService, ServerService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<WorkflowParser>();
+
+// ComfyUI client
+builder.Services.AddScoped<IComfyClient, ComfyClient>();
 
 // State management
 builder.Services.AddSingleton<GenerationState>();
