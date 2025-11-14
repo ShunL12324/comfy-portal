@@ -4,6 +4,10 @@ using ComfyPortal;
 using MudBlazor.Services;
 using Blazored.LocalStorage;
 using TG.Blazor.IndexedDB;
+using ComfyPortal.Services.Storage;
+using ComfyPortal.Services.Server;
+using ComfyPortal.Services.Workflow;
+using ComfyPortal.Services.State;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -58,11 +62,17 @@ builder.Services.AddIndexedDB(dbStore =>
     });
 });
 
-// Application services (will be implemented in later phases)
-// builder.Services.AddScoped<IServerService, ServerService>();
-// builder.Services.AddScoped<IWorkflowService, WorkflowService>();
-// builder.Services.AddScoped<IComfyClient, ComfyClient>();
-// builder.Services.AddSingleton<GenerationState>();
-// builder.Services.AddSingleton<ThemeState>();
+// Application services
+// Storage
+builder.Services.AddScoped<IStorageService, IndexedDBStorageService>();
+
+// Business logic services
+builder.Services.AddScoped<IServerService, ServerService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<WorkflowParser>();
+
+// State management
+builder.Services.AddSingleton<GenerationState>();
+builder.Services.AddSingleton<ThemeState>();
 
 await builder.Build().RunAsync();
