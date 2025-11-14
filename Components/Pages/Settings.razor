@@ -1,65 +1,211 @@
 @page "/settings"
+@using ComfyPortal.Services.State
+@using ComfyPortal.Services.Storage
+@using ComfyPortal.Services.Image
+@using ComfyPortal.Constants
+@inject ThemeState ThemeState
+@inject IStorageService StorageService
+@inject IImageStorageService ImageStorage
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Settings - Comfy Portal</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Settings</MudText>
-<MudText Typo="Typo.body1" Class="mb-4">
-    Configure your Comfy Portal preferences
-</MudText>
+<MudText Typo="Typo.h3" Class="mb-4">Settings</MudText>
 
-<MudCard Elevation="4" Class="mb-4">
-    <MudCardHeader>
-        <CardHeaderContent>
-            <MudText Typo="Typo.h6">Appearance</MudText>
-        </CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent>
-        <MudSwitch @bind-Checked="@_isDarkMode" Label="Dark Mode" Color="Color.Primary" />
-    </MudCardContent>
-</MudCard>
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" GutterBottom>
+                <MudIcon Icon="@Icons.Material.Filled.Palette" Class="mr-1" />
+                Appearance
+            </MudText>
 
-<MudCard Elevation="4" Class="mb-4">
-    <MudCardHeader>
-        <CardHeaderContent>
-            <MudText Typo="Typo.h6">About</MudText>
-        </CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent>
-        <MudText Typo="Typo.body2">
-            <strong>Comfy Portal</strong> - Blazor WebAssembly PWA<br />
-            Version: 1.0.0<br />
-            Built with Blazor, MudBlazor, and IndexedDB
-        </MudText>
-    </MudCardContent>
-</MudCard>
+            <MudSwitch @bind-Checked="@_isDarkMode"
+                       Label="Dark Mode"
+                       Color="Color.Primary"
+                       Class="mt-2" />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                Current theme: @(ThemeState.IsDarkMode ? "Dark" : "Light")
+            </MudText>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" GutterBottom>
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Class="mr-1" />
+                Storage
+            </MudText>
+
+            <div class="d-flex flex-column gap-2 mt-2">
+                <div>
+                    <MudText Typo="Typo.body2">Image Storage</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_imageCount images • @FormatBytes(_imageStorageSize)
+                    </MudText>
+                </div>
+
+                <MudButton Variant="Variant.Outlined"
+                          StartIcon="@Icons.Material.Filled.DeleteSweep"
+                          OnClick="ClearImageStorage"
+                          Color="Color.Error"
+                          Disabled="@(_imageCount == 0)">
+                    Clear Image History
+                </MudButton>
+
+                <MudDivider Class="my-2" />
+
+                <MudButton Variant="Variant.Outlined"
+                          StartIcon="@Icons.Material.Filled.Delete"
+                          OnClick="ClearAllData"
+                          Color="Color.Error">
+                    Clear All Data
+                </MudButton>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    This will delete all servers, workflows, and images
+                </MudText>
+            </div>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" GutterBottom>
+                <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-1" />
+                About
+            </MudText>
+
+            <div class="d-flex flex-column gap-1 mt-2">
+                <div>
+                    <MudText Typo="Typo.body2"><strong>Version</strong></MudText>
+                    <MudText Typo="Typo.body2">@AppConstants.AppVersion</MudText>
+                </div>
+
+                <div class="mt-2">
+                    <MudText Typo="Typo.body2"><strong>Platform</strong></MudText>
+                    <MudText Typo="Typo.body2">Blazor WebAssembly</MudText>
+                </div>
+
+                <div class="mt-2">
+                    <MudText Typo="Typo.body2"><strong>Build</strong></MudText>
+                    <MudText Typo="Typo.body2">PWA + IndexedDB</MudText>
+                </div>
+            </div>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" GutterBottom>
+                <MudIcon Icon="@Icons.Material.Filled.Help" Class="mr-1" />
+                Help & Resources
+            </MudText>
+
+            <MudList Dense="true">
+                <MudListItem Icon="@Icons.Material.Filled.Book" Href="/guide/getting-started">
+                    Getting Started Guide
+                </MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Code" Href="https://github.com/comfyanonymous/ComfyUI" Target="_blank">
+                    ComfyUI Documentation
+                </MudListItem>
+            </MudList>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
-    [Inject]
-    private ILocalStorageService LocalStorage { get; set; } = default!;
-
-    [Inject]
-    private IJSRuntime JSRuntime { get; set; } = default!;
-
-    private bool _isDarkMode = true;
-
-    protected override async Task OnInitializedAsync()
+    private bool _isDarkMode
     {
-        // Load theme preference
-        try
+        get => ThemeState.IsDarkMode;
+        set
         {
-            var theme = await LocalStorage.GetItemAsync<string>("theme");
-            _isDarkMode = theme != "light";
-        }
-        catch
-        {
-            _isDarkMode = true;
+            ThemeState.SetDarkMode(value);
+            StateHasChanged();
         }
     }
 
-    private async Task OnDarkModeChanged(bool value)
+    private int _imageCount = 0;
+    private long _imageStorageSize = 0;
+
+    protected override async Task OnInitializedAsync()
     {
-        _isDarkMode = value;
-        await LocalStorage.SetItemAsync("theme", _isDarkMode ? "dark" : "light");
-        await JSRuntime.InvokeVoidAsync("comfyPortal.theme.set", _isDarkMode);
+        await LoadStorageInfo();
+    }
+
+    private async Task LoadStorageInfo()
+    {
+        try
+        {
+            var images = await ImageStorage.GetImageHistoryAsync(1000);
+            _imageCount = images.Count;
+            _imageStorageSize = await ImageStorage.GetStorageSizeAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load storage info: {ex.Message}", Severity.Warning);
+        }
+    }
+
+    private async Task ClearImageStorage()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Clear Image History",
+            "Are you sure you want to delete all generated images? This cannot be undone.",
+            yesText: "Clear All", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ImageStorage.ClearOldImagesAsync(0); // Keep 0 = delete all
+                Snackbar.Add("Image history cleared", Severity.Success);
+                await LoadStorageInfo();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to clear images: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ClearAllData()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Clear All Data",
+            "⚠️ WARNING: This will permanently delete ALL data including servers, workflows, and images. This cannot be undone!",
+            yesText: "Delete Everything", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                // Clear all stores
+                await StorageService.ClearStoreAsync(AppConstants.ServersStore);
+                await StorageService.ClearStoreAsync(AppConstants.WorkflowsStore);
+                await StorageService.ClearStoreAsync(AppConstants.ImagesStore);
+
+                Snackbar.Add("All data cleared", Severity.Success);
+                await LoadStorageInfo();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to clear data: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
     }
 }
