@@ -1,0 +1,65 @@
+@page "/settings"
+
+<PageTitle>Settings - Comfy Portal</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Settings</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">
+    Configure your Comfy Portal preferences
+</MudText>
+
+<MudCard Elevation="4" Class="mb-4">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Appearance</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudSwitch @bind-Checked="@_isDarkMode" Label="Dark Mode" Color="Color.Primary" />
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="4" Class="mb-4">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">About</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudText Typo="Typo.body2">
+            <strong>Comfy Portal</strong> - Blazor WebAssembly PWA<br />
+            Version: 1.0.0<br />
+            Built with Blazor, MudBlazor, and IndexedDB
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private bool _isDarkMode = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load theme preference
+        try
+        {
+            var theme = await LocalStorage.GetItemAsync<string>("theme");
+            _isDarkMode = theme != "light";
+        }
+        catch
+        {
+            _isDarkMode = true;
+        }
+    }
+
+    private async Task OnDarkModeChanged(bool value)
+    {
+        _isDarkMode = value;
+        await LocalStorage.SetItemAsync("theme", _isDarkMode ? "dark" : "light");
+        await JSRuntime.InvokeVoidAsync("comfyPortal.theme.set", _isDarkMode);
+    }
+}

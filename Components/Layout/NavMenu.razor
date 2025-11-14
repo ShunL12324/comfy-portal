@@ -1,0 +1,44 @@
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
+    <MudNavLink Href="/servers" Icon="@Icons.Material.Filled.Storage">
+        Servers
+    </MudNavLink>
+    <MudNavLink Href="/workflows" Icon="@Icons.Material.Filled.AccountTree">
+        Workflows
+    </MudNavLink>
+    <MudNavLink Href="/history" Icon="@Icons.Material.Filled.History">
+        History
+    </MudNavLink>
+
+    <MudDivider Class="my-2" />
+
+    <MudNavGroup Title="Guides" Icon="@Icons.Material.Filled.MenuBook" Expanded="false">
+        <MudNavLink Href="/guide/local" Icon="@Icons.Material.Filled.Computer">
+            Local Setup
+        </MudNavLink>
+        <MudNavLink Href="/guide/remote" Icon="@Icons.Material.Filled.Cloud">
+            Remote Setup
+        </MudNavLink>
+        <MudNavLink Href="/guide/runpod" Icon="@Icons.Material.Filled.CloudQueue">
+            RunPod Setup
+        </MudNavLink>
+        <MudNavLink Href="/guide/workflow" Icon="@Icons.Material.Filled.Download">
+            Export Workflow
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudDivider Class="my-2" />
+
+    <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">
+        Settings
+    </MudNavLink>
+    <MudNavLink Href="/about" Icon="@Icons.Material.Filled.Info">
+        About
+    </MudNavLink>
+</MudNavMenu>
+
+@code {
+
+}

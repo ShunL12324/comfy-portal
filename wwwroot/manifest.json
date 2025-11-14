@@ -1,0 +1,39 @@
+{
+  "name": "Comfy Portal",
+  "short_name": "Comfy Portal",
+  "description": "Connect to ComfyUI servers and generate AI images from anywhere",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "share_target": {
+    "action": "/workflow/import",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "workflow",
+          "accept": ["application/json", ".json"]
+        }
+      ]
+    }
+  }
+}

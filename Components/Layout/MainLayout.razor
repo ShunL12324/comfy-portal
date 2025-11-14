@@ -1,0 +1,101 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-3">Comfy Portal</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="@ToggleTheme"
+                       Title="Toggle theme" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Navigation</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="pt-16">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+    <TabBar />
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = false;
+    private bool _isDarkMode = true;
+    private MudTheme _theme = new MudTheme()
+    {
+        Palette = new PaletteLight()
+        {
+            Primary = "#7c3aed",
+            Secondary = "#6d28d9",
+            AppbarBackground = "#1e1e1e",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#8b5cf6",
+            Secondary = "#7c3aed",
+            AppbarBackground = "#1e1e1e",
+            Background = "#1e1e1e",
+            BackgroundGrey = "#2d2d2d",
+            Surface = "#2d2d2d",
+            DrawerBackground = "#1e1e1e",
+            DrawerText = "rgba(255,255,255, 0.87)",
+            TextPrimary = "rgba(255,255,255, 0.87)",
+            TextSecondary = "rgba(255,255,255, 0.60)",
+            ActionDefault = "#adadb1",
+            ActionDisabled = "rgba(255,255,255, 0.26)",
+            ActionDisabledBackground = "rgba(255,255,255, 0.12)",
+            Divider = "rgba(255,255,255, 0.12)",
+            DividerLight = "rgba(255,255,255, 0.06)",
+            TableLines = "rgba(255,255,255, 0.12)",
+            LinesDefault = "rgba(255,255,255, 0.12)",
+            LinesInputs = "rgba(255,255,255, 0.3)",
+            TextDisabled = "rgba(255,255,255, 0.38)"
+        }
+    };
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load theme preference
+        try
+        {
+            var theme = await LocalStorage.GetItemAsync<string>("theme");
+            _isDarkMode = theme != "light";
+        }
+        catch
+        {
+            // Default to dark mode
+            _isDarkMode = true;
+        }
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        await LocalStorage.SetItemAsync("theme", _isDarkMode ? "dark" : "light");
+        await JSRuntime.InvokeVoidAsync("comfyPortal.theme.set", _isDarkMode);
+    }
+}

@@ -1,0 +1,89 @@
+@page "/"
+
+<PageTitle>Home - Comfy Portal</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Welcome to Comfy Portal</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">
+    Connect to your ComfyUI servers and generate AI images from anywhere.
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="4">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
+                <MudText Typo="Typo.h6">Servers</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Connect to local or remote ComfyUI servers
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/servers">Manage Servers</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="4">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
+                <MudText Typo="Typo.h6">Workflows</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Import and manage your ComfyUI workflows
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/workflows">View Workflows</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="4">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
+                <MudText Typo="Typo.h6">History</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    View your generated images and history
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/history">View History</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<MudDivider Class="my-6" />
+
+<MudText Typo="Typo.h5" GutterBottom="true">Quick Start</MudText>
+<MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start">
+    <MudTimelineItem Color="Color.Primary" Icon="@Icons.Material.Filled.Add">
+        <MudText Typo="Typo.h6">1. Add a Server</MudText>
+        <MudText Typo="Typo.body2">Connect to your ComfyUI server (local or remote)</MudText>
+    </MudTimelineItem>
+    <MudTimelineItem Color="Color.Primary" Icon="@Icons.Material.Filled.Download">
+        <MudText Typo="Typo.h6">2. Import a Workflow</MudText>
+        <MudText Typo="Typo.body2">Import workflow JSON from file, URL, clipboard, or use presets</MudText>
+    </MudTimelineItem>
+    <MudTimelineItem Color="Color.Primary" Icon="@Icons.Material.Filled.PlayArrow">
+        <MudText Typo="Typo.h6">3. Generate Images</MudText>
+        <MudText Typo="Typo.body2">Configure parameters and start generating AI images</MudText>
+    </MudTimelineItem>
+</MudTimeline>
+
+<MudDivider Class="my-6" />
+
+<MudAlert Severity="Severity.Info" Class="mb-4">
+    <MudText Typo="Typo.body2">
+        <strong>PWA Support:</strong> This app can be installed on your device for offline access!
+        Click the install button in your browser's address bar.
+    </MudText>
+</MudAlert>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Initialize home page
+    }
+}
