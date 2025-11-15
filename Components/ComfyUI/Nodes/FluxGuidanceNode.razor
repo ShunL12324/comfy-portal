@@ -1,0 +1,66 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Class="mr-1" />
+                Flux Guidance
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Applies guidance to Flux model conditioning
+        </MudAlert>
+
+        <MudNumericField @bind-Value="_guidance"
+                        Label="Guidance"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="100.0"
+                        Step="0.1"
+                        HelperText="Guidance scale for Flux model" />
+
+        @if (_hasConditioningInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to conditioning
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No conditioning connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private double _guidance = 3.5;
+    private bool _hasConditioningInput;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("guidance", out var guidanceVal) && guidanceVal.TryGetDouble(out var guidance))
+            _guidance = guidance;
+
+        // Check if conditioning is connected
+        if (Node.Inputs.TryGetValue("conditioning", out var condVal) && condVal.ValueKind == JsonValueKind.Array)
+            _hasConditioningInput = true;
+    }
+}

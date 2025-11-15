@@ -1,0 +1,108 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Layers" Size="Size.Small" Class="mr-1" />
+                Dual CLIP Loader
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Loads dual CLIP models for SDXL/Flux workflows
+        </MudAlert>
+
+        <MudSelect @bind-Value="_clip1"
+                   Label="CLIP Model 1"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            @foreach (var clip in _availableClips)
+            {
+                <MudSelectItem Value="@clip">@clip</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect @bind-Value="_clip2"
+                   Label="CLIP Model 2"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            @foreach (var clip in _availableClips)
+            {
+                <MudSelectItem Value="@clip">@clip</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect @bind-Value="_clipType"
+                   Label="CLIP Type"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            <MudSelectItem Value="@("sdxl")">SDXL</MudSelectItem>
+            <MudSelectItem Value="@("sd3")">SD3</MudSelectItem>
+            <MudSelectItem Value="@("flux")">Flux</MudSelectItem>
+        </MudSelect>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    [Inject]
+    private IServerService ServerService { get; set; } = default!;
+
+    private List<string> _availableClips = new();
+    private string _clip1 = "";
+    private string _clip2 = "";
+    private string _clipType = "sdxl";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("clip_name1", out var clip1Val) && clip1Val.ValueKind == JsonValueKind.String)
+        {
+            var clip1Str = clip1Val.GetString();
+            if (clip1Str != null)
+                _clip1 = clip1Str;
+        }
+
+        if (Node.Inputs.TryGetValue("clip_name2", out var clip2Val) && clip2Val.ValueKind == JsonValueKind.String)
+        {
+            var clip2Str = clip2Val.GetString();
+            if (clip2Str != null)
+                _clip2 = clip2Str;
+        }
+
+        if (Node.Inputs.TryGetValue("type", out var typeVal) && typeVal.ValueKind == JsonValueKind.String)
+        {
+            var typeStr = typeVal.GetString();
+            if (typeStr != null)
+                _clipType = typeStr;
+        }
+
+        // Load available CLIPs from server
+        try
+        {
+            var servers = await ServerService.GetAllServersAsync();
+            if (servers.Any())
+            {
+                var models = await ServerService.GetServerModelsAsync(servers.First().Id);
+                _availableClips = models.Clips;
+            }
+        }
+        catch
+        {
+            // Fallback to empty list if server fetch fails
+            _availableClips = new List<string> { "clip_l.safetensors", "clip_g.safetensors" };
+        }
+    }
+}

@@ -1,0 +1,70 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Size="Size.Small" Class="mr-1" />
+                Basic Guider
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Provides basic guidance for sampling
+        </MudAlert>
+
+        @if (_hasModelInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to model
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No model connected
+            </MudText>
+        }
+
+        @if (_hasConditioningInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to conditioning
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No conditioning connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private bool _hasModelInput;
+    private bool _hasConditioningInput;
+
+    protected override void OnInitialized()
+    {
+        // Check if inputs are connected
+        if (Node.Inputs.TryGetValue("model", out var modelVal) && modelVal.ValueKind == JsonValueKind.Array)
+            _hasModelInput = true;
+
+        if (Node.Inputs.TryGetValue("conditioning", out var condVal) && condVal.ValueKind == JsonValueKind.Array)
+            _hasConditioningInput = true;
+    }
+}

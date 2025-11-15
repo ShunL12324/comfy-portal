@@ -1,0 +1,246 @@
+@page "/workflow/image/{Id}"
+@using ComfyPortal.Models
+@using ComfyPortal.Services.Image
+@inject IImageStorageService ImageStorage
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>View Image - Comfy Portal</PageTitle>
+
+@if (_loading)
+{
+    <LoadingSpinner Text="Loading image..." />
+}
+else if (_image == null)
+{
+    <MudAlert Severity="Severity.Error">Image not found</MudAlert>
+    <MudButton Color="Color.Primary" OnClick="@(() => Navigation.NavigateTo("/history"))">
+        Back to History
+    </MudButton>
+}
+else
+{
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">@_image.Filename</MudText>
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Outlined"
+                      StartIcon="@Icons.Material.Filled.Download"
+                      OnClick="DownloadImage">
+                Download
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Error"
+                      StartIcon="@Icons.Material.Filled.Delete"
+                      OnClick="DeleteImage">
+                Delete
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                      StartIcon="@Icons.Material.Filled.ArrowBack"
+                      OnClick="@(() => Navigation.NavigateTo("/history"))">
+                Back
+            </MudButton>
+        </div>
+    </div>
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudImage Src="@GetImageDataUrl()"
+                         Alt="@_image.Filename"
+                         Class="rounded"
+                         Style="width: 100%; height: auto;" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.h6" GutterBottom>Image Details</MudText>
+
+                <div class="d-flex flex-column gap-2">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Filename</MudText>
+                        <MudText Typo="Typo.body2">@_image.Filename</MudText>
+                    </div>
+
+                    @if (_image.Width > 0 && _image.Height > 0)
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Dimensions</MudText>
+                            <MudText Typo="Typo.body2">@_image.Width × @_image.Height px</MudText>
+                        </div>
+                    }
+
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">File Size</MudText>
+                        <MudText Typo="Typo.body2">@FormatBytes(_image.FileSize)</MudText>
+                    </div>
+
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Generated</MudText>
+                        <MudText Typo="Typo.body2">@_image.GeneratedAt.ToString("MMMM dd, yyyy HH:mm:ss")</MudText>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_image.PromptId))
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Prompt ID</MudText>
+                            <MudText Typo="Typo.body2" Style="word-break: break-all;">@_image.PromptId</MudText>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_image.WorkflowId))
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Workflow</MudText>
+                            <MudButton Variant="Variant.Text"
+                                      Size="Size.Small"
+                                      OnClick="@(() => Navigation.NavigateTo($"/workflow/preview/{_image.WorkflowId}"))">
+                                View Workflow
+                            </MudButton>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
+
+            @if (!string.IsNullOrEmpty(_image.PromptText) || _image.Seed.HasValue || _image.Steps.HasValue)
+            {
+                <MudPaper Elevation="2" Class="pa-4 mt-4">
+                    <MudText Typo="Typo.h6" GutterBottom>Generation Parameters</MudText>
+
+                    <div class="d-flex flex-column gap-2">
+                        @if (!string.IsNullOrEmpty(_image.PromptText))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Prompt</MudText>
+                                <MudText Typo="Typo.body2">@_image.PromptText</MudText>
+                            </div>
+                        }
+
+                        @if (_image.Seed.HasValue)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Seed</MudText>
+                                <MudText Typo="Typo.body2">@_image.Seed.Value</MudText>
+                            </div>
+                        }
+
+                        @if (_image.Steps.HasValue)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Steps</MudText>
+                                <MudText Typo="Typo.body2">@_image.Steps.Value</MudText>
+                            </div>
+                        }
+
+                        @if (_image.CfgScale.HasValue)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">CFG Scale</MudText>
+                                <MudText Typo="Typo.body2">@_image.CfgScale.Value</MudText>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_image.Sampler))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Sampler</MudText>
+                                <MudText Typo="Typo.body2">@_image.Sampler</MudText>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_image.Model))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Model</MudText>
+                                <MudText Typo="Typo.body2">@_image.Model</MudText>
+                            </div>
+                        }
+                    </div>
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    private ImageMetadata? _image;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _image = await ImageStorage.GetImageMetadataAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load image: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetImageDataUrl()
+    {
+        if (_image == null) return "";
+        if (!string.IsNullOrEmpty(_image.ImageDataBase64))
+            return $"data:image/png;base64,{_image.ImageDataBase64}";
+        return "/images/placeholder.png";
+    }
+
+    private async Task DownloadImage()
+    {
+        try
+        {
+            // In a real implementation, use JS interop to trigger download
+            Snackbar.Add("Download functionality requires JS interop implementation", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to download image: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteImage()
+    {
+        if (_image == null) return;
+
+        var result = await DialogService.ShowMessageBox(
+            "Delete Image",
+            $"Are you sure you want to delete '{_image.Filename}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ImageStorage.DeleteImageAsync(_image.Id);
+                Snackbar.Add("Image deleted", Severity.Success);
+                Navigation.NavigateTo("/history");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete image: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

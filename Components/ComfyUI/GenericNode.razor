@@ -1,0 +1,149 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+@* Generic node component that can display any node type *@
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">@Node.ClassType</MudText>
+            @if (Node.Meta?.Title != null)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@Node.Meta.Title</MudText>
+            }
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+        </CardHeaderActions>
+    </MudCardHeader>
+
+    <MudCardContent>
+        @if (Node.Inputs.Any())
+        {
+            @foreach (var input in Node.Inputs)
+            {
+                <div class="mb-3">
+                    @RenderInput(input.Key, input.Value)
+                </div>
+            }
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">No inputs</MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+<style>
+    .node-card {
+        height: 100%;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private RenderFragment RenderInput(string inputName, JsonElement value)
+    {
+        return builder =>
+        {
+            // Format input name (convert snake_case to Title Case)
+            var displayName = FormatInputName(inputName);
+
+            // Render based on value type
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.String:
+                    var strValue = value.GetString() ?? "";
+                    builder.OpenComponent<MudTextField<string>>(0);
+                    builder.AddAttribute(1, "Label", displayName);
+                    builder.AddAttribute(2, "Value", strValue);
+                    builder.AddAttribute(3, "Variant", Variant.Outlined);
+                    builder.AddAttribute(4, "Margin", Margin.Dense);
+                    builder.CloseComponent();
+                    break;
+
+                case JsonValueKind.Number:
+                    if (value.TryGetInt32(out var intValue))
+                    {
+                        builder.OpenComponent<MudNumericField<int>>(0);
+                        builder.AddAttribute(1, "Label", displayName);
+                        builder.AddAttribute(2, "Value", intValue);
+                        builder.AddAttribute(3, "Variant", Variant.Outlined);
+                        builder.AddAttribute(4, "Margin", Margin.Dense);
+                        builder.CloseComponent();
+                    }
+                    else if (value.TryGetDouble(out var doubleValue))
+                    {
+                        builder.OpenComponent<MudNumericField<double>>(0);
+                        builder.AddAttribute(1, "Label", displayName);
+                        builder.AddAttribute(2, "Value", doubleValue);
+                        builder.AddAttribute(3, "Variant", Variant.Outlined);
+                        builder.AddAttribute(4, "Margin", Margin.Dense);
+                        builder.CloseComponent();
+                    }
+                    break;
+
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    builder.OpenComponent<MudSwitch<bool>>(0);
+                    builder.AddAttribute(1, "Label", displayName);
+                    builder.AddAttribute(2, "Checked", value.GetBoolean());
+                    builder.AddAttribute(3, "Color", Color.Primary);
+                    builder.CloseComponent();
+                    break;
+
+                case JsonValueKind.Array:
+                    // Check if it's a node connection (e.g., ["nodeId", outputIndex])
+                    if (value.GetArrayLength() >= 2 &&
+                        value[0].ValueKind == JsonValueKind.String)
+                    {
+                        var nodeId = value[0].GetString();
+                        var outputIndex = value.GetArrayLength() > 1 ? value[1].ToString() : "0";
+
+                        builder.OpenComponent<MudText>(0);
+                        builder.AddAttribute(1, "Typo", Typo.body2);
+                        builder.AddAttribute(2, "Color", Color.Secondary);
+                        builder.AddAttribute(3, "ChildContent", (RenderFragment)(b =>
+                        {
+                            b.AddMarkupContent(0, $"<strong>{displayName}:</strong> Connected to node {nodeId}[{outputIndex}]");
+                        }));
+                        builder.CloseComponent();
+                    }
+                    else
+                    {
+                        // Regular array
+                        builder.OpenComponent<MudText>(0);
+                        builder.AddAttribute(1, "Typo", Typo.body2);
+                        builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                        {
+                            b.AddMarkupContent(0, $"<strong>{displayName}:</strong> {value}");
+                        }));
+                        builder.CloseComponent();
+                    }
+                    break;
+
+                default:
+                    builder.OpenComponent<MudText>(0);
+                    builder.AddAttribute(1, "Typo", Typo.body2);
+                    builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    {
+                        b.AddMarkupContent(0, $"<strong>{displayName}:</strong> {value}");
+                    }));
+                    builder.CloseComponent();
+                    break;
+            }
+        };
+    }
+
+    private string FormatInputName(string inputName)
+    {
+        // Convert snake_case to Title Case
+        return string.Join(" ", inputName.Split('_')
+            .Select(word => char.ToUpper(word[0]) + word.Substring(1)));
+    }
+}

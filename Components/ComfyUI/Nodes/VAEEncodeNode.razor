@@ -1,0 +1,99 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Transform" Size="Size.Small" Class="mr-1" />
+                @(Node.ClassType == "VAEEncodeForInpaint" ? "VAE Encode (Inpaint)" : "VAE Encode")
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Encodes images to latent space using VAE
+        </MudAlert>
+
+        @if (Node.ClassType == "VAEEncodeForInpaint")
+        {
+            <MudNumericField @bind-Value="_growMask"
+                            Label="Grow Mask By"
+                            Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
+                            Class="mt-2"
+                            Min="0"
+                            Max="64"
+                            HelperText="Pixels to expand the mask by" />
+        }
+
+        @if (_hasPixelsInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to image source
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No image source connected
+            </MudText>
+        }
+
+        @if (_hasVaeInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to VAE
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No VAE connected
+            </MudText>
+        }
+
+        @if (Node.ClassType == "VAEEncodeForInpaint" && _hasMaskInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to mask
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private int _growMask = 6;
+    private bool _hasPixelsInput;
+    private bool _hasVaeInput;
+    private bool _hasMaskInput;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("grow_mask_by", out var growVal) && growVal.TryGetInt32(out var grow))
+            _growMask = grow;
+
+        // Check if inputs are connected (array format means connection)
+        if (Node.Inputs.TryGetValue("pixels", out var pixelsVal) && pixelsVal.ValueKind == JsonValueKind.Array)
+            _hasPixelsInput = true;
+
+        if (Node.Inputs.TryGetValue("vae", out var vaeVal) && vaeVal.ValueKind == JsonValueKind.Array)
+            _hasVaeInput = true;
+
+        if (Node.Inputs.TryGetValue("mask", out var maskVal) && maskVal.ValueKind == JsonValueKind.Array)
+            _hasMaskInput = true;
+    }
+}

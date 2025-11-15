@@ -1,0 +1,143 @@
+@using ComfyPortal.Services.State
+@using ComfyPortal.Enums
+@inject GenerationState GenerationState
+@implements IDisposable
+
+<MudCard Elevation="1">
+    <MudCardContent>
+        <div class="d-flex justify-space-between align-center mb-2">
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@GetStatusIcon()" Color="@GetStatusColor()" Size="Size.Small" Class="mr-1" />
+                @GetStatusText()
+            </MudText>
+
+            @if (GenerationState.Progress != null)
+            {
+                <MudChip Size="Size.Small" Color="@GetStatusColor()">
+                    @((int)(GenerationState.Progress.ProgressPercentage))%
+                </MudChip>
+            }
+        </div>
+
+        @if (GenerationState.Progress != null)
+        {
+            <MudProgressLinear Value="@GenerationState.Progress.ProgressPercentage"
+                              Color="@GetStatusColor()"
+                              Class="mb-3"
+                              Size="Size.Large" />
+
+            <div class="d-flex flex-column gap-1">
+                @if (!string.IsNullOrEmpty(GenerationState.Progress.CurrentNode))
+                {
+                    <MudText Typo="Typo.body2">
+                        <strong>Current Node:</strong> @GenerationState.Progress.CurrentNode
+                    </MudText>
+                }
+
+                @if (GenerationState.Progress.TotalNodes > 0)
+                {
+                    <MudText Typo="Typo.body2">
+                        <strong>Progress:</strong> @GenerationState.Progress.CompletedNodes / @GenerationState.Progress.TotalNodes nodes
+                    </MudText>
+                }
+
+                @if (GenerationState.Progress.CurrentStep > 0)
+                {
+                    <MudText Typo="Typo.body2">
+                        <strong>Step:</strong> @GenerationState.Progress.CurrentStep / @GenerationState.Progress.TotalSteps
+                    </MudText>
+
+                    @if (GenerationState.Progress.TotalSteps > 0)
+                    {
+                        var stepProgress = (double)GenerationState.Progress.CurrentStep / GenerationState.Progress.TotalSteps * 100;
+                        <MudProgressLinear Value="@stepProgress"
+                                          Color="Color.Info"
+                                          Class="mt-1"
+                                          Size="Size.Small" />
+                    }
+                }
+
+                @if (GenerationState.Progress.EstimatedTimeRemaining.HasValue)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" />
+                        <strong>ETA:</strong> @FormatTimeSpan(GenerationState.Progress.EstimatedTimeRemaining.Value)
+                    </MudText>
+                }
+
+                @if (!string.IsNullOrEmpty(GenerationState.Progress.StatusMessage))
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+                        @GenerationState.Progress.StatusMessage
+                    </MudAlert>
+                }
+            </div>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">
+                Waiting for generation to start...
+            </MudAlert>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    protected override void OnInitialized()
+    {
+        GenerationState.OnChange += StateHasChanged;
+    }
+
+    private string GetStatusText()
+    {
+        return GenerationState.Status switch
+        {
+            GenerationStatus.Idle => "Ready",
+            GenerationStatus.Running => "Generating...",
+            GenerationStatus.Completed => "Completed",
+            GenerationStatus.Failed => "Failed",
+            GenerationStatus.Interrupted => "Interrupted",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetStatusIcon()
+    {
+        return GenerationState.Status switch
+        {
+            GenerationStatus.Idle => Icons.Material.Filled.CheckCircle,
+            GenerationStatus.Running => Icons.Material.Filled.Autorenew,
+            GenerationStatus.Completed => Icons.Material.Filled.CheckCircle,
+            GenerationStatus.Failed => Icons.Material.Filled.Error,
+            GenerationStatus.Interrupted => Icons.Material.Filled.Warning,
+            _ => Icons.Material.Filled.Help
+        };
+    }
+
+    private Color GetStatusColor()
+    {
+        return GenerationState.Status switch
+        {
+            GenerationStatus.Idle => Color.Default,
+            GenerationStatus.Running => Color.Primary,
+            GenerationStatus.Completed => Color.Success,
+            GenerationStatus.Failed => Color.Error,
+            GenerationStatus.Interrupted => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatTimeSpan(TimeSpan timeSpan)
+    {
+        if (timeSpan.TotalHours >= 1)
+            return $"{timeSpan.Hours}h {timeSpan.Minutes}m";
+        if (timeSpan.TotalMinutes >= 1)
+            return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+        return $"{timeSpan.Seconds}s";
+    }
+
+    public void Dispose()
+    {
+        GenerationState.OnChange -= StateHasChanged;
+    }
+}

@@ -1,0 +1,56 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Grain" Size="Size.Small" Class="mr-1" />
+                Random Noise
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudNumericField @bind-Value="_noiseSeed"
+                        Label="Noise Seed"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        HelperText="Seed for noise generation" />
+
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Casino"
+                   Class="mt-2"
+                   OnClick="RandomizeSeed">
+            Randomize Seed
+        </MudButton>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            Generates random noise for sampling
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private long _noiseSeed = 0;
+    private static readonly Random _random = new();
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("noise_seed", out var seedVal) && seedVal.TryGetInt64(out var seed))
+            _noiseSeed = seed;
+    }
+
+    private void RandomizeSeed()
+    {
+        _noiseSeed = (long)(_random.NextDouble() * long.MaxValue);
+        StateHasChanged();
+    }
+}

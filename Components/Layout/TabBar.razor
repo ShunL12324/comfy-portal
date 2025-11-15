@@ -1,0 +1,96 @@
+@inject NavigationManager NavigationManager
+
+<div class="tab-bar">
+    <MudPaper Elevation="4" Class="tab-bar-container">
+        <MudButtonGroup Color="Color.Primary" Variant="Variant.Text" Class="tab-bar-buttons">
+            <MudButton StartIcon="@Icons.Material.Filled.Home"
+                       Class="@GetTabClass("/")"
+                       OnClick="@(() => Navigate("/"))"
+                       FullWidth="true">
+                Home
+            </MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.AccountTree"
+                       Class="@GetTabClass("/workflows")"
+                       OnClick="@(() => Navigate("/workflows"))"
+                       FullWidth="true">
+                Workflows
+            </MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.Settings"
+                       Class="@GetTabClass("/settings"))"
+                       OnClick="@(() => Navigate("/settings"))"
+                       FullWidth="true">
+                Settings
+            </MudButton>
+        </MudButtonGroup>
+    </MudPaper>
+</div>
+
+<style>
+    .tab-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        display: none;
+    }
+
+    .tab-bar-container {
+        border-radius: 0;
+        padding: 8px;
+    }
+
+    .tab-bar-buttons {
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .tab-active {
+        background-color: rgba(124, 58, 237, 0.1);
+    }
+
+    @@media (max-width: 960px) {
+        .tab-bar {
+            display: block;
+        }
+
+        /* Add padding to main content to account for tab bar */
+        .mud-main-content {
+            padding-bottom: 72px !important;
+        }
+    }
+</style>
+
+@code {
+    private string _currentPath = "/";
+
+    protected override void OnInitialized()
+    {
+        _currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _currentPath = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    private void Navigate(string path)
+    {
+        NavigationManager.NavigateTo(path);
+    }
+
+    private string GetTabClass(string path)
+    {
+        var isActive = _currentPath == path.TrimStart('/') ||
+                       (path == "/" && _currentPath == "");
+        return isActive ? "tab-active" : "";
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

@@ -1,0 +1,116 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.CropFree" Size="Size.Small" Class="mr-1" />
+                Pad Image for Outpaint
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudNumericField @bind-Value="_left"
+                        Label="Left"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Min="0"
+                        Max="4096"
+                        HelperText="Pixels to add on left side" />
+
+        <MudNumericField @bind-Value="_top"
+                        Label="Top"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0"
+                        Max="4096"
+                        HelperText="Pixels to add on top" />
+
+        <MudNumericField @bind-Value="_right"
+                        Label="Right"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0"
+                        Max="4096"
+                        HelperText="Pixels to add on right side" />
+
+        <MudNumericField @bind-Value="_bottom"
+                        Label="Bottom"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0"
+                        Max="4096"
+                        HelperText="Pixels to add on bottom" />
+
+        <MudNumericField @bind-Value="_feathering"
+                        Label="Feathering"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0"
+                        Max="250"
+                        HelperText="Feathering amount for smooth transition" />
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            Total Padding: @(_left + _right) × @(_top + _bottom) pixels
+        </MudText>
+
+        @if (_hasImageInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to image source
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No image source connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private int _left = 0;
+    private int _top = 0;
+    private int _right = 0;
+    private int _bottom = 0;
+    private int _feathering = 40;
+    private bool _hasImageInput;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("left", out var leftVal) && leftVal.TryGetInt32(out var left))
+            _left = left;
+
+        if (Node.Inputs.TryGetValue("top", out var topVal) && topVal.TryGetInt32(out var top))
+            _top = top;
+
+        if (Node.Inputs.TryGetValue("right", out var rightVal) && rightVal.TryGetInt32(out var right))
+            _right = right;
+
+        if (Node.Inputs.TryGetValue("bottom", out var bottomVal) && bottomVal.TryGetInt32(out var bottom))
+            _bottom = bottom;
+
+        if (Node.Inputs.TryGetValue("feathering", out var featherVal) && featherVal.TryGetInt32(out var feathering))
+            _feathering = feathering;
+
+        // Check if image is connected
+        if (Node.Inputs.TryGetValue("image", out var imageVal) && imageVal.ValueKind == JsonValueKind.Array)
+            _hasImageInput = true;
+    }
+}

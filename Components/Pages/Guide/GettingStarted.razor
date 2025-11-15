@@ -1,0 +1,69 @@
+@page "/guide/getting-started"
+
+<PageTitle>Getting Started - Comfy Portal</PageTitle>
+
+<div class="guide-container">
+    <MudText Typo="Typo.h3" Class="mb-4">Getting Started with Comfy Portal</MudText>
+
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h5" GutterBottom>1. Add a ComfyUI Server</MudText>
+        <MudText Typo="Typo.body1" Paragraph>
+            Navigate to the Servers page and add your ComfyUI instance by providing:
+        </MudText>
+        <MudList Dense>
+            <MudListItem Icon="@Icons.Material.Filled.Storage">Server name (e.g., "Local Server")</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.Computer">Host (e.g., "localhost" or "192.168.1.100")</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.Router">Port (default: 8188)</MudListItem>
+        </MudList>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/servers" Class="mt-2">
+            Go to Servers
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h5" GutterBottom>2. Import a Workflow</MudText>
+        <MudText Typo="Typo.body1" Paragraph>
+            Import ComfyUI workflows in multiple ways:
+        </MudText>
+        <MudList Dense>
+            <MudListItem Icon="@Icons.Material.Filled.UploadFile">Upload a workflow JSON file</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.Link">Import from URL</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.ContentPaste">Paste JSON from clipboard</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.WorkSpaces">Select from built-in presets</MudListItem>
+        </MudList>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/workflows" Class="mt-2">
+            Go to Workflows
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h5" GutterBottom>3. Execute Workflows</MudText>
+        <MudText Typo="Typo.body1" Paragraph>
+            Configure and execute your workflows:
+        </MudText>
+        <MudList Dense>
+            <MudListItem Icon="@Icons.Material.Filled.Tune">Adjust node parameters</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.PlayArrow">Start generation</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.Timeline">Monitor progress in real-time</MudListItem>
+            <MudListItem Icon="@Icons.Material.Filled.Image">View generated images</MudListItem>
+        </MudList>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudText Typo="Typo.h5" GutterBottom>4. View History</MudText>
+        <MudText Typo="Typo.body1" Paragraph>
+            All generated images are automatically saved to your browser's local storage.
+            Access them anytime from the History page.
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/history" Class="mt-2">
+            View History
+        </MudButton>
+    </MudPaper>
+</div>
+
+<style>
+    .guide-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+</style>

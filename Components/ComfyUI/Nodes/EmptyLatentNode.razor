@@ -1,0 +1,72 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.CropSquare" Size="Size.Small" Class="mr-1" />
+                Empty Latent Image
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudNumericField @bind-Value="_width"
+                        Label="Width"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Min="64"
+                        Max="2048"
+                        Step="64"
+                        HelperText="Image width (multiple of 64)" />
+
+        <MudNumericField @bind-Value="_height"
+                        Label="Height"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="64"
+                        Max="2048"
+                        Step="64"
+                        HelperText="Image height (multiple of 64)" />
+
+        <MudNumericField @bind-Value="_batchSize"
+                        Label="Batch Size"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="1"
+                        Max="16"
+                        HelperText="Number of images to generate" />
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            Resolution: @_width × @_height (@((_width * _height) / 1000000.0:F1)MP)
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private int _width = 512;
+    private int _height = 512;
+    private int _batchSize = 1;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("width", out var widthVal) && widthVal.TryGetInt32(out var width))
+            _width = width;
+
+        if (Node.Inputs.TryGetValue("height", out var heightVal) && heightVal.TryGetInt32(out var height))
+            _height = height;
+
+        if (Node.Inputs.TryGetValue("batch_size", out var batchVal) && batchVal.TryGetInt32(out var batchSize))
+            _batchSize = batchSize;
+    }
+}

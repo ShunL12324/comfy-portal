@@ -1,0 +1,96 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="mr-1" />
+                Load Image
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg,.webp" FilesChanged="HandleFileSelected">
+            <ButtonTemplate>
+                <MudButton HtmlTag="label"
+                          Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.CloudUpload"
+                          for="@context">
+                    Select Image
+                </MudButton>
+            </ButtonTemplate>
+        </MudFileUpload>
+
+        @if (_selectedFile != null)
+        {
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Selected: @_selectedFile.Name
+            </MudText>
+        }
+        else if (!string.IsNullOrEmpty(_imagePath))
+        {
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Current: @_imagePath
+            </MudText>
+        }
+
+        @if (!string.IsNullOrEmpty(_previewUrl))
+        {
+            <MudImage Src="@_previewUrl" Alt="Preview" Class="mt-2" Style="max-width: 100%; max-height: 200px;" />
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private IBrowserFile? _selectedFile;
+    private string _imagePath = "";
+    private string _previewUrl = "";
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("image", out var imageVal) && imageVal.ValueKind == JsonValueKind.String)
+        {
+            var imageStr = imageVal.GetString();
+            if (imageStr != null)
+                _imagePath = imageStr;
+        }
+
+        // Load upload type (defaults to "temp")
+        if (Node.Inputs.TryGetValue("upload", out var uploadVal) && uploadVal.ValueKind == JsonValueKind.String)
+        {
+            // Can be "temp" or "input"
+        }
+    }
+
+    private async Task HandleFileSelected(IBrowserFile file)
+    {
+        _selectedFile = file;
+
+        // Create preview URL
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+            var buffer = new byte[stream.Length];
+            await stream.ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        }
+        catch
+        {
+            _previewUrl = "";
+        }
+
+        StateHasChanged();
+    }
+}

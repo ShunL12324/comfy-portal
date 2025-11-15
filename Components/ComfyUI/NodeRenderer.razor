@@ -1,0 +1,117 @@
+@using ComfyPortal.Models
+
+@* Dynamic node renderer - routes to specific components or generic fallback *@
+
+@switch (Node.ClassType)
+{
+    // Loaders
+    case "CheckpointLoaderSimple":
+        <CheckpointLoaderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "LoraLoader":
+    case "LoraLoaderModelOnly":
+        <LoraLoaderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "VAELoader":
+        <VAELoaderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "LoadImage":
+        <LoadImageNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "DualCLIPLoader":
+        <DualCLIPLoaderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "UNETLoader":
+        <UNETLoaderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Encoders
+    case "CLIPTextEncode":
+    case "CLIPTextEncodeSDXL":
+        <CLIPTextEncodeNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "VAEEncode":
+    case "VAEEncodeForInpaint":
+        <VAEEncodeNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Samplers
+    case "KSampler":
+    case "KSamplerAdvanced":
+        <KSamplerNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "KSamplerSelect":
+        <KSamplerSelectNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "SamplerCustomAdvanced":
+        <SamplerCustomAdvancedNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "BasicScheduler":
+        <BasicSchedulerNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "BasicGuider":
+        <BasicGuiderNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Generators
+    case "EmptyLatentImage":
+    case "EmptySD3LatentImage":
+        <EmptyLatentNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "RandomNoise":
+        <RandomNoiseNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Flux specific
+    case "FluxGuidance":
+        <FluxGuidanceNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "ModelSamplingFlux":
+        <ModelSamplingFluxNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Image Processing
+    case "ImageScale":
+    case "ImageScaleBy":
+        <ImageScaleNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "ImagePadForOutpaint":
+        <ImagePadForOutpaintNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // Output
+    case "SaveImage":
+    case "PreviewImage":
+        <SaveImageNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    case "VAEDecode":
+        <VAEDecodeNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+
+    // For all other node types, use generic renderer
+    default:
+        <GenericNode Node="@Node" OnNodeChanged="@OnNodeChanged" />
+        break;
+}
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+}

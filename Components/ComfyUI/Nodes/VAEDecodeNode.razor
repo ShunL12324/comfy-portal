@@ -1,0 +1,70 @@
+@using ComfyPortal.Models
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Transform" Size="Size.Small" Class="mr-1" />
+                VAE Decode
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Decodes latent samples to images using VAE
+        </MudAlert>
+
+        @if (_hasLatentInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to latent samples
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No latent samples connected
+            </MudText>
+        }
+
+        @if (_hasVaeInput)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                Connected to VAE
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                No VAE connected
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private bool _hasLatentInput;
+    private bool _hasVaeInput;
+
+    protected override void OnInitialized()
+    {
+        // Check if inputs are connected (array format means connection)
+        if (Node.Inputs.TryGetValue("samples", out var samplesVal) && samplesVal.ValueKind == JsonValueKind.Array)
+            _hasLatentInput = true;
+
+        if (Node.Inputs.TryGetValue("vae", out var vaeVal) && vaeVal.ValueKind == JsonValueKind.Array)
+            _hasVaeInput = true;
+    }
+}

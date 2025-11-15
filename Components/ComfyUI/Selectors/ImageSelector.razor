@@ -1,0 +1,88 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="image-selector">
+    <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg,.webp" FilesChanged="HandleFileSelected">
+        <ButtonTemplate>
+            <MudButton HtmlTag="label"
+                      Variant="@Variant"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.CloudUpload"
+                      Disabled="@Disabled"
+                      for="@context">
+                @Label
+            </MudButton>
+        </ButtonTemplate>
+    </MudFileUpload>
+
+    @if (SelectedFile != null)
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">
+            Selected: @SelectedFile.Name (@(SelectedFile.Size / 1024)KB)
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(PreviewUrl))
+        {
+            <MudCard Class="mt-2" Elevation="1">
+                <MudCardContent>
+                    <MudImage Src="@PreviewUrl" Alt="Preview" Style="max-width: 100%; max-height: 300px;" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Size="Size.Small" OnClick="ClearSelection" StartIcon="@Icons.Material.Filled.Clear">
+                        Clear
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IBrowserFile? SelectedFile { get; set; }
+
+    [Parameter]
+    public EventCallback<IBrowserFile?> SelectedFileChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Select Image";
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
+
+    private string PreviewUrl = "";
+
+    private async Task HandleFileSelected(IBrowserFile file)
+    {
+        SelectedFile = file;
+        await SelectedFileChanged.InvokeAsync(file);
+
+        // Create preview URL
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: MaxFileSize);
+            var buffer = new byte[stream.Length];
+            await stream.ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            PreviewUrl = $"data:{file.ContentType};base64,{base64}";
+        }
+        catch
+        {
+            PreviewUrl = "";
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ClearSelection()
+    {
+        SelectedFile = null;
+        PreviewUrl = "";
+        await SelectedFileChanged.InvokeAsync(null);
+    }
+}

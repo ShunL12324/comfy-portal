@@ -1,0 +1,52 @@
+@* Empty state component *@
+
+<div class="empty-state @Class">
+    <MudIcon Icon="@Icon" Size="Size.Large" Color="Color.Default" Class="empty-state-icon" />
+    <MudText Typo="Typo.h6" Class="mt-4">@Title</MudText>
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@Description</MudText>
+    }
+    @if (ActionText != null && OnAction != null)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="OnAction">
+            @ActionText
+        </MudButton>
+    }
+</div>
+
+<style>
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        opacity: 0.3;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public required string Icon { get; set; }
+
+    [Parameter]
+    public required string Title { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string? ActionText { get; set; }
+
+    [Parameter]
+    public EventCallback OnAction { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+}

@@ -1,0 +1,118 @@
+@using ComfyPortal.Models
+@using ComfyPortal.Enums
+@using System.Text.Json
+
+<MudCard Elevation="1" Class="node-card">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Class="mr-1" />
+                @(Node.ClassType == "KSamplerAdvanced" ? "KSampler (Advanced)" : "KSampler")
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudNumericField @bind-Value="_seed"
+                        Label="Seed"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        HelperText="Random seed for generation" />
+
+        <MudNumericField @bind-Value="_steps"
+                        Label="Steps"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="1"
+                        Max="150"
+                        HelperText="Number of sampling steps" />
+
+        <MudNumericField @bind-Value="_cfg"
+                        Label="CFG Scale"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="1.0"
+                        Max="30.0"
+                        Step="0.5"
+                        HelperText="Classifier free guidance scale" />
+
+        <MudSelect @bind-Value="_sampler"
+                   Label="Sampler"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            @foreach (var sampler in Enum.GetValues<Sampler>())
+            {
+                <MudSelectItem Value="@sampler">@sampler.ToComfyUIString()</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect @bind-Value="_scheduler"
+                   Label="Scheduler"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Class="mt-2">
+            @foreach (var scheduler in Enum.GetValues<Scheduler>())
+            {
+                <MudSelectItem Value="@scheduler">@scheduler.ToComfyUIString()</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudNumericField @bind-Value="_denoise"
+                        Label="Denoise"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Class="mt-2"
+                        Min="0.0"
+                        Max="1.0"
+                        Step="0.05"
+                        HelperText="Denoising strength (1.0 = full denoise)" />
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public required WorkflowNode Node { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkflowNode> OnNodeChanged { get; set; }
+
+    private long _seed = 0;
+    private int _steps = 20;
+    private double _cfg = 7.0;
+    private Sampler _sampler = Sampler.Euler;
+    private Scheduler _scheduler = Scheduler.Normal;
+    private double _denoise = 1.0;
+
+    protected override void OnInitialized()
+    {
+        // Load values from node inputs
+        if (Node.Inputs.TryGetValue("seed", out var seedVal) && seedVal.TryGetInt64(out var seed))
+            _seed = seed;
+
+        if (Node.Inputs.TryGetValue("steps", out var stepsVal) && stepsVal.TryGetInt32(out var steps))
+            _steps = steps;
+
+        if (Node.Inputs.TryGetValue("cfg", out var cfgVal) && cfgVal.TryGetDouble(out var cfg))
+            _cfg = cfg;
+
+        if (Node.Inputs.TryGetValue("sampler_name", out var samplerVal) && samplerVal.ValueKind == JsonValueKind.String)
+        {
+            var samplerStr = samplerVal.GetString();
+            if (samplerStr != null)
+                _sampler = SamplerExtensions.FromComfyUIString(samplerStr);
+        }
+
+        if (Node.Inputs.TryGetValue("scheduler", out var schedVal) && schedVal.ValueKind == JsonValueKind.String)
+        {
+            var schedStr = schedVal.GetString();
+            if (schedStr != null)
+                _scheduler = SchedulerExtensions.FromComfyUIString(schedStr);
+        }
+
+        if (Node.Inputs.TryGetValue("denoise", out var denoiseVal) && denoiseVal.TryGetDouble(out var denoise))
+            _denoise = denoise;
+    }
+}
