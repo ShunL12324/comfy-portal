@@ -63,7 +63,6 @@ interface BottomPanelProps {
   images: Array<{ url: string; timestamp: number }>;
   onSelectAll: () => void;
   onDelete: () => void;
-  insets: { bottom: number };
 }
 
 export const BottomPanel = React.memo(

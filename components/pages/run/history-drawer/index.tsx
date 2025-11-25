@@ -1,4 +1,4 @@
-import { Drawer, DrawerBackdrop, DrawerContent, DrawerHeader } from '@/components/ui/drawer';
+import { Drawer, DrawerHeader } from '@/components/self-ui/drawer';
 import { FlatList } from '@/components/ui/flat-list';
 import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
@@ -188,29 +188,25 @@ export function HistoryDrawer({
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} size="lg" anchor="right">
-      <DrawerBackdrop />
-      <DrawerContent className="relative overflow-hidden p-0">
-        <View style={{ paddingTop: insets.top }} className="flex-1">
-          <DrawerHeader className="border-b-[0.5px] border-b-background-100 px-4">
-            <View className="flex-row items-center py-3">
-              <View className="flex-1 flex-row items-center gap-2">
-                <Icon as={History} size="sm" className="text-background-800" />
-                <Text className="text-base font-medium text-background-800">History</Text>
-              </View>
-              <SelectButton isSelectionMode={isSelectionMode} onPress={handleToggleSelectionMode} />
+      <View style={{ paddingTop: insets.top }} className="flex-1">
+        <DrawerHeader className="border-b-[0.5px] border-b-background-100 px-4">
+          <View className="flex-row items-center py-3">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Icon as={History} size="sm" className="text-background-800" />
+              <Text className="text-base font-medium text-background-800">History</Text>
             </View>
-          </DrawerHeader>
-          <FlatList {...flatListProps} />
-          <BottomPanel
-            isSelectionMode={isSelectionMode}
-            selectedImages={selectedImages}
-            images={images}
-            onSelectAll={handleSelectAll}
-            onDelete={handleDelete}
-            insets={insets}
-          />
-        </View>
-      </DrawerContent>
+            <SelectButton isSelectionMode={isSelectionMode} onPress={handleToggleSelectionMode} />
+          </View>
+        </DrawerHeader>
+        <FlatList {...flatListProps} />
+        <BottomPanel
+          isSelectionMode={isSelectionMode}
+          selectedImages={selectedImages}
+          images={images}
+          onSelectAll={handleSelectAll}
+          onDelete={handleDelete}
+        />
+      </View>
     </Drawer>
   );
 }
