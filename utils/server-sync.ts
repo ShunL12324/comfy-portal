@@ -43,7 +43,16 @@ async function savePreviewImage(
 
     const arrayBuffer = await previewResponse.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    const base64 = btoa(String.fromCharCode(...bytes));
+    let binary = '';
+    const len = bytes.byteLength;
+    const chunkSize = 8192; // Process in 8KB chunks to avoid stack overflow
+
+    for (let i = 0; i < len; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, len));
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+
+    const base64 = btoa(binary);
 
     await FileSystem.writeAsStringAsync(
       previewPath,
@@ -94,7 +103,7 @@ export async function scanServerModelsByFolder(
           server.useSSL,
           server.host,
           server.port,
-          `/experiment/models/preview/${folderName}/${model.pathIndex}/${model.name}`,
+          `/experiment/models/preview/${folderName}/${model.pathIndex}/${encodeURIComponent(model.name)}`,
         );
         const previewResponse = await fetchWithAuth(previewUrl, server.token);
 
