@@ -100,7 +100,7 @@ export function validateHost(host: string): string {
   }
 
   const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-  const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+  const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9-]{2,})+$/;
   const localhostRegex = /^localhost$/;
 
   if (!ipRegex.test(host) && !domainRegex.test(host) && !localhostRegex.test(host)) {
