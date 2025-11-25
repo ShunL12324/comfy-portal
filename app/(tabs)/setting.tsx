@@ -35,7 +35,7 @@ export default function SettingScreen() {
 
   return (
     <View className="flex-1 bg-background-0">
-      <AppBar title="Setting" />
+      <AppBar title="Setting" titleSize="xl" />
       <ScrollView className="flex-1">
         <View className="px-5">
           {/* Theme Section */}

@@ -66,3 +66,9 @@ credentials.json
 # cursorrules
 .cursorrules*
 .cursor
+
+# credentials
+credentials
+
+# AI
+CLAUDE.md

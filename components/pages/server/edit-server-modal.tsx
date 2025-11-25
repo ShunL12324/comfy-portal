@@ -1,41 +1,69 @@
-import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
+import { FormInput } from '@/components/self-ui/form-input';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
-import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
+import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
+import { useThemeStore } from '@/store/theme';
 import { Server } from '@/types/server';
 import { validateHost, validatePort } from '@/utils/network';
-import React from 'react';
+import {
+  BottomSheetModal,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
+import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EditServerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
   serverId: string;
+}
+
+export interface EditServerModalRef {
+  present: () => void;
 }
 
 const MAX_NAME_LENGTH = 30;
 
-export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalProps) => {
+export const EditServerModal = forwardRef<
+  EditServerModalRef,
+  EditServerModalProps
+>((props, ref) => {
+  const { serverId } = props;
+  const { theme } = useThemeStore();
+  const isDarkMode = theme === 'dark';
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const updateServer = useServersStore((state) => state.updateServer);
-  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
-  if (!server) {
-    return null;
-  }
-
-  const [name, setName] = React.useState(server.name);
-  const [host, setHost] = React.useState(server.host);
-  const [port, setPort] = React.useState(server.port.toString());
-  const [useSSL, setUseSSL] = React.useState<Server['useSSL']>(server.useSSL);
-  const [token, setToken] = React.useState(server.token || '');
-  const [errors, setErrors] = React.useState({
-    name: '',
-    host: '',
-    port: '',
-  });
-
+  
+  // 状态管理
+  const [name, setName] = useState('');
+  const [host, setHost] = useState('');
+  const [port, setPort] = useState('8188');
+  const [useSSL, setUseSSL] = useState<Server['useSSL']>('Auto');
+  const [token, setToken] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [hostError, setHostError] = useState('');
+  const [portError, setPortError] = useState('');
+  
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  
+  // 加载服务器数据
+  const loadServerData = useCallback(() => {
+    const server = useServersStore.getState().servers.find(s => s.id === serverId);
+    if (server) {
+      setName(server.name);
+      setHost(server.host);
+      setPort(server.port.toString());
+      setUseSSL(server.useSSL);
+      setToken(server.token || '');
+    }
+  }, [serverId]);
+  
+  // 表单验证
   const validateName = (value: string) => {
     if (value.length === 0) {
       return 'Name is required';
@@ -45,133 +73,143 @@ export const EditServerModal = ({ isOpen, onClose, serverId }: EditServerModalPr
     }
     return '';
   };
-
+  
+  // 保存服务器数据
   const handleSave = () => {
-    const nameError = validateName(name);
-    const hostError = validateHost(host);
-    const portError = validatePort(port);
-
-    setErrors({
-      name: nameError,
-      host: hostError,
-      port: portError,
-    });
-
-    if (nameError || hostError || portError) {
+    const newNameError = validateName(name);
+    const newHostError = validateHost(host);
+    const newPortError = validatePort(port);
+    
+    setNameError(newNameError);
+    setHostError(newHostError);
+    setPortError(newPortError);
+    
+    if (newNameError || newHostError || newPortError) {
       return;
     }
-
-    updateServer(server.id, {
+    
+    updateServer(serverId, {
       name,
       host,
       port: parseInt(port, 10),
       useSSL,
       token: token || undefined,
     });
-    onClose();
+    
+    handleClose();
   };
-
-  const handleClose = () => {
-    setName(server.name);
-    setHost(server.host);
-    setPort(server.port.toString());
-    setUseSSL(server.useSSL);
-    setErrors({
-      name: '',
-      host: '',
-      port: '',
-    });
-    setToken(server.token || '');
-    onClose();
-  };
-
-  return (
-    <KeyboardModal isOpen={isOpen} onClose={handleClose}>
-      <KeyboardModal.Header>
-        <Text className="text-lg font-semibold text-primary-500">Edit Server</Text>
-      </KeyboardModal.Header>
-
-      <KeyboardModal.Body scrollEnabled={false}>
-        <VStack space="md">
-          <KeyboardModal.Item title="Name" error={errors.name}>
-            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-              <InputField
-                defaultValue={name}
-                onChangeText={(value) => {
-                  setName(value);
-                  setErrors((prev) => ({ ...prev, name: '' }));
-                }}
-                placeholder="Server name"
-                maxLength={MAX_NAME_LENGTH}
-                className="px-3 py-2 text-primary-500"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <KeyboardModal.Item title="Host" error={errors.host}>
-            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-              <InputField
-                defaultValue={host}
-                onChangeText={(value) => {
-                  setHost(value);
-                  setErrors((prev) => ({ ...prev, host: '' }));
-                }}
-                placeholder="Host or IP address"
-                className="px-3 py-2 text-primary-500"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <KeyboardModal.Item title="Port" error={errors.port}>
-            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-              <InputField
-                defaultValue={port}
-                onChangeText={(value) => {
-                  setPort(value);
-                  setErrors((prev) => ({ ...prev, port: '' }));
-                }}
-                placeholder="Port number"
-                keyboardType="numeric"
-                className="px-3 py-2 text-primary-500"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <KeyboardModal.Item title="Authorization Token (Optional)">
-            <Input size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-              <InputField
-                defaultValue={token}
-                onChangeText={setToken}
-                placeholder="Enter token (without 'Bearer')"
-                secureTextEntry={true}
-                className="px-3 py-2 text-primary-500"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <KeyboardModal.Item title="Use SSL">
-            <SegmentedControl
-              options={['Auto', 'Always', 'Never']}
-              value={useSSL}
-              onChange={(value) => {
-                setUseSSL(value as Server['useSSL']);
-              }}
-              className="mt-1"
-            />
-          </KeyboardModal.Item>
-        </VStack>
-      </KeyboardModal.Body>
-
-      <KeyboardModal.Footer>
-        <HStack space="sm">
-          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
-            <ButtonText className="text-primary-400">Cancel</ButtonText>
-          </Button>
-          <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-primary-500">
-            <ButtonText className="text-background-0">Save Changes</ButtonText>
-          </Button>
-        </HStack>
-      </KeyboardModal.Footer>
-    </KeyboardModal>
+  
+  // 关闭modal并重置表单
+  const handleClose = useCallback(() => {
+    setNameError('');
+    setHostError('');
+    setPortError('');
+    bottomSheetModalRef.current?.dismiss();
+  }, []);
+  
+  // 暴露present方法
+  useImperativeHandle(ref, () => ({
+    present: () => {
+      loadServerData();
+      bottomSheetModalRef.current?.present();
+    },
+  }));
+  
+  const maxHeight = useMemo(
+    () => windowHeight - insets.top - 60,
+    [windowHeight, insets.top],
   );
-};
+  
+  return (
+    <ThemedBottomSheetModal
+      ref={bottomSheetModalRef}
+      index={0}
+      onDismiss={handleClose}
+      enablePanDownToClose={true}
+      topInset={insets.top}
+      maxDynamicContentSize={maxHeight}
+      enableDynamicSizing
+    >
+      <BottomSheetView style={{ paddingHorizontal: 16 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ width: '100%' }}
+        >
+          <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
+            <View className="pb-2">
+              <Text className="text-lg font-semibold text-primary-500">Edit Server</Text>
+            </View>
+            
+            <FormInput
+              title="Name"
+              error={nameError}
+              defaultValue={name}
+              onChangeText={(value: string) => {
+                setName(value);
+                setNameError('');
+              }}
+              placeholder="Server name"
+              maxLength={MAX_NAME_LENGTH}
+            />
+            
+            <FormInput
+              title="Host"
+              error={hostError}
+              defaultValue={host}
+              onChangeText={(value: string) => {
+                setHost(value);
+                setHostError('');
+              }}
+              placeholder="Host or IP address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            
+            <FormInput
+              title="Port"
+              error={portError}
+              defaultValue={port}
+              onChangeText={(value: string) => {
+                setPort(value);
+                setPortError('');
+              }}
+              placeholder="Port number"
+              keyboardType="numeric"
+            />
+            
+            <FormInput
+              title="Authorization Token (Optional)"
+              defaultValue={token}
+              onChangeText={(value: string) => setToken(value)}
+              placeholder="Enter token (without 'Bearer')"
+              secureTextEntry={true}
+            />
+            
+            <VStack space="xs">
+              <Text className="text-sm font-medium text-typography-600">Use SSL</Text>
+              <SegmentedControl
+                options={['Auto', 'Always', 'Never']}
+                value={useSSL}
+                onChange={(value) => {
+                  setUseSSL(value as Server['useSSL']);
+                }}
+                className="mt-1"
+              />
+            </VStack>
+            
+            <HStack space="sm" style={{ marginTop: 12 }}>
+              <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100 py-2">
+                <ButtonText className="text-primary-400">Cancel</ButtonText>
+              </Button>
+              <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-primary-500 py-2">
+                <ButtonText className="text-background-0">Save</ButtonText>
+              </Button>
+            </HStack>
+          </VStack>
+        </KeyboardAvoidingView>
+      </BottomSheetView>
+    </ThemedBottomSheetModal>
+  );
+});
+
+EditServerModal.displayName = 'EditServerModal';

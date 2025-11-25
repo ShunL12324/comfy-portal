@@ -27,6 +27,7 @@ interface ServersState {
     status: Server['status'],
     latency?: number,
     models?: Model[],
+    CPEEnable?: boolean,
   ) => void;
   refreshServers: () => Promise<void>;
   refreshServer: (id: string) => Promise<void>;
@@ -65,7 +66,7 @@ export const useServersStore = create<ServersState>()(
           ),
         })),
 
-      updateServerStatus: (id, status, latency, models) =>
+      updateServerStatus: (id, status, latency, models, CPEEnable) =>
         set((state) => ({
           servers: state.servers.map((s) =>
             s.id === id
@@ -73,10 +74,12 @@ export const useServersStore = create<ServersState>()(
                 ...s,
                 status,
                 latency,
+                CPEEnable,
                 ...(models && {
                   models,
                   lastModelSync: Date.now(),
                 }),
+                ...(status === 'offline' && { CPEEnable: undefined }),
               }
               : s,
           ),
@@ -87,13 +90,11 @@ export const useServersStore = create<ServersState>()(
         try {
           // update all servers to refreshing state
           set((state) => ({
-            servers: state.servers.map((server) => {
-              return {
-                ...server,
-                status: 'refreshing'
-              }
-            })
-          }))
+            servers: state.servers.map((server) => ({
+              ...server,
+              status: 'refreshing',
+            })),
+          }));
           const servers = get().servers;
           const results = await checkMultipleServers(servers);
           set((state) => ({
@@ -104,10 +105,12 @@ export const useServersStore = create<ServersState>()(
                   ...server,
                   status: result.status,
                   latency: result.latency,
+                  CPEEnable: result.CPEEnable,
                   ...(result.models && {
                     models: result.models,
                     lastModelSync: Date.now(),
                   }),
+                  ...(result.status === 'offline' && { CPEEnable: undefined }),
                 };
               }
               return server;
@@ -125,29 +128,27 @@ export const useServersStore = create<ServersState>()(
         if (!server) return;
 
         try {
-          // update the targer server status to refreshing
+          // update the target server status to refreshing
           set((state) => ({
             servers: state.servers.map((s) =>
-              s.id === id ? {
-                ...s,
-                status: 'refreshing'
-              }
-                : s,
+              s.id === id ? { ...s, status: 'refreshing' } : s,
             ),
-          }))
+          }));
           const result = await checkServerStatus(server);
           set((state) => ({
             servers: state.servers.map((s) =>
               s.id === id
                 ? {
-                  ...s,
-                  status: result.status,
-                  latency: result.latency,
-                  ...(result.models && {
-                    models: result.models,
-                    lastModelSync: Date.now(),
-                  }),
-                }
+                    ...s,
+                    status: result.status,
+                    latency: result.latency,
+                    CPEEnable: result.CPEEnable,
+                    ...(result.models && {
+                      models: result.models,
+                      lastModelSync: Date.now(),
+                    }),
+                    ...(result.status === 'offline' && { CPEEnable: undefined }),
+                  }
                 : s,
             ),
           }));

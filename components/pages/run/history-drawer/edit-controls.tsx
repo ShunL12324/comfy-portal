@@ -1,19 +1,19 @@
+import { BottomActionPanel } from '@/components/self-ui/bottom-action-panel';
 import { Button } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
-import { Check, MinusSquare, PlusSquare, Settings2, Trash2 } from 'lucide-react-native';
+import { Check, CheckSquare, MinusSquare, PlusSquare, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 
-interface EditButtonProps {
-  isEditMode: boolean;
+interface SelectButtonProps {
+  isSelectionMode: boolean;
   onPress: () => void;
 }
 
-export const EditButton = React.memo(({ isEditMode, onPress }: EditButtonProps) => (
+export const SelectButton = React.memo(({ isSelectionMode, onPress }: SelectButtonProps) => (
   <Button
     variant="outline"
     size="sm"
@@ -22,13 +22,13 @@ export const EditButton = React.memo(({ isEditMode, onPress }: EditButtonProps) 
   >
     <MotiView
       animate={{
-        translateY: isEditMode ? 0 : -20,
-        opacity: isEditMode ? 1 : 0,
+        translateY: isSelectionMode ? 0 : -20,
+        opacity: isSelectionMode ? 1 : 0,
       }}
       transition={{
         type: 'timing',
         duration: 150,
-        delay: isEditMode ? 0 : 50,
+        delay: isSelectionMode ? 0 : 50,
       }}
       className="absolute"
     >
@@ -39,26 +39,26 @@ export const EditButton = React.memo(({ isEditMode, onPress }: EditButtonProps) 
     </MotiView>
     <MotiView
       animate={{
-        translateY: isEditMode ? 20 : 0,
-        opacity: isEditMode ? 0 : 1,
+        translateY: isSelectionMode ? 20 : 0,
+        opacity: isSelectionMode ? 0 : 1,
       }}
       transition={{
         type: 'timing',
         duration: 150,
-        delay: isEditMode ? 50 : 0,
+        delay: isSelectionMode ? 50 : 0,
       }}
       className="absolute"
     >
       <HStack space="xs" className="items-center">
-        <Icon as={Settings2} size="sm" className="text-primary-500" />
-        <Text className="text-sm font-medium text-primary-500">Edit</Text>
+        <Icon as={CheckSquare} size="sm" className="text-primary-500" />
+        <Text className="text-sm font-medium text-primary-500">Select</Text>
       </HStack>
     </MotiView>
   </Button>
 ));
 
 interface BottomPanelProps {
-  isEditMode: boolean;
+  isSelectionMode: boolean;
   selectedImages: string[];
   images: Array<{ url: string; timestamp: number }>;
   onSelectAll: () => void;
@@ -67,48 +67,36 @@ interface BottomPanelProps {
 }
 
 export const BottomPanel = React.memo(
-  ({ isEditMode, selectedImages, images, onSelectAll, onDelete, insets }: BottomPanelProps) => (
-    <MotiView
-      animate={{
-        translateY: isEditMode ? 0 : 200,
-        opacity: isEditMode ? 1 : 0,
-      }}
-      transition={{
-        type: 'timing',
-        duration: 200,
-      }}
-      className="absolute bottom-0 left-0 right-0 border-t-[0.5px] border-t-background-100 bg-background-0"
-    >
-      <View style={{ paddingBottom: insets.bottom }} className="px-4 py-4">
-        <VStack space="sm">
-          <Text className="text-sm text-background-400">{selectedImages.length} selected</Text>
-          <Button
-            variant="outline"
-            size="lg"
-            onPress={onSelectAll}
-            className="h-12 w-full justify-start border-background-100 px-4"
-          >
-            <Icon
-              as={selectedImages.length === images.length ? MinusSquare : PlusSquare}
-              size="sm"
-              className="mr-2 text-primary-500"
-            />
-            <Text className="text-sm text-primary-500">
-              {selectedImages.length === images.length ? 'Deselect All' : 'Select All'}
-            </Text>
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onPress={onDelete}
-            isDisabled={selectedImages.length === 0}
-            className="h-12 w-full justify-start border-background-100 px-4"
-          >
-            <Icon as={Trash2} size="sm" className="mr-2 text-error-500" />
-            <Text className="text-sm text-error-500">Delete Selected</Text>
-          </Button>
-        </VStack>
-      </View>
-    </MotiView>
+  ({ isSelectionMode, selectedImages, images, onSelectAll, onDelete }: BottomPanelProps) => (
+    <BottomActionPanel isOpen={isSelectionMode}>
+      <VStack space="sm">
+        <Text className="text-sm text-background-400">{selectedImages.length} selected</Text>
+        <Button
+          variant="outline"
+          size="lg"
+          onPress={onSelectAll}
+          className="h-12 w-full justify-start border-background-100 px-4"
+        >
+          <Icon
+            as={selectedImages.length === images.length ? MinusSquare : PlusSquare}
+            size="sm"
+            className="mr-2 text-primary-500"
+          />
+          <Text className="text-sm text-primary-500">
+            {selectedImages.length === images.length ? 'Deselect All' : 'Select All'}
+          </Text>
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          onPress={onDelete}
+          isDisabled={selectedImages.length === 0}
+          className="h-12 w-full justify-start border-background-100 px-4"
+        >
+          <Icon as={Trash2} size="sm" className="mr-2 text-error-500" />
+          <Text className="text-sm text-error-500">Delete Selected</Text>
+        </Button>
+      </VStack>
+    </BottomActionPanel>
   ),
 );

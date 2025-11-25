@@ -10,5 +10,6 @@
   ],
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
-  }
+  },
+  "terminal.integrated.scrollback": 3000
 }

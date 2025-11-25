@@ -85,9 +85,9 @@ function RunWorkflowScreenContent() {
         progress={
           state.status === 'generating'
             ? {
-                current: state.progress.value,
-                total: state.progress.max,
-              }
+              current: state.progress.value,
+              total: state.progress.max,
+            }
             : undefined
         }
         workflowId={workflowRecord.id}

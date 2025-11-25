@@ -16,4 +16,5 @@ export interface Server {
   latency?: number;
   models?: Model[];
   lastModelSync?: number;
+  CPEEnable?: boolean; // Flag indicating Comfy Portal Endpoint is enabled
 }

@@ -1,13 +1,15 @@
 import { Drawer, DrawerBackdrop, DrawerContent, DrawerHeader } from '@/components/ui/drawer';
 import { FlatList } from '@/components/ui/flat-list';
+import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { loadHistoryImages } from '@/utils/image-storage';
 import * as FileSystem from 'expo-file-system';
+import { History } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomPanel, EditButton } from './edit-controls';
+import { BottomPanel, SelectButton } from './edit-controls';
 import { ImageItem, getItemLayout } from './image-item';
 
 interface HistoryDrawerProps {
@@ -30,7 +32,7 @@ export function HistoryDrawer({
   onImageDeleted,
 }: HistoryDrawerProps) {
   const insets = useSafeAreaInsets();
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -59,15 +61,15 @@ export function HistoryDrawer({
   // Reset state when drawer closes
   useEffect(() => {
     if (!isOpen) {
-      setIsEditMode(false);
+      setIsSelectionMode(false);
       setSelectedImages([]);
       setPage(1);
       setIsLoading(false);
     }
   }, [isOpen]);
 
-  const handleToggleEditMode = useCallback(() => {
-    setIsEditMode((prev) => !prev);
+  const handleToggleSelectionMode = useCallback(() => {
+    setIsSelectionMode((prev) => !prev);
     setSelectedImages([]);
   }, []);
 
@@ -99,7 +101,7 @@ export function HistoryDrawer({
         setImages(updatedImages);
 
         setSelectedImages([]);
-        setIsEditMode(false);
+        setIsSelectionMode(false);
         onImageDeleted?.();
       } catch (error) {
         console.error('Failed to delete images:', error);
@@ -107,17 +109,37 @@ export function HistoryDrawer({
     }
   }, [selectedImages, serverId, workflowId, onImageDeleted]);
 
+  const handleDeleteItem = useCallback(
+    async (url: string) => {
+      if (workflowId) {
+        try {
+          await FileSystem.deleteAsync(url);
+          await FileSystem.deleteAsync(`${url}.json`).catch(() => { });
+
+          // Refresh images
+          const updatedImages = await loadHistoryImages(serverId, workflowId);
+          setImages(updatedImages);
+          onImageDeleted?.();
+        } catch (error) {
+          console.error('Failed to delete image:', error);
+        }
+      }
+    },
+    [serverId, workflowId, onImageDeleted],
+  );
+
   const renderItem = useCallback(
     ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
       <ImageItem
         url={item.url}
         index={index}
-        isEditMode={isEditMode}
+        isSelectionMode={isSelectionMode}
         isSelected={selectedImages.includes(item.url)}
-        onPress={() => (isEditMode ? handleToggleSelect(item.url) : onSelectImage?.(item.url))}
+        onPress={() => (isSelectionMode ? handleToggleSelect(item.url) : onSelectImage?.(item.url))}
+        onDelete={() => handleDeleteItem(item.url)}
       />
     ),
-    [isEditMode, selectedImages, onSelectImage, handleToggleSelect],
+    [isSelectionMode, selectedImages, onSelectImage, handleToggleSelect],
   );
 
   const handleLoadMore = useCallback(() => {
@@ -171,15 +193,16 @@ export function HistoryDrawer({
         <View style={{ paddingTop: insets.top }} className="flex-1">
           <DrawerHeader className="border-b-[0.5px] border-b-background-100 px-4">
             <View className="flex-row items-center py-3">
-              <View className="flex-1">
-                <Text className="text-xl font-medium text-background-800">History</Text>
+              <View className="flex-1 flex-row items-center gap-2">
+                <Icon as={History} size="sm" className="text-background-800" />
+                <Text className="text-base font-medium text-background-800">History</Text>
               </View>
-              <EditButton isEditMode={isEditMode} onPress={handleToggleEditMode} />
+              <SelectButton isSelectionMode={isSelectionMode} onPress={handleToggleSelectionMode} />
             </View>
           </DrawerHeader>
           <FlatList {...flatListProps} />
           <BottomPanel
-            isEditMode={isEditMode}
+            isSelectionMode={isSelectionMode}
             selectedImages={selectedImages}
             images={images}
             onSelectAll={handleSelectAll}

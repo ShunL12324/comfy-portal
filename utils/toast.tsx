@@ -1,9 +1,9 @@
-import { View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import Toast from 'react-native-toast-message';
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useThemeStore } from '@/store/theme';
+import { AlertCircle, CheckCircle2, Info } from 'lucide-react-native';
+import { StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 /**
  * Props for custom toast components
@@ -57,6 +57,7 @@ const getThemedStyles = (isDark: boolean): ThemedStyles =>
       minWidth: 320,
       borderRadius: 10,
       paddingVertical: 10,
+      paddingBottom: 20,
       paddingHorizontal: 14,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },

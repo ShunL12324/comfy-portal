@@ -108,6 +108,7 @@ export const ImagePreview = memo(function ParallaxImage({
     previewTranslateY.value = 0;
     savedPreviewTranslateX.value = 0;
     savedPreviewTranslateY.value = 0;
+    savedPreviewTranslateY.value = 0;
   };
 
   return (
@@ -214,7 +215,15 @@ export const ImagePreview = memo(function ParallaxImage({
                 >
                   <Icon as={X} size="sm" className="text-white" />
                 </TouchableOpacity>
+
               </ModalBody>
+              <ImageActions
+                isOpen={showActionsheet}
+                onClose={() => setShowActionsheet(false)}
+                imageUrl={imageUrl}
+                workflowId={workflowId}
+                serverId={serverId}
+              />
             </ModalContent>
           </Modal>
         </View>
@@ -238,13 +247,7 @@ export const ImagePreview = memo(function ParallaxImage({
         <ProgressOverlay current={progress.current} total={progress.total} />
       )}
 
-      <ImageActions
-        isOpen={showActionsheet}
-        onClose={() => setShowActionsheet(false)}
-        imageUrl={imageUrl}
-        workflowId={workflowId}
-        serverId={serverId}
-      />
+
     </View>
   );
 });

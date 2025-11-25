@@ -1,24 +1,24 @@
-import React, { createContext, useMemo, useContext } from 'react';
 import {
   Table as ExpoTable,
-  THead as ExpoTHead,
   TBody as ExpoTBody,
-  TFoot as ExpoTFoot,
-  TR as ExpoTR,
   Caption as ExpoTCaption,
+  TFoot as ExpoTFoot,
+  THead as ExpoTHead,
+  TR as ExpoTR,
 } from '@expo/html-elements';
+import React, { createContext, useContext, useMemo } from 'react';
 
+import { Text, View } from 'react-native';
 import {
-  tableStyle,
-  tableHeaderStyle,
   tableBodyStyle,
+  tableCaptionStyle,
+  tableDataStyle,
   tableFooterStyle,
+  tableHeaderStyle,
   tableHeadStyle,
   tableRowStyleStyle,
-  tableDataStyle,
-  tableCaptionStyle,
+  tableStyle,
 } from './styles';
-import { Text, View } from 'react-native';
 
 const TableHeaderContext = createContext<{
   isHeaderRow: boolean;
@@ -37,10 +37,12 @@ type ITableBodyProps = React.ComponentProps<typeof ExpoTBody>;
 type ITableFooterProps = React.ComponentProps<typeof ExpoTFoot>;
 type ITableHeadProps = React.ComponentProps<typeof View | typeof Text> & {
   useRNView?: boolean;
+  className?: string;
 };
 type ITableRowProps = React.ComponentProps<typeof ExpoTR>;
 type ITableDataProps = React.ComponentProps<typeof View | typeof Text> & {
   useRNView?: boolean;
+  className?: string;
 };
 type ITableCaptionProps = React.ComponentProps<typeof ExpoTCaption>;
 
@@ -111,9 +113,11 @@ const TableFooter = React.forwardRef<React.ElementRef<typeof ExpoTFoot>, ITableF
 const TableHead = React.forwardRef<React.ElementRef<typeof View | typeof Text>, ITableHeadProps>(
   ({ useRNView = false, className, ...props }, ref) => {
     if (useRNView) {
-      return <View ref={ref} className={tableHeadStyle({ class: className })} {...props} />;
+      // @ts-ignore
+      return <View ref={ref as any} className={tableHeadStyle({ class: className })} {...props} />;
     } else {
-      return <Text ref={ref} className={tableHeadStyle({ class: className })} {...props} />;
+      // @ts-ignore
+      return <Text ref={ref as any} className={tableHeadStyle({ class: className })} {...props} />;
     }
   },
 );
@@ -139,9 +143,11 @@ const TableRow = React.forwardRef<React.ElementRef<typeof ExpoTR>, ITableRowProp
 const TableData = React.forwardRef<React.ElementRef<typeof View | typeof Text>, ITableDataProps>(
   ({ useRNView = false, className, ...props }, ref) => {
     if (useRNView) {
-      return <View ref={ref} className={tableDataStyle({ class: className })} {...props} />;
+      // @ts-ignore
+      return <View ref={ref as any} className={tableDataStyle({ class: className })} {...props} />;
     } else {
-      return <Text ref={ref} className={tableDataStyle({ class: className })} {...props} />;
+      // @ts-ignore
+      return <Text ref={ref as any} className={tableDataStyle({ class: className })} {...props} />;
     }
   },
 );
@@ -168,4 +174,5 @@ TableRow.displayName = 'TableRow';
 TableData.displayName = 'TableData';
 TableCaption.displayName = 'TableCaption';
 
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableData, TableCaption };
+export { Table, TableBody, TableCaption, TableData, TableFooter, TableHead, TableHeader, TableRow };
+

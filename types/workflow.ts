@@ -17,10 +17,11 @@ export interface WorkflowRecord {
   name: string;
   serverId: string;
   data: Workflow;
-  addMethod: 'file' | 'clipboard' | 'url' | 'preset';
+  addMethod: 'file' | 'clipboard' | 'url' | 'preset' | 'server-sync';
   thumbnail?: string;
   createdAt: Date;
   lastUsed?: Date;
+  metadata?: Record<string, any>;
 }
 
 

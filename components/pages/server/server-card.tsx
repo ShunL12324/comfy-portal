@@ -8,15 +8,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
+import { Icon } from '@/components/ui/icon';
+import { Menu, MenuItem, MenuItemLabel } from '@/components/ui/menu';
 import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/store/servers';
 import { router } from 'expo-router';
-import { Activity, Globe, Hash, Layers, Loader, Server, Settings2, Trash2, Unplug } from 'lucide-react-native';
+import { EllipsisVertical, Loader, Server, Settings2, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import { Icon } from '../../ui/icon';
-import { EditServerModal } from './edit-server-modal';
+import { EditServerModal, type EditServerModalRef } from './edit-server-modal';
 
 // Types
 interface ServerCardProps {
@@ -29,110 +31,88 @@ interface ServerInfoProps {
   host: string;
   port: number;
   models?: any[];
-}
-
-interface ServerStatusProps {
   status: 'online' | 'offline' | 'refreshing';
   latency?: number;
-  isRefreshing: boolean;
 }
 
-interface ActionButtonsProps {
+interface ActionMenuProps {
   onEdit: () => void;
   onDelete: () => void;
 }
 
 // Sub-components
-const ServerInfo = ({ name, host, port, models }: ServerInfoProps) => (
-  <View className="h-full flex-1 flex-row items-center gap-4">
-    <View className="h-24 w-24 items-center justify-center rounded-lg bg-background-0">
-      <Icon as={Server} size="xl" className="text-primary-500" />
-    </View>
-    <View className="h-full min-w-0 flex-1 items-start justify-start">
-      <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
-        {name}
-      </Text>
-      <View className="mt-2 flex-col gap-1">
-        <View className="flex-row items-center gap-1">
-          <Icon as={Globe} size="2xs" className="shrink-0 text-primary-500" />
-          <Text className="flex-shrink text-2xs text-typography-400" numberOfLines={1}>
-            {host}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Icon as={Hash} size="2xs" className="shrink-0 text-primary-500" />
-          <Text className="text-2xs text-typography-400" numberOfLines={1}>
-            {port}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Icon as={Layers} size="2xs" className="shrink-0 text-primary-500" />
-          <Text className="text-2xs text-typography-400" numberOfLines={1}>
-            {models?.length || 'No'} models
-          </Text>
-        </View>
+const ServerInfo = ({ name, host, port, models, status, latency }: ServerInfoProps) => {
+  const isRefreshing = status === 'refreshing';
+  const isOnline = status === 'online';
+
+  return (
+    <HStack space="md" className="flex-1 items-center">
+      <View className="h-16 w-16 items-center justify-center rounded-lg bg-background-0 p-2">
+        <Icon as={Server} size="xl" className="text-primary-500" />
       </View>
-    </View>
-  </View>
-);
-
-const ActionButtons = ({ onEdit, onDelete }: ActionButtonsProps) => (
-  <View className="mb-auto flex-row items-center justify-between">
-    <TouchableOpacity
-      onPress={onEdit}
-      className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-    >
-      <Icon as={Settings2} size="sm" className="text-primary-500" />
-    </TouchableOpacity>
-    <TouchableOpacity
-      onPress={onDelete}
-      className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-    >
-      <Icon as={Trash2} size="sm" className="text-error-600" />
-    </TouchableOpacity>
-  </View>
-);
-
-const ServerStatus = ({ status, latency, isRefreshing }: ServerStatusProps) => (
-  <TouchableOpacity
-    disabled={isRefreshing}
-    className={`items-center rounded-md px-2 py-2 ${status === 'online' ? 'bg-success-100/50' : 'bg-background-0'}`}
-  >
-    <MotiView
-      from={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{
-        type: 'spring',
-        damping: 20,
-        mass: 0.8,
-      }}
-      className="w-full flex-row items-center justify-around"
-    >
-      {isRefreshing ? (
-        <MotiView
-          from={{ rotate: '0deg' }}
-          animate={{ rotate: '360deg' }}
-          transition={{
-            loop: true,
-            type: 'timing',
-            duration: 1000,
-          }}
-        >
-          <Icon as={Loader} size="sm" className="text-primary-500" />
-        </MotiView>
-      ) : status === 'online' ? (
-        <Icon as={Activity} size="sm" className="text-success-500" />
-      ) : (
-        <Icon as={Unplug} size="sm" className="text-typography-400" />
-      )}
-      {!isRefreshing && (
-        <Text className={`text-2xs font-medium ${status === 'online' ? 'text-success-500' : 'text-typography-400'}`}>
-          {status === 'online' ? `${latency?.toString()}ms` : 'Offline'}
+      <VStack space="xs" className="flex-1">
+        <HStack space="sm" className="items-center">
+          {isRefreshing ? (
+            <MotiView
+              from={{ rotate: '0deg' }}
+              animate={{ rotate: '360deg' }}
+              transition={{ loop: true, type: 'timing', duration: 1000 }}
+              className="h-4 w-4 items-center justify-center"
+            >
+              <Icon as={Loader} size="sm" className="text-primary-500" />
+            </MotiView>
+          ) : (
+            <View
+              className={`h-2 w-2 rounded-full ${isOnline ? 'bg-success-500' : 'bg-typography-400'}`}
+            />
+          )}
+          <Text className="flex-1 text-base font-semibold text-typography-950" numberOfLines={1}>
+            {name}
+          </Text>
+        </HStack>
+        <Text className="text-xs text-typography-500" numberOfLines={1}>
+          {host}:{port} • {models?.length ?? 'No'} models
+          {isOnline && latency !== undefined ? ` • ${latency}ms` : ''}
+          {!isOnline && !isRefreshing ? ' • Offline' : ''}
         </Text>
-      )}
-    </MotiView>
-  </TouchableOpacity>
+      </VStack>
+    </HStack>
+  );
+};
+
+const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
+  <Menu
+    placement="bottom right"
+    className="rounded-xl border border-background-200 bg-background-100 p-1"
+    trigger={({ ...triggerProps }) => {
+      return (
+        <TouchableOpacity {...triggerProps} className="h-9 w-9 items-center justify-center rounded-md">
+          <Icon as={EllipsisVertical} size="md" className="text-typography-500" />
+        </TouchableOpacity>
+      );
+    }}
+  >
+    <MenuItem
+      key="edit"
+      textValue="Edit"
+      onPress={onEdit}
+      className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+    >
+      <Icon as={Settings2} size="sm" className="mr-2 text-typography-700" />
+      <MenuItemLabel size="sm">Edit</MenuItemLabel>
+    </MenuItem>
+    <MenuItem
+      key="delete"
+      textValue="Delete"
+      onPress={onDelete}
+      className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+    >
+      <Icon as={Trash2} size="sm" className="mr-2 text-error-600" />
+      <MenuItemLabel size="sm" className="text-error-600">
+        Delete
+      </MenuItemLabel>
+    </MenuItem>
+  </Menu>
 );
 
 const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: () => void; onDelete: () => void }) => (
@@ -163,19 +143,18 @@ const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: 
 
 // Main component
 export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const editModalRef = useRef<EditServerModalRef>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const removeServer = useServersStore((state) => state.removeServer);
   const server = useServersStore((state) => state.servers.find((s) => s.id === id));
 
   if (!server) return null;
 
   const { name, host, port, status, latency, models } = server;
-
-  useEffect(() => {
-    setIsRefreshing(server.status === 'refreshing');
-  }, [server]);
+  
+  const handleEdit = () => {
+    editModalRef.current?.present();
+  };
 
   return (
     <>
@@ -191,19 +170,16 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         <TouchableOpacity
           onPress={() => router.push(`/workflow/${id}`)}
           activeOpacity={0.8}
-          className="overflow-hidden rounded-xl bg-background-50"
+          className="overflow-hidden rounded-xl bg-background-50 p-3.5"
         >
-          <View className="flex-row items-center justify-between p-3.5">
-            <ServerInfo name={name} host={host} port={port} models={models} />
-            <View className="ml-4 h-24 w-20 flex-col justify-between">
-              <ActionButtons onEdit={() => setIsEditModalOpen(true)} onDelete={() => setIsDeleteAlertOpen(true)} />
-              <ServerStatus status={status} latency={latency} isRefreshing={isRefreshing} />
-            </View>
-          </View>
+          <HStack space="sm" className="items-center justify-between">
+            <ServerInfo name={name} host={host} port={port} models={models} status={status} latency={latency} />
+            <ActionMenu onEdit={handleEdit} onDelete={() => setIsDeleteAlertOpen(true)} />
+          </HStack>
         </TouchableOpacity>
       </MotiView>
 
-      <EditServerModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} serverId={id} />
+      <EditServerModal ref={editModalRef} serverId={id} />
 
       <DeleteAlert
         isOpen={isDeleteAlertOpen}

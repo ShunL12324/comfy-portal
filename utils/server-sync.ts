@@ -124,25 +124,48 @@ export async function scanServerModelsByFolder(
 /**
  * Scans and retrieves specific model types from a ComfyUI server
  */
-export async function scanServerModels(server: Server): Promise<Model[]> {
-  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders'];
+export async function scanServerModels(
+  server: Server,
+): Promise<{ models: Model[]; isCPEEnabled: boolean }> {
+  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders', 'upscale_models', 'controlnet'];
   let models: Model[] = [];
+  let isCPEEnabled = false;
 
   try {
-    // First check system stats to determine OS type
+    // --- Attempt to fetch /system_stats (optional, might fail) ---
     let isWindowsServer = false;
-    const statsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
-
     try {
+      const statsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
       const statsResponse = await fetchWithAuth(statsUrl, server.token);
       if (statsResponse.ok) {
-        const stats = await statsResponse.json() as SystemStats;
-        isWindowsServer = stats.system?.os === 'nt';
+        const systemStats = await statsResponse.json() as SystemStats;
+        console.log(systemStats);
+        isWindowsServer = systemStats.system?.os === 'nt';
       }
     } catch (error) {
-      console.warn('Failed to get system stats, assuming non-Windows OS:', error);
+      // Removed system stats error log
     }
+    // --- End /system_stats attempt ---
 
+    // --- Attempt to fetch /extensions and check for comfy-portal-endpoint ---
+    try {
+      const extensionsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/extensions');
+      const extensionsResponse = await fetchWithAuth(extensionsUrl, server.token);
+      if (extensionsResponse.ok) {
+        const extensionsData = await extensionsResponse.json();
+        if (
+          Array.isArray(extensionsData) &&
+          extensionsData.some((ext: unknown) => typeof ext === 'string' && ext.includes('comfy-portal-endpoint'))
+        ) {
+          isCPEEnabled = true;
+        }
+      }
+    } catch (err) {
+      // Removed extensions error log
+    }
+    // --- End /extensions attempt ---
+
+    // --- Continue with existing logic using /experiment/models ---
     const foldersUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/experiment/models');
     const foldersResponse = await fetchWithAuth(foldersUrl, server.token);
     if (!foldersResponse.ok) throw new Error('Failed to get model folders');
@@ -156,10 +179,10 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
       models = [...models, ...folderModels];
     }));
 
-    return models;
+    return { models, isCPEEnabled };
   } catch (error) {
     console.error('Failed to scan server models:', error);
-    return [];
+    return { models: [], isCPEEnabled: false };
   }
 }
 
@@ -170,6 +193,7 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
  * @property {Server['status']} status - Current server status ('online' or 'offline')
  * @property {number} [latency] - Server response time in milliseconds (only if online)
  * @property {Model[]} [models] - Array of available models (only if online)
+ * @property {boolean} [CPEEnable] - Indicates if Comfy Portal Endpoint is enabled
  * @remarks
  * This function performs three main operations:
  * 1. Checks server availability using /system_stats endpoint
@@ -179,7 +203,7 @@ export async function scanServerModels(server: Server): Promise<Model[]> {
  */
 export async function checkServerStatus(
   server: Server,
-): Promise<{ status: Server['status']; latency?: number; models?: Model[] }> {
+): Promise<{ status: Server['status']; latency?: number; models?: Model[]; CPEEnable?: boolean }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -190,12 +214,20 @@ export async function checkServerStatus(
     const latency = Date.now() - startTime;
     clearTimeout(timeoutId);
 
-    if (!response.ok) return { status: 'offline' };
+    if (!response.ok) {
+      return { status: 'offline' };
+    }
 
-    const models = await scanServerModels(server);
-    return { status: 'online', latency, models };
-  } catch (error) {
+    const { models, isCPEEnabled } = await scanServerModels(server);
+
+    return { status: 'online', latency, models, CPEEnable: isCPEEnabled };
+  } catch (error: any) {
     clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.log(`[${server.name}] Server check timed out.`);
+    } else {
+      console.error(`[${server.name}] Error during server check:`, error);
+    }
     return { status: 'offline' };
   }
 }

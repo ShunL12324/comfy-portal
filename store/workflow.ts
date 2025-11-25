@@ -12,6 +12,7 @@ interface WorkflowStoreState {
   updateWorkflow: (id: string, updates: Partial<Omit<WorkflowRecord, 'id'>>) => void;
   updateUsage: (id: string) => void;
   updateNodeInput: (workflowId: string, nodeId: string, inputKey: string, value: any) => void;
+  clearServerSyncedWorkflows: (serverId: string) => void;
 }
 
 export const useWorkflowStore = create<WorkflowStoreState>()(
@@ -79,6 +80,26 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
             };
           }),
         })),
+
+      clearServerSyncedWorkflows: (serverId) =>
+        set((state) => {
+          // First, identify workflows to be removed to perform cleanup if necessary
+          const workflowsToRemove = state.workflow.filter(
+            (wf) => wf.serverId === serverId && wf.addMethod === 'server-sync'
+          );
+
+          // Perform cleanup for each workflow being removed
+          // This is similar to removeWorkflow, but we are batching the state update
+          workflowsToRemove.forEach(workflow => {
+            cleanupWorkflowData(workflow.serverId, workflow.id).catch(console.warn); // Changed to console.warn
+          });
+
+          return {
+            workflow: state.workflow.filter(
+              (wf) => !(wf.serverId === serverId && wf.addMethod === 'server-sync')
+            ),
+          };
+        }),
     }),
     {
       name: 'workflows-storage',

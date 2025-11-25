@@ -13,11 +13,13 @@ import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Image } from '@/components/ui/image';
 import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/store/workflow';
+import { formatDateToYYYYMMDD } from '@/utils/date';
 import { useRouter } from 'expo-router';
-import { ImageIcon, Settings2, Trash2 } from 'lucide-react-native';
+import { ImageIcon, Settings2 } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, TouchableOpacity, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 interface WorkflowCardProps {
   id: string;
@@ -41,61 +43,58 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
   return (
     <>
       <Pressable
-        className="active:scale-98 overflow-hidden rounded-xl bg-background-50 active:opacity-80"
+        className="active:scale-98 overflow-hidden rounded-xl bg-background-50 active:opacity-90 shadow-lg shadow-black/5 relative"
         onPress={() => router.push(`/workflow/${workflowRecord?.serverId}/run/${workflowRecord?.id}`)}
       >
         {/* Top Image Section */}
-        <View className="h-64 w-full bg-background-100">
+        <View className="h-48 w-full bg-background-100">
           {workflowRecord?.thumbnail ? (
             <Image
               source={{ uri: workflowRecord?.thumbnail }}
               className="w-full flex-1"
-              alt="Workflow thumbnail"
+              alt={workflowRecord.name || 'Workflow thumbnail'}
               onError={(error) => {
                 console.error('[WorkflowCard] Failed to load thumbnail:', error.nativeEvent.error);
-                // Only clear invalid thumbnail if the file doesn't exist
                 if (error.nativeEvent.error.includes('no such file')) {
                   useWorkflowStore.getState().updateWorkflow(id, { thumbnail: undefined });
                 }
               }}
             />
           ) : (
-            <View className="flex-1 items-center justify-center">
-              <Icon as={ImageIcon} size="xl" className="h-8 w-8 text-primary-500" />
+            <View className="flex-1 items-center justify-center bg-background-200">
+              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-typography-400" />
             </View>
           )}
         </View>
 
-        {/* Bottom Info Section */}
-        <View className="p-3">
-          <Text className="text-base font-semibold text-typography-950" numberOfLines={1}>
+        {/* Bottom Info Section - Revised Structure */}
+        <View className="p-4">
+          <Heading size="sm" className="text-typography-900" numberOfLines={1}>
             {workflowRecord.name}
-          </Text>
+          </Heading>
 
-          <View className="mt-2 flex-row items-center justify-between">
-            <View className="flex-1">
+          <VStack className="mt-2 space-y-1">
+            <Text className="text-xs text-typography-500">
+              Last used: {workflowRecord.lastUsed ? formatDateToYYYYMMDD(workflowRecord.lastUsed) : 'Never'}
+            </Text>
+            {workflowRecord.addMethod === 'server-sync' && workflowRecord.metadata?.originalFilename && (
               <Text className="text-xs text-typography-400" numberOfLines={1}>
-                {'No model selected'}
+                Path: {String(workflowRecord.metadata.originalFilename)}
               </Text>
-              <Text className="mt-1 text-xs text-typography-400">Last used: {'Never'}</Text>
-            </View>
-
-            <View className="ml-2 flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => setIsEditModalOpen(true)}
-                className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-              >
-                <Icon as={Settings2} size="sm" className="text-primary-500" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setIsDeleteAlertOpen(true)}
-                className="h-9 w-9 items-center justify-center rounded-md bg-background-0 active:bg-background-100"
-              >
-                <Icon as={Trash2} size="sm" className="text-error-600" />
-              </TouchableOpacity>
-            </View>
-          </View>
+            )}
+          </VStack>
         </View>
+
+        {/* Settings Icon - Positioned absolutely at top-right, now directly opens Edit Modal */}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            setIsEditModalOpen(true);
+          }}
+          className="absolute top-2 right-2 z-10 h-8 w-8 items-center justify-center rounded-md bg-black/20 active:bg-black/30"
+        >
+          <Icon as={Settings2} size="sm" className="text-white" />
+        </Pressable>
       </Pressable>
 
       <EditWorkflowModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} workflowId={id} />

@@ -1,21 +1,65 @@
+import { OverlayButton } from '@/components/self-ui/overlay-button';
 import { Box } from '@/components/ui/box';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
+import { showToast } from '@/utils/toast';
 import { Image } from 'expo-image';
-import { Check } from 'lucide-react-native';
+import * as MediaLibrary from 'expo-media-library';
+import { Check, Download, Share as ShareIcon, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
+import { Alert, Share, View } from 'react-native';
 
 interface ImageItemProps {
   url: string;
   index: number;
-  isEditMode: boolean;
+  isSelectionMode: boolean;
   isSelected: boolean;
   onPress: () => void;
+  onDelete?: () => void;
 }
 
 export const ImageItem = React.memo(
-  function ImageItem({ url, index, isEditMode, isSelected, onPress }: ImageItemProps) {
+  function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: ImageItemProps) {
+    const handleShare = async () => {
+      try {
+        await Share.share({
+          url,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    };
+
+    const handleSave = async () => {
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showToast.error('Permission needed', 'Please grant permission to save images.');
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(url);
+        showToast.success('Saved', 'Image saved to gallery.');
+      } catch (error) {
+        console.error('Error saving:', error);
+        showToast.error('Error', 'Failed to save image.');
+      }
+    };
+
+    const handleDelete = () => {
+      Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: onDelete,
+        },
+      ]);
+    };
+
     return (
       <Pressable onPress={onPress} className="relative mb-4">
         <Box className="aspect-square overflow-hidden rounded-md border-outline-50">
@@ -31,7 +75,7 @@ export const ImageItem = React.memo(
             priority={index < 4 ? 'high' : 'normal'}
           />
         </Box>
-        {isEditMode && (
+        {isSelectionMode ? (
           <MotiView
             from={{
               opacity: 0,
@@ -46,10 +90,16 @@ export const ImageItem = React.memo(
               damping: 20,
               stiffness: 300,
             }}
-            className="absolute right-2 top-2 rounded-full bg-primary-500 p-1.5 shadow-sm"
+            className="absolute right-2 bottom-2 rounded-full bg-accent-500 p-1.5 shadow-sm"
           >
-            <Icon as={Check} size="sm" className="text-background-0" />
+            <Icon as={Check} size="sm" className="text-white" />
           </MotiView>
+        ) : (
+          <View className="absolute right-2 top-2 flex-row gap-2">
+            <OverlayButton icon={ShareIcon} onPress={handleShare} />
+            <OverlayButton icon={Download} onPress={handleSave} />
+            {onDelete && <OverlayButton icon={Trash2} onPress={handleDelete} iconColor="#ef4444" />}
+          </View>
         )}
       </Pressable>
     );
@@ -57,7 +107,7 @@ export const ImageItem = React.memo(
   (prevProps, nextProps) => {
     return (
       prevProps.url === nextProps.url &&
-      prevProps.isEditMode === nextProps.isEditMode &&
+      prevProps.isSelectionMode === nextProps.isSelectionMode &&
       prevProps.isSelected === nextProps.isSelected
     );
   },

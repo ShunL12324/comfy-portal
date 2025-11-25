@@ -1,5 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
-import { AddServerModal } from '@/components/pages/server/add-server-modal';
+import { AddServerModal, type AddServerModalRef } from '@/components/pages/server/add-server-modal';
 import { ServerCard } from '@/components/pages/server/server-card';
 import { Button } from '@/components/ui/button';
 import { Center } from '@/components/ui/center';
@@ -13,10 +13,10 @@ import { useServersStore } from '@/store/servers';
 import { Link } from 'expo-router';
 import { ArrowRight, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 export default function HomeScreen() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const addServerModalRef = useRef<AddServerModalRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { servers, refreshServer } = useServersStore();
 
@@ -30,6 +30,7 @@ export default function HomeScreen() {
     <View className={`flex-1 bg-background-0`}>
       <AppBar
         title="Servers"
+        titleSize="xl"
         bottomElement={
           <HStack space="sm" className="items-center">
             <Button
@@ -37,7 +38,7 @@ export default function HomeScreen() {
               action="primary"
               size="md"
               className="h-11 flex-1 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
-              onPress={() => setIsAddModalOpen(true)}
+              onPress={() => addServerModalRef.current?.present()}
             >
               <HStack space="sm" className="items-center justify-center">
                 <Icon as={Plus} size="md" className="text-primary-500" />
@@ -127,7 +128,7 @@ export default function HomeScreen() {
         </VStack>
       </ScrollView>
 
-      <AddServerModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <AddServerModal ref={addServerModalRef} />
     </View>
   );
 }
