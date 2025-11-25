@@ -16,7 +16,7 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 // Initialize Sentry
@@ -59,6 +59,7 @@ function RootLayoutNav() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+  const insets = useSafeAreaInsets();
   const systemColorScheme = useColorScheme();
   const { theme, setSystemTheme } = useThemeStore();
 
@@ -101,7 +102,7 @@ function RootLayoutNav() {
           </SafeAreaView>
         </GluestackUIProvider>
       </GestureHandlerRootView>
-      <Toast config={toastConfig} />
+      <Toast config={toastConfig} topOffset={insets.top + 8} />
     </>
   );
 }

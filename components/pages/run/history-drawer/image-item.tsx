@@ -8,7 +8,8 @@ import * as MediaLibrary from 'expo-media-library';
 import { Check, Download, Share as ShareIcon, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
-import { Alert, Share, View } from 'react-native';
+import { Share, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ImageItemProps {
   url: string;
@@ -21,6 +22,8 @@ interface ImageItemProps {
 
 export const ImageItem = React.memo(
   function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: ImageItemProps) {
+    const insets = useSafeAreaInsets();
+
     const handleShare = async () => {
       try {
         await Share.share({
@@ -35,29 +38,19 @@ export const ImageItem = React.memo(
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          showToast.error('Permission needed', 'Please grant permission to save images.');
+          showToast.error('Permission needed', 'Please grant permission to save images.', insets.top + 8);
           return;
         }
         await MediaLibrary.saveToLibraryAsync(url);
-        showToast.success('Saved', 'Image saved to gallery.');
+        showToast.success('Saved', 'Image saved to gallery.', insets.top + 8);
       } catch (error) {
         console.error('Error saving:', error);
-        showToast.error('Error', 'Failed to save image.');
+        showToast.error('Error', 'Failed to save image.', insets.top + 8);
       }
     };
 
     const handleDelete = () => {
-      Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: onDelete,
-        },
-      ]);
+      onDelete?.();
     };
 
     return (

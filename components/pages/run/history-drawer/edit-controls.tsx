@@ -4,7 +4,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { Check, CheckSquare, MinusSquare, PlusSquare, Trash2 } from 'lucide-react-native';
+import { Check, CheckSquare, Download, MinusSquare, PlusSquare, Share, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 
@@ -63,10 +63,12 @@ interface BottomPanelProps {
   images: Array<{ url: string; timestamp: number }>;
   onSelectAll: () => void;
   onDelete: () => void;
+  onShare: () => void;
+  onSave: () => void;
 }
 
 export const BottomPanel = React.memo(
-  ({ isSelectionMode, selectedImages, images, onSelectAll, onDelete }: BottomPanelProps) => (
+  ({ isSelectionMode, selectedImages, images, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) => (
     <BottomActionPanel isOpen={isSelectionMode}>
       <VStack space="sm">
         <Text className="text-sm text-background-400">{selectedImages.length} selected</Text>
@@ -85,6 +87,28 @@ export const BottomPanel = React.memo(
             {selectedImages.length === images.length ? 'Deselect All' : 'Select All'}
           </Text>
         </Button>
+        <HStack space="sm">
+          <Button
+            variant="outline"
+            size="lg"
+            onPress={onShare}
+            isDisabled={selectedImages.length === 0}
+            className="h-12 flex-1 justify-start border-background-100 px-4"
+          >
+            <Icon as={Share} size="sm" className="mr-2 text-primary-500" />
+            <Text className="text-sm text-primary-500">Share</Text>
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onPress={onSave}
+            isDisabled={selectedImages.length === 0}
+            className="h-12 flex-1 justify-start border-background-100 px-4"
+          >
+            <Icon as={Download} size="sm" className="mr-2 text-primary-500" />
+            <Text className="text-sm text-primary-500">Save</Text>
+          </Button>
+        </HStack>
         <Button
           variant="outline"
           size="lg"

@@ -1,4 +1,4 @@
-import { Compass, Server, Settings2 } from 'lucide-react-native';
+import { Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { Dimensions } from 'react-native';
@@ -9,7 +9,7 @@ import { Text } from '../ui/text';
 import { VStack } from '../ui/vstack';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const NUM_TABS = 3;
+const NUM_TABS = 2;
 const TAB_WIDTH = SCREEN_WIDTH / NUM_TABS;
 
 export type TabRoute = 'server' | 'explore' | 'setting';
@@ -47,7 +47,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
       case 'explore':
         return TAB_WIDTH + 40;
       case 'setting':
-        return TAB_WIDTH * 2 + 40;
+        return TAB_WIDTH + 40;
       default:
         return 40;
     }
@@ -78,18 +78,6 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
           label="Server"
           isActive={activeTab === 'server'}
           onPress={() => onChangeTab('server')}
-        />
-        <TabItem
-          icon={
-            <Icon
-              as={Compass}
-              size="lg"
-              className={`${activeTab === 'explore' ? 'text-typography-950' : 'text-typography-400'}`}
-            />
-          }
-          label="Explore"
-          isActive={activeTab === 'explore'}
-          onPress={() => onChangeTab('explore')}
         />
         <TabItem
           icon={

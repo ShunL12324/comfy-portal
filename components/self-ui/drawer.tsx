@@ -1,9 +1,11 @@
 import { Colors } from '@/constants/Colors';
 import { useThemeStore } from '@/store/theme';
+import { toastConfig } from '@/utils/toast';
 import { AnimatePresence, MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface DrawerProps {
   children: React.ReactNode;
   anchor?: 'left' | 'right' | 'top' | 'bottom';
   size?: 'sm' | 'md' | 'lg' | 'full';
+  insets?: EdgeInsets;
 }
 
 export const Drawer = ({
@@ -19,10 +22,12 @@ export const Drawer = ({
   children,
   anchor = 'right',
   size = 'md',
+  insets: propInsets,
 }: DrawerProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const dimensions = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const hookInsets = useSafeAreaInsets();
+  const insets = propInsets ?? hookInsets;
   const { theme } = useThemeStore();
   const activeTheme = theme ?? 'light';
 
@@ -140,6 +145,9 @@ export const Drawer = ({
             </MotiView>
           )}
         </AnimatePresence>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9999 }} pointerEvents="box-none">
+          <Toast config={toastConfig} topOffset={insets.top + 8} />
+        </View>
       </View>
     </Modal>
   );
