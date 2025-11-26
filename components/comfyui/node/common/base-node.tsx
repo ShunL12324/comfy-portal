@@ -21,16 +21,12 @@ export default function BaseNode({ node, children, badges }: BaseNodeProps) {
   return (
     <MotiView
       animate={{
-        scale: isCurrentNode && isGenerating ? [1, 1.02, 1] : 1,
         borderColor:
-          isCurrentNode && isGenerating
-            ? [colors.primary[400], colors.primary[700], colors.primary[400]]
-            : colors.outline[50],
+          isCurrentNode && isGenerating ? colors.primary[500] : colors.outline[50],
       }}
       transition={{
         type: 'timing',
-        loop: isCurrentNode && isGenerating,
-        duration: 1000,
+        duration: 200,
       }}
       className="my-2 rounded-lg bg-background-0 p-4"
       style={{

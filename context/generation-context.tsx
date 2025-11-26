@@ -10,7 +10,7 @@ import { saveGeneratedImage } from '@/utils/image-storage';
 import { showToast } from '@/utils/toast';
 
 interface GenerationState {
-  status: 'idle' | 'generating' | 'downloading';
+  status: 'idle' | 'generating' | 'downloading' | 'error' | 'success';
   progress: { value: number; max: number };
   nodeProgress: { completed: number; total: number };
   downloadProgress: number;
@@ -35,22 +35,45 @@ interface GenerationContextType {
 
 const GenerationContext = createContext<GenerationContextType | null>(null);
 
+interface GenerationStatus {
+  status: 'idle' | 'generating' | 'downloading' | 'error' | 'success';
+  currentNodeId?: string;
+  generatedImage: string | null;
+}
+
+interface GenerationProgress {
+  progress: { value: number; max: number };
+  nodeProgress: { completed: number; total: number };
+  downloadProgress: number;
+}
+
+const GenerationStatusContext = createContext<GenerationStatus | null>(null);
+const GenerationProgressContext = createContext<GenerationProgress | null>(null);
+const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedImage' | 'isGenerating'> | null>(null);
+
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<GenerationState>({
+  const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
+    generatedImage: null,
+  });
+
+  const [progress, setProgress] = useState<GenerationProgress>({
     progress: { value: 0, max: 0 },
     nodeProgress: { completed: 0, total: 0 },
     downloadProgress: 0,
   });
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+
   const comfyClient = useRef<ComfyClient | null>(null);
   const progressCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const nodeHooksRef = useRef<Record<string, NodeLifecycleHooks>>({});
   const insets = useSafeAreaInsets();
 
-  const debouncedSetState = useDebouncedCallback(
-    (updates: Partial<GenerationState>) => {
-      setState((prev) => ({
+  const lastProgressPercentRef = useRef(0);
+
+  // Debounce progress updates to avoid excessive re-renders
+  const debouncedSetProgress = useDebouncedCallback(
+    (updates: Partial<GenerationProgress>) => {
+      setProgress((prev) => ({
         ...prev,
         ...updates,
       }));
@@ -61,20 +84,28 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
   const handleProgress = useCallback(
     (value: number, max: number) => {
-      debouncedSetState({
-        progress: { value, max },
-      });
+      const percent = (value / max) * 100;
+      if (
+        value === 1 || // Start
+        value === max || // End
+        Math.abs(percent - lastProgressPercentRef.current) >= 5 // Change >= 5%
+      ) {
+        lastProgressPercentRef.current = percent;
+        debouncedSetProgress({
+          progress: { value, max },
+        });
+      }
     },
-    [debouncedSetState],
+    [debouncedSetProgress],
   );
 
   const handleNodeProgress = useCallback(
     (completed: number, total: number) => {
-      debouncedSetState({
+      debouncedSetProgress({
         nodeProgress: { completed, total },
       });
     },
-    [debouncedSetState],
+    [debouncedSetProgress],
   );
 
   const reset = useCallback(() => {
@@ -82,8 +113,13 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       clearTimeout(progressCompleteTimeoutRef.current);
       progressCompleteTimeoutRef.current = null;
     }
-    setState({
+    setStatus((prev) => ({
+      ...prev,
       status: 'idle',
+      currentNodeId: undefined,
+    }));
+    lastProgressPercentRef.current = 0;
+    setProgress({
       progress: { value: 0, max: 0 },
       nodeProgress: { completed: 0, total: 0 },
       downloadProgress: 0,
@@ -96,6 +132,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
   const unregisterNodeHooks = useCallback((nodeId: string) => {
     delete nodeHooksRef.current[nodeId];
+  }, []);
+
+  const setGeneratedImage = useCallback((url: string | null) => {
+    setStatus((prev) => ({ ...prev, generatedImage: url }));
   }, []);
 
   const generate = useCallback(
@@ -117,7 +157,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
       try {
         reset();
-        setState((prev) => ({ ...prev, status: 'generating' }));
+        setStatus((prev) => ({ ...prev, status: 'generating' }));
 
         // Call onPre hooks for all nodes
         await Promise.all(
@@ -147,34 +187,26 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         await comfyClient.current.generate(workflow, {
           onProgress: handleProgress,
           onNodeStart: (nodeId) => {
-            setState((prev) => ({ ...prev, currentNodeId: nodeId }));
+            setStatus((prev) => ({ ...prev, currentNodeId: nodeId }));
           },
           onNodeComplete: (node, completed, total) => {
             handleNodeProgress(completed, total);
           },
           onDownloadProgress: (_, progress) => {
-            if (progress === 0) {
-              setState((prev) => ({
-                ...prev,
-                status: 'downloading',
-                downloadProgress: 0,
-              }));
-            } else {
-              setState((prev) => ({
-                ...prev,
-                downloadProgress: progress,
-              }));
-            }
+            setStatus((prev) => {
+              if (prev.status === 'downloading') return prev;
+              return { ...prev, status: 'downloading' };
+            });
+            debouncedSetProgress({ downloadProgress: progress });
           },
           onComplete: async (images) => {
             try {
               useWorkflowStore.getState().updateUsage(workflowId);
 
               if (images.length > 0) {
-                setState((prev) => ({
-                  ...prev,
-                  progress: { ...prev.progress, value: prev.progress.max },
-                }));
+                debouncedSetProgress({
+                  progress: { value: progress.progress.max, max: progress.progress.max },
+                });
 
                 await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -232,25 +264,68 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         reset();
       }
     },
-    [handleNodeProgress, handleProgress, insets.top, reset],
+    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedImage],
+  );
+
+  const actions = React.useMemo(
+    () => ({
+      generate,
+      reset,
+      setGeneratedImage,
+      registerNodeHooks,
+      unregisterNodeHooks,
+    }),
+    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedImage],
   );
 
   return (
-    <GenerationContext.Provider
-      value={{
-        state,
-        generatedImage,
-        isGenerating: state.status === 'generating',
-        generate,
-        reset,
-        setGeneratedImage,
-        registerNodeHooks,
-        unregisterNodeHooks,
-      }}
-    >
-      {children}
-    </GenerationContext.Provider>
+    <GenerationActionsContext.Provider value={actions}>
+      <GenerationStatusContext.Provider value={status}>
+        <GenerationProgressContext.Provider value={progress}>
+          <GenerationContext.Provider
+            value={{
+              state: { ...status, ...progress },
+              generatedImage: status.generatedImage,
+              isGenerating: status.status === 'generating',
+              ...actions,
+            }}
+          >
+            {children}
+          </GenerationContext.Provider>
+        </GenerationProgressContext.Provider>
+      </GenerationStatusContext.Provider>
+    </GenerationActionsContext.Provider>
   );
+}
+
+export function useGenerationStatus() {
+  const context = useContext(GenerationStatusContext);
+  if (!context) {
+    throw new Error('useGenerationStatus must be used within a GenerationProvider');
+  }
+  return context;
+}
+
+export function useGenerationProgress() {
+  const context = useContext(GenerationProgressContext);
+  if (!context) {
+    throw new Error('useGenerationProgress must be used within a GenerationProvider');
+  }
+  return context;
+}
+
+export function useGenerationState() {
+  const status = useGenerationStatus();
+  const progress = useGenerationProgress();
+  return { ...status, ...progress };
+}
+
+export function useGenerationActions() {
+  const context = useContext(GenerationActionsContext);
+  if (!context) {
+    throw new Error('useGenerationActions must be used within a GenerationProvider');
+  }
+  return context;
 }
 
 export function useGeneration() {
@@ -262,9 +337,9 @@ export function useGeneration() {
 }
 
 export function useGenerationNodeState(nodeId: string) {
-  const { state } = useGeneration();
+  const status = useGenerationStatus();
   return {
-    isCurrentNode: state.currentNodeId === nodeId,
-    isGenerating: state.status === 'generating',
+    isCurrentNode: status.currentNodeId === nodeId,
+    isGenerating: status.status === 'generating',
   };
 }

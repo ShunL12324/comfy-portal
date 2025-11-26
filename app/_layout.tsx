@@ -25,11 +25,11 @@ Sentry.init({
   // Set tracesSampleRate to 1.0 to capture 100%
   // of transactions for performance monitoring.
   // We recommend adjusting this value in production
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0.01,
   _experiments: {
     // profilesSampleRate is relative to tracesSampleRate.
     // Here, we'll capture profiles for 100% of transactions.
-    profilesSampleRate: 1.0,
+    profilesSampleRate: 0,
   },
   // Session Replay
   replaysSessionSampleRate: 0.1, // Set to 1.0 for testing

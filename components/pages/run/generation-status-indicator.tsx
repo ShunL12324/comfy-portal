@@ -58,7 +58,7 @@ export function ServerStatus({
         <Box className={`flex-row items-center rounded-full px-2 py-0.5`}>
           <Box className={`mr-1 h-1.5 w-1.5 rounded-full bg-${color}-500`}>
             {(generating || downloading) && (
-              <Box className={`absolute h-1.5 w-1.5 rounded-full bg-${color}-500 animate-ping`} />
+              <Box className={`absolute h-1.5 w-1.5 rounded-full bg-${color}-500`} />
             )}
           </Box>
           <Text className={`text-2xs font-medium text-${color}-700 dark:text-${color}-300`}>{status}</Text>

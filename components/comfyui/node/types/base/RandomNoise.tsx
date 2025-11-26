@@ -8,7 +8,7 @@ import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
 
 import { Text } from '@/components/ui/text';
-import { useGeneration } from '@/context/generation-context';
+import { useGenerationActions } from '@/context/generation-context';
 import { useWorkflowStore } from '@/store/workflow';
 import { useEffect, useState } from 'react';
 import { generateRandomSeed } from './KSamplerAdvanced';
@@ -23,7 +23,7 @@ export default function RandomNoise({ node, serverId, workflowId }: RandomNoiseP
   const [randomSeed, setRandomSeed] = useState(true);
   const [seed, setSeed] = useState<number | null>(node.inputs.noise_seed);
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
-  const { registerNodeHooks, unregisterNodeHooks } = useGeneration();
+  const { registerNodeHooks, unregisterNodeHooks } = useGenerationActions();
 
   useEffect(() => {
     if (randomSeed) {

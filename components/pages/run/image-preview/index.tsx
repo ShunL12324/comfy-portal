@@ -16,9 +16,12 @@ import { ProgressOverlay } from './progress-overlay';
 /**
  * Props for the parallax scrolling image component
  */
+import { useGenerationProgress, useGenerationStatus } from '@/context/generation-context';
+
+/**
+ * Props for the parallax scrolling image component
+ */
 interface ParallaxImageProps {
-  imageUrl?: string;
-  progress?: { current: number; total: number };
   workflowId?: string;
   serverId?: string;
 }
@@ -27,11 +30,11 @@ interface ParallaxImageProps {
  * A component that displays an image with parallax scrolling effect and preview functionality
  */
 export const ImagePreview = memo(function ParallaxImage({
-  imageUrl,
-  progress,
   workflowId,
   serverId,
 }: ParallaxImageProps) {
+  const { generatedImage: imageUrl, status } = useGenerationStatus();
+  const { progress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -233,9 +236,9 @@ export const ImagePreview = memo(function ParallaxImage({
             <Icon as={ImageIcon} size="xl" className="text-typography-500" />
             <View className="items-center gap-1">
               <Text className="text-sm text-typography-500">No image generated yet</Text>
-              {progress && progress.current > 0 && (
+              {status === 'generating' && progress.max > 0 && (
                 <Text className="text-xs text-typography-400">
-                  Generating... {Math.round((progress.current / progress.total) * 100)}%
+                  Generating... {Math.round((progress.value / progress.max) * 100)}%
                 </Text>
               )}
             </View>
@@ -243,8 +246,8 @@ export const ImagePreview = memo(function ParallaxImage({
         </View>
       )}
 
-      {progress && progress.current > 0 && progress.current < progress.total && (
-        <ProgressOverlay current={progress.current} total={progress.total} />
+      {status === 'generating' && progress.value > 0 && progress.value < progress.max && (
+        <ProgressOverlay current={progress.value} total={progress.max} />
       )}
 
 

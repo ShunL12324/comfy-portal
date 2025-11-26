@@ -1,3 +1,4 @@
+
 import { SamplerSelector } from '@/components/selectors/sampler';
 import { SchedulerSelector } from '@/components/selectors/scheduler';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
@@ -5,7 +6,7 @@ import { NumberSlider } from '@/components/self-ui/slider';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { useGeneration } from '@/context/generation-context';
+import { useGenerationActions } from '@/context/generation-context';
 import { useWorkflowStore } from '@/store/workflow';
 import { Node } from '@/types/workflow';
 import { Dice2, Info } from 'lucide-react-native';
@@ -14,6 +15,7 @@ import { TouchableOpacity, View } from 'react-native';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
 import { generateRandomSeed } from './KSamplerAdvanced';
+
 interface KSamplerProps {
   node: Node;
   serverId: string;
@@ -24,7 +26,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
   const [seed, setSeed] = useState<number | null>(node.inputs.seed);
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
 
-  const { registerNodeHooks, unregisterNodeHooks } = useGeneration();
+  const { registerNodeHooks, unregisterNodeHooks } = useGenerationActions();
 
   useEffect(() => {
     if (randomSeed) {

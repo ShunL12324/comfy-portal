@@ -7,7 +7,7 @@ import Switch from '@/components/self-ui/switch';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { useGeneration } from '@/context/generation-context';
+import { useGenerationActions } from '@/context/generation-context';
 import { useWorkflowStore } from '@/store/workflow';
 import { Node } from '@/types/workflow';
 import * as Crypto from 'expo-crypto';
@@ -33,7 +33,7 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const [randomSeed, setRandomSeed] = useState(true);
   const [seed, setSeed] = useState(node.inputs.noise_seed);
-  const { registerNodeHooks, unregisterNodeHooks } = useGeneration();
+  const { registerNodeHooks, unregisterNodeHooks } = useGenerationActions();
 
   useEffect(() => {
     if (randomSeed) {
