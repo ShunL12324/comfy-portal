@@ -45,11 +45,13 @@ with the following details:
 - Host: Your computer's IP address or "localhost" (do not include http:// prefix)
 - Port: 8188 (default ComfyUI port)
 
-**Example for local network:**
+**Example Configuration:**
 
-> Name: Home ComfyUI  
-> Host: 192.168.1.100  
-> Port: 8188
+| Field | Value |
+| :--- | :--- |
+| **Name** | Home ComfyUI |
+| **Host** | `192.168.1.100` |
+| **Port** | `8188` |
 
 For troubleshooting and additional setup options, visit:
 

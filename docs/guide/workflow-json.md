@@ -1,3 +1,8 @@
+---
+layout: guide
+title: Export Workflow JSON
+---
+
 # Getting Workflow JSON in API Format
 
 To import workflows into Comfy Portal, you'll need to export them from ComfyUI in API format. Here's how to do it:

@@ -23,30 +23,31 @@ Ensure your remote server meets these requirements:
 
 ## 2. HTTPS Setup (Required)
 
-Due to Apple's security restrictions, HTTPS is required for remote
-connections. You have two options:
+<div class="info-box warning">
+  <h4>⚠️ HTTPS Required</h4>
+  <p>Due to Apple's security restrictions, <strong>HTTPS is required</strong> for all remote connections. You must configure SSL/TLS on your server.</p>
+</div>
 
 - Follow ComfyUI's built-in SSL/TLS setup guide:
   [ComfyUI TLS/SSL Setup Guide →](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#how-to-use-tlsssl)
 
-Alternatively, you can use Nginx or similar web servers as a reverse
-proxy to handle HTTPS
+Alternatively, you can use Nginx or similar web servers as a reverse proxy to handle HTTPS.
 
 ## 3. Connect to the Server
 
-Once the server is running with HTTPS, tap the "+" button to add it
-with these details:
+Once the server is running with HTTPS, tap the "+" button to add it with these details:
 
 - Name: Give your server a memorable name (e.g., "Cloud Server")
-- Host: Your server's public IP or domain name (do not include
-  https:// prefix)
+- Host: Your server's public IP or domain name (do not include https:// prefix)
 - Port: 8188 (or your configured port)
 
-**Example:**
+**Example Configuration:**
 
-> Name: Cloud ComfyUI  
-> Host: comfyui.example.com  
-> Port: 8188
+| Field | Value |
+| :--- | :--- |
+| **Name** | Cloud ComfyUI |
+| **Host** | `comfyui.example.com` |
+| **Port** | `8188` |
 
 For troubleshooting and additional setup options, visit:
 
