@@ -3,6 +3,7 @@
     "name": "Comfy Portal",
     "slug": "comfy-portal",
     "version": "1.0.4",
+    "owner": "sillyl12324",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "comfyportal",
