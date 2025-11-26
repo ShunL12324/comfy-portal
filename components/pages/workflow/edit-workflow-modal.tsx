@@ -1,3 +1,4 @@
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
@@ -6,12 +7,14 @@ import { Input, InputField } from '@/components/ui/input';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { Colors } from '@/constants/Colors';
+import { useThemeStore } from '@/store/theme';
 import { useWorkflowStore } from '@/store/workflow';
 import { saveWorkflowThumbnail } from '@/utils/image-storage';
 import { showToast } from '@/utils/toast';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { ImagePlus } from 'lucide-react-native';
+import { ImagePlus, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,6 +30,8 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const [thumbnail, setThumbnail] = useState(workflow?.thumbnail || '');
   const [error, setError] = useState('');
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
+  const { theme } = useThemeStore();
+  const activeTheme = (theme ?? 'light') as keyof typeof Colors;
   const insets = useSafeAreaInsets();
   if (!workflow) return null;
 
@@ -113,59 +118,90 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
     onClose();
   };
 
+  const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+
+  const handleDelete = () => {
+    removeWorkflow(workflow.id);
+    setIsDeleteAlertOpen(false);
+    onClose();
+  };
+
   return (
-    <KeyboardModal isOpen={isOpen} onClose={handleClose}>
-      <KeyboardModal.Header>
-        <Text className="text-lg font-semibold text-primary-500">Edit Workflow</Text>
-      </KeyboardModal.Header>
-
-      <KeyboardModal.Body scrollEnabled={false}>
-        <VStack space="md">
-          <KeyboardModal.Item title="Name" error={error}>
-            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
-              <InputField
-                onChangeText={(value) => {
-                  setName(value);
-                  setError('');
-                }}
-                defaultValue={name}
-                placeholder="Enter workflow name"
-                className="px-3 py-2 text-sm text-primary-500"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <VStack space="xs">
-            <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
-            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
-              {thumbnail ? (
-                <Image
-                  source={{ uri: thumbnail }}
-                  className="h-40 w-full"
-                  resizeMode="cover"
-                  alt="Workflow thumbnail"
-                />
-              ) : (
-                <VStack className="h-40 items-center justify-center">
-                  <ImagePlus className="text-primary-300" />
-                  <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
-                </VStack>
-              )}
+    <>
+      <KeyboardModal isOpen={isOpen} onClose={handleClose}>
+        <KeyboardModal.Header>
+          <HStack className="w-full items-center justify-between">
+            <Text className="text-lg font-semibold text-primary-500">Edit Workflow</Text>
+            <Pressable onPress={handleClose} className="p-1 active:opacity-60">
+              <X size={20} color={Colors[activeTheme].primary[500]} />
             </Pressable>
-          </VStack>
-        </VStack>
-      </KeyboardModal.Body>
+          </HStack>
+        </KeyboardModal.Header>
 
-      <KeyboardModal.Footer>
-        <HStack space="sm">
-          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
-            <ButtonText className="text-primary-400">Cancel</ButtonText>
-          </Button>
-          <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-primary-500">
-            <ButtonText className="text-background-0">Save Changes</ButtonText>
-          </Button>
-        </HStack>
-      </KeyboardModal.Footer>
-    </KeyboardModal>
+        <KeyboardModal.Body scrollEnabled={false}>
+          <VStack space="md">
+            <KeyboardModal.Item title="Name" error={error}>
+              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+                <InputField
+                  onChangeText={(value) => {
+                    setName(value);
+                    setError('');
+                  }}
+                  defaultValue={name}
+                  placeholder="Enter workflow name"
+                  className="px-3 py-2 text-sm text-primary-500"
+                />
+              </Input>
+            </KeyboardModal.Item>
+
+            <VStack space="xs">
+              <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+                {thumbnail ? (
+                  <Image
+                    source={{ uri: thumbnail }}
+                    className="h-40 w-full"
+                    resizeMode="cover"
+                    alt="Workflow thumbnail"
+                  />
+                ) : (
+                  <VStack className="h-40 items-center justify-center">
+                    <ImagePlus className="text-primary-300" />
+                    <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                  </VStack>
+                )}
+              </Pressable>
+            </VStack>
+          </VStack>
+        </KeyboardModal.Body>
+
+        <KeyboardModal.Footer>
+          <HStack space="sm">
+            <Button
+              variant="outline"
+              onPress={() => setIsDeleteAlertOpen(true)}
+              className="flex-1 rounded-md bg-transparent active:bg-error-50"
+              style={{ borderColor: Colors[activeTheme].error[500] }}
+            >
+              <ButtonText style={{ color: Colors[activeTheme].error[500] }}>Delete</ButtonText>
+            </Button>
+            <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-primary-500">
+              <ButtonText className="text-background-0">Save Changes</ButtonText>
+            </Button>
+          </HStack>
+        </KeyboardModal.Footer>
+      </KeyboardModal>
+
+      <ConfirmDialog
+        isOpen={isDeleteAlertOpen}
+        onClose={() => setIsDeleteAlertOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Workflow"
+        description="Are you sure you want to delete this workflow? This action cannot be undone."
+        confirmText="Delete"
+        confirmButtonColor="bg-error-500"
+      />
+    </>
   );
 }

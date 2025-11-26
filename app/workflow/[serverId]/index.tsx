@@ -2,6 +2,7 @@ import { AppBar } from '@/components/layout/app-bar';
 import { AddWorkflowModal } from '@/components/pages/workflow/add-workflow-modal';
 import { ImportWorkflowModal } from '@/components/pages/workflow/import-workflow-modal';
 import { WorkflowCard } from '@/components/pages/workflow/workflow-card';
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { Center } from '@/components/ui/center';
 import { Fab, FabIcon, FabLabel } from '@/components/ui/fab';
 import { FlatList } from '@/components/ui/flat-list';
@@ -19,7 +20,7 @@ import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as api
 import { showToast } from '@/utils/toast';
 import { parseWorkflowTemplate } from '@/utils/workflow-parser';
 import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, ServerCrash, Trash2, UploadCloud } from 'lucide-react-native';
+import { FileSearch, ServerCrash, UploadCloud } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useColorScheme, useWindowDimensions } from 'react-native';
@@ -359,6 +360,7 @@ const WorkflowsScreen = () => {
   const { clearServerSyncedWorkflows } = useWorkflowStore();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
   const openAddModal = useCallback(() => setIsAddModalOpen(true), []);
   const openImportModal = useCallback(() => setIsImportModalOpen(true), []);
 
@@ -407,10 +409,20 @@ const WorkflowsScreen = () => {
     );
   }
 
+  const workflows = useWorkflowStore((state) => state.workflow);
+  const serverWorkflowsCount = useMemo(() =>
+    workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length,
+    [workflows, serverId]
+  );
+
   const renderTabBar = useCallback((props: any) => {
     const rightActionButton = (
-      <Pressable onPress={handleClearServerWorkflows} className="p-2">
-        <Icon as={Trash2} size="lg" className="text-error-500" />
+      <Pressable
+        onPress={() => setIsClearAlertOpen(true)}
+        disabled={index !== 1 || serverWorkflowsCount === 0}
+        className={`px-3 py-2 mr-1 active:opacity-60 ${index !== 1 ? 'opacity-0' : (serverWorkflowsCount === 0 ? 'opacity-30' : 'opacity-100')}`}
+      >
+        <Text className={`font-medium text-base ${index !== 1 ? 'text-transparent' : 'text-error-500'}`}>Clear</Text>
       </Pressable>
     );
 
@@ -469,6 +481,18 @@ const WorkflowsScreen = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         serverId={serverId}
+      />
+      <ConfirmDialog
+        isOpen={isClearAlertOpen}
+        onClose={() => setIsClearAlertOpen(false)}
+        onConfirm={() => {
+          handleClearServerWorkflows();
+          setIsClearAlertOpen(false);
+        }}
+        title="Clear Synced Workflows"
+        description="This will remove all workflows synced from this server. This action cannot be undone."
+        confirmText="Clear"
+        confirmButtonColor="bg-error-500"
       />
     </View>
   );
