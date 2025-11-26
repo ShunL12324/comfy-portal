@@ -2,8 +2,8 @@ name: EAS Build and Submit
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'version-*'
 
 jobs:
   build:
