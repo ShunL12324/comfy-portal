@@ -15,6 +15,11 @@
   --color-note-bg: #fbfbfd;
   --color-note-border: #e5e5ea;
   
+  /* Legacy Variable Mapping (for compatibility) */
+  --color-canvas-subtle: var(--color-bg-alt);
+  --color-border-default: var(--color-border);
+  --color-danger-fg: #cf222e;
+  
   /* Spacing & Layout */
   --max-width: 980px;
   --content-width: 760px;
@@ -33,10 +38,13 @@
     --color-text-secondary: #a1a1a6;
     --color-primary: #2997ff;
     --color-primary-hover: #007aff;
-    --color-border: #424245;
+    --color-border: #38383a;
     --color-code-bg: #1c1c1e;
     --color-note-bg: #1c1c1e;
     --color-note-border: #38383a;
+    
+    /* Legacy Variable Mapping */
+    --color-danger-fg: #ff453a;
   }
 }
 
@@ -70,9 +78,10 @@ a:hover {
 
 /* Layout */
 .container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 24px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 16px; /* Minimal padding for readability */
 }
 
 /* Header */
@@ -98,6 +107,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 16px; /* Match body padding */
 }
 
 .site-title {
@@ -133,12 +143,14 @@ a:hover {
 
 /* Main Content */
 .page-content {
-  padding: 48px 0;
+  padding: 24px 0;
 }
 
 .markdown-body {
-  max-width: var(--content-width);
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Typography */
@@ -153,6 +165,7 @@ h1, h2, h3, h4, h5, h6 {
 h1 { font-size: 40px; margin-top: 0; letter-spacing: -0.02em; }
 h2 { font-size: 30px; border-bottom: 1px solid var(--color-border); padding-bottom: 0.3em; letter-spacing: -0.01em; }
 h3 { font-size: 24px; }
+h4 { font-size: 20px; }
 
 p { margin-bottom: 1.5em; }
 
@@ -166,6 +179,7 @@ code {
   background: var(--color-code-bg);
   padding: 0.2em 0.4em;
   border-radius: 6px;
+  color: var(--color-text);
 }
 
 pre {
@@ -181,6 +195,7 @@ pre code {
   background: none;
   padding: 0;
   border-radius: 0;
+  color: inherit;
 }
 
 /* Images */
@@ -192,7 +207,7 @@ img {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* Blockquotes / Info Boxes */
+/* Blockquotes */
 blockquote {
   margin: 1.5em 0;
   padding: 24px;
@@ -204,6 +219,35 @@ blockquote {
 
 blockquote p:last-child {
   margin-bottom: 0;
+}
+
+/* Info Boxes (Warnings, etc) */
+.info-box {
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+}
+
+.info-box h4 {
+  margin-top: 0;
+}
+
+.info-box.warning {
+  background: rgba(255, 59, 48, 0.05);
+  border-color: rgba(255, 59, 48, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .info-box.warning {
+    background: rgba(255, 69, 58, 0.1);
+    border-color: rgba(255, 69, 58, 0.3);
+  }
+}
+
+.info-box.warning h4 {
+  color: var(--color-danger-fg);
 }
 
 /* Lists */
