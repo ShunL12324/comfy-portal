@@ -38,6 +38,19 @@ show_help() {
   echo "  --help               Show this help message"
 }
 
+# Function to show manual running instructions
+show_manual_instructions() {
+  echo
+  echo -e "${YELLOW}=== How to run ComfyUI manually ===${NC}"
+  echo -e "Run these commands to start ComfyUI:"
+  echo -e "${BLUE}cd /workspace/ComfyUI${NC}"
+  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 8188${NC}"
+  echo
+  echo -e "Or to run in a new tmux session:"
+  echo -e "${BLUE}tmux new-session -s comfyui${NC}"
+  echo -e "Then run the commands above in the tmux session"
+}
+
 # Parse command line arguments
 INSTALL_MODEL_MANAGER=true
 while [[ $# -gt 0 ]]; do
@@ -74,7 +87,7 @@ fi
 echo -e "${BLUE}=== ComfyUI Installation Plan ===${NC}"
 echo -e "This script will:"
 echo -e "1. Update system packages"
-echo -e "2. Install essential tools (git, zsh, tmux)"
+echo -e "2. Install essential tools (git, zsh, tmux, venv)"
 echo -e "3. Clone and set up ComfyUI in /workspace"
 echo -e "4. Install ComfyUI Manager"
 if [ "$INSTALL_MODEL_MANAGER" = true ]; then
@@ -99,14 +112,15 @@ log_info "Starting ComfyUI installation..."
 
 # Update system packages
 log_info "Updating system packages..."
-apt update && apt upgrade -y || {
+export DEBIAN_FRONTEND=noninteractive
+apt-get update && apt-get upgrade -y || {
   log_error "Failed to update system packages"
   exit 1
 }
 
 # Install essential tools
 log_info "Installing essential tools..."
-apt install -y git zsh tmux || {
+apt-get install -y git zsh tmux python3-venv || {
   log_error "Failed to install essential tools"
   exit 1
 }
@@ -126,6 +140,13 @@ else
 fi
 
 cd ComfyUI
+
+# Setup Python Virtual Environment
+log_info "Setting up Python virtual environment..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+source venv/bin/activate
 
 # Install ComfyUI dependencies
 log_info "Installing ComfyUI dependencies..."
@@ -178,6 +199,7 @@ tmux kill-session -t comfyui 2>/dev/null || true
 # Try to start ComfyUI in tmux session
 if tmux new-session -d -s comfyui; then
   tmux send-keys -t comfyui "cd /workspace/ComfyUI" C-m
+  tmux send-keys -t comfyui "source venv/bin/activate" C-m
   tmux send-keys -t comfyui "python main.py --listen 0.0.0.0 --port 8188" C-m
 
   # Wait a bit to check if the session is still alive
@@ -202,16 +224,3 @@ else
   log_warn "Failed to start ComfyUI in tmux session"
   show_manual_instructions
 fi
-
-# Function to show manual running instructions
-show_manual_instructions() {
-  echo
-  echo -e "${YELLOW}=== How to run ComfyUI manually ===${NC}"
-  echo -e "Run these commands to start ComfyUI:"
-  echo -e "${BLUE}cd /workspace/ComfyUI${NC}"
-  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 8188${NC}"
-  echo
-  echo -e "Or to run in a new tmux session:"
-  echo -e "${BLUE}tmux new-session -s comfyui${NC}"
-  echo -e "Then run the commands above in the tmux session"
-}
