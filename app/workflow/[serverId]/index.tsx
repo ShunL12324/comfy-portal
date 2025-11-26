@@ -143,11 +143,11 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
         try {
           const identicalWorkflowInStore = storedWorkflows.find(
             (wf) => wf.serverId === serverId &&
-                    wf.addMethod === 'server-sync' &&
-                    wf.metadata?.originalFilename === serverFile.filename &&
-                    wf.metadata?.serverFileModified === serverFile.modified &&
-                    wf.metadata?.serverFileSize === serverFile.size &&
-                    wf.metadata?.raw_content === serverFile.raw_content
+              wf.addMethod === 'server-sync' &&
+              wf.metadata?.originalFilename === serverFile.filename &&
+              wf.metadata?.serverFileModified === serverFile.modified &&
+              wf.metadata?.serverFileSize === serverFile.size &&
+              wf.metadata?.raw_content === serverFile.raw_content
           );
 
           const newMetadataBase = {
@@ -166,7 +166,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
               }
             });
             setSkippedCount(prev => prev + 1);
-            continue; 
+            continue;
           }
 
           if (cancelSyncRef.current) { break; }
@@ -187,15 +187,15 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
 
           const existingWorkflowForPath = storedWorkflows.find(
             (wf) => wf.serverId === serverId &&
-                    wf.addMethod === 'server-sync' &&
-                    wf.metadata?.originalFilename === serverFile.filename
+              wf.addMethod === 'server-sync' &&
+              wf.metadata?.originalFilename === serverFile.filename
           );
 
           if (existingWorkflowForPath) {
             updateWorkflow(existingWorkflowForPath.id, {
               name: workflowName,
               data: parsedData,
-              metadata: { 
+              metadata: {
                 ...existingWorkflowForPath.metadata,
                 ...newMetadataBase,
               },
@@ -221,7 +221,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
     } catch (error) {
       console.warn('Failed to refresh server workflows:', error);
       showToast.error(
-        'Sync Error', 
+        'Sync Error',
         'An error occurred while syncing workflows. Please check your connection and server status.',
         insets.top + 8
       );
@@ -261,9 +261,9 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
   );
 
   const refreshControl = (
-    <RefreshControl 
-      refreshing={refreshing} 
-      onRefresh={onRefresh} 
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       tintColor={refreshControlColor}
       colors={[refreshControlColor]}
       progressBackgroundColor={progressBgColor}
@@ -295,7 +295,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
                   <Text className="font-bold">Step 1: </Text>Ensure the <Text className="font-semibold">comfy-portal-endpoint</Text> extension is installed on your ComfyUI server.
                 </Text>
                 <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="mt-1">
-                  <Text 
+                  <Text
                     className="text-sm text-primary-500"
                     style={{ textDecorationLine: 'underline' }}
                   >
@@ -322,10 +322,19 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
     return (
       <FlatList
         data={workflowsToDisplay}
-        renderItem={({ item }) => (
-          <View className="w-1/2 p-1.5">
+        renderItem={({ item, index }) => (
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{
+              type: 'timing',
+              duration: 300,
+              delay: index * 50,
+            }}
+            className="w-1/2 p-1.5"
+          >
             <WorkflowCard id={item.id} />
-          </View>
+          </MotiView>
         )}
         keyExtractor={(item) => item.id}
         numColumns={2}
@@ -337,9 +346,9 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
   };
 
   return (
-    <View className="flex-1 bg-background-0"> 
-      {refreshing && renderProgress()} 
-      {renderMainContent()} 
+    <View className="flex-1 bg-background-0">
+      {refreshing && renderProgress()}
+      {renderMainContent()}
     </View>
   );
 };
@@ -424,9 +433,8 @@ const WorkflowsScreen = () => {
               >
                 <VStack className="items-center py-3">
                   <Text
-                    className={`text-sm font-medium ${
-                      isActive ? 'text-primary-500' : 'text-typography-500'
-                    }`}
+                    className={`text-sm font-medium ${isActive ? 'text-primary-500' : 'text-typography-500'
+                      }`}
                   >
                     {route.title}
                   </Text>
