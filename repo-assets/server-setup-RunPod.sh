@@ -44,7 +44,7 @@ show_manual_instructions() {
   echo -e "${YELLOW}=== How to run ComfyUI manually ===${NC}"
   echo -e "Run these commands to start ComfyUI:"
   echo -e "${BLUE}cd /workspace/ComfyUI${NC}"
-  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 8188${NC}"
+  echo -e "${BLUE}python main.py --listen 0.0.0.0 --port 8188 --front-end-version Comfy-Org/ComfyUI_frontend@latest${NC}"
   echo
   echo -e "Or to run in a new tmux session:"
   echo -e "${BLUE}tmux new-session -s comfyui${NC}"
@@ -90,11 +90,12 @@ echo -e "1. Update system packages"
 echo -e "2. Install essential tools (git, zsh, tmux, venv)"
 echo -e "3. Clone and set up ComfyUI in /workspace"
 echo -e "4. Install ComfyUI Manager"
+echo -e "5. Install Comfy Portal Endpoint"
 if [ "$INSTALL_MODEL_MANAGER" = true ]; then
-  echo -e "5. Install ComfyUI Model Manager"
+  echo -e "6. Install ComfyUI Model Manager"
 fi
-echo -e "6. Create necessary model directories"
-echo -e "7. Start ComfyUI in a tmux session named 'comfyui'"
+echo -e "7. Create necessary model directories"
+echo -e "8. Start ComfyUI in a tmux session named 'comfyui'"
 echo
 echo -e "${YELLOW}Note: This installation requires an internet connection and may take several minutes.${NC}"
 echo -e "${YELLOW}Please ensure you have sufficient disk space available.${NC}"
@@ -169,6 +170,17 @@ else
   log_warn "ComfyUI Manager already installed, skipping"
 fi
 
+# Install Comfy Portal Endpoint
+log_info "Installing Comfy Portal Endpoint..."
+if [ ! -d "custom_nodes/comfy-portal-endpoint" ]; then
+  git clone https://github.com/ShunL12324/comfy-portal-endpoint.git custom_nodes/comfy-portal-endpoint || {
+    log_error "Failed to install Comfy Portal Endpoint"
+    exit 1
+  }
+else
+  log_warn "Comfy Portal Endpoint already installed, skipping"
+fi
+
 # Install Model Manager (optional)
 if [ "$INSTALL_MODEL_MANAGER" = true ]; then
   log_info "Installing ComfyUI Model Manager..."
@@ -200,7 +212,7 @@ tmux kill-session -t comfyui 2>/dev/null || true
 if tmux new-session -d -s comfyui; then
   tmux send-keys -t comfyui "cd /workspace/ComfyUI" C-m
   tmux send-keys -t comfyui "source venv/bin/activate" C-m
-  tmux send-keys -t comfyui "python main.py --listen 0.0.0.0 --port 8188" C-m
+  tmux send-keys -t comfyui "python main.py --listen 0.0.0.0 --port 8188 --front-end-version Comfy-Org/ComfyUI_frontend@latest" C-m
 
   # Wait a bit to check if the session is still alive
   sleep 3
