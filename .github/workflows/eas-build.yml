@@ -3,7 +3,7 @@ name: EAS Build and Submit
 on:
   push:
     tags:
-      - 'version-*'
+      - 'release-*'
 
 jobs:
   build:
