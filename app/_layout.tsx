@@ -3,7 +3,6 @@ import '@/global.css';
 import { useThemeStore } from '@/store/theme';
 import { toastConfig } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,30 +19,31 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Toast from 'react-native-toast-message';
 
 // Initialize Sentry
-Sentry.init({
-  dsn: 'https://bd0ec56053142b228f923f7e2258e0dc@o4509226334683136.ingest.us.sentry.io/4509226336780288',
-  // Set tracesSampleRate to 1.0 to capture 100%
-  // of transactions for performance monitoring.
-  // We recommend adjusting this value in production
-  tracesSampleRate: 0.01,
-  _experiments: {
-    // profilesSampleRate is relative to tracesSampleRate.
-    // Here, we'll capture profiles for 100% of transactions.
-    profilesSampleRate: 0,
-  },
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // Set to 1.0 for testing
-  replaysOnErrorSampleRate: 1.0,
-  integrations: [
-    Sentry.mobileReplayIntegration(),
-    // You can configure replay options here, for example:
-    // Sentry.mobileReplayIntegration({
-    //   maskAllText: true,
-    //   maskAllImages: true,
-    //   maskAllVectors: true,
-    // }),
-  ],
-});
+// Initialize Sentry
+// Sentry.init({
+//   dsn: 'https://bd0ec56053142b228f923f7e2258e0dc@o4509226334683136.ingest.us.sentry.io/4509226336780288',
+//   // Set tracesSampleRate to 1.0 to capture 100%
+//   // of transactions for performance monitoring.
+//   // We recommend adjusting this value in production
+//   tracesSampleRate: 0.01,
+//   _experiments: {
+//     // profilesSampleRate is relative to tracesSampleRate.
+//     // Here, we'll capture profiles for 100% of transactions.
+//     profilesSampleRate: 0,
+//   },
+//   // Session Replay
+//   replaysSessionSampleRate: 0.1, // Set to 1.0 for testing
+//   replaysOnErrorSampleRate: 1.0,
+//   integrations: [
+//     Sentry.mobileReplayIntegration(),
+//     // You can configure replay options here, for example:
+//     // Sentry.mobileReplayIntegration({
+//     //   maskAllText: true,
+//     //   maskAllImages: true,
+//     //   maskAllVectors: true,
+//     // }),
+//   ],
+// });
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -107,4 +107,5 @@ function RootLayoutNav() {
   );
 }
 
-export default Sentry.wrap(RootLayoutNav);
+export default RootLayoutNav;
+// export default Sentry.wrap(RootLayoutNav);

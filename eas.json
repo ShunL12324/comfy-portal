@@ -21,8 +21,7 @@
       "distribution": "store",
       "autoIncrement": true,
       "ios": {
-        "buildConfiguration": "Release",
-        "credentialsSource": "local"
+        "buildConfiguration": "Release"
       }
     }
   },
