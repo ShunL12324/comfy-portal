@@ -21,26 +21,48 @@ interface ListWorkflowsResponse {
   workflows: ServerWorkflowFile[];
 }
 
-export const uploadImage = async (fileUri: string, fileName: string, serverId: string): Promise<UploadImageResponse> => {
-  try {
-    const server = useServersStore.getState().servers.find((server) => server.id === serverId);
-    if (!server) {
-      throw new Error('server not found');
-    }
+export const uploadImage = (
+  fileUri: string,
+  fileName: string,
+  serverId: string,
+  onProgress?: (progress: number) => void
+): { promise: Promise<UploadImageResponse>; cancel: () => Promise<void> } => {
+  const server = useServersStore.getState().servers.find((server) => server.id === serverId);
+  if (!server) {
+    return {
+      promise: Promise.reject(new Error('server not found')),
+      cancel: async () => { },
+    };
+  }
+
+  let task: FileSystem.UploadTask | null = null;
+
+  const promise = (async () => {
     const url = await buildServerUrl(server.useSSL, server.host, server.port, '/upload/image');
 
-    const uploadResult = await FileSystem.uploadAsync(url, fileUri, {
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'image',
-      parameters: {
-        type: 'input',
-        overwrite: 'true',
+    task = FileSystem.createUploadTask(
+      url,
+      fileUri,
+      {
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'image',
+        parameters: {
+          type: 'input',
+          overwrite: 'true',
+        },
+        mimeType: 'image/jpeg',
+        httpMethod: 'POST',
       },
-      mimeType: 'image/jpeg',
-      httpMethod: 'POST',
-    });
+      (data) => {
+        if (onProgress && data.totalBytesExpectedToSend > 0) {
+          onProgress(data.totalBytesSent / data.totalBytesExpectedToSend);
+        }
+      }
+    );
 
-    if (uploadResult.status !== 200) {
+    const uploadResult = await task.uploadAsync();
+
+    if (!uploadResult || uploadResult.status !== 200) {
       throw new Error('Failed to upload image');
     }
 
@@ -63,10 +85,16 @@ export const uploadImage = async (fileUri: string, fileName: string, serverId: s
       type: data.type,
       previewUrl,
     };
-  } catch (error) {
-    console.warn('Error uploading image:', error);
-    throw error;
-  }
+  })();
+
+  return {
+    promise,
+    cancel: async () => {
+      if (task) {
+        await task.cancelAsync();
+      }
+    },
+  };
 };
 
 export const listWorkflows = async (serverId: string): Promise<ServerWorkflowFile[]> => {
