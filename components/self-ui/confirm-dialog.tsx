@@ -87,16 +87,16 @@ export const ConfirmDialog = ({
                   <Button
                     variant="outline"
                     onPress={onClose}
-                    className="flex-1 rounded-md bg-background-100 border-outline-100"
+                    className="flex-1 rounded-md bg-background-100 py-2"
                   >
-                    <ButtonText className="text-sm text-typography-500">{cancelText}</ButtonText>
+                    <ButtonText className="text-sm text-primary-400">{cancelText}</ButtonText>
                   </Button>
                   <Button
                     variant={confirmButtonVariant}
                     onPress={onConfirm}
-                    className={`flex-1 rounded-md ${confirmButtonColor} active:opacity-80`}
+                    className={`flex-1 rounded-md ${confirmButtonColor} active:opacity-80 py-2`}
                   >
-                    <ButtonText className="text-sm text-typography-50">{confirmText}</ButtonText>
+                    <ButtonText className="text-sm text-background-0">{confirmText}</ButtonText>
                   </Button>
                 </HStack>
               </View>

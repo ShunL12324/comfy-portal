@@ -1,8 +1,10 @@
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import { Colors } from '@/constants/Colors';
 import '@/global.css';
 import { useThemeStore } from '@/store/theme';
 import { toastConfig } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -79,27 +81,45 @@ function RootLayoutNav() {
     return null;
   }
 
+  const CustomDarkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: Colors.dark.background[0],
+    },
+  };
+
+  const CustomLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: Colors.light.background[0],
+    },
+  };
+
   return (
     <>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <GluestackUIProvider mode={theme === 'dark' ? 'dark' : 'light'}>
-          <SafeAreaView className="flex-1 bg-background-0">
-            <BottomSheetModalProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="+not-found"
-                  options={{ headerShown: false }}
-                />
-              </Stack>
-            </BottomSheetModalProvider>
+          <ThemeProvider value={theme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
+            <SafeAreaView className="flex-1 bg-background-0">
+              <BottomSheetModalProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="+not-found"
+                    options={{ headerShown: false }}
+                  />
+                </Stack>
+              </BottomSheetModalProvider>
 
-            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-          </SafeAreaView>
+              <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+            </SafeAreaView>
+          </ThemeProvider>
         </GluestackUIProvider>
       </GestureHandlerRootView>
       <Toast config={toastConfig} topOffset={insets.top + 8} />

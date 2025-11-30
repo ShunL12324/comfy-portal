@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Images, Wand2 } from 'lucide-react-native';
+import { Images, Search, Wand2 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -20,7 +21,7 @@ import NodeComponent from '@/features/comfy-node/components/node';
 import { ImagePreview } from '@/features/generation/components/image-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useThemeStore } from '@/store/theme';
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 
 function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
@@ -59,7 +60,22 @@ function RunWorkflowScreenContent() {
     );
   }
 
-  const nodes = useMemo(() => Object.values(workflowRecord.data), [workflowRecord.data]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const nodes = useMemo(() => {
+    const allNodes = Object.values(workflowRecord.data);
+    if (!searchQuery) return allNodes;
+    const lowerQuery = searchQuery.toLowerCase();
+    return allNodes.filter((node: any) => {
+      const title = node._meta?.title || '';
+      const type = node.class_type || '';
+      const inputs = Object.keys(node.inputs || {}).join(' ');
+
+      return title.toLowerCase().includes(lowerQuery) ||
+        type.toLowerCase().includes(lowerQuery) ||
+        inputs.toLowerCase().includes(lowerQuery);
+    });
+  }, [workflowRecord.data, searchQuery]);
 
   const renderItem = useCallback(
     ({ item }: { item: any }) => (
@@ -106,7 +122,31 @@ function RunWorkflowScreenContent() {
         handleStyle={{
           height: 32,
         }}
+        keyboardBehavior="extend"
       >
+        <View className="px-4 pt-4 pb-2 bg-background-0">
+          <HStack
+            className="items-center rounded-lg bg-background-0 px-3 py-3"
+            style={{
+              borderWidth: 1,
+              borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
+            }}
+          >
+            <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
+            <BottomSheetTextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search nodes..."
+              placeholderTextColor={theme === 'light' ? Colors.light.typography[400] : Colors.dark.typography[400]}
+              style={{
+                flex: 1,
+                color: theme === 'light' ? Colors.light.typography[900] : Colors.dark.typography[900],
+                fontSize: 14,
+                padding: 0,
+              }}
+            />
+          </HStack>
+        </View>
         <BottomSheetFlatList
           data={nodes}
           keyExtractor={(item) => item.id}
