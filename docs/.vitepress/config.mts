@@ -59,7 +59,8 @@ export default defineConfig({
               { text: '本地服务器', link: '/zh/guide/local-server' },
               { text: '远程服务器', link: '/zh/guide/remote-server' },
               { text: 'RunPod 服务器', link: '/zh/guide/remote-server-runpod' },
-              { text: '工作流 JSON', link: '/zh/guide/workflow-json' }
+              { text: '工作流 JSON', link: '/zh/guide/workflow-json' },
+              { text: '常见问题', link: '/zh/guide/faq' }
             ]
           }
         ]
