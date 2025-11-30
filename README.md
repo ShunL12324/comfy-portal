@@ -58,6 +58,15 @@ You need a running ComfyUI instance. We provide detailed guides for various setu
 | **Remote** | [Remote Server Setup](https://shunl12324.github.io/comfy-portal/guide/remote-server) |
 | **RunPod** | [RunPod Deployment](https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod) |
 
+### 3. Install Extension (Recommended)
+
+To unlock full functionality, including **workflow synchronization** and enhanced app integration, we strongly recommend installing the [Comfy Portal Endpoint](https://github.com/ShunL12324/comfy-portal-endpoint) extension.
+
+- **Workflow Sync**: Seamlessly sync your workflows from PC to App.
+- **Enhanced Integration**: Provides necessary API endpoints for better app performance.
+
+[Install Comfy Portal Endpoint →](https://github.com/ShunL12324/comfy-portal-endpoint)
+
 ## Development
 
 ### Prerequisites

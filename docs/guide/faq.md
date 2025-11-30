@@ -18,12 +18,4 @@ No. This is because Comfy Portal communicates with the server using both HTTP pr
 1. Please ensure you have an active browser window connected to the server. This is because workflow conversion relies on frontend code, and we currently don't have a better solution.
 2. Please ensure the workflow can run normally on that server, otherwise some nodes might not be recognized correctly, causing sync failure.
 
-## Performance
-
-### Why does it take so long to download images after they are generated?
-
-Download speed primarily depends on your network connection quality. If you're using a local WiFi network, you can try these optimization tips:
-
-- Ensure the device running ComfyUI server is positioned closer to the WiFi router
-- Keep your device closer to the WiFi router
-- Avoid having too many physical obstacles between the router and devices 
+ 
