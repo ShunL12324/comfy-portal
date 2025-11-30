@@ -40,6 +40,12 @@
 | :---: | :---: | :---: |
 | <img src="repo-assets/screenshot-1.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-2.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-3.png" width="240" style="border-radius: 12px;"> |
 
+## Latest Updates
+
+| Version | Date | Changes |
+| :--- | :--- | :--- |
+| **v1.0.4** | 2025-12-01 | • **Documentation**: Migrated to VitePress<br>• **Feature**: Smooth upload progress & cancellation<br>• **Fix**: Video preview issues resolved<br>• **Docs**: Added extension recommendation |
+
 ## Quick Start
 
 ### 1. Download App
