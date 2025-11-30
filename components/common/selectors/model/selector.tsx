@@ -22,7 +22,7 @@ interface ModelSelectorProps {
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
-  type?: 'checkpoints' | 'loras' | 'embeddings' | 'diffusion_models' | 'vae' | 'text_encoders';
+  type?: string | string[];
   serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
@@ -100,19 +100,26 @@ export function ModelSelector({
     if (!server) return;
     setIsRefreshing(true);
     try {
-      const models = await scanServerModelsByFolder(server, type);
-      if (models.length > 0) {
+      const types = Array.isArray(type) ? type : [type];
+      const allModels = [];
+
+      for (const t of types) {
+        const models = await scanServerModelsByFolder(server, t);
+        allModels.push(...models);
+      }
+
+      if (allModels.length > 0) {
         const existingModels = server.models || [];
         // Create a Map to store unique models, using name+type as key
         const modelMap = new Map();
 
         // Add existing models of different types
         existingModels
-          .filter((model) => model.type !== type)
+          .filter((model) => !types.includes(model.type))
           .forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
 
         // Add new models, will automatically override any duplicates
-        models.forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
+        allModels.forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
 
         const updatedModels = Array.from(modelMap.values());
         updateServerStatus(serverId, server.status, server.latency, updatedModels);

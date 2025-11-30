@@ -104,7 +104,8 @@
     "use-debounce": "^10.0.4",
     "zustand": "^5.0.3",
     "expo-sharing": "~13.0.1",
-    "expo-av": "~15.0.2"
+    "expo-av": "~15.0.2",
+    "expo-video": "~2.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

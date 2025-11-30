@@ -5,7 +5,8 @@ import { Pressable } from '@/components/ui/pressable';
 import { showToast } from '@/utils/toast';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
-import { Check, Download, Share as ShareIcon, Trash2 } from 'lucide-react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { Check, Download, PlayCircle, Share as ShareIcon, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { Share, View } from 'react-native';
@@ -23,6 +24,16 @@ interface ImageItemProps {
 export const ImageItem = React.memo(
   function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: ImageItemProps) {
     const insets = useSafeAreaInsets();
+    const isVideo = React.useMemo(() => {
+      const ext = url.split('.').pop()?.toLowerCase();
+      return ['mp4', 'mov', 'm4v', 'webm'].includes(ext || '');
+    }, [url]);
+
+    const player = useVideoPlayer(isVideo ? url : null, player => {
+      player.loop = false;
+      player.pause();
+      player.muted = true;
+    });
 
     const handleShare = async () => {
       try {
@@ -55,18 +66,32 @@ export const ImageItem = React.memo(
 
     return (
       <Pressable onPress={onPress} className="relative mb-4">
-        <Box className="aspect-square overflow-hidden rounded-md border-outline-50">
-          <Image
-            source={url}
-            alt={`Generated image ${index + 1}`}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            recyclingKey={url}
-            placeholder={null}
-            transition={200}
-            priority={index < 4 ? 'high' : 'normal'}
-          />
+        <Box className="aspect-square overflow-hidden rounded-md border-outline-50 justify-center items-center bg-background-100">
+          {isVideo ? (
+            <>
+              <VideoView
+                player={player}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+                nativeControls={false}
+              />
+              <View className="absolute inset-0 items-center justify-center bg-black/20">
+                <Icon as={PlayCircle} className="text-white opacity-90 h-12 w-12" />
+              </View>
+            </>
+          ) : (
+            <Image
+              source={url}
+              alt={`Generated image ${index + 1}`}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={url}
+              placeholder={null}
+              transition={200}
+              priority={index < 4 ? 'high' : 'normal'}
+            />
+          )}
         </Box>
         {isSelectionMode ? (
           <MotiView

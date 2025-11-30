@@ -15,10 +15,30 @@ import { ZoomableImage } from './zoomable-image';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { PlayCircle } from 'lucide-react-native';
+
 interface ParallaxImageProps {
   workflowId?: string;
   serverId?: string;
 }
+
+const VideoPreview = ({ url }: { url: string }) => {
+  const player = useVideoPlayer(url, player => {
+    player.loop = false;
+    player.pause();
+    player.muted = true;
+  });
+
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', height: '100%' }}
+      contentFit="contain"
+      nativeControls={false}
+    />
+  );
+};
 
 /**
  * A component that displays an image with parallax scrolling effect and preview functionality
@@ -76,17 +96,26 @@ export const ImagePreview = memo(function ParallaxImage({
             {generatedImages.map((imageUrl, index) => (
               <View key={`${imageUrl}-${index}`} className="flex-1">
                 <Pressable className="flex-1" onPress={() => setIsPreviewOpen(true)}>
-                  <Image
-                    source={{ uri: imageUrl }}
-                    style={{
-                      width: screenWidth,
-                      height: screenHeight,
-                      aspectRatio: undefined,
-                    }}
-                    contentFit="contain"
-                    contentPosition="top"
-                    cachePolicy="memory-disk"
-                  />
+                  {['mp4', 'mov', 'm4v', 'webm'].includes(imageUrl.split('.').pop()?.toLowerCase() || '') ? (
+                    <View className="flex-1 items-center justify-center bg-black">
+                      <VideoPreview url={imageUrl} />
+                      <View className="absolute inset-0 items-center justify-center bg-black/20">
+                        <Icon as={PlayCircle} className="text-white opacity-90 h-12 w-12" />
+                      </View>
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={{
+                        width: screenWidth,
+                        height: screenHeight,
+                        aspectRatio: undefined,
+                      }}
+                      contentFit="contain"
+                      contentPosition="top"
+                      cachePolicy="memory-disk"
+                    />
+                  )}
                 </Pressable>
               </View>
             ))}
@@ -105,14 +134,24 @@ export const ImagePreview = memo(function ParallaxImage({
             </View>
           )}
 
-          {/* Image Counter Indicator */}
-          {generatedImages.length > 1 && (
-            <View className="absolute top-3 right-3 rounded-full bg-black/50 px-2.5 py-1">
-              <Text className="text-xs font-medium text-white">
-                {activeIndex + 1}/{generatedImages.length}
+          {/* Status Indicators */}
+          {/* Status Indicators */}
+          <View className="absolute top-3 right-3 flex-row gap-2">
+            <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
+              <Text className="text-center text-xs font-medium text-white">
+                {['mp4', 'mov', 'm4v', 'webm'].includes(generatedImages[activeIndex]?.split('.').pop()?.toLowerCase() || '')
+                  ? 'Video'
+                  : 'Image'}
               </Text>
             </View>
-          )}
+            {generatedImages.length > 1 && (
+              <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
+                <Text className="text-center text-xs font-medium text-white">
+                  {activeIndex + 1}/{generatedImages.length}
+                </Text>
+              </View>
+            )}
+          </View>
 
           <Modal
             isOpen={isPreviewOpen}

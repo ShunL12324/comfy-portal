@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { memo, useRef } from 'react';
-import { ScrollView, useWindowDimensions } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runOnJS } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ZoomableImageProps {
   imageUrl: string;
@@ -17,7 +19,20 @@ export const ZoomableImage = memo(function ZoomableImage({
   onLongPress,
 }: ZoomableImageProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const isVideo = React.useMemo(() => {
+    const ext = imageUrl.split('.').pop()?.toLowerCase();
+    return ['mp4', 'mov', 'm4v', 'webm'].includes(ext || '');
+  }, [imageUrl]);
+
+  const player = useVideoPlayer(isVideo ? imageUrl : null, player => {
+    if (isVideo) {
+      player.loop = true;
+      player.play();
+    }
+  });
 
   // Double tap to zoom
   const doubleTap = Gesture.Tap()
@@ -47,6 +62,37 @@ export const ZoomableImage = memo(function ZoomableImage({
 
   // Exclusive gestures
   const taps = Gesture.Exclusive(doubleTap, singleTap, longPress);
+
+  if (isVideo) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureDetector gesture={taps}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'black',
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+              paddingRight: insets.right,
+            }}
+          >
+            <VideoView
+              player={player}
+              style={{
+                width: '100%',
+                height: '100%',
+              }}
+              contentFit="contain"
+              nativeControls={true}
+            />
+          </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -397,6 +397,15 @@ export class ComfyClient {
         if (nodeOutput.images) {
           allImages.push(...nodeOutput.images);
         }
+        if (nodeOutput.gifs) {
+          allImages.push(...nodeOutput.gifs);
+        }
+        if (nodeOutput.videos) {
+          allImages.push(...nodeOutput.videos);
+        }
+        if (nodeOutput.audio) {
+          allImages.push(...nodeOutput.audio);
+        }
       }
 
       // Filter images: if we have "output" type, use only those. Otherwise use "temp".

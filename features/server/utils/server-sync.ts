@@ -136,7 +136,7 @@ export async function scanServerModelsByFolder(
 export async function scanServerModels(
   server: Server,
 ): Promise<{ models: Model[]; isCPEEnabled: boolean }> {
-  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders', 'upscale_models', 'controlnet'];
+  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders', 'upscale_models', 'controlnet', 'clip_vision', 'clip'];
   let models: Model[] = [];
   let isCPEEnabled = false;
 

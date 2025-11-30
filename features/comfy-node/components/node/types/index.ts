@@ -4,15 +4,19 @@ import UnknownNode from '../common/unknown-node';
 import BasicGuider from './base/BasicGuider';
 import BasicScheduler from './base/BasicScheduler';
 import CheckpointLoaderSimple from './base/CheckpointLoaderSimple';
+import CLIPLoader from './base/CLIPLoader';
 import CLIPSetLastLayer from './base/CLIPSetLastLayer';
 import CLIPTextEncode from './base/CLIPTextEncode';
 import CLIPTextEncodeSDXL from './base/CLIPTextEncodeSDXL';
+import CLIPVisionEncode from './base/CLIPVisionEncode';
+import CLIPVisionLoader from './base/CLIPVisionLoader';
 import DualCLIPLoader from './base/DualCLIPLoader';
 import EmptyLatentImage from './base/EmptyLatentImage';
 import EmptySD3LatentImage from './base/EmptySD3LatentImage';
 import FluxGuidance from './base/FluxGuidance';
 import ImagePadForOutpaint from './base/ImagePadForOutpaint';
 import ImageScale from './base/ImageScale';
+import ImageScaleBy from './base/ImageScaleBy';
 import KSampler from './base/KSampler';
 import KSamplerAdvanced from './base/KSamplerAdvanced';
 import KSamplerSelect from './base/KSamplerSelect';
@@ -20,7 +24,9 @@ import LoadImage from './base/LoadImage';
 import LoraLoader from './base/LoraLoader';
 import LoraLoaderModelOnly from './base/LoraLoaderModelOnly';
 import ModelSamplingFlux from './base/ModelSamplingFlux';
+import ModelSamplingSD3 from './base/ModelSamplingSD3';
 import PreviewImage from './base/PreviewImage';
+import PrimitiveStringMultiline from './base/PrimitiveStringMultiline';
 import RandomNoise from './base/RandomNoise';
 import SamplerCustomAdvanced from './base/SamplerCustomAdvanced';
 import SaveImage from './base/SaveImage';
@@ -29,6 +35,9 @@ import VAEDecode from './base/VAEDecode';
 import VAEEncode from './base/VAEEncode';
 import VAEEncodeForInpaint from './base/VAEEncodeForInpaint';
 import VAELoader from './base/VAELoader';
+import WanImageToVideo from './base/WanImageToVideo';
+import ImageResizeKJv2 from './kj-nodes/ImageResizeKJv2';
+import VHS_VideoCombine from './video-helper-suite/VHS_VideoCombine';
 interface NodeContentProps {
   node: Node;
   serverId: string;
@@ -64,6 +73,15 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'VAEEncodeForInpaint': VAEEncodeForInpaint,
   'ImagePadForOutpaint': ImagePadForOutpaint,
   'LoraLoaderModelOnly': LoraLoaderModelOnly,
+  'CLIPVisionLoader': CLIPVisionLoader,
+  'CLIPVisionEncode': CLIPVisionEncode,
+  'CLIPLoader': CLIPLoader,
+  'PrimitiveStringMultiline': PrimitiveStringMultiline,
+  'WanImageToVideo': WanImageToVideo,
+  'ModelSamplingSD3': ModelSamplingSD3,
+  'VHS_VideoCombine': VHS_VideoCombine,
+  'ImageScaleBy': ImageScaleBy,
+  'ImageResizeKJv2': ImageResizeKJv2,
   // add more node types here
 };
 

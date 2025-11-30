@@ -37,7 +37,10 @@ export async function saveGeneratedImage({
     // Generate unique filename
     const uuid = await Crypto.randomUUID();
     const timestamp = new Date().toISOString();
-    const filename = `${timestamp}-${uuid}.png`;
+    
+    // Get extension from original URL or default to png
+    const originalExt = imageUrl.split('.').pop()?.split('?')[0] || 'png';
+    const filename = `${timestamp}-${uuid}.${originalExt}`;
 
     // Download image
     const filePath = `${dirPath}/${filename}`;
@@ -81,8 +84,9 @@ export async function getGeneratedImages(serverId: string, workflowId: string) {
 
     const files = await FileSystem.readDirectoryAsync(dirPath);
 
+    const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.mov'];
     const images = files
-      .filter((file) => file.endsWith('.png'))
+      .filter((file) => supportedExtensions.some(ext => file.toLowerCase().endsWith(ext)))
       .map((file) => ({
         path: `${dirPath}/${file}`,
         metadataPath: `${dirPath}/${file}.json`,

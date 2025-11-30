@@ -80,7 +80,8 @@
           "savePhotosPermission": "Allow $(PRODUCT_NAME) to save generated images to your photos",
           "isAccessMediaLocationEnabled": true
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true
