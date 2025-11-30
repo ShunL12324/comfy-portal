@@ -13,6 +13,11 @@ No. This is because Comfy Portal communicates with the server using both HTTP pr
 1. First, please confirm that you can access the server via a browser on your device.
 2. If you can access it via browser but not through the app, try adjusting the "Use SSL" option and refresh.
 
+### I cannot sync my workflow to the app via comfy-portal-endpoint extension?
+
+1. Please ensure you have an active browser window connected to the server. This is because workflow conversion relies on frontend code, and we currently don't have a better solution.
+2. Please ensure the workflow can run normally on that server, otherwise some nodes might not be recognized correctly, causing sync failure.
+
 ## Performance
 
 ### Why does it take so long to download images after they are generated?
