@@ -20,10 +20,9 @@ Ensure your remote server meets these requirements:
 
 ## 2. HTTPS Setup (Required)
 
-<div class="info-box warning">
-  <h4>⚠️ HTTPS Required</h4>
-  <p>Due to Apple's security restrictions, <strong>HTTPS is required</strong> for all remote connections. You must configure SSL/TLS on your server.</p>
-</div>
+::: warning HTTPS Required
+Due to Apple's security restrictions, **HTTPS is required** for all remote connections. You must configure SSL/TLS on your server.
+:::
 
 - Follow ComfyUI's built-in SSL/TLS setup guide:
   [ComfyUI TLS/SSL Setup Guide →](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#how-to-use-tlsssl)

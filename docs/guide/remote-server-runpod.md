@@ -49,10 +49,9 @@ Once ComfyUI is running, tap the "+" button to add the server:
 - Host: Your pod's proxy URL (do not include https:// prefix)
 - Port: 443 (RunPod proxy uses HTTPS port)
 
-<div class="info-box">
-  <h4>ℹ️ Port Configuration</h4>
-  <p>Although ComfyUI runs on port 8188, we use port 443 because RunPod proxies the connection through HTTPS.</p>
-</div>
+::: info Port Configuration
+Although ComfyUI runs on port 8188, we use port 443 because RunPod proxies the connection through HTTPS.
+:::
 
 **Example Configuration:**
 
