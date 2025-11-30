@@ -8,6 +8,11 @@ title: FAQ
 
 No. This is because Comfy Portal communicates with the server using both HTTP protocol and WebSocket. The system will handle the protocol prefixes automatically - you only need to enter the domain name or IP address.
 
+### I cannot connect to my server, how should I troubleshoot?
+
+1. First, please confirm that you can access the server via a browser on your device.
+2. If you can access it via browser but not through the app, try adjusting the "Use SSL" option and refresh.
+
 ## Performance
 
 ### Why does it take so long to download images after they are generated?
