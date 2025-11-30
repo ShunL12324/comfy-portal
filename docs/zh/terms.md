@@ -1,5 +1,4 @@
 ---
-layout: default
 title: 服务条款
 lang: zh
 ---
@@ -105,7 +104,7 @@ Comfy Portal 是一个移动客户端应用程序，用于连接和控制 ComfyU
 
 ## 9. 隐私
 
-您的隐私使用受我们的[隐私政策](/comfy-portal/zh/privacy)约束。
+您的隐私使用受我们的[隐私政策](/zh/privacy)约束。
 
 ## 10. 赔偿
 
@@ -124,7 +123,7 @@ Comfy Portal 是一个移动客户端应用程序，用于连接和控制 ComfyU
 如有任何问题或疑虑：
 
 - 电子邮件：liushun0574@gmail.com
-- GitHub Issues：[提交问题](https://github.com/ShunL12324/comfy-portal/issues)
+- GitHub Issues：[提交问题](https://github.com/ShunL12324/issues)
 
 ## 13. 条款更新
 
@@ -136,4 +135,4 @@ Comfy Portal 是一个移动客户端应用程序，用于连接和控制 ComfyU
 
 继续使用本应用即表示您接受更新后的条款。
 
-[返回文档首页](/comfy-portal/zh/) 
+[返回文档首页](/zh/) 

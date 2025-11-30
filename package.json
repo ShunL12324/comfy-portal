@@ -9,7 +9,9 @@
     "ios": "DARK_MODE=media expo start --ios",
     "web": "DARK_MODE=media expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "jest": {
     "preset": "jest-expo"
@@ -59,6 +61,7 @@
     "@sentry/react-native": "~6.10.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "expo": "~52.0.47",
+    "expo-av": "~15.0.2",
     "expo-blur": "~14.0.3",
     "expo-build-properties": "~0.13.3",
     "expo-clipboard": "~7.0.1",
@@ -74,10 +77,12 @@
     "expo-linking": "~7.0.5",
     "expo-media-library": "~17.0.6",
     "expo-router": "~4.0.21",
+    "expo-sharing": "~13.0.1",
     "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.1",
     "expo-symbols": "~0.2.2",
     "expo-system-ui": "~4.0.9",
+    "expo-video": "~2.0.6",
     "expo-web-browser": "~14.0.2",
     "lucide-react-native": "^0.473.0",
     "moti": "^0.29.0",
@@ -102,10 +107,7 @@
     "react-native-webview": "13.12.5",
     "tailwindcss": "^3.4.17",
     "use-debounce": "^10.0.4",
-    "zustand": "^5.0.3",
-    "expo-sharing": "~13.0.1",
-    "expo-av": "~15.0.2",
-    "expo-video": "~2.0.6"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -119,7 +121,9 @@
     "prettier-plugin-liquid": "^0.0.1-security",
     "prettier-plugin-tailwindcss": "^0.6.10",
     "react-test-renderer": "18.3.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.25"
   },
   "private": true,
   "expo": {

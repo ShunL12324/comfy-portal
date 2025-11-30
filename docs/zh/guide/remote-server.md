@@ -1,5 +1,4 @@
 ---
-layout: guide
 title: 远程服务器设置
 lang: zh
 ---
@@ -186,7 +185,7 @@ sudo systemctl start comfyui
 
 - 查看服务器日志：`sudo journalctl -u comfyui`
 - 检查 Nginx 日志：`sudo tail -f /var/log/nginx/error.log`
-- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/comfy-portal/issues) 提交问题
+- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/issues) 提交问题
 - 发送邮件至 liushun0574@gmail.com
 
-[返回文档首页](/comfy-portal/zh/) 
+[返回文档首页](/zh/) 

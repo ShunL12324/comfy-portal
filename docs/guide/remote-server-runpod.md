@@ -1,8 +1,5 @@
 ---
-layout: guide
 title: RunPod Server Setup Guide
-warning_title: Disclaimer
-warning_content: RunPod is a third-party service. We have no affiliation with RunPod and are not responsible for their service, pricing, or any potential damages or losses that may occur.
 ---
 
 ## 1. Configure RunPod Template
@@ -25,7 +22,7 @@ You can either start ComfyUI manually or use our automated setup script.
 Run this command in your pod's terminal to automatically set up and start ComfyUI(Please note run this command in your volume directory, usually mount to /workspace):
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/ShunL12324/comfy-portal/c9f2c6753d4f9c7389037af43f1d40525172e681/repo-assets/server-setup-RunPod.sh)
+bash <(curl -s https://raw.githubusercontent.com/ShunL12324/comfy-portal/main/repo-assets/server-setup-RunPod.sh)
 ```
 
 ### Option B: Manual Setup

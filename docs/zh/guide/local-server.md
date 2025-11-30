@@ -1,5 +1,4 @@
 ---
-layout: guide
 title: 本地服务器设置
 lang: zh
 ---
@@ -95,7 +94,7 @@ python main.py
 如果您遇到其他问题：
 
 - 查看 [ComfyUI GitHub Issues](https://github.com/comfyanonymous/ComfyUI/issues)
-- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/comfy-portal/issues) 提交问题
+- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/issues) 提交问题
 - 发送邮件至 liushun0574@gmail.com
 
-[返回文档首页](/comfy-portal/zh/) 
+[返回文档首页](/zh/) 

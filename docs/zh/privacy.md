@@ -1,5 +1,4 @@
 ---
-layout: default
 title: 隐私政策
 lang: zh
 ---
@@ -92,6 +91,6 @@ Comfy Portal 采用本地优先的方式，这意味着大多数数据都存储�
 如有隐私相关问题：
 
 - 电子邮件：liushun0574@gmail.com
-- GitHub Issues：[提交问题](https://github.com/ShunL12324/comfy-portal/issues)
+- GitHub Issues：[提交问题](https://github.com/ShunL12324/issues)
 
-[返回文档首页](/comfy-portal/zh/) 
+[返回文档首页](/zh/) 

@@ -1,5 +1,4 @@
 ---
-layout: guide
 title: RunPod 服务器设置
 lang: zh
 ---
@@ -90,7 +89,7 @@ lang: zh
 
 - 查看 [RunPod 文档](https://docs.runpod.io)
 - 联系 RunPod 支持
-- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/comfy-portal/issues) 提交问题
+- 在我们的 [GitHub 仓库](https://github.com/ShunL12324/issues) 提交问题
 - 发送邮件至 liushun0574@gmail.com
 
 ## 最佳实践
@@ -137,4 +136,4 @@ lang: zh
 - 状态监控
 - 资源管理
 
-[返回文档首页](/comfy-portal/zh/) 
+[返回文档首页](/zh/) 

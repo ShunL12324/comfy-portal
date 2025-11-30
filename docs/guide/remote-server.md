@@ -1,8 +1,5 @@
 ---
-layout: guide
 title: Remote Server Setup Guide
-warning_title: Disclaimer
-warning_content: This guide provides setup instructions only. Please understand all potential risks before proceeding. We are not responsible for any damages or losses that may occur.
 ---
 
 Follow these steps to connect to your remote ComfyUI server. The setup

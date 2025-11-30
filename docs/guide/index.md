@@ -1,8 +1,5 @@
 ---
-layout: guide
 title: Server Setup Guides
-warning_title: Disclaimer
-warning_content: These guides provide setup instructions only. Please understand all potential risks before proceeding. We are not responsible for any damages or losses that may occur.
 ---
 
 Welcome to the Comfy Portal server setup guides. Here you'll find detailed instructions for setting up and running your ComfyUI server in different environments.
