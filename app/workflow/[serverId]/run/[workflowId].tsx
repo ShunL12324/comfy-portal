@@ -8,17 +8,17 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 
-import { useServersStore } from '@/store/servers';
-import { useWorkflowStore } from '@/store/workflow';
+import { useServersStore } from '@/features/server/stores/server-store';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 
 import { AppBar } from '@/components/layout/app-bar';
-import { HistoryDrawer } from '@/components/pages/run/history-drawer';
-import { RunPageHeaderStatus } from '@/components/pages/run/run-page-header-status';
+import { HistoryDrawer } from '@/features/generation/components/history-drawer';
+import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 
-import NodeComponent from '@/components/comfyui/node';
-import { ImagePreview } from '@/components/pages/run/image-preview';
 import { Colors } from '@/constants/Colors';
-import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/context/generation-context';
+import NodeComponent from '@/features/comfy-node/components/node';
+import { ImagePreview } from '@/features/generation/components/image-preview';
+import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useThemeStore } from '@/store/theme';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 

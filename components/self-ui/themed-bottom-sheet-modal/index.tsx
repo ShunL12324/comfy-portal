@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/Colors';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { useThemeStore } from '@/store/theme';
 import {
   BottomSheetBackdrop,
@@ -13,16 +13,14 @@ export const ThemedBottomSheetModal = forwardRef<
   BottomSheetModal,
   BottomSheetModalProps
 >((props, ref) => {
-  const { theme } = useThemeStore(); // Get theme
-  const isDarkMode = theme === 'dark';
+  const { theme } = useThemeStore();
+  const colors = useThemeColor();
 
   // Define theme-based colors (Subtly Darker Dark BG)
-  const handleColor = isDarkMode
-    ? Colors.dark.outline[500] // Keep handle visible
-    : Colors.light.outline[500];
-  const backgroundColor = isDarkMode
-    ? Colors.dark.background[100] // Dark: Use background[100] (#202020)
-    : Colors.light.background[50];
+  const handleColor = colors.outline[500];
+  const backgroundColor = theme === 'dark'
+    ? colors.background[100] // Dark: Use background[100] (#202020)
+    : colors.background[50];
 
   // Define the backdrop render function
   const renderBackdrop = useCallback(
@@ -31,8 +29,8 @@ export const ThemedBottomSheetModal = forwardRef<
         {...backdropProps}
         appearsOnIndex={0} // Show backdrop when sheet is open (index 0)
         disappearsOnIndex={-1} // Hide backdrop when sheet is closed (index -1)
-        // Don't dismiss keyboard when pressing backdrop - removed onPress handler
-        // Default backdrop opacity is usually fine, but can be customized here
+      // Don't dismiss keyboard when pressing backdrop - removed onPress handler
+      // Default backdrop opacity is usually fine, but can be customized here
       />
     ),
     [],

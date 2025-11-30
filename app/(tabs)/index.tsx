@@ -1,6 +1,4 @@
 import { AppBar } from '@/components/layout/app-bar';
-import { AddServerModal, type AddServerModalRef } from '@/components/pages/server/add-server-modal';
-import { ServerCard } from '@/components/pages/server/server-card';
 import { Button } from '@/components/ui/button';
 import { Center } from '@/components/ui/center';
 import { HStack } from '@/components/ui/hstack';
@@ -9,7 +7,9 @@ import { ScrollView } from '@/components/ui/scroll-view';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
-import { useServersStore } from '@/store/servers';
+import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
+import { ServerCard } from '@/features/server/components/server-card';
+import { useServersStore } from '@/features/server/stores/server-store';
 import { Link } from 'expo-router';
 import { ArrowRight, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
 import { MotiView } from 'moti';
