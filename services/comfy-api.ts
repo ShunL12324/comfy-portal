@@ -33,7 +33,6 @@ export const uploadImage = async (fileUri: string, fileName: string, serverId: s
       uploadType: FileSystem.FileSystemUploadType.MULTIPART,
       fieldName: 'image',
       parameters: {
-        subfolder: 'temp',
         type: 'input',
         overwrite: 'true',
       },
