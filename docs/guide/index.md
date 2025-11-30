@@ -35,6 +35,6 @@ If you encounter any issues or need assistance:
 
 - Check our [FAQ](faq) section
 - Join our community discussions
-- Contact support at [support email]
+- Contact support at liushun0574@gmail.com
 
 Remember to check back regularly as these guides are updated with new information and improvements.
