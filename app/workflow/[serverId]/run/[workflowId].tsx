@@ -33,8 +33,8 @@ function RunWorkflowScreenContent() {
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
 
-  const { status, generatedImage } = useGenerationStatus();
-  const { generate, setGeneratedImage } = useGenerationActions();
+  const { status } = useGenerationStatus();
+  const { generate, setGeneratedImages } = useGenerationActions();
 
   if (!workflowRecord) {
     router.back();
@@ -47,7 +47,7 @@ function RunWorkflowScreenContent() {
   };
 
   const handleSelectHistoryImage = (url: string) => {
-    setGeneratedImage(url);
+    setGeneratedImages([url]);
     setIsHistoryOpen(false);
   };
 

@@ -4,23 +4,17 @@ import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 import { ImageIcon, X } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import React, { memo, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Reanimated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ImageActions } from './image-actions';
 import { ProgressOverlay } from './progress-overlay';
+import { ZoomableImage } from './zoomable-image';
 
-/**
- * Props for the parallax scrolling image component
- */
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 
-/**
- * Props for the parallax scrolling image component
- */
 interface ParallaxImageProps {
   workflowId?: string;
   serverId?: string;
@@ -33,125 +27,109 @@ export const ImagePreview = memo(function ParallaxImage({
   workflowId,
   serverId,
 }: ParallaxImageProps) {
-  const { generatedImage: imageUrl, status } = useGenerationStatus();
+  const { generatedImages, status } = useGenerationStatus();
   const { progress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const safeAreaInsets = useSafeAreaInsets();
+  const pagerRef = useRef<PagerView>(null);
+  const modalPagerRef = useRef<PagerView>(null);
 
-  // Preview gesture values
-  const previewScale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const previewTranslateX = useSharedValue(0);
-  const previewTranslateY = useSharedValue(0);
-  const savedPreviewTranslateX = useSharedValue(0);
-  const savedPreviewTranslateY = useSharedValue(0);
+  // Sync active index when images change (e.g. new generation)
+  useEffect(() => {
+    if (generatedImages.length > 0) {
+      setActiveIndex(0);
+    }
+  }, [generatedImages]);
 
-  const springConfig = {
-    damping: 20,
-    mass: 0.5,
-    stiffness: 200,
+  const handlePageSelected = (e: any) => {
+    setActiveIndex(e.nativeEvent.position);
   };
 
-  // Gesture handlers
-  const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
-      savedScale.value = previewScale.value;
-    })
-    .onUpdate((e) => {
-      previewScale.value = Math.min(Math.max(savedScale.value * e.scale, 0.5), 3);
-    })
-    .onEnd(() => {
-      if (previewScale.value < 1) {
-        previewScale.value = withSpring(1, springConfig);
-        previewTranslateX.value = withSpring(0, springConfig);
-        previewTranslateY.value = withSpring(0, springConfig);
-      } else if (previewScale.value > 3) {
-        previewScale.value = withSpring(3, springConfig);
-      }
-      savedScale.value = previewScale.value;
-    });
+  // When modal closes, sync the main pager to the last viewed index
+  const handleModalClose = () => {
+    pagerRef.current?.setPageWithoutAnimation(activeIndex);
+    setIsPreviewOpen(false);
+  };
 
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
-      savedPreviewTranslateX.value = previewTranslateX.value;
-      savedPreviewTranslateY.value = previewTranslateY.value;
-    })
-    .onUpdate((e) => {
-      const maxOffset = Math.max(((previewScale.value - 1) * screenWidth) / 2, 0);
-      previewTranslateX.value = Math.min(
-        Math.max(savedPreviewTranslateX.value + e.translationX, -maxOffset),
-        maxOffset,
-      );
-      previewTranslateY.value = Math.min(
-        Math.max(savedPreviewTranslateY.value + e.translationY, -maxOffset),
-        maxOffset,
-      );
-    })
-    .onEnd(() => {
-      savedPreviewTranslateX.value = previewTranslateX.value;
-      savedPreviewTranslateY.value = previewTranslateY.value;
-    });
+  const handleZoomableImageClose = () => {
+    handleModalClose();
+  };
 
-  const gesture = Gesture.Simultaneous(pinchGesture, panGesture);
-
-  const previewStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: previewTranslateX.value },
-      { translateY: previewTranslateY.value },
-      { scale: previewScale.value },
-    ],
-  }));
-
-  const resetPreviewValues = () => {
-    previewScale.value = 1;
-    savedScale.value = 1;
-    previewTranslateX.value = 0;
-    previewTranslateY.value = 0;
-    savedPreviewTranslateX.value = 0;
-    savedPreviewTranslateY.value = 0;
-    savedPreviewTranslateY.value = 0;
+  const handleZoomableImageLongPress = () => {
+    setShowActionsheet(true);
   };
 
   return (
     <View className="relative w-full flex-1 flex-col items-start justify-start">
-      {imageUrl ? (
+      {generatedImages.length > 0 ? (
         <View className="h-auto w-full flex-1 justify-start">
-          <Image
-            source={{ uri: imageUrl }}
-            style={{
-              width: screenWidth,
-              height: screenHeight,
-              aspectRatio: undefined,
-            }}
-            contentFit="contain"
-            contentPosition="top"
-            cachePolicy="memory-disk"
-            onTouchEnd={() => setIsPreviewOpen(true)}
-          />
+          <PagerView
+            key={generatedImages.join('-')}
+            ref={pagerRef}
+            style={{ flex: 1, width: '100%' }}
+            initialPage={0}
+            onPageSelected={handlePageSelected}
+          >
+            {generatedImages.map((imageUrl, index) => (
+              <View key={`${imageUrl}-${index}`} className="flex-1">
+                <Pressable className="flex-1" onPress={() => setIsPreviewOpen(true)}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={{
+                      width: screenWidth,
+                      height: screenHeight,
+                      aspectRatio: undefined,
+                    }}
+                    contentFit="contain"
+                    contentPosition="top"
+                    cachePolicy="memory-disk"
+                  />
+                </Pressable>
+              </View>
+            ))}
+          </PagerView>
+
+          {/* Page Indicator */}
+          {generatedImages.length > 1 && (
+            <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-2">
+              {generatedImages.map((_, index) => (
+                <View
+                  key={index}
+                  className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-primary-500' : 'bg-border-300'
+                    }`}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Image Counter Indicator */}
+          {generatedImages.length > 1 && (
+            <View className="absolute top-3 right-3 rounded-full bg-black/50 px-2.5 py-1">
+              <Text className="text-xs font-medium text-white">
+                {activeIndex + 1}/{generatedImages.length}
+              </Text>
+            </View>
+          )}
 
           <Modal
             isOpen={isPreviewOpen}
-            onClose={() => {
-              setIsPreviewOpen(false);
-              resetPreviewValues();
-            }}
+            onClose={handleModalClose}
             useRNModal={false}
             avoidKeyboard={false}
             closeOnOverlayClick
             size="full"
-            style={{
-              margin: 0,
-              padding: 0,
-            }}
+            style={{ margin: 0, padding: 0 }}
           >
             <ModalBackdrop />
             <ModalContent
               className="m-0 h-full rounded-none border-0 bg-black p-0"
-              style={{
-                shadowColor: 'transparent',
-                elevation: 0,
+              style={{ shadowColor: 'transparent', elevation: 0 }}
+              transition={{
+                type: 'timing',
+                duration: 250,
               }}
             >
               <ModalBody
@@ -164,48 +142,48 @@ export const ImagePreview = memo(function ParallaxImage({
                   margin: 0,
                 }}
               >
-                <GestureHandlerRootView className="h-full w-full">
-                  <GestureDetector gesture={gesture}>
-                    <Reanimated.View style={[{ height: '100%', width: '100%' }, previewStyle]}>
-                      <Pressable
-                        className="h-full w-full"
-                        onPress={() => setIsPreviewOpen(false)}
-                        onLongPress={() => setShowActionsheet(true)}
-                        delayLongPress={500}
-                      >
-                        <Image
-                          source={{ uri: imageUrl }}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                          }}
-                          contentFit="contain"
-                        />
-                      </Pressable>
-                    </Reanimated.View>
-                  </GestureDetector>
-                </GestureHandlerRootView>
+                <PagerView
+                  key={generatedImages.join('-')}
+                  ref={modalPagerRef}
+                  style={{ flex: 1, width: '100%', height: '100%' }}
+                  initialPage={activeIndex}
+                  onPageSelected={handlePageSelected}
+                >
+                  {generatedImages.map((imageUrl, index) => (
+                    <View key={`modal-${imageUrl}-${index}`} className="flex-1">
+                      <ZoomableImage
+                        imageUrl={imageUrl}
+                        onClose={handleZoomableImageClose}
+                        onLongPress={handleZoomableImageLongPress}
+                      />
+                    </View>
+                  ))}
+                </PagerView>
 
                 <MotiView
-                  from={{
-                    opacity: 1,
-                  }}
-                  animate={{
-                    opacity: 0,
-                  }}
-                  transition={{
-                    type: 'timing',
-                    duration: 300,
-                    delay: 2000,
-                  }}
-                  className="absolute bottom-16 left-0 right-0 items-center justify-center"
+                  from={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ type: 'timing', duration: 300, delay: 2000 }}
+                  className="absolute bottom-16 left-0 right-0 items-center justify-center pointer-events-none"
                 >
                   <Text className="text-sm font-medium text-white/70">Long press to open menu</Text>
                 </MotiView>
 
+                {generatedImages.length > 1 && (
+                  <View className="absolute bottom-8 left-0 right-0 flex-row justify-center gap-2 pointer-events-none">
+                    {generatedImages.map((_, index) => (
+                      <View
+                        key={index}
+                        className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                      />
+                    ))}
+                  </View>
+                )}
+
                 <TouchableOpacity
                   activeOpacity={0.5}
-                  onPress={() => setIsPreviewOpen(false)}
+                  onPress={handleModalClose}
                   style={{
                     position: 'absolute',
                     top: safeAreaInsets.top + 12,
@@ -218,12 +196,11 @@ export const ImagePreview = memo(function ParallaxImage({
                 >
                   <Icon as={X} size="sm" className="text-white" />
                 </TouchableOpacity>
-
               </ModalBody>
               <ImageActions
                 isOpen={showActionsheet}
                 onClose={() => setShowActionsheet(false)}
-                imageUrl={imageUrl}
+                imageUrl={generatedImages[activeIndex]}
                 workflowId={workflowId}
                 serverId={serverId}
               />
@@ -249,8 +226,6 @@ export const ImagePreview = memo(function ParallaxImage({
       {status === 'generating' && progress.value > 0 && progress.value < progress.max && (
         <ProgressOverlay current={progress.value} total={progress.max} />
       )}
-
-
     </View>
   );
 });

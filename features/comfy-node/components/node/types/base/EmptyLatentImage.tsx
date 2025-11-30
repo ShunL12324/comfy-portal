@@ -1,4 +1,5 @@
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { NumberSlider } from '@/components/self-ui/slider';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
@@ -140,6 +141,16 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
             </View>
           </View>
         </View>
+      </SubItem>
+      <SubItem title="Batch Size">
+        <NumberSlider
+          defaultValue={node.inputs.batch_size || 1}
+          minValue={1}
+          maxValue={4}
+          step={1}
+          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'batch_size', Number(value))}
+          space={12}
+        />
       </SubItem>
     </BaseNode>
   );

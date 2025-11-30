@@ -2,6 +2,8 @@ import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeStore } from '@/store/theme';
 import {
   BottomSheetFlatList,
   BottomSheetModal
@@ -34,6 +36,13 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
     ref,
   ) {
     const [searchQuery, setSearchQuery] = useState('');
+    const { theme } = useThemeStore();
+    const colors = useThemeColor();
+
+    // Define theme-based colors matching ThemedBottomSheetModal
+    const backgroundColor = theme === 'dark'
+      ? colors.background[100]
+      : colors.background[50];
 
     const filteredOptions = useMemo(
       () =>
@@ -50,11 +59,14 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
 
     const renderHandle = useCallback(
       () => (
-        <View className="-mb-1 h-8 items-center justify-center rounded-t-[24px] bg-background-0">
+        <View
+          className="-mb-1 h-8 items-center justify-center rounded-t-[24px]"
+          style={{ backgroundColor }}
+        >
           <View className="h-1 w-12 rounded-full bg-background-300" />
         </View>
       ),
-      [],
+      [backgroundColor],
     );
 
     const selectedOption = options.find((option) => option.value === value);
@@ -82,7 +94,7 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
                   variant="outline"
                   size="md"
                   onPress={onRefresh}
-                  className="aspect-square rounded-lg border-0 bg-background-50 p-0"
+                  className="aspect-square rounded-lg border-0 bg-background-200 p-0"
                 >
                   {isRefreshing ? (
                     <Spinner size="small" className="text-background-400" />

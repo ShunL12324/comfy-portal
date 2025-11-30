@@ -38,7 +38,8 @@ app-example
 # test
 output/
 output/*.png
-test-assets/
+
+
 tools/
 
 

@@ -14,6 +14,7 @@ interface GenerationState {
   progress: { value: number; max: number };
   nodeProgress: { completed: number; total: number };
   downloadProgress: number;
+  generatedImages: string[];
   currentNodeId?: string;
 }
 
@@ -24,11 +25,11 @@ interface NodeLifecycleHooks {
 
 interface GenerationContextType {
   state: GenerationState;
-  generatedImage: string | null;
+  generatedImages: string[];
   isGenerating: boolean;
   generate: (workflow: Record<string, Node>, workflowId: string, serverId: string) => Promise<void>;
   reset: () => void;
-  setGeneratedImage: (url: string | null) => void;
+  setGeneratedImages: (urls: string[]) => void;
   registerNodeHooks: (nodeId: string, hooks: NodeLifecycleHooks) => void;
   unregisterNodeHooks: (nodeId: string) => void;
 }
@@ -38,7 +39,7 @@ const GenerationContext = createContext<GenerationContextType | null>(null);
 interface GenerationStatus {
   status: 'idle' | 'generating' | 'downloading' | 'error' | 'success';
   currentNodeId?: string;
-  generatedImage: string | null;
+  generatedImages: string[];
 }
 
 interface GenerationProgress {
@@ -49,12 +50,12 @@ interface GenerationProgress {
 
 const GenerationStatusContext = createContext<GenerationStatus | null>(null);
 const GenerationProgressContext = createContext<GenerationProgress | null>(null);
-const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedImage' | 'isGenerating'> | null>(null);
+const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedImages' | 'isGenerating'> | null>(null);
 
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
-    generatedImage: null,
+    generatedImages: [],
   });
 
   const [progress, setProgress] = useState<GenerationProgress>({
@@ -134,8 +135,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     delete nodeHooksRef.current[nodeId];
   }, []);
 
-  const setGeneratedImage = useCallback((url: string | null) => {
-    setStatus((prev) => ({ ...prev, generatedImage: url }));
+  const setGeneratedImages = useCallback((urls: string[]) => {
+    setStatus((prev) => ({ ...prev, generatedImages: urls }));
   }, []);
 
   const generate = useCallback(
@@ -210,19 +211,26 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
                 await new Promise((resolve) => setTimeout(resolve, 300));
 
-                const result = await saveGeneratedImage({
-                  serverId,
-                  imageUrl: images[0],
-                  workflow,
-                  workflowId,
-                });
+                const savedImagePaths: string[] = [];
+                for (const imageUrl of images) {
+                  const result = await saveGeneratedImage({
+                    serverId,
+                    imageUrl,
+                    workflow,
+                    workflowId,
+                  });
 
-                if (result) {
-                  const localImageUrl = result.path.startsWith('file://') ? result.path : `file://${result.path}`;
-                  setGeneratedImage(localImageUrl);
+                  if (result) {
+                    const localImageUrl = result.path.startsWith('file://') ? result.path : `file://${result.path}`;
+                    savedImagePaths.push(localImageUrl);
+                  }
+                }
+
+                if (savedImagePaths.length > 0) {
+                  setGeneratedImages(savedImagePaths);
                 } else {
-                  console.error('Failed to save generated image');
-                  showToast.error('Save Failed', 'Unable to save the generated image.', insets.top + 8);
+                  console.error('Failed to save generated images');
+                  showToast.error('Save Failed', 'Unable to save the generated images.', insets.top + 8);
                 }
               } else {
                 showToast.error('Generation Failed', 'No images were generated.', insets.top + 8);
@@ -264,18 +272,18 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         reset();
       }
     },
-    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedImage],
+    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedImages],
   );
 
   const actions = React.useMemo(
     () => ({
       generate,
       reset,
-      setGeneratedImage,
+      setGeneratedImages,
       registerNodeHooks,
       unregisterNodeHooks,
     }),
-    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedImage],
+    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedImages],
   );
 
   return (
@@ -285,7 +293,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           <GenerationContext.Provider
             value={{
               state: { ...status, ...progress },
-              generatedImage: status.generatedImage,
+              generatedImages: status.generatedImages,
               isGenerating: status.status === 'generating',
               ...actions,
             }}

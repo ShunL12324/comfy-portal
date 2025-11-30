@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Input, InputField, InputSlot, InputIcon } from '@/components/ui/input';
-import { VStack } from '@/components/ui/vstack';
-import { Text } from '@/components/ui/text';
-import { Search } from 'lucide-react-native';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
+import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { VStack } from '@/components/ui/vstack';
+import { Search } from 'lucide-react-native';
+import React, { useCallback, useRef, useState } from 'react';
 
 interface SearchHeaderProps {
   title: string;
@@ -49,7 +49,7 @@ export function SearchHeader({
         <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
           <HStack space="sm" className="items-center">
             <Box className="flex-1">
-              <Input variant="outline" size="md" className="overflow-hidden rounded-lg border-0 bg-background-50">
+              <Input variant="outline" size="md" className="overflow-hidden rounded-lg border-0 bg-background-200">
                 <InputSlot className="pl-3">
                   <InputIcon as={Search} className="text-background-400" />
                 </InputSlot>

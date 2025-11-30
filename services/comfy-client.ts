@@ -391,19 +391,26 @@ export class ComfyClient {
       const outputs = history[promptId].outputs;
       const images: string[] = [];
 
+      const allImages: { filename: string; subfolder: string; type: string }[] = [];
       for (const nodeId in outputs) {
         const nodeOutput = outputs[nodeId];
         if (nodeOutput.images) {
-          for (const image of nodeOutput.images) {
-            const imageUrl = await this.downloadImage(
-              image.filename,
-              image.subfolder,
-              image.type,
-              callbacks
-            );
-            images.push(imageUrl);
-          }
+          allImages.push(...nodeOutput.images);
         }
+      }
+
+      // Filter images: if we have "output" type, use only those. Otherwise use "temp".
+      const outputImages = allImages.filter((img) => img.type === 'output');
+      const imagesToDownload = outputImages.length > 0 ? outputImages : allImages;
+
+      for (const image of imagesToDownload) {
+        const imageUrl = await this.downloadImage(
+          image.filename,
+          image.subfolder,
+          image.type,
+          callbacks
+        );
+        images.push(imageUrl);
       }
 
       callbacks.onComplete?.(images);

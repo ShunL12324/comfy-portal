@@ -209,7 +209,7 @@ export function ModelSelector({
         style={{ width: '48.5%' }}
       >
         <Box
-          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-background-50'
+          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-background-200'
             }`}
         >
           {isSelected && (

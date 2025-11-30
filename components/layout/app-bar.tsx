@@ -50,11 +50,11 @@ export function AppBar({
               </Button>
             )}
             {!centerTitle && (
-              <VStack>
-                <Heading size={titleSize} className="text-typography-950">
+              <VStack className="max-w-[100px]">
+                <Heading size={titleSize} className="text-typography-950" numberOfLines={1} ellipsizeMode="tail">
                   {title}
                 </Heading>
-                {subtitle && <Text className="text-sm text-typography-500">{subtitle}</Text>}
+                {subtitle && <Text className="text-sm text-typography-500" numberOfLines={1}>{subtitle}</Text>}
               </VStack>
             )}
           </HStack>

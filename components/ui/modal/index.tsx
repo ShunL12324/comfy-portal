@@ -1,12 +1,12 @@
 'use client';
-import React from 'react';
 import { createModal } from '@gluestack-ui/modal';
-import { Pressable, View, ScrollView } from 'react-native';
-import { Motion, AnimatePresence, createMotionAnimatedComponent } from '@legendapp/motion';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
-import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/nativewind-utils';
+import { tva } from '@gluestack-ui/nativewind-utils/tva';
+import { useStyleContext, withStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { AnimatePresence, createMotionAnimatedComponent, Motion } from '@legendapp/motion';
+import { cssInterop } from 'nativewind';
+import React from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 
 const AnimatedPressable = createMotionAnimatedComponent(Pressable);
 const SCOPE = 'MODAL';
@@ -161,6 +161,7 @@ const ModalContent = React.forwardRef<React.ElementRef<typeof UIModal.Content>, 
             type: 'timing',
             duration: 250,
           },
+          ...props.transition,
         }}
         {...props}
         className={modalContentStyle({
@@ -241,4 +242,5 @@ ModalBody.displayName = 'ModalBody';
 ModalFooter.displayName = 'ModalFooter';
 ModalCloseButton.displayName = 'ModalCloseButton';
 
-export { Modal, ModalBackdrop, ModalContent, ModalCloseButton, ModalHeader, ModalBody, ModalFooter };
+export { Modal, ModalBackdrop, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader };
+
