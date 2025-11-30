@@ -12,7 +12,7 @@ import React from 'react';
 import { Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface ImageItemProps {
+interface HistoryItemProps {
   url: string;
   index: number;
   isSelectionMode: boolean;
@@ -21,8 +21,8 @@ interface ImageItemProps {
   onDelete?: () => void;
 }
 
-export const ImageItem = React.memo(
-  function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: ImageItemProps) {
+export const HistoryItem = React.memo(
+  function HistoryItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: HistoryItemProps) {
     const insets = useSafeAreaInsets();
     const isVideo = React.useMemo(() => {
       const ext = url.split('.').pop()?.toLowerCase();
@@ -49,14 +49,14 @@ export const ImageItem = React.memo(
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          showToast.error('Permission needed', 'Please grant permission to save images.', insets.top + 8);
+          showToast.error('Permission needed', 'Please grant permission to save media.', insets.top + 8);
           return;
         }
         await MediaLibrary.saveToLibraryAsync(url);
-        showToast.success('Saved', 'Image saved to gallery.', insets.top + 8);
+        showToast.success('Saved', 'Media saved to gallery.', insets.top + 8);
       } catch (error) {
         console.error('Error saving:', error);
-        showToast.error('Error', 'Failed to save image.', insets.top + 8);
+        showToast.error('Error', 'Failed to save media.', insets.top + 8);
       }
     };
 
@@ -82,7 +82,7 @@ export const ImageItem = React.memo(
           ) : (
             <Image
               source={url}
-              alt={`Generated image ${index + 1}`}
+              alt={`Generated media ${index + 1}`}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               cachePolicy="memory-disk"

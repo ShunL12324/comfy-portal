@@ -1,3 +1,4 @@
+// Force rebuild
 import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
@@ -9,16 +10,16 @@ import { Pressable, TouchableOpacity, useWindowDimensions, View } from 'react-na
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ImageActions } from './image-actions';
+import { MediaActions } from './media-actions';
 import { ProgressOverlay } from './progress-overlay';
-import { ZoomableImage } from './zoomable-image';
+import { ZoomableMedia } from './zoomable-media';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { PlayCircle } from 'lucide-react-native';
 
-interface ParallaxImageProps {
+interface ParallaxMediaProps {
   workflowId?: string;
   serverId?: string;
 }
@@ -41,13 +42,13 @@ const VideoPreview = ({ url }: { url: string }) => {
 };
 
 /**
- * A component that displays an image with parallax scrolling effect and preview functionality
+ * A component that displays media with parallax scrolling effect and preview functionality
  */
-export const ImagePreview = memo(function ParallaxImage({
+export const MediaPreview = memo(function ParallaxMedia({
   workflowId,
   serverId,
-}: ParallaxImageProps) {
-  const { generatedImages, status } = useGenerationStatus();
+}: ParallaxMediaProps) {
+  const { generatedMedia, status } = useGenerationStatus();
   const { progress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
@@ -57,12 +58,12 @@ export const ImagePreview = memo(function ParallaxImage({
   const pagerRef = useRef<PagerView>(null);
   const modalPagerRef = useRef<PagerView>(null);
 
-  // Sync active index when images change (e.g. new generation)
+  // Sync active index when media change (e.g. new generation)
   useEffect(() => {
-    if (generatedImages.length > 0) {
+    if (generatedMedia.length > 0) {
       setActiveIndex(0);
     }
-  }, [generatedImages]);
+  }, [generatedMedia]);
 
   const handlePageSelected = (e: any) => {
     setActiveIndex(e.nativeEvent.position);
@@ -74,38 +75,38 @@ export const ImagePreview = memo(function ParallaxImage({
     setIsPreviewOpen(false);
   };
 
-  const handleZoomableImageClose = () => {
+  const handleZoomableMediaClose = () => {
     handleModalClose();
   };
 
-  const handleZoomableImageLongPress = () => {
+  const handleZoomableMediaLongPress = () => {
     setShowActionsheet(true);
   };
 
   return (
     <View className="relative w-full flex-1 flex-col items-start justify-start">
-      {generatedImages.length > 0 ? (
+      {generatedMedia.length > 0 ? (
         <View className="h-auto w-full flex-1 justify-start">
           <PagerView
-            key={generatedImages.join('-')}
+            key={generatedMedia.join('-')}
             ref={pagerRef}
             style={{ flex: 1, width: '100%' }}
             initialPage={0}
             onPageSelected={handlePageSelected}
           >
-            {generatedImages.map((imageUrl, index) => (
-              <View key={`${imageUrl}-${index}`} className="flex-1">
+            {generatedMedia.map((mediaUrl, index) => (
+              <View key={`${mediaUrl}-${index}`} className="flex-1">
                 <Pressable className="flex-1" onPress={() => setIsPreviewOpen(true)}>
-                  {['mp4', 'mov', 'm4v', 'webm'].includes(imageUrl.split('.').pop()?.toLowerCase() || '') ? (
+                  {['mp4', 'mov', 'm4v', 'webm'].includes(mediaUrl.split('.').pop()?.toLowerCase() || '') ? (
                     <View className="flex-1 items-center justify-center bg-black">
-                      <VideoPreview url={imageUrl} />
+                      <VideoPreview url={mediaUrl} />
                       <View className="absolute inset-0 items-center justify-center bg-black/20">
                         <Icon as={PlayCircle} className="text-white opacity-90 h-12 w-12" />
                       </View>
                     </View>
                   ) : (
                     <Image
-                      source={{ uri: imageUrl }}
+                      source={{ uri: mediaUrl }}
                       style={{
                         width: screenWidth,
                         height: screenHeight,
@@ -122,9 +123,9 @@ export const ImagePreview = memo(function ParallaxImage({
           </PagerView>
 
           {/* Page Indicator */}
-          {generatedImages.length > 1 && (
+          {generatedMedia.length > 1 && (
             <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-2">
-              {generatedImages.map((_, index) => (
+              {generatedMedia.map((_, index) => (
                 <View
                   key={index}
                   className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-primary-500' : 'bg-border-300'
@@ -135,19 +136,18 @@ export const ImagePreview = memo(function ParallaxImage({
           )}
 
           {/* Status Indicators */}
-          {/* Status Indicators */}
           <View className="absolute top-3 right-3 flex-row gap-2">
             <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
               <Text className="text-center text-xs font-medium text-white">
-                {['mp4', 'mov', 'm4v', 'webm'].includes(generatedImages[activeIndex]?.split('.').pop()?.toLowerCase() || '')
+                {['mp4', 'mov', 'm4v', 'webm'].includes(generatedMedia[activeIndex]?.split('.').pop()?.toLowerCase() || '')
                   ? 'Video'
                   : 'Image'}
               </Text>
             </View>
-            {generatedImages.length > 1 && (
+            {generatedMedia.length > 1 && (
               <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
                 <Text className="text-center text-xs font-medium text-white">
-                  {activeIndex + 1}/{generatedImages.length}
+                  {activeIndex + 1}/{generatedMedia.length}
                 </Text>
               </View>
             )}
@@ -182,18 +182,18 @@ export const ImagePreview = memo(function ParallaxImage({
                 }}
               >
                 <PagerView
-                  key={generatedImages.join('-')}
+                  key={generatedMedia.join('-')}
                   ref={modalPagerRef}
                   style={{ flex: 1, width: '100%', height: '100%' }}
                   initialPage={activeIndex}
                   onPageSelected={handlePageSelected}
                 >
-                  {generatedImages.map((imageUrl, index) => (
-                    <View key={`modal-${imageUrl}-${index}`} className="flex-1">
-                      <ZoomableImage
-                        imageUrl={imageUrl}
-                        onClose={handleZoomableImageClose}
-                        onLongPress={handleZoomableImageLongPress}
+                  {generatedMedia.map((mediaUrl, index) => (
+                    <View key={`modal-${mediaUrl}-${index}`} className="flex-1">
+                      <ZoomableMedia
+                        mediaUrl={mediaUrl}
+                        onClose={handleZoomableMediaClose}
+                        onLongPress={handleZoomableMediaLongPress}
                       />
                     </View>
                   ))}
@@ -208,9 +208,9 @@ export const ImagePreview = memo(function ParallaxImage({
                   <Text className="text-sm font-medium text-white/70">Long press to open menu</Text>
                 </MotiView>
 
-                {generatedImages.length > 1 && (
+                {generatedMedia.length > 1 && (
                   <View className="absolute bottom-8 left-0 right-0 flex-row justify-center gap-2 pointer-events-none">
-                    {generatedImages.map((_, index) => (
+                    {generatedMedia.map((_, index) => (
                       <View
                         key={index}
                         className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-white' : 'bg-white/50'
@@ -236,10 +236,10 @@ export const ImagePreview = memo(function ParallaxImage({
                   <Icon as={X} size="sm" className="text-white" />
                 </TouchableOpacity>
               </ModalBody>
-              <ImageActions
+              <MediaActions
                 isOpen={showActionsheet}
                 onClose={() => setShowActionsheet(false)}
-                imageUrl={generatedImages[activeIndex]}
+                mediaUrl={generatedMedia[activeIndex]}
                 workflowId={workflowId}
                 serverId={serverId}
               />
@@ -251,7 +251,7 @@ export const ImagePreview = memo(function ParallaxImage({
           <View className="items-center gap-4">
             <Icon as={ImageIcon} size="xl" className="text-typography-500" />
             <View className="items-center gap-1">
-              <Text className="text-sm text-typography-500">No image generated yet</Text>
+              <Text className="text-sm text-typography-500">No media generated yet</Text>
               {status === 'generating' && progress.max > 0 && (
                 <Text className="text-xs text-typography-400">
                   Generating... {Math.round((progress.value / progress.max) * 100)}%

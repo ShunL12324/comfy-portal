@@ -2,30 +2,30 @@ import { Workflow } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system';
 
-interface SaveImageOptions {
+interface SaveMediaOptions {
   serverId: string;
   workflowId: string;
-  imageUrl: string;
+  mediaUrl: string;
   workflow: Workflow;
   delete?: boolean;
 }
 
-export async function saveGeneratedImage({
+export async function saveGeneratedMedia({
   serverId,
   workflowId,
-  imageUrl,
+  mediaUrl,
   workflow,
   delete: shouldDelete,
-}: SaveImageOptions) {
+}: SaveMediaOptions) {
   try {
     const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
 
     if (shouldDelete) {
       // Extract filename from path
-      const filename = imageUrl.split('/').pop();
-      if (!filename) throw new Error('Invalid image URL');
+      const filename = mediaUrl.split('/').pop();
+      if (!filename) throw new Error('Invalid media URL');
 
-      // Delete image and metadata
+      // Delete media and metadata
       await FileSystem.deleteAsync(`${dirPath}/${filename}`);
       await FileSystem.deleteAsync(`${dirPath}/${filename}.json`).catch(() => { });
       return;
@@ -39,19 +39,19 @@ export async function saveGeneratedImage({
     const timestamp = new Date().toISOString();
     
     // Get extension from original URL or default to png
-    const originalExt = imageUrl.split('.').pop()?.split('?')[0] || 'png';
+    const originalExt = mediaUrl.split('.').pop()?.split('?')[0] || 'png';
     const filename = `${timestamp}-${uuid}.${originalExt}`;
 
-    // Download image
+    // Download media
     const filePath = `${dirPath}/${filename}`;
-    await FileSystem.downloadAsync(imageUrl, filePath);
+    await FileSystem.downloadAsync(mediaUrl, filePath);
 
     // Save metadata
     const metadataPath = `${dirPath}/${filename}.json`;
     const metadata = {
       timestamp,
       workflow,
-      originalUrl: imageUrl,
+      originalUrl: mediaUrl,
     };
     await FileSystem.writeAsStringAsync(
       metadataPath,
@@ -63,12 +63,12 @@ export async function saveGeneratedImage({
       metadata,
     };
   } catch (error) {
-    console.error('Failed to save/delete generated image:', error);
+    console.error('Failed to save/delete generated media:', error);
     throw error;
   }
 }
 
-export async function getGeneratedImages(serverId: string, workflowId: string) {
+export async function getGeneratedMedia(serverId: string, workflowId: string) {
   try {
     const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
 
@@ -85,7 +85,7 @@ export async function getGeneratedImages(serverId: string, workflowId: string) {
     const files = await FileSystem.readDirectoryAsync(dirPath);
 
     const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.mov'];
-    const images = files
+    const mediaItems = files
       .filter((file) => supportedExtensions.some(ext => file.toLowerCase().endsWith(ext)))
       .map((file) => ({
         path: `${dirPath}/${file}`,
@@ -93,7 +93,7 @@ export async function getGeneratedImages(serverId: string, workflowId: string) {
       }));
 
     return Promise.all(
-      images.map(async ({ path, metadataPath }) => {
+      mediaItems.map(async ({ path, metadataPath }) => {
         try {
           const metadataStr = await FileSystem.readAsStringAsync(metadataPath);
           const metadata = JSON.parse(metadataStr);
@@ -104,24 +104,24 @@ export async function getGeneratedImages(serverId: string, workflowId: string) {
       }),
     );
   } catch (error) {
-    console.error('failed to get generated images:', error);
+    console.error('failed to get generated media:', error);
     return [];
   }
 }
 
-export async function loadHistoryImages(serverId: string, workflowId: string) {
+export async function loadHistoryMedia(serverId: string, workflowId: string) {
   try {
-    const images = await getGeneratedImages(serverId, workflowId);
+    const mediaItems = await getGeneratedMedia(serverId, workflowId);
 
-    return images
-      .filter((image) => image.metadata)
-      .map((image) => ({
-        url: image.path,
-        timestamp: new Date(image.metadata.timestamp).getTime(),
+    return mediaItems
+      .filter((item) => item.metadata)
+      .map((item) => ({
+        url: item.path,
+        timestamp: new Date(item.metadata.timestamp).getTime(),
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
-    console.error('failed to load history images:', error);
+    console.error('failed to load history media:', error);
     return [];
   }
 }

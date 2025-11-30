@@ -18,7 +18,7 @@ import { RunPageHeaderStatus } from '@/features/generation/components/run-page-h
 
 import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
-import { ImagePreview } from '@/features/generation/components/image-preview';
+import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useThemeStore } from '@/store/theme';
 import BottomSheet, { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
@@ -35,7 +35,7 @@ function RunWorkflowScreenContent() {
   const sheetRef = useRef<BottomSheet>(null);
 
   const { status } = useGenerationStatus();
-  const { generate, setGeneratedImages } = useGenerationActions();
+  const { generate, setGeneratedMedia } = useGenerationActions();
 
   if (!workflowRecord) {
     router.back();
@@ -47,8 +47,8 @@ function RunWorkflowScreenContent() {
     generate(workflowRecord.data, workflowRecord.id, server.id);
   };
 
-  const handleSelectHistoryImage = (url: string) => {
-    setGeneratedImages([url]);
+  const handleSelectHistoryMedia = (url: string) => {
+    setGeneratedMedia([url]);
     setIsHistoryOpen(false);
   };
 
@@ -100,7 +100,7 @@ function RunWorkflowScreenContent() {
         className="relative z-30 bg-background-0"
       />
 
-      <ImagePreview
+      <MediaPreview
         workflowId={workflowRecord.id}
         serverId={serverId as string}
       />
@@ -185,7 +185,7 @@ function RunWorkflowScreenContent() {
         onClose={() => setIsHistoryOpen(false)}
         serverId={serverId as string}
         workflowId={workflowRecord?.id}
-        onSelectImage={handleSelectHistoryImage}
+        onSelectMedia={handleSelectHistoryMedia}
       />
     </View>
   );

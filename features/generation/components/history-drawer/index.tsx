@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { loadHistoryImages } from '@/services/image-storage';
+import { loadHistoryMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
@@ -14,15 +14,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeleteAlert } from './delete-alert';
 import { BottomPanel, SelectButton } from './edit-controls';
-import { ImageItem, getItemLayout } from './image-item';
+import { HistoryItem, getItemLayout } from './history-item';
 
 interface HistoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   serverId: string;
   workflowId?: string;
-  onSelectImage?: (url: string) => void;
-  onImageDeleted?: () => void;
+  onSelectMedia?: (url: string) => void;
+  onMediaDeleted?: () => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -32,30 +32,30 @@ export function HistoryDrawer({
   onClose,
   serverId,
   workflowId,
-  onSelectImage,
-  onImageDeleted,
+  onSelectMedia,
+  onMediaDeleted,
 }: HistoryDrawerProps) {
   const insets = useSafeAreaInsets();
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
 
-  const [images, setImages] = useState<Array<{ url: string; timestamp: number }>>([]);
+  const [mediaItems, setMediaItems] = useState<Array<{ url: string; timestamp: number }>>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | 'selection' | null>(null);
 
-  // Memoize paginatedImages to prevent unnecessary recalculations
-  const paginatedImages = useMemo(() => images.slice(0, page * ITEMS_PER_PAGE), [images, page]);
+  // Memoize paginatedMedia to prevent unnecessary recalculations
+  const paginatedMedia = useMemo(() => mediaItems.slice(0, page * ITEMS_PER_PAGE), [mediaItems, page]);
 
-  // Load images only when necessary
+  // Load media only when necessary
   useEffect(() => {
     let mounted = true;
 
     if (isOpen && workflowId) {
-      loadHistoryImages(serverId, workflowId).then((newImages) => {
+      loadHistoryMedia(serverId, workflowId).then((newMedia) => {
         if (mounted) {
-          setImages(newImages);
+          setMediaItems(newMedia);
         }
       });
     }
@@ -69,7 +69,7 @@ export function HistoryDrawer({
   useEffect(() => {
     if (!isOpen) {
       setIsSelectionMode(false);
-      setSelectedImages([]);
+      setSelectedMedia([]);
       setPage(1);
       setIsLoading(false);
     }
@@ -77,27 +77,27 @@ export function HistoryDrawer({
 
   const handleToggleSelectionMode = useCallback(() => {
     setIsSelectionMode((prev) => !prev);
-    setSelectedImages([]);
+    setSelectedMedia([]);
   }, []);
 
   const handleToggleSelect = useCallback((url: string) => {
-    setSelectedImages((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]));
+    setSelectedMedia((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]));
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    setSelectedImages((prev) => (prev.length === paginatedImages.length ? [] : paginatedImages.map((img) => img.url)));
-  }, [paginatedImages]);
+    setSelectedMedia((prev) => (prev.length === paginatedMedia.length ? [] : paginatedMedia.map((img) => img.url)));
+  }, [paginatedMedia]);
 
   const confirmDelete = useCallback(async () => {
     if (!workflowId || !deleteTarget) return;
 
     try {
-      const targets = deleteTarget === 'selection' ? selectedImages : [deleteTarget];
+      const targets = deleteTarget === 'selection' ? selectedMedia : [deleteTarget];
 
-      // Delete both image files and their metadata files
+      // Delete both media files and their metadata files
       await Promise.all(
         targets.map(async (url) => {
-          // Delete the image file
+          // Delete the media file
           await FileSystem.deleteAsync(url);
           // Delete the metadata file
           await FileSystem.deleteAsync(`${url}.json`).catch(() => {
@@ -106,33 +106,33 @@ export function HistoryDrawer({
         }),
       );
 
-      // Refresh images
-      const updatedImages = await loadHistoryImages(serverId, workflowId);
-      setImages(updatedImages);
+      // Refresh media
+      const updatedMedia = await loadHistoryMedia(serverId, workflowId);
+      setMediaItems(updatedMedia);
 
       if (deleteTarget === 'selection') {
-        setSelectedImages([]);
+        setSelectedMedia([]);
         setIsSelectionMode(false);
       }
 
-      onImageDeleted?.();
+      onMediaDeleted?.();
       setIsDeleteAlertOpen(false);
       setDeleteTarget(null);
     } catch (error) {
-      console.error('Failed to delete images:', error);
-      showToast.error('Delete Failed', 'Failed to delete images', insets.top + 8);
+      console.error('Failed to delete media:', error);
+      showToast.error('Delete Failed', 'Failed to delete media', insets.top + 8);
     }
-  }, [deleteTarget, selectedImages, serverId, workflowId, onImageDeleted, insets.top]);
+  }, [deleteTarget, selectedMedia, serverId, workflowId, onMediaDeleted, insets.top]);
 
   const handleDelete = useCallback(() => {
-    if (selectedImages.length > 0) {
+    if (selectedMedia.length > 0) {
       setDeleteTarget('selection');
       setIsDeleteAlertOpen(true);
     }
-  }, [selectedImages]);
+  }, [selectedMedia]);
 
   const handleShareSelected = useCallback(async () => {
-    if (selectedImages.length === 0) return;
+    if (selectedMedia.length === 0) return;
 
     try {
       const isAvailable = await Sharing.isAvailableAsync();
@@ -141,42 +141,42 @@ export function HistoryDrawer({
         return;
       }
 
-      if (selectedImages.length > 1) {
-        showToast.info('Sharing first image', 'Sharing multiple images is not supported', insets.top + 8);
+      if (selectedMedia.length > 1) {
+        showToast.info('Sharing first item', 'Sharing multiple items is not supported', insets.top + 8);
       }
 
-      const url = selectedImages[0];
+      const url = selectedMedia[0];
       await Sharing.shareAsync(url);
     } catch (error) {
-      console.error('Failed to share image:', error);
+      console.error('Failed to share media:', error);
     }
-  }, [selectedImages]);
+  }, [selectedMedia]);
 
   const handleSaveSelected = useCallback(async () => {
-    if (selectedImages.length === 0) return;
+    if (selectedMedia.length === 0) return;
 
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status !== 'granted') {
-      showToast.error('Permission required', 'Please allow access to save images', insets.top + 8);
+      showToast.error('Permission required', 'Please allow access to save media', insets.top + 8);
       return;
     }
 
     let savedCount = 0;
     try {
       await Promise.all(
-        selectedImages.map(async (url) => {
+        selectedMedia.map(async (url) => {
           await MediaLibrary.saveToLibraryAsync(url);
           savedCount++;
         })
       );
-      showToast.success('Saved', `Saved ${savedCount} images to gallery`, insets.top + 8);
+      showToast.success('Saved', `Saved ${savedCount} items to gallery`, insets.top + 8);
       setIsSelectionMode(false);
-      setSelectedImages([]);
+      setSelectedMedia([]);
     } catch (error) {
-      console.error('Failed to save images:', error);
-      showToast.error('Save Failed', 'Failed to save some images', insets.top + 8);
+      console.error('Failed to save media:', error);
+      showToast.error('Save Failed', 'Failed to save some media', insets.top + 8);
     }
-  }, [selectedImages]);
+  }, [selectedMedia]);
 
   const handleDeleteItem = useCallback((url: string) => {
     setDeleteTarget(url);
@@ -185,20 +185,20 @@ export function HistoryDrawer({
 
   const renderItem = useCallback(
     ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
-      <ImageItem
+      <HistoryItem
         url={item.url}
         index={index}
         isSelectionMode={isSelectionMode}
-        isSelected={selectedImages.includes(item.url)}
-        onPress={() => (isSelectionMode ? handleToggleSelect(item.url) : onSelectImage?.(item.url))}
+        isSelected={selectedMedia.includes(item.url)}
+        onPress={() => (isSelectionMode ? handleToggleSelect(item.url) : onSelectMedia?.(item.url))}
         onDelete={() => handleDeleteItem(item.url)}
       />
     ),
-    [isSelectionMode, selectedImages, onSelectImage, handleToggleSelect],
+    [isSelectionMode, selectedMedia, onSelectMedia, handleToggleSelect],
   );
 
   const handleLoadMore = useCallback(() => {
-    if (paginatedImages.length >= images.length || isLoading) return;
+    if (paginatedMedia.length >= mediaItems.length || isLoading) return;
 
     setIsLoading(true);
     const timer = setTimeout(() => {
@@ -207,7 +207,7 @@ export function HistoryDrawer({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [paginatedImages.length, images.length, isLoading]);
+  }, [paginatedMedia.length, mediaItems.length, isLoading]);
 
   const renderFooter = useMemo(() => {
     if (!isLoading) return null;
@@ -220,7 +220,7 @@ export function HistoryDrawer({
 
   const flatListProps = useMemo(
     () => ({
-      data: paginatedImages,
+      data: paginatedMedia,
       renderItem,
       keyExtractor: (item: { url: string }) => item.url,
       getItemLayout,
@@ -238,7 +238,7 @@ export function HistoryDrawer({
       initialNumToRender: 6,
       updateCellsBatchingPeriod: 100,
     }),
-    [paginatedImages, renderItem, handleLoadMore, renderFooter],
+    [paginatedMedia, renderItem, handleLoadMore, renderFooter],
   );
 
   return (
@@ -256,8 +256,8 @@ export function HistoryDrawer({
         <FlatList {...flatListProps} />
         <BottomPanel
           isSelectionMode={isSelectionMode}
-          selectedImages={selectedImages}
-          images={images}
+          selectedMedia={selectedMedia}
+          mediaItems={mediaItems}
           onSelectAll={handleSelectAll}
           onDelete={handleDelete}
           onShare={handleShareSelected}
@@ -270,11 +270,11 @@ export function HistoryDrawer({
         isOpen={isDeleteAlertOpen}
         onClose={() => setIsDeleteAlertOpen(false)}
         onConfirm={confirmDelete}
-        title={deleteTarget === 'selection' ? 'Delete Selected Images' : 'Delete Image'}
+        title={deleteTarget === 'selection' ? 'Delete Selected Media' : 'Delete Media'}
         description={
           deleteTarget === 'selection'
-            ? `Are you sure you want to delete ${selectedImages.length} images? This action cannot be undone.`
-            : 'Are you sure you want to delete this image? This action cannot be undone.'
+            ? `Are you sure you want to delete ${selectedMedia.length} items? This action cannot be undone.`
+            : 'Are you sure you want to delete this item? This action cannot be undone.'
         }
       />
     </Drawer >

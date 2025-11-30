@@ -6,9 +6,9 @@ import { VStack } from '@/components/ui/vstack';
  * Props for the ServerStatus component
  */
 interface ServerStatusProps {
-  /** Whether the server is currently generating an image */
+  /** Whether the server is currently generating media */
   generating: boolean;
-  /** Whether the server is currently downloading an image */
+  /** Whether the server is currently downloading media */
   downloading?: boolean;
   /** Download progress percentage (0-100) */
   downloadProgress?: number;

@@ -7,27 +7,27 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface ZoomableImageProps {
-  imageUrl: string;
+interface ZoomableMediaProps {
+  mediaUrl: string;
   onClose: () => void;
   onLongPress: () => void;
 }
 
-export const ZoomableImage = memo(function ZoomableImage({
-  imageUrl,
+export const ZoomableMedia = memo(function ZoomableMedia({
+  mediaUrl,
   onClose,
   onLongPress,
-}: ZoomableImageProps) {
+}: ZoomableMediaProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const isVideo = React.useMemo(() => {
-    const ext = imageUrl.split('.').pop()?.toLowerCase();
+    const ext = mediaUrl.split('.').pop()?.toLowerCase();
     return ['mp4', 'mov', 'm4v', 'webm'].includes(ext || '');
-  }, [imageUrl]);
+  }, [mediaUrl]);
 
-  const player = useVideoPlayer(isVideo ? imageUrl : null, player => {
+  const player = useVideoPlayer(isVideo ? mediaUrl : null, player => {
     if (isVideo) {
       player.loop = true;
       player.play();
@@ -113,7 +113,7 @@ export const ZoomableImage = memo(function ZoomableImage({
           bouncesZoom
         >
           <Image
-            source={{ uri: imageUrl }}
+            source={{ uri: mediaUrl }}
             style={{
               width: screenWidth,
               height: screenHeight,

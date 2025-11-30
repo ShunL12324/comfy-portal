@@ -12,13 +12,13 @@ import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface ImageActionsProps {
+interface MediaActionsProps {
   /** Whether the action sheet is open */
   isOpen: boolean;
   /** Callback when the action sheet is closed */
   onClose: () => void;
-  /** URL of the image */
-  imageUrl?: string;
+  /** URL of the media */
+  mediaUrl?: string;
   /** Current workflow ID */
   workflowId?: string;
   /** Current server ID */
@@ -26,15 +26,15 @@ interface ImageActionsProps {
 }
 
 /**
- * Component for image actions (save to gallery, set as thumbnail)
+ * Component for media actions (save to gallery, set as thumbnail)
  */
-export const ImageActions = memo(function ImageActions({
+export const MediaActions = memo(function MediaActions({
   isOpen,
   onClose,
-  imageUrl,
+  mediaUrl,
   workflowId,
   serverId,
-}: ImageActionsProps) {
+}: MediaActionsProps) {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
   const safeAreaInsets = useSafeAreaInsets();
 
@@ -47,25 +47,25 @@ export const ImageActions = memo(function ImageActions({
         }
       }
 
-      if (imageUrl) {
-        await MediaLibrary.saveToLibraryAsync(imageUrl);
+      if (mediaUrl) {
+        await MediaLibrary.saveToLibraryAsync(mediaUrl);
         onClose();
-        showToast.success('Image saved to your gallery', undefined, safeAreaInsets.top + 16);
+        showToast.success('Media saved to your gallery', undefined, safeAreaInsets.top + 16);
       }
     } catch (error) {
-      console.error('Failed to save image:', error);
-      showToast.error('Failed to save image', undefined, safeAreaInsets.top + 16);
+      console.error('Failed to save media:', error);
+      showToast.error('Failed to save media', undefined, safeAreaInsets.top + 16);
     }
   };
 
   const handleSetAsThumbnail = async () => {
-    if (!imageUrl || !workflowId || !serverId) return;
+    if (!mediaUrl || !workflowId || !serverId) return;
 
     try {
       const savedImage = await saveWorkflowThumbnail({
         serverId,
         workflowId,
-        imageUri: imageUrl,
+        imageUri: mediaUrl,
       });
 
       if (savedImage) {
@@ -99,7 +99,7 @@ export const ImageActions = memo(function ImageActions({
               className="h-12 w-full justify-start border-background-100 px-4"
             >
               <Icon as={Save} size="sm" className="mr-2 text-primary-500" />
-              <Text className="text-sm text-primary-500">Save Image</Text>
+              <Text className="text-sm text-primary-500">Save Media</Text>
             </Button>
             {workflowId && (
               <Button

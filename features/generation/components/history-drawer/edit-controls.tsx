@@ -59,8 +59,8 @@ export const SelectButton = React.memo(({ isSelectionMode, onPress }: SelectButt
 
 interface BottomPanelProps {
   isSelectionMode: boolean;
-  selectedImages: string[];
-  images: Array<{ url: string; timestamp: number }>;
+  selectedMedia: string[];
+  mediaItems: Array<{ url: string; timestamp: number }>;
   onSelectAll: () => void;
   onDelete: () => void;
   onShare: () => void;
@@ -68,10 +68,10 @@ interface BottomPanelProps {
 }
 
 export const BottomPanel = React.memo(
-  ({ isSelectionMode, selectedImages, images, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) => (
+  ({ isSelectionMode, selectedMedia, mediaItems, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) => (
     <BottomActionPanel isOpen={isSelectionMode}>
       <VStack space="sm">
-        <Text className="text-sm text-background-400">{selectedImages.length} selected</Text>
+        <Text className="text-sm text-background-400">{selectedMedia.length} selected</Text>
         <Button
           variant="outline"
           size="lg"
@@ -79,12 +79,12 @@ export const BottomPanel = React.memo(
           className="h-12 w-full justify-start border-background-100 px-4"
         >
           <Icon
-            as={selectedImages.length === images.length ? MinusSquare : PlusSquare}
+            as={selectedMedia.length === mediaItems.length ? MinusSquare : PlusSquare}
             size="sm"
             className="mr-2 text-primary-500"
           />
           <Text className="text-sm text-primary-500">
-            {selectedImages.length === images.length ? 'Deselect All' : 'Select All'}
+            {selectedMedia.length === mediaItems.length ? 'Deselect All' : 'Select All'}
           </Text>
         </Button>
         <HStack space="sm">
@@ -92,7 +92,7 @@ export const BottomPanel = React.memo(
             variant="outline"
             size="lg"
             onPress={onShare}
-            isDisabled={selectedImages.length === 0}
+            isDisabled={selectedMedia.length === 0}
             className="h-12 flex-1 justify-start border-background-100 px-4"
           >
             <Icon as={Share} size="sm" className="mr-2 text-primary-500" />
@@ -102,7 +102,7 @@ export const BottomPanel = React.memo(
             variant="outline"
             size="lg"
             onPress={onSave}
-            isDisabled={selectedImages.length === 0}
+            isDisabled={selectedMedia.length === 0}
             className="h-12 flex-1 justify-start border-background-100 px-4"
           >
             <Icon as={Download} size="sm" className="mr-2 text-primary-500" />
@@ -113,7 +113,7 @@ export const BottomPanel = React.memo(
           variant="outline"
           size="lg"
           onPress={onDelete}
-          isDisabled={selectedImages.length === 0}
+          isDisabled={selectedMedia.length === 0}
           className="h-12 w-full justify-start border-background-100 px-4"
         >
           <Icon as={Trash2} size="sm" className="mr-2 text-error-500" />

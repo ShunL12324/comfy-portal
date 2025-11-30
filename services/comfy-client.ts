@@ -41,9 +41,9 @@ interface ProgressCallback {
 
   /**
    * Called when generation completes successfully
-   * @param images - Array of URLs for the generated images
+   * @param mediaUrls - Array of URLs for the generated media
    */
-  onComplete?: (images: string[]) => void;
+  onComplete?: (mediaUrls: string[]) => void;
 
   /**
    * Called when an error occurs during generation
@@ -52,7 +52,7 @@ interface ProgressCallback {
   onError?: (error: string) => void;
 
   /**
-   * Called when downloading generated images
+   * Called when downloading generated media
    * @param filename - Name of the file being downloaded
    * @param progress - Download progress percentage (0-100)
    */
@@ -318,15 +318,15 @@ export class ComfyClient {
   }
 
   /**
-   * Constructs the URL for downloading a generated image.
+   * Constructs the URL for downloading a generated media file.
    * 
-   * @param filename - The name of the image file
-   * @param subfolder - The subfolder containing the image
-   * @param type - The type of the image (output/temp)
+   * @param filename - The name of the media file
+   * @param subfolder - The subfolder containing the media
+   * @param type - The type of the media (output/temp)
    * @returns Promise that resolves to the download URL
    * @private
    */
-  private async downloadImage(
+  private async downloadMedia(
     filename: string,
     subfolder: string,
     type: string,
@@ -341,7 +341,7 @@ export class ComfyClient {
     const response = await fetchWithAuth(url, this.token);
 
     if (!response.ok) {
-      console.warn(`Failed to download image ${filename}:`, response.statusText);
+      console.warn(`Failed to download media ${filename}:`, response.statusText);
       return url;
     }
 
@@ -362,21 +362,21 @@ export class ComfyClient {
   }
 
   /**
-   * Generates images using the provided workflow.
+   * Generates media using the provided workflow.
    * Handles the complete generation process including:
    * - Queueing the workflow
    * - Tracking execution progress
-   * - Retrieving generated images
+   * - Retrieving generated media
    * 
    * The generation process is monitored through callbacks that provide:
    * - Overall progress updates
    * - Node execution status
-   * - Final image URLs
+   * - Final media URLs
    * - Error notifications
    * 
    * @param workflow - The workflow to execute
    * @param callbacks - Callbacks for tracking generation progress
-   * @returns Promise that resolves to an array of image URLs
+   * @returns Promise that resolves to an array of media URLs
    * @throws Error if generation fails at any stage
    */
   async generate(workflow: Workflow, callbacks: ProgressCallback): Promise<string[]> {
@@ -389,41 +389,41 @@ export class ComfyClient {
 
       const history = await this.getHistory(promptId);
       const outputs = history[promptId].outputs;
-      const images: string[] = [];
+      const mediaUrls: string[] = [];
 
-      const allImages: { filename: string; subfolder: string; type: string }[] = [];
+      const allMedia: { filename: string; subfolder: string; type: string }[] = [];
       for (const nodeId in outputs) {
         const nodeOutput = outputs[nodeId];
         if (nodeOutput.images) {
-          allImages.push(...nodeOutput.images);
+          allMedia.push(...nodeOutput.images);
         }
         if (nodeOutput.gifs) {
-          allImages.push(...nodeOutput.gifs);
+          allMedia.push(...nodeOutput.gifs);
         }
         if (nodeOutput.videos) {
-          allImages.push(...nodeOutput.videos);
+          allMedia.push(...nodeOutput.videos);
         }
         if (nodeOutput.audio) {
-          allImages.push(...nodeOutput.audio);
+          allMedia.push(...nodeOutput.audio);
         }
       }
 
-      // Filter images: if we have "output" type, use only those. Otherwise use "temp".
-      const outputImages = allImages.filter((img) => img.type === 'output');
-      const imagesToDownload = outputImages.length > 0 ? outputImages : allImages;
+      // Filter media: if we have "output" type, use only those. Otherwise use "temp".
+      const outputMedia = allMedia.filter((img) => img.type === 'output');
+      const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
 
-      for (const image of imagesToDownload) {
-        const imageUrl = await this.downloadImage(
-          image.filename,
-          image.subfolder,
-          image.type,
+      for (const media of mediaToDownload) {
+        const mediaUrl = await this.downloadMedia(
+          media.filename,
+          media.subfolder,
+          media.type,
           callbacks
         );
-        images.push(imageUrl);
+        mediaUrls.push(mediaUrl);
       }
 
-      callbacks.onComplete?.(images);
-      return images;
+      callbacks.onComplete?.(mediaUrls);
+      return mediaUrls;
     } catch (error) {
       callbacks.onError?.(error instanceof Error ? error.message : 'Unknown error');
       throw error;

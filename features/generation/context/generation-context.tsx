@@ -6,7 +6,7 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { ComfyClient } from '@/services/comfy-client';
-import { saveGeneratedImage } from '@/services/image-storage';
+import { saveGeneratedMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 
 interface GenerationState {
@@ -14,7 +14,7 @@ interface GenerationState {
   progress: { value: number; max: number };
   nodeProgress: { completed: number; total: number };
   downloadProgress: number;
-  generatedImages: string[];
+  generatedMedia: string[];
   currentNodeId?: string;
 }
 
@@ -25,11 +25,11 @@ interface NodeLifecycleHooks {
 
 interface GenerationContextType {
   state: GenerationState;
-  generatedImages: string[];
+  generatedMedia: string[];
   isGenerating: boolean;
   generate: (workflow: Record<string, Node>, workflowId: string, serverId: string) => Promise<void>;
   reset: () => void;
-  setGeneratedImages: (urls: string[]) => void;
+  setGeneratedMedia: (urls: string[]) => void;
   registerNodeHooks: (nodeId: string, hooks: NodeLifecycleHooks) => void;
   unregisterNodeHooks: (nodeId: string) => void;
 }
@@ -39,7 +39,7 @@ const GenerationContext = createContext<GenerationContextType | null>(null);
 interface GenerationStatus {
   status: 'idle' | 'generating' | 'downloading' | 'error' | 'success';
   currentNodeId?: string;
-  generatedImages: string[];
+  generatedMedia: string[];
 }
 
 interface GenerationProgress {
@@ -50,12 +50,12 @@ interface GenerationProgress {
 
 const GenerationStatusContext = createContext<GenerationStatus | null>(null);
 const GenerationProgressContext = createContext<GenerationProgress | null>(null);
-const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedImages' | 'isGenerating'> | null>(null);
+const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedMedia' | 'isGenerating'> | null>(null);
 
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
-    generatedImages: [],
+    generatedMedia: [],
   });
 
   const [progress, setProgress] = useState<GenerationProgress>({
@@ -135,8 +135,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     delete nodeHooksRef.current[nodeId];
   }, []);
 
-  const setGeneratedImages = useCallback((urls: string[]) => {
-    setStatus((prev) => ({ ...prev, generatedImages: urls }));
+  const setGeneratedMedia = useCallback((urls: string[]) => {
+    setStatus((prev) => ({ ...prev, generatedMedia: urls }));
   }, []);
 
   const generate = useCallback(
@@ -200,40 +200,40 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
             });
             debouncedSetProgress({ downloadProgress: progress });
           },
-          onComplete: async (images) => {
+          onComplete: async (mediaUrls) => {
             try {
               useWorkflowStore.getState().updateUsage(workflowId);
 
-              if (images.length > 0) {
+              if (mediaUrls.length > 0) {
                 debouncedSetProgress({
                   progress: { value: progress.progress.max, max: progress.progress.max },
                 });
 
                 await new Promise((resolve) => setTimeout(resolve, 300));
 
-                const savedImagePaths: string[] = [];
-                for (const imageUrl of images) {
-                  const result = await saveGeneratedImage({
+                const savedMediaPaths: string[] = [];
+                for (const mediaUrl of mediaUrls) {
+                  const result = await saveGeneratedMedia({
                     serverId,
-                    imageUrl,
+                    mediaUrl,
                     workflow,
                     workflowId,
                   });
 
                   if (result) {
-                    const localImageUrl = result.path.startsWith('file://') ? result.path : `file://${result.path}`;
-                    savedImagePaths.push(localImageUrl);
+                    const localMediaUrl = result.path.startsWith('file://') ? result.path : `file://${result.path}`;
+                    savedMediaPaths.push(localMediaUrl);
                   }
                 }
 
-                if (savedImagePaths.length > 0) {
-                  setGeneratedImages(savedImagePaths);
+                if (savedMediaPaths.length > 0) {
+                  setGeneratedMedia(savedMediaPaths);
                 } else {
-                  console.error('Failed to save generated images');
-                  showToast.error('Save Failed', 'Unable to save the generated images.', insets.top + 8);
+                  console.error('Failed to save generated media');
+                  showToast.error('Save Failed', 'Unable to save the generated media.', insets.top + 8);
                 }
               } else {
-                showToast.error('Generation Failed', 'No images were generated.', insets.top + 8);
+                showToast.error('Generation Failed', 'No media were generated.', insets.top + 8);
               }
 
               // Call onPost hooks for all nodes
@@ -272,18 +272,18 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         reset();
       }
     },
-    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedImages],
+    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedMedia],
   );
 
   const actions = React.useMemo(
     () => ({
       generate,
       reset,
-      setGeneratedImages,
+      setGeneratedMedia,
       registerNodeHooks,
       unregisterNodeHooks,
     }),
-    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedImages],
+    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedMedia],
   );
 
   return (
@@ -293,7 +293,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           <GenerationContext.Provider
             value={{
               state: { ...status, ...progress },
-              generatedImages: status.generatedImages,
+              generatedMedia: status.generatedMedia,
               isGenerating: status.status === 'generating',
               ...actions,
             }}
