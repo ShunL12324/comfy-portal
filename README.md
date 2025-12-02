@@ -36,7 +36,7 @@
 
 ## Interface
 
-| Workflow View | Generation Progress | Image Gallery |
+| Workflow View | Generation Progress | Model Selector |
 | :---: | :---: | :---: |
 | <img src="repo-assets/screenshot-1.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-2.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-3.png" width="240" style="border-radius: 12px;"> |
 
