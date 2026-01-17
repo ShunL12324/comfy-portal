@@ -1,4 +1,3 @@
-// Force rebuild
 import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
@@ -18,6 +17,13 @@ import { useGenerationProgress, useGenerationStatus } from '@/features/generatio
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { PlayCircle } from 'lucide-react-native';
+
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
+
+const isVideoUrl = (url: string): boolean => {
+  const ext = url.split('.').pop()?.toLowerCase() || '';
+  return VIDEO_EXTENSIONS.includes(ext);
+};
 
 interface ParallaxMediaProps {
   workflowId?: string;
@@ -97,7 +103,7 @@ export const MediaPreview = memo(function ParallaxMedia({
             {generatedMedia.map((mediaUrl, index) => (
               <View key={`${mediaUrl}-${index}`} className="flex-1">
                 <Pressable className="flex-1" onPress={() => setIsPreviewOpen(true)}>
-                  {['mp4', 'mov', 'm4v', 'webm'].includes(mediaUrl.split('.').pop()?.toLowerCase() || '') ? (
+                  {isVideoUrl(mediaUrl) ? (
                     <View className="flex-1 items-center justify-center bg-black">
                       <VideoPreview url={mediaUrl} />
                       <View className="absolute inset-0 items-center justify-center bg-black/20">
@@ -139,7 +145,7 @@ export const MediaPreview = memo(function ParallaxMedia({
           <View className="absolute top-3 right-3 flex-row gap-2">
             <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
               <Text className="text-center text-xs font-medium text-white">
-                {['mp4', 'mov', 'm4v', 'webm'].includes(generatedMedia[activeIndex]?.split('.').pop()?.toLowerCase() || '')
+                {isVideoUrl(generatedMedia[activeIndex] || '')
                   ? 'Video'
                   : 'Image'}
               </Text>
@@ -181,23 +187,25 @@ export const MediaPreview = memo(function ParallaxMedia({
                   margin: 0,
                 }}
               >
-                <PagerView
-                  key={generatedMedia.join('-')}
-                  ref={modalPagerRef}
-                  style={{ flex: 1, width: '100%', height: '100%' }}
-                  initialPage={activeIndex}
-                  onPageSelected={handlePageSelected}
-                >
-                  {generatedMedia.map((mediaUrl, index) => (
-                    <View key={`modal-${mediaUrl}-${index}`} className="flex-1">
-                      <ZoomableMedia
-                        mediaUrl={mediaUrl}
-                        onClose={handleZoomableMediaClose}
-                        onLongPress={handleZoomableMediaLongPress}
-                      />
-                    </View>
-                  ))}
-                </PagerView>
+                {isPreviewOpen && (
+                  <PagerView
+                    key={generatedMedia.join('-')}
+                    ref={modalPagerRef}
+                    style={{ flex: 1, width: '100%', height: '100%' }}
+                    initialPage={activeIndex}
+                    onPageSelected={handlePageSelected}
+                  >
+                    {generatedMedia.map((mediaUrl, index) => (
+                      <View key={`modal-${mediaUrl}-${index}`} className="flex-1">
+                        <ZoomableMedia
+                          mediaUrl={mediaUrl}
+                          onClose={handleZoomableMediaClose}
+                          onLongPress={handleZoomableMediaLongPress}
+                        />
+                      </View>
+                    ))}
+                  </PagerView>
+                )}
 
                 <MotiView
                   from={{ opacity: 1 }}

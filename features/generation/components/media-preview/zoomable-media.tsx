@@ -1,11 +1,13 @@
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { memo, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
 
 interface ZoomableMediaProps {
   mediaUrl: string;
@@ -22,9 +24,23 @@ export const ZoomableMedia = memo(function ZoomableMedia({
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Reset zoom to 1x when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollResponderZoomTo({
+        x: 0,
+        y: 0,
+        width: screenWidth,
+        height: screenHeight,
+        animated: false,
+      });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [screenWidth, screenHeight]);
+
   const isVideo = React.useMemo(() => {
     const ext = mediaUrl.split('.').pop()?.toLowerCase();
-    return ['mp4', 'mov', 'm4v', 'webm'].includes(ext || '');
+    return VIDEO_EXTENSIONS.includes(ext || '');
   }, [mediaUrl]);
 
   const player = useVideoPlayer(isVideo ? mediaUrl : null, player => {
