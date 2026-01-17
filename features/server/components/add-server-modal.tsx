@@ -1,4 +1,4 @@
-import { FormInput } from '@/components/self-ui/form-input';
+import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Button, ButtonText } from '@/components/ui/button';
@@ -12,11 +12,11 @@ import { parseServerUrl, validateHost, validatePort } from '@/services/network';
 import { useThemeStore } from '@/store/theme';
 import {
   BottomSheetModal,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
-import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
-import { KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AddServerModalProps {
@@ -34,7 +34,6 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
     const { theme } = useThemeStore();
     const isDarkMode = theme === 'dark';
     const insets = useSafeAreaInsets();
-    const { height: windowHeight } = useWindowDimensions();
     const addServer = useServersStore((state) => state.addServer);
     const [name, setName] = React.useState('');
     const [host, setHost] = React.useState('');
@@ -53,6 +52,15 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
         bottomSheetModalRef.current?.present();
       },
     }));
+
+    // Workaround: manually restore position when keyboard hides
+    // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
+    useEffect(() => {
+      const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
+        bottomSheetModalRef.current?.snapToIndex(0);
+      });
+      return () => hideSubscription.remove();
+    }, []);
 
     const checkClipboard = async () => {
       try {
@@ -127,37 +135,28 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
       bottomSheetModalRef.current?.dismiss();
     }, []);
 
-    const maxHeight = useMemo(
-      () => windowHeight - insets.top - 60,
-      [windowHeight, insets.top],
-    );
-
     return (
       <ThemedBottomSheetModal
         ref={bottomSheetModalRef}
         index={0}
+        snapPoints={['70%']}
         onDismiss={handleClose}
         topInset={insets.top}
-        maxDynamicContentSize={maxHeight}
-        enableDynamicSizing
         enablePanDownToClose={true}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
       >
-        <BottomSheetView
+        <BottomSheetScrollView
           style={{
             paddingHorizontal: 16,
           }}
-
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ width: '100%' }}
-          >
-            <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
+          <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
               <View className="pb-2">
                 <Text className="text-lg font-semibold text-primary-500">Add Server</Text>
               </View>
 
-              <FormInput
+              <BottomSheetFormInput
                 title="Name"
                 error={nameError}
                 defaultValue={name}
@@ -169,7 +168,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
                 maxLength={MAX_NAME_LENGTH}
               />
 
-              <FormInput
+              <BottomSheetFormInput
                 title="Host"
                 error={hostError}
                 defaultValue={host}
@@ -182,7 +181,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
                 autoCorrect={false}
               />
 
-              <FormInput
+              <BottomSheetFormInput
                 title="Port"
                 error={portError}
                 defaultValue={port}
@@ -194,7 +193,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
                 keyboardType="numeric"
               />
 
-              <FormInput
+              <BottomSheetFormInput
                 title="Authorization Token (Optional)"
                 defaultValue={token}
                 onChangeText={(value: string) => setToken(value)}
@@ -223,8 +222,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
                 </Button>
               </HStack>
             </VStack>
-          </KeyboardAvoidingView>
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </ThemedBottomSheetModal>
     );
   },

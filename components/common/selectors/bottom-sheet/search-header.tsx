@@ -1,10 +1,13 @@
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
-import { Input, InputField, InputIcon, InputSlot } from '@/components/ui/input';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Search } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
+import { View } from 'react-native';
 
 interface SearchHeaderProps {
   title: string;
@@ -25,6 +28,7 @@ export function SearchHeader({
 }: SearchHeaderProps) {
   const [localValue, setLocalValue] = useState(searchQuery);
   const debounceTimeout = useRef<NodeJS.Timeout>();
+  const colors = useThemeColor();
 
   const handleChange = useCallback(
     (text: string) => {
@@ -48,23 +52,33 @@ export function SearchHeader({
       {showSearch && (
         <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
           <HStack space="sm" className="items-center">
-            <Box className="flex-1">
-              <Input variant="outline" size="md" className="overflow-hidden rounded-lg border-0 bg-background-200">
-                <InputSlot className="pl-3">
-                  <InputIcon as={Search} className="text-background-400" />
-                </InputSlot>
-                <InputField
-                  placeholder={searchPlaceholder}
-                  value={localValue}
-                  onChangeText={handleChange}
-                  className="text-base text-primary-500"
-                  placeholderTextColor="rgb(115, 115, 115)"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  clearButtonMode="while-editing"
-                />
-              </Input>
-            </Box>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: colors.background[200],
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                height: 40,
+              }}
+            >
+              <Icon as={Search} size="sm" className="text-background-400" style={{ marginRight: 8 }} />
+              <BottomSheetTextInput
+                placeholder={searchPlaceholder}
+                value={localValue}
+                onChangeText={handleChange}
+                style={{
+                  flex: 1,
+                  fontSize: 16,
+                  color: colors.primary[500],
+                }}
+                placeholderTextColor={colors.typography[400]}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+            </View>
             {rightElement}
           </HStack>
         </Box>

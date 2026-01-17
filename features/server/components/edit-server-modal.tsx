@@ -1,4 +1,4 @@
-import { FormInput } from '@/components/self-ui/form-input';
+import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Button, ButtonText } from '@/components/ui/button';
@@ -12,10 +12,10 @@ import { validateHost, validatePort } from '@/services/network';
 import { useThemeStore } from '@/store/theme';
 import {
   BottomSheetModal,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
-import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EditServerModalProps {
@@ -36,7 +36,6 @@ export const EditServerModal = forwardRef<
   const { theme } = useThemeStore();
   const isDarkMode = theme === 'dark';
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
   const updateServer = useServersStore((state) => state.updateServer);
 
   // 状态管理
@@ -115,32 +114,33 @@ export const EditServerModal = forwardRef<
     },
   }));
 
-  const maxHeight = useMemo(
-    () => windowHeight - insets.top - 60,
-    [windowHeight, insets.top],
-  );
+  // Workaround: manually restore position when keyboard hides
+  // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
+  useEffect(() => {
+    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
+      bottomSheetModalRef.current?.snapToIndex(0);
+    });
+    return () => hideSubscription.remove();
+  }, []);
 
   return (
     <ThemedBottomSheetModal
       ref={bottomSheetModalRef}
       index={0}
+      snapPoints={['70%']}
       onDismiss={handleClose}
       enablePanDownToClose={true}
       topInset={insets.top}
-      maxDynamicContentSize={maxHeight}
-      enableDynamicSizing
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
     >
-      <BottomSheetView style={{ paddingHorizontal: 16 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ width: '100%' }}
-        >
-          <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }}>
+        <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
             <View className="pb-2">
               <Text className="text-lg font-semibold text-primary-500">Edit Server</Text>
             </View>
 
-            <FormInput
+            <BottomSheetFormInput
               title="Name"
               error={nameError}
               defaultValue={name}
@@ -152,7 +152,7 @@ export const EditServerModal = forwardRef<
               maxLength={MAX_NAME_LENGTH}
             />
 
-            <FormInput
+            <BottomSheetFormInput
               title="Host"
               error={hostError}
               defaultValue={host}
@@ -165,7 +165,7 @@ export const EditServerModal = forwardRef<
               autoCorrect={false}
             />
 
-            <FormInput
+            <BottomSheetFormInput
               title="Port"
               error={portError}
               defaultValue={port}
@@ -177,7 +177,7 @@ export const EditServerModal = forwardRef<
               keyboardType="numeric"
             />
 
-            <FormInput
+            <BottomSheetFormInput
               title="Authorization Token (Optional)"
               defaultValue={token}
               onChangeText={(value: string) => setToken(value)}
@@ -206,8 +206,7 @@ export const EditServerModal = forwardRef<
               </Button>
             </HStack>
           </VStack>
-        </KeyboardAvoidingView>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </ThemedBottomSheetModal>
   );
 });
