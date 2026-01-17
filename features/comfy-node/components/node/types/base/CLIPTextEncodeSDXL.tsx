@@ -83,12 +83,22 @@ export default function CLIPTextEncodeSDXL({ node, serverId, workflowId }: CLIPT
       </SubItem>
       <SubItem title="text_g" node={node} dependencies={['text_g']}>
         <Textarea size="md" className="flex-1 rounded-lg border-0 bg-background-50">
-          <TextareaInput defaultValue={node.inputs.text_g} size="sm" placeholder="Your text goes here..." />
+          <TextareaInput
+            defaultValue={node.inputs.text_g}
+            onChangeText={(text) => updateNodeInput(workflowId, node.id, 'text_g', text)}
+            size="sm"
+            placeholder="Your text goes here..."
+          />
         </Textarea>
       </SubItem>
       <SubItem title="text_l" node={node} dependencies={['text_l']}>
         <Textarea size="md" className="flex-1 rounded-lg border-0 bg-background-50">
-          <TextareaInput defaultValue={node.inputs.text_l} size="sm" placeholder="Your text goes here..." />
+          <TextareaInput
+            defaultValue={node.inputs.text_l}
+            onChangeText={(text) => updateNodeInput(workflowId, node.id, 'text_l', text)}
+            size="sm"
+            placeholder="Your text goes here..."
+          />
         </Textarea>
       </SubItem>
     </BaseNode>
