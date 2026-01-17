@@ -43,6 +43,7 @@ export const MediaActions = memo(function MediaActions({
       if (!permissionResponse?.granted) {
         const { granted } = await requestPermission();
         if (!granted) {
+          showToast.error('Permission needed', 'Please grant permission to save media.', safeAreaInsets.top + 16);
           return;
         }
       }
