@@ -144,7 +144,7 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
       </SubItem>
       <SubItem title="Batch Size">
         <NumberSlider
-          defaultValue={node.inputs.batch_size || 1}
+          value={node.inputs.batch_size || 1}
           minValue={1}
           maxValue={4}
           step={1}

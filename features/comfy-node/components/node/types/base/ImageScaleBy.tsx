@@ -34,7 +34,7 @@ export default function ImageScaleBy({ node, workflowId }: ImageScaleByProps) {
       </SubItem>
       <SubItem title="Scale By">
         <NumberSlider
-          defaultValue={node.inputs.scale_by}
+          value={node.inputs.scale_by}
           minValue={0.1}
           maxValue={8}
           step={0.05}

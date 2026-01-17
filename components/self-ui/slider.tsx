@@ -3,7 +3,7 @@ import { useThemeStore } from '@/store/theme';
 import RNSlider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Icon } from '../ui/icon';
 import { Text } from '../ui/text';
@@ -13,8 +13,10 @@ import { Text } from '../ui/text';
  * @interface CustomSliderProps
  */
 interface CustomSliderProps {
-  /** Initial value of the slider */
-  defaultValue: number;
+  /** Current value of the slider (optional if defaultValue is provided) */
+  value?: number;
+  /** Initial value of the slider (used if value is not provided) */
+  defaultValue?: number;
   /** Minimum value of the slider (default: 0) */
   minValue?: number;
   /** Maximum value of the slider (default: 100) */
@@ -63,7 +65,8 @@ const sliderStyles = StyleSheet.create({
  * A smooth, animated slider component with haptic feedback
  */
 export function NumberSlider({
-  defaultValue: initialValue,
+  value: controlledValue,
+  defaultValue = 0,
   minValue = 0,
   maxValue = 100,
   step = 1,
@@ -74,9 +77,16 @@ export function NumberSlider({
   thumbSize = 24,
   space = 24,
 }: CustomSliderProps) {
-  const [value, setValue] = useState(initialValue ?? 0);
+  const [localValue, setLocalValue] = useState(controlledValue ?? defaultValue ?? 0);
   const theme = useThemeStore((state) => state.theme);
   const colors = Colors[theme === 'dark' ? 'dark' : 'light'];
+
+  // Sync external controlled value to internal state
+  useEffect(() => {
+    if (controlledValue !== undefined) {
+      setLocalValue(controlledValue);
+    }
+  }, [controlledValue]);
 
   const precision = useCallback(() => {
     return decimalPlaces ?? (step.toString().split('.')[1] || '').length;
@@ -91,19 +101,19 @@ export function NumberSlider({
 
   const adjustValue = useCallback(
     (delta: number) => {
-      const newValue = Number(Math.min(Math.max(value + delta, minValue), maxValue).toFixed(precision()));
-      setValue(newValue);
+      const newValue = Number(Math.min(Math.max(localValue + delta, minValue), maxValue).toFixed(precision()));
+      setLocalValue(newValue);
       if (onChange) {
         onChange(newValue);
       }
       Haptics.selectionAsync();
     },
-    [value, minValue, maxValue, precision, onChange],
+    [localValue, minValue, maxValue, precision, onChange],
   );
 
   const handleChange = useCallback(
     (newValue: number) => {
-      setValue(newValue);
+      setLocalValue(newValue);
       if (onChange) {
         onChange(newValue);
       }
@@ -126,15 +136,15 @@ export function NumberSlider({
       <View className={styles.container}>
         <View className={styles.value}>
           <Text size="sm" bold className="text-typography-900">
-            {formatValue(value)}
+            {formatValue(localValue)}
           </Text>
         </View>
 
         {showButtons && (
           <TouchableOpacity
             onPress={() => adjustValue(-step)}
-            disabled={value <= minValue}
-            className={value <= minValue ? styles.button.disabled : undefined}
+            disabled={localValue <= minValue}
+            className={localValue <= minValue ? styles.button.disabled : undefined}
             style={{ marginRight: space }}
           >
             <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>
@@ -146,7 +156,7 @@ export function NumberSlider({
         <View className={styles.sliderContainer}>
           <RNSlider
             style={[sliderStyles.slider]}
-            value={value}
+            value={localValue}
             minimumValue={minValue}
             maximumValue={maxValue}
             step={step}
@@ -161,8 +171,8 @@ export function NumberSlider({
         {showButtons && (
           <TouchableOpacity
             onPress={() => adjustValue(step)}
-            disabled={value >= maxValue}
-            className={value >= maxValue ? styles.button.disabled : undefined}
+            disabled={localValue >= maxValue}
+            className={localValue >= maxValue ? styles.button.disabled : undefined}
             style={{ marginLeft: space }}
           >
             <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>

@@ -15,7 +15,7 @@ export default function FluxGuidance({ node, serverId, workflowId }: FluxGuidanc
     <BaseNode node={node}>
       <SubItem title="Guidance">
         <NumberInput
-          defaultValue={node.inputs.guidance}
+          value={node.inputs.guidance}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'guidance', value);
           }}

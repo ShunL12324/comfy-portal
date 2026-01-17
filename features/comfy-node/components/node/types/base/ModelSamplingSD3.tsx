@@ -17,7 +17,7 @@ export default function ModelSamplingSD3({ node, workflowId }: ModelSamplingSD3P
     <BaseNode node={node}>
       <SubItem title="Shift">
         <NumberSlider
-          defaultValue={node.inputs.shift}
+          value={node.inputs.shift}
           minValue={0}
           maxValue={100}
           step={0.1}

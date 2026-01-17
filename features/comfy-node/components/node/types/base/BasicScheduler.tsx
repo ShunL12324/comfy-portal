@@ -25,7 +25,7 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
       </SubItem>
       <SubItem title="steps" node={node} dependencies={['steps']}>
         <NumberSlider
-          defaultValue={node.inputs.steps}
+          value={node.inputs.steps}
           minValue={1}
           maxValue={100}
           step={1}
@@ -36,7 +36,7 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
       </SubItem>
       <SubItem title="denoise" node={node} dependencies={['denoise']}>
         <NumberSlider
-          defaultValue={node.inputs.denoise}
+          value={node.inputs.denoise}
           minValue={0}
           maxValue={1}
           step={0.01}

@@ -15,7 +15,7 @@ export default function ModelSamplingFlux({ node, serverId, workflowId }: ModelS
     <BaseNode node={node}>
       <SubItem title="max_shift">
         <NumberInput
-          defaultValue={node.inputs.max_shift}
+          value={node.inputs.max_shift}
           minValue={0}
           maxValue={100}
           step={0.05}
@@ -25,7 +25,7 @@ export default function ModelSamplingFlux({ node, serverId, workflowId }: ModelS
       </SubItem>
       <SubItem title="base_shift">
         <NumberInput
-          defaultValue={node.inputs.base_shift}
+          value={node.inputs.base_shift}
           minValue={0}
           maxValue={100}
           step={0.05}

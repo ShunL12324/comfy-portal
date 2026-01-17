@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Search, Wand2 } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import NodeComponent from '@/features/comfy-node/components/node';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useThemeStore } from '@/store/theme';
-import BottomSheet, { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 
 function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
@@ -64,9 +64,14 @@ function RunWorkflowScreenContent() {
 
   const nodes = useMemo(() => {
     const allNodes = Object.values(workflowRecord.data);
-    if (!searchQuery) return allNodes;
+    const sorted = allNodes.sort((a: any, b: any) => {
+      const aId = parseInt(a.id);
+      const bId = parseInt(b.id);
+      return aId - bId;
+    });
+    if (!searchQuery) return sorted;
     const lowerQuery = searchQuery.toLowerCase();
-    return allNodes.filter((node: any) => {
+    return sorted.filter((node: any) => {
       const title = node._meta?.title || '';
       const type = node.class_type || '';
       const inputs = Object.keys(node.inputs || {}).join(' ');
@@ -76,13 +81,6 @@ function RunWorkflowScreenContent() {
         inputs.toLowerCase().includes(lowerQuery);
     });
   }, [workflowRecord.data, searchQuery]);
-
-  const renderItem = useCallback(
-    ({ item }: { item: any }) => (
-      <NodeComponent node={item} serverId={serverId as string} workflowId={workflowId as string} />
-    ),
-    [serverId, workflowId],
-  );
 
   return (
     <View className="z-0 flex-1 bg-background-0">
@@ -123,6 +121,7 @@ function RunWorkflowScreenContent() {
           height: 32,
         }}
         keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
       >
         <View className="px-4 pt-4 pb-2 bg-background-0">
           <HStack
@@ -147,21 +146,26 @@ function RunWorkflowScreenContent() {
             />
           </HStack>
         </View>
-        <BottomSheetFlatList
-          data={nodes}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
+        <BottomSheetScrollView
           contentContainerStyle={{
             padding: 16,
-            paddingBottom: 100, // Extra padding for bottom button
+            paddingBottom: 100,
             backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
           }}
           style={{
             flex: 1,
-            height: '100%',
             backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
           }}
-        />
+        >
+          {nodes.map((node: any) => (
+            <NodeComponent
+              key={node.id}
+              node={node}
+              serverId={serverId as string}
+              workflowId={workflowId as string}
+            />
+          ))}
+        </BottomSheetScrollView>
       </BottomSheet>
 
       <View className="relative z-30 h-20 bg-background-0 px-4">

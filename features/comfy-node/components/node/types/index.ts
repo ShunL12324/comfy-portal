@@ -30,6 +30,7 @@ import PrimitiveStringMultiline from './base/PrimitiveStringMultiline';
 import RandomNoise from './base/RandomNoise';
 import SamplerCustomAdvanced from './base/SamplerCustomAdvanced';
 import SaveImage from './base/SaveImage';
+import TextEncodeQwenImageEditPlus from './base/TextEncodeQwenImageEditPlus';
 import UNETLoader from './base/UNETLoader';
 import VAEDecode from './base/VAEDecode';
 import VAEEncode from './base/VAEEncode';
@@ -82,6 +83,7 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'VHS_VideoCombine': VHS_VideoCombine,
   'ImageScaleBy': ImageScaleBy,
   'ImageResizeKJv2': ImageResizeKJv2,
+  'TextEncodeQwenImageEditPlus': TextEncodeQwenImageEditPlus,
   // add more node types here
 };
 

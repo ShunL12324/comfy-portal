@@ -16,7 +16,7 @@ export default function VAEEncodeForInpaint({ node, serverId, workflowId }: VAEE
     <BaseNode node={node}>
       <SubItem title="grow_mask_by" node={node} dependencies={['grow_mask_by']}>
         <NumberSlider
-          defaultValue={node.inputs.grow_mask_by}
+          value={node.inputs.grow_mask_by}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'grow_mask_by', value);
           }}

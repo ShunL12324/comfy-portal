@@ -114,7 +114,7 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
       </SubItem>
       <SubItem title="Steps">
         <NumberSlider
-          defaultValue={node.inputs.steps}
+          value={node.inputs.steps}
           minValue={1}
           maxValue={100}
           step={1}
@@ -124,7 +124,7 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
       </SubItem>
       <SubItem title="CFG">
         <NumberSlider
-          defaultValue={node.inputs.cfg}
+          value={node.inputs.cfg}
           minValue={1}
           maxValue={30}
           step={0.5}
@@ -147,7 +147,7 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
       </SubItem>
       <SubItem title="Start at step">
         <NumberInput
-          defaultValue={node.inputs.start_at_step}
+          value={node.inputs.start_at_step}
           onChange={(value) => updateNodeInput(workflowId, node.id, 'start_at_step', Number(value))}
           minValue={0}
           maxValue={100}
@@ -159,7 +159,7 @@ export default function KSamplerAdvanced({ node, serverId, workflowId }: KSample
       </SubItem>
       <SubItem title="End at step">
         <NumberInput
-          defaultValue={node.inputs.end_at_step}
+          value={node.inputs.end_at_step}
           onChange={(value) => updateNodeInput(workflowId, node.id, 'end_at_step', Number(value))}
           minValue={0}
           maxValue={10000}

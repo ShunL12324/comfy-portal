@@ -95,7 +95,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
       </SubItem>
       <SubItem title="Steps">
         <NumberSlider
-          defaultValue={node.inputs.steps}
+          value={node.inputs.steps}
           minValue={1}
           maxValue={100}
           step={1}
@@ -105,7 +105,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
       </SubItem>
       <SubItem title="CFG">
         <NumberSlider
-          defaultValue={node.inputs.cfg}
+          value={node.inputs.cfg}
           minValue={1}
           maxValue={30}
           step={0.5}
@@ -128,7 +128,7 @@ export default function KSampler({ node, serverId, workflowId }: KSamplerProps) 
       </SubItem>
       <SubItem title="Denoise">
         <NumberSlider
-          defaultValue={node.inputs.denoise}
+          value={node.inputs.denoise}
           minValue={0}
           maxValue={1}
           step={0.01}

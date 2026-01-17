@@ -42,7 +42,7 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
     <BaseNode node={node}>
       <SubItem title="Frame Rate">
         <NumberSlider
-          defaultValue={node.inputs.frame_rate}
+          value={node.inputs.frame_rate}
           minValue={1}
           maxValue={120}
           step={1}
@@ -87,7 +87,7 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
       </SubItem>
       <SubItem title="CRF">
         <NumberSlider
-          defaultValue={node.inputs.crf}
+          value={node.inputs.crf}
           minValue={0}
           maxValue={51}
           step={1}

@@ -35,7 +35,7 @@ export default function ImageScale({ node, serverId, workflowId }: ImageScaleNod
       </SubItem>
       <SubItem title="width" node={node} dependencies={['width']}>
         <NumberInput
-          defaultValue={node.inputs.width}
+          value={node.inputs.width}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'width', value);
           }}
@@ -46,7 +46,7 @@ export default function ImageScale({ node, serverId, workflowId }: ImageScaleNod
       </SubItem>
       <SubItem title="height" node={node} dependencies={['height']}>
         <NumberInput
-          defaultValue={node.inputs.height}
+          value={node.inputs.height}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'height', value);
           }}

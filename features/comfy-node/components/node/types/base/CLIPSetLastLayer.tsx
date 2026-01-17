@@ -16,7 +16,7 @@ export default function CLIPSetLastLayer({ node, serverId, workflowId }: CLIPSet
     <BaseNode node={node}>
       <SubItem title="CLIP Set Last Layer">
         <NumberInput
-          defaultValue={node.inputs.stop_at_clip_layer}
+          value={node.inputs.stop_at_clip_layer}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'stop_at_clip_layer', value);
           }}

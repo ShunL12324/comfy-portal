@@ -16,7 +16,7 @@ export default function ImagePadForOutpaint({ node, serverId, workflowId }: Imag
     <BaseNode node={node}>
       <SubItem title="left" node={node} dependencies={['left']}>
         <NumberInput
-          defaultValue={node.inputs.left}
+          value={node.inputs.left}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'left', value);
           }}
@@ -27,7 +27,7 @@ export default function ImagePadForOutpaint({ node, serverId, workflowId }: Imag
       </SubItem>
       <SubItem title="top" node={node} dependencies={['top']}>
         <NumberInput
-          defaultValue={node.inputs.top}
+          value={node.inputs.top}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'top', value);
           }}
@@ -38,7 +38,7 @@ export default function ImagePadForOutpaint({ node, serverId, workflowId }: Imag
       </SubItem>
       <SubItem title="right" node={node} dependencies={['right']}>
         <NumberInput
-          defaultValue={node.inputs.right}
+          value={node.inputs.right}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'right', value);
           }}
@@ -49,7 +49,7 @@ export default function ImagePadForOutpaint({ node, serverId, workflowId }: Imag
       </SubItem>
       <SubItem title="bottom" node={node} dependencies={['bottom']}>
         <NumberInput
-          defaultValue={node.inputs.bottom}
+          value={node.inputs.bottom}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'bottom', value);
           }}
@@ -60,7 +60,7 @@ export default function ImagePadForOutpaint({ node, serverId, workflowId }: Imag
       </SubItem>
       <SubItem title="feathering" node={node} dependencies={['feathering']}>
         <NumberInput
-          defaultValue={node.inputs.feathering}
+          value={node.inputs.feathering}
           onChange={(value) => {
             updateNodeInput(workflowId, node.id, 'feathering', value);
           }}
