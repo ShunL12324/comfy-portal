@@ -1,9 +1,9 @@
+import { Zoomable, type ZoomableRef } from '@likashefqet/react-native-image-zoom';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { memo, useEffect, useRef } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,21 +22,15 @@ export const ZoomableMedia = memo(function ZoomableMedia({
 }: ZoomableMediaProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const zoomableRef = useRef<ZoomableRef>(null);
 
-  // Reset zoom to 1x when component mounts
+  // Reset zoom when component mounts (modal opens)
   useEffect(() => {
     const timer = setTimeout(() => {
-      scrollViewRef.current?.scrollResponderZoomTo({
-        x: 0,
-        y: 0,
-        width: screenWidth,
-        height: screenHeight,
-        animated: false,
-      });
+      zoomableRef.current?.reset();
     }, 50);
     return () => clearTimeout(timer);
-  }, [screenWidth, screenHeight]);
+  }, []);
 
   const isVideo = React.useMemo(() => {
     const ext = mediaUrl.split('.').pop()?.toLowerCase();
@@ -50,39 +44,24 @@ export const ZoomableMedia = memo(function ZoomableMedia({
     }
   });
 
-  // Double tap to zoom
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      // We can't easily programmatically zoom ScrollView without native modules or reanimated hacks,
-      // but for now, let's just rely on pinch-to-zoom which is native.
-      // Or we could implement a simple toggle if needed, but native pinch is the priority.
-    });
-
-  // Single tap to close/toggle UI
-  const singleTap = Gesture.Tap()
-    .numberOfTaps(1)
-    .onEnd(() => {
-      if (onClose) {
-        runOnJS(onClose)();
-      }
-    });
-
-  // Long press for menu
-  const longPress = Gesture.LongPress()
-    .onEnd(() => {
-      if (onLongPress) {
-        runOnJS(onLongPress)();
-      }
-    });
-
-  // Exclusive gestures
-  const taps = Gesture.Exclusive(doubleTap, singleTap, longPress);
-
+  // Video: Keep existing VideoView with gesture detection for close/long-press
   if (isVideo) {
+    const singleTap = Gesture.Tap()
+      .numberOfTaps(1)
+      .onEnd(() => {
+        runOnJS(onClose)();
+      });
+
+    const longPress = Gesture.LongPress()
+      .onEnd(() => {
+        runOnJS(onLongPress)();
+      });
+
+    const gestures = Gesture.Exclusive(longPress, singleTap);
+
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <GestureDetector gesture={taps}>
+        <GestureDetector gesture={gestures}>
           <View
             style={{
               flex: 1,
@@ -110,34 +89,34 @@ export const ZoomableMedia = memo(function ZoomableMedia({
     );
   }
 
+  // Image: Use Zoomable for zoom handling
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <GestureDetector gesture={taps}>
-        <ScrollView
-          ref={scrollViewRef}
-          style={{ flex: 1, width: '100%', height: '100%' }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+    <Pressable
+      style={{
+        flex: 1,
+        backgroundColor: 'black',
+      }}
+      onLongPress={onLongPress}
+      delayLongPress={500}
+    >
+      <Zoomable
+        ref={zoomableRef}
+        minScale={1}
+        maxScale={5}
+        doubleTapScale={2.5}
+        isSingleTapEnabled
+        isDoubleTapEnabled
+        onSingleTap={onClose}
+      >
+        <Image
+          source={{ uri: mediaUrl }}
+          style={{
+            width: screenWidth,
+            height: screenHeight,
           }}
-          maximumZoomScale={3}
-          minimumZoomScale={1}
-          showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
-          centerContent
-          bouncesZoom
-        >
-          <Image
-            source={{ uri: mediaUrl }}
-            style={{
-              width: screenWidth,
-              height: screenHeight,
-            }}
-            contentFit="contain"
-          />
-        </ScrollView>
-      </GestureDetector>
-    </GestureHandlerRootView>
+          contentFit="contain"
+        />
+      </Zoomable>
+    </Pressable>
   );
 });
