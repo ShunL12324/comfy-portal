@@ -28,10 +28,13 @@ interface EmptySD3LatentImageProps {
 export default function EmptySD3LatentImage({ node, serverId, workflowId }: EmptySD3LatentImageProps) {
   const insects = useSafeAreaInsets();
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const isWidthLinked = Array.isArray(node.inputs.width);
+  const isHeightLinked = Array.isArray(node.inputs.height);
+  const hasLinkedDimensions = isWidthLinked || isHeightLinked;
 
   const [dimensions, setDimensions] = useState({
-    width: node.inputs.width,
-    height: node.inputs.height,
+    width: typeof node.inputs.width === 'number' ? node.inputs.width : 1024,
+    height: typeof node.inputs.height === 'number' ? node.inputs.height : 1024,
   });
   const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(() => {
     return (
@@ -42,9 +45,10 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
   });
 
   useEffect(() => {
+    if (hasLinkedDimensions) return;
     updateNodeInput(workflowId, node.id, 'width', Number(dimensions.width));
     updateNodeInput(workflowId, node.id, 'height', Number(dimensions.height));
-  }, [dimensions]);
+  }, [dimensions, hasLinkedDimensions, workflowId, node.id, updateNodeInput]);
 
   const handleResolutionChange = (value: ResolutionOption) => {
     setSelectedResolution(value);
@@ -62,84 +66,90 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
   return (
     <BaseNode node={node}>
       <SubItem title="Resolution">
-        <View className="flex-col gap-2">
-          <SegmentedControl
-            options={RESOLUTION_OPTIONS.map((option) => option.label)}
-            value={selectedResolution}
-            onChange={(value) => {
-              handleResolutionChange(value as ResolutionOption);
-            }}
-          />
-          <View className="flex-row items-center gap-2">
-            <View className="flex-1 flex-col gap-2">
-              <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
-                Width
-              </Text>
-              <Input
-                className="flex-1 rounded-md border-0 bg-background-50"
-                variant="outline"
-                size="sm"
-                isDisabled={selectedResolution !== 'Custom'}
-              >
-                <InputField
-                  placeholder="Width"
-                  keyboardType="numeric"
-                  value={dimensions.width.toString()}
-                  onChangeText={(text) => {
-                    const parsedValue = text === '' ? 0 : parseInt(text, 10);
-                    if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
-                      setDimensions((prev) => ({ ...prev, width: parsedValue }));
-                    }
-                  }}
-                  onBlur={() => {
-                    if (dimensions.width < 16 || dimensions.width > 10240) {
-                      setDimensions((prev) => ({ ...prev, width: 1024 }));
-                      showToast.error(
-                        'Invalid width',
-                        `Please enter a valid integer number between 16 and 10240`,
-                        insects.top,
-                      );
-                    }
-                  }}
-                />
-              </Input>
-            </View>
-            <Text className="font-medium">×</Text>
-            <View className="flex-1 flex-col gap-2">
-              <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
-                Height
-              </Text>
-              <Input
-                className="flex-1 rounded-md border-0 bg-background-50"
-                variant="outline"
-                size="sm"
-                isDisabled={selectedResolution !== 'Custom'}
-              >
-                <InputField
-                  placeholder="Height"
-                  keyboardType="numeric"
-                  value={dimensions.height.toString()}
-                  onChangeText={(text) => {
-                    const parsedValue = text === '' ? 0 : parseInt(text, 10);
-                    if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
-                      setDimensions((prev) => ({ ...prev, height: parsedValue }));
-                    }
-                  }}
-                  onBlur={() => {
-                    if (dimensions.height < 16 || dimensions.height > 10240) {
-                      setDimensions((prev) => ({ ...prev, height: 1024 }));
-                      showToast.error(
-                        'Invalid height',
-                        `Please enter a valid integer number between 16 and 10240`,
-                        insects.top,
-                      );
-                    }
-                  }}
-                />
-              </Input>
+        {hasLinkedDimensions ? (
+          <Text size="sm" className="text-typography-500">
+            Width and height are linked from another node. Edit the source node to change final image size.
+          </Text>
+        ) : (
+          <View className="flex-col gap-2">
+            <SegmentedControl
+              options={RESOLUTION_OPTIONS.map((option) => option.label)}
+              value={selectedResolution}
+              onChange={(value) => {
+                handleResolutionChange(value as ResolutionOption);
+              }}
+            />
+            <View className="flex-row items-center gap-2">
+              <View className="flex-1 flex-col gap-2">
+                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
+                  Width
+                </Text>
+                <Input
+                  className="flex-1 rounded-md border-0 bg-background-50"
+                  variant="outline"
+                  size="sm"
+                  isDisabled={selectedResolution !== 'Custom'}
+                >
+                  <InputField
+                    placeholder="Width"
+                    keyboardType="numeric"
+                    value={dimensions.width.toString()}
+                    onChangeText={(text) => {
+                      const parsedValue = text === '' ? 0 : parseInt(text, 10);
+                      if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
+                        setDimensions((prev) => ({ ...prev, width: parsedValue }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (dimensions.width < 16 || dimensions.width > 10240) {
+                        setDimensions((prev) => ({ ...prev, width: 1024 }));
+                        showToast.error(
+                          'Invalid width',
+                          `Please enter a valid integer number between 16 and 10240`,
+                          insects.top,
+                        );
+                      }
+                    }}
+                  />
+                </Input>
+              </View>
+              <Text className="font-medium">×</Text>
+              <View className="flex-1 flex-col gap-2">
+                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
+                  Height
+                </Text>
+                <Input
+                  className="flex-1 rounded-md border-0 bg-background-50"
+                  variant="outline"
+                  size="sm"
+                  isDisabled={selectedResolution !== 'Custom'}
+                >
+                  <InputField
+                    placeholder="Height"
+                    keyboardType="numeric"
+                    value={dimensions.height.toString()}
+                    onChangeText={(text) => {
+                      const parsedValue = text === '' ? 0 : parseInt(text, 10);
+                      if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
+                        setDimensions((prev) => ({ ...prev, height: parsedValue }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (dimensions.height < 16 || dimensions.height > 10240) {
+                        setDimensions((prev) => ({ ...prev, height: 1024 }));
+                        showToast.error(
+                          'Invalid height',
+                          `Please enter a valid integer number between 16 and 10240`,
+                          insects.top,
+                        );
+                      }
+                    }}
+                  />
+                </Input>
+              </View>
             </View>
           </View>
-        </View>
+        )}
       </SubItem>
     </BaseNode>
   );
