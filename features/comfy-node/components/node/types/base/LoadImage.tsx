@@ -139,7 +139,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
 
   const handleClearImage = () => {
     setImage(null);
-    updateNodeInput(workflowId, node.id, 'image', undefined);
+    updateNodeInput(workflowId, node.id, 'image', '');
   };
 
   return (
