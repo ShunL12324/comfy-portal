@@ -9,6 +9,36 @@ interface UploadImageResponse {
   previewUrl: string;
 }
 
+function resolveImageMimeType(fileName: string, mimeType?: string): string {
+  if (mimeType && mimeType.startsWith('image/')) {
+    return mimeType;
+  }
+
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'bmp':
+      return 'image/bmp';
+    case 'heic':
+      return 'image/heic';
+    case 'heif':
+      return 'image/heif';
+    case 'tif':
+    case 'tiff':
+      return 'image/tiff';
+    default:
+      return 'image/jpeg';
+  }
+}
+
 export interface ServerWorkflowFile {
   filename: string;
   size: number;
@@ -25,6 +55,7 @@ export const uploadImage = (
   fileUri: string,
   fileName: string,
   serverId: string,
+  mimeType?: string,
   onProgress?: (progress: number) => void
 ): { promise: Promise<UploadImageResponse>; cancel: () => Promise<void> } => {
   const server = useServersStore.getState().servers.find((server) => server.id === serverId);
@@ -50,7 +81,7 @@ export const uploadImage = (
           type: 'input',
           overwrite: 'true',
         },
-        mimeType: 'image/jpeg',
+        mimeType: resolveImageMimeType(fileName, mimeType),
         httpMethod: 'POST',
       },
       (data) => {

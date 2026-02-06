@@ -2,9 +2,11 @@ import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
+import { buildServerUrl } from '@/services/network';
 import { showToast } from '@/utils/toast';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,6 +26,7 @@ interface LoadImageNodeProps {
 
 export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [image, setImage] = useState<string | null>(null);
@@ -36,6 +39,39 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
   useEffect(() => {
     progressWidth.value = withTiming(uploadProgress * 100, { duration: 300 });
   }, [uploadProgress]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncPreviewFromNodeInput = async () => {
+      const inputImage = node.inputs.image;
+      if (!server || typeof inputImage !== 'string' || !inputImage) {
+        if (isMounted) {
+          setImage(null);
+        }
+        return;
+      }
+
+      const baseUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/api/view');
+      const params = new URLSearchParams();
+      params.append('type', 'input');
+      params.append('filename', inputImage);
+      params.append('subfolder', '');
+      params.append('rand', Math.random().toString());
+      if (server.token) {
+        params.append('token', server.token);
+      }
+
+      if (isMounted) {
+        setImage(`${baseUrl}?${params.toString()}`);
+      }
+    };
+
+    syncPreviewFromNodeInput();
+    return () => {
+      isMounted = false;
+    };
+  }, [server, node.inputs.image]);
 
   const animatedProgressStyle = useAnimatedStyle(() => {
     return {
@@ -67,6 +103,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
           result.assets[0].uri,
           result.assets[0].fileName ?? 'image.jpg',
           serverId,
+          result.assets[0].mimeType ?? undefined,
           (progress) => {
             setUploadProgress(progress);
           }
@@ -100,25 +137,38 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     }
   };
 
+  const handleClearImage = () => {
+    setImage(null);
+    updateNodeInput(workflowId, node.id, 'image', undefined);
+  };
+
   return (
     <BaseNode node={node}>
-      <SubItem title="image" node={node} dependencies={['image']}>
+      <SubItem title="image">
         <Pressable
           onPress={isUploading ? undefined : handleImageUpload}
           className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
         >
           {image ? (
-            <Image
-              source={{ uri: image }}
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: 12,
-              }}
-              contentFit="contain"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
+            <>
+              <Image
+                source={{ uri: image }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 12,
+                }}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+              <Pressable
+                onPress={handleClearImage}
+                className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
+              >
+                <Icon as={X} className="h-4 w-4 text-white" />
+              </Pressable>
+            </>
           ) : !isUploading ? (
             <VStack space="md" className="h-full w-full items-center justify-center">
               <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
