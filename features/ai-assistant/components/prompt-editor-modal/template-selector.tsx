@@ -3,7 +3,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { PromptTemplate } from '@/features/ai-assistant/types';
-import { Check } from 'lucide-react-native';
+import { Check, FileText } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 
@@ -76,8 +76,12 @@ export function TemplateSelector({
 
         {/* Empty State */}
         {templates.length === 0 && (
-          <View className="px-3 py-4">
-            <Text className="text-center text-sm text-typography-500">No templates available</Text>
+          <View className="items-center px-3 py-5">
+            <View className="rounded-full bg-background-50 p-2.5">
+              <Icon as={FileText} size="sm" className="text-typography-400" />
+            </View>
+            <Text className="mt-2 text-sm font-medium text-typography-700">No templates available</Text>
+            <Text className="mt-1 text-xs text-typography-500">Create one in settings first.</Text>
           </View>
         )}
       </View>
