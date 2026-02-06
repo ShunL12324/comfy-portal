@@ -170,6 +170,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           }),
         );
 
+        // onPre hooks may update node inputs in the workflow store (e.g. random seeds).
+        // Re-read the latest workflow snapshot so this generation run uses those updates.
+        const workflowForExecution =
+          useWorkflowStore.getState().workflow.find((p) => p.id === workflowId)?.data ?? workflow;
+
         if (!comfyClient.current.isConnected()) {
           try {
             await comfyClient.current.connect();
@@ -185,7 +190,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           }
         }
 
-        await comfyClient.current.generate(workflow, {
+        await comfyClient.current.generate(workflowForExecution, {
           onProgress: handleProgress,
           onNodeStart: (nodeId) => {
             setStatus((prev) => ({ ...prev, currentNodeId: nodeId }));
@@ -216,7 +221,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
                   const result = await saveGeneratedMedia({
                     serverId,
                     mediaUrl,
-                    workflow,
+                    workflow: workflowForExecution,
                     workflowId,
                   });
 
@@ -238,7 +243,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
               // Call onPost hooks for all nodes
               await Promise.all(
-                Object.entries(workflow).map(async ([nodeId, _]) => {
+                Object.entries(workflowForExecution).map(async ([nodeId, _]) => {
                   const hooks = nodeHooksRef.current[nodeId];
                   if (hooks?.onPost) {
                     await hooks.onPost();
