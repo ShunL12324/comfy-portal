@@ -93,8 +93,9 @@ interface ServerWorkflowsTabProps {
 const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
-  const { addWorkflow, updateWorkflow, workflow: storedWorkflows, clearServerSyncedWorkflows } = useWorkflowStore();
+  const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
   const cancelSyncRef = useRef(false);
+  const syncRunIdRef = useRef(0);
   const refreshingRef = useRef(refreshing);
   const insets = useSafeAreaInsets();
 
@@ -108,10 +109,17 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
   const progressBgColor = colorScheme === 'dark' ? '#262626' : '#FAFAFA';
 
   const onRefresh = useCallback(async () => {
+    const currentRunId = syncRunIdRef.current + 1;
+    syncRunIdRef.current = currentRunId;
     cancelSyncRef.current = false;
+    const isCurrentRun = () => syncRunIdRef.current === currentRunId;
+    const isActiveRun = () => isCurrentRun() && !cancelSyncRef.current;
+
     if (!serverId) {
       console.log('Server ID is missing, cannot refresh.');
-      setRefreshing(false);
+      if (isCurrentRun()) {
+        setRefreshing(false);
+      }
       return;
     }
     setRefreshing(true);
@@ -121,28 +129,33 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
     setSyncedCount(0);
     setFailedCount(0);
     let processedCount = 0;
+    let localSkippedCount = 0;
+    let localSyncedCount = 0;
+    let localFailedCount = 0;
     let fetchedFiles: ServerWorkflowFile[] = [];
 
     try {
       fetchedFiles = await apiListWorkflows(serverId);
+      if (!isActiveRun()) {
+        return;
+      }
       setServerWorkflows(fetchedFiles);
       const totalFiles = fetchedFiles.length;
       if (totalFiles === 0) {
         setSyncProgressText('No files found on server.');
-        setRefreshing(false);
         return;
       }
 
       for (const serverFile of fetchedFiles) {
-        if (cancelSyncRef.current) {
+        if (!isActiveRun()) {
           console.log('Sync cancelled by user action.');
-          setSyncProgressText('Sync cancelled.');
           break;
         }
         processedCount++;
         setSyncProgressText(`Processing ${processedCount}/${totalFiles}: ${serverFile.filename}`);
         try {
-          const identicalWorkflowInStore = storedWorkflows.find(
+          const latestWorkflows = useWorkflowStore.getState().workflow;
+          const identicalWorkflowInStore = latestWorkflows.find(
             (wf) => wf.serverId === serverId &&
               wf.addMethod === 'server-sync' &&
               wf.metadata?.originalFilename === serverFile.filename &&
@@ -151,9 +164,10 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
               wf.metadata?.raw_content === serverFile.raw_content
           );
 
+          const now = new Date().toISOString();
           const newMetadataBase = {
             originalFilename: serverFile.filename,
-            lastSyncedAt: new Date().toISOString(),
+            lastSyncedAt: now,
             serverFileSize: serverFile.size,
             serverFileModified: serverFile.modified,
             raw_content: serverFile.raw_content,
@@ -163,30 +177,33 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
             updateWorkflow(identicalWorkflowInStore.id, {
               metadata: {
                 ...identicalWorkflowInStore.metadata,
-                lastSyncedAt: new Date().toISOString(),
+                lastSyncedAt: now,
               }
             });
-            setSkippedCount(prev => prev + 1);
+            localSkippedCount += 1;
+            setSkippedCount(localSkippedCount);
             continue;
           }
 
-          if (cancelSyncRef.current) { break; }
+          if (!isActiveRun()) { break; }
           setSyncProgressText(`Downloading ${processedCount}/${totalFiles}: ${serverFile.filename}`);
           const rawWorkflowData = await apiGetAndConvertWorkflow(serverId, serverFile.filename);
 
-          if (cancelSyncRef.current) { break; }
+          if (!isActiveRun()) { break; }
           if (!rawWorkflowData) {
             console.warn(`No data returned from getAndConvertWorkflow for ${serverFile.filename}`);
-            setFailedCount(prev => prev + 1);
+            localFailedCount += 1;
+            setFailedCount(localFailedCount);
             continue;
           }
 
-          if (cancelSyncRef.current) { break; }
+          if (!isActiveRun()) { break; }
           setSyncProgressText(`Parsing ${processedCount}/${totalFiles}: ${serverFile.filename}`);
           const parsedData = parseWorkflowTemplate(rawWorkflowData);
           const workflowName = serverFile.filename.split('/').pop()?.replace(/\.json$/i, '') || serverFile.filename;
 
-          const existingWorkflowForPath = storedWorkflows.find(
+          const latestWorkflowsForPath = useWorkflowStore.getState().workflow;
+          const existingWorkflowForPath = latestWorkflowsForPath.find(
             (wf) => wf.serverId === serverId &&
               wf.addMethod === 'server-sync' &&
               wf.metadata?.originalFilename === serverFile.filename
@@ -201,7 +218,8 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
                 ...newMetadataBase,
               },
             });
-            setSyncedCount(prev => prev + 1);
+            localSyncedCount += 1;
+            setSyncedCount(localSyncedCount);
           } else {
             addWorkflow({
               name: workflowName,
@@ -211,15 +229,34 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
               metadata: newMetadataBase,
               lastUsed: new Date(serverFile.modified * 1000),
             });
-            setSyncedCount(prev => prev + 1);
+            localSyncedCount += 1;
+            setSyncedCount(localSyncedCount);
           }
         } catch (convertError) {
+          if (!isActiveRun()) {
+            break;
+          }
           console.warn(`Error processing workflow ${serverFile.filename}:`, convertError);
-          setFailedCount(prev => prev + 1);
+          localFailedCount += 1;
+          setFailedCount(localFailedCount);
         }
       }
-      setSyncProgressText(`Sync complete. Synced: ${syncedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
+      if (!isCurrentRun()) {
+        return;
+      }
+      if (cancelSyncRef.current) {
+        setSyncProgressText('Sync cancelled.');
+      } else {
+        setSyncProgressText(`Sync complete. Synced: ${localSyncedCount}, Skipped: ${localSkippedCount}, Failed: ${localFailedCount}`);
+      }
     } catch (error) {
+      if (!isCurrentRun()) {
+        return;
+      }
+      if (cancelSyncRef.current) {
+        setSyncProgressText('Sync cancelled.');
+        return;
+      }
       console.warn('Failed to refresh server workflows:', error);
       showToast.error(
         'Sync Error',
@@ -227,11 +264,14 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
         insets.top + 8
       );
       setSyncProgressText('Error listing server workflows.');
-      setFailedCount(prev => prev + (fetchedFiles?.length || 0));
+      localFailedCount += fetchedFiles?.length || 0;
+      setFailedCount(localFailedCount);
     } finally {
-      setRefreshing(false);
+      if (isCurrentRun()) {
+        setRefreshing(false);
+      }
     }
-  }, [serverId, addWorkflow, updateWorkflow, storedWorkflows, clearServerSyncedWorkflows, insets.top]);
+  }, [serverId, addWorkflow, updateWorkflow, insets.top]);
 
   useEffect(() => {
     refreshingRef.current = refreshing;
