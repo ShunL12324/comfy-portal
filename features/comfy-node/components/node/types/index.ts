@@ -39,6 +39,7 @@ import VAELoader from './base/VAELoader';
 import WanImageToVideo from './base/WanImageToVideo';
 import ImageResizeKJv2 from './kj-nodes/ImageResizeKJv2';
 import VHS_VideoCombine from './video-helper-suite/VHS_VideoCombine';
+import ImmutableNode from '../common/immutable-node';
 interface NodeContentProps {
   node: Node;
   serverId: string;
@@ -84,6 +85,7 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'ImageScaleBy': ImageScaleBy,
   'ImageResizeKJv2': ImageResizeKJv2,
   'TextEncodeQwenImageEditPlus': TextEncodeQwenImageEditPlus,
+  'GetImageSize': ImmutableNode,
   // add more node types here
 };
 
