@@ -8,7 +8,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
-import { Settings, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -93,8 +93,8 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
       <ThemedBottomSheetModal
         ref={bottomSheetModalRef}
         index={0}
-        snapPoints={['90%']}
-        onDismiss={handleClose}
+        snapPoints={['100%']}
+        enableDynamicSizing={false}
         topInset={insets.top}
         enablePanDownToClose={true}
         keyboardBehavior="extend"
@@ -102,7 +102,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
       >
         <View className="flex-1">
           {/* Header */}
-          <HStack className="items-center justify-between border-b border-outline-100 px-4 pb-3">
+          <HStack className="items-center justify-between px-4 pb-3">
             <Pressable onPress={handleClose} className="p-1">
               <Icon as={X} size="md" className="text-typography-500" />
             </Pressable>
@@ -110,9 +110,6 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
             <Text className="text-base font-semibold text-typography-900">{title}</Text>
 
             <HStack space="sm" className="items-center">
-              <Pressable onPress={handleOpenSettings} className="p-1">
-                <Icon as={Settings} size="md" className="text-typography-500" />
-              </Pressable>
               <Button size="sm" variant="solid" action="primary" onPress={handleDone} className="rounded-lg px-4">
                 <ButtonText>Done</ButtonText>
               </Button>
