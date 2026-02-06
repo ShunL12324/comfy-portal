@@ -124,7 +124,9 @@
     "react-test-renderer": "18.3.1",
     "typescript": "^5.3.3",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.25"
+    "vue": "^3.5.25",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~8.0.1"
   },
   "private": true,
   "expo": {
