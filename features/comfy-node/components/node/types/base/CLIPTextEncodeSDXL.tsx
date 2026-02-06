@@ -1,7 +1,15 @@
 import { NumberInput } from '@/components/self-ui/number-input';
+import { Icon } from '@/components/ui/icon';
+import { Pressable } from '@/components/ui/pressable';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
+import {
+  PromptEditorModal,
+  PromptEditorModalRef,
+} from '@/features/ai-assistant/components/prompt-editor-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
+import { Maximize2 } from 'lucide-react-native';
+import { useCallback, useRef } from 'react';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
 
@@ -13,6 +21,19 @@ interface CLIPTextEncodeSDXLNodeProps {
 
 export default function CLIPTextEncodeSDXL({ node, serverId, workflowId }: CLIPTextEncodeSDXLNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const promptEditorRef = useRef<PromptEditorModalRef>(null);
+
+  const handleOpenEditor = useCallback(
+    (field: 'text_g' | 'text_l', title: string) => {
+      promptEditorRef.current?.present({
+        initialValue: node.inputs?.[field] || '',
+        onSave: (value) => updateNodeInput(workflowId, node.id, field, value),
+        title,
+      });
+    },
+    [node.inputs, workflowId, node.id, updateNodeInput],
+  );
+
   return (
     <BaseNode node={node}>
       <SubItem title="width" node={node} dependencies={['width']}>
@@ -81,7 +102,16 @@ export default function CLIPTextEncodeSDXL({ node, serverId, workflowId }: CLIPT
           step={1}
         />
       </SubItem>
-      <SubItem title="text_g" node={node} dependencies={['text_g']}>
+      <SubItem
+        title="text_g"
+        node={node}
+        dependencies={['text_g']}
+        rightComponent={
+          <Pressable onPress={() => handleOpenEditor('text_g', 'Edit Prompt (G)')} className="p-1">
+            <Icon as={Maximize2} size="sm" className="text-typography-500" />
+          </Pressable>
+        }
+      >
         <Textarea size="md" className="flex-1 rounded-lg border-0 bg-background-50">
           <TextareaInput
             value={node.inputs?.text_g || ''}
@@ -91,7 +121,16 @@ export default function CLIPTextEncodeSDXL({ node, serverId, workflowId }: CLIPT
           />
         </Textarea>
       </SubItem>
-      <SubItem title="text_l" node={node} dependencies={['text_l']}>
+      <SubItem
+        title="text_l"
+        node={node}
+        dependencies={['text_l']}
+        rightComponent={
+          <Pressable onPress={() => handleOpenEditor('text_l', 'Edit Prompt (L)')} className="p-1">
+            <Icon as={Maximize2} size="sm" className="text-typography-500" />
+          </Pressable>
+        }
+      >
         <Textarea size="md" className="flex-1 rounded-lg border-0 bg-background-50">
           <TextareaInput
             value={node.inputs?.text_l || ''}
@@ -101,6 +140,7 @@ export default function CLIPTextEncodeSDXL({ node, serverId, workflowId }: CLIPT
           />
         </Textarea>
       </SubItem>
+      <PromptEditorModal ref={promptEditorRef} />
     </BaseNode>
   );
 }

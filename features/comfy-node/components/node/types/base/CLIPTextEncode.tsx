@@ -2,15 +2,20 @@ import Switch from '@/components/self-ui/switch';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
+import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
+import {
+  PromptEditorModal,
+  PromptEditorModalRef,
+} from '@/features/ai-assistant/components/prompt-editor-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
-import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Check, Maximize2, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import { useEffect, useState } from 'react';
-import { Pressable, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
@@ -103,6 +108,7 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [tags, setTags] = useState<Tag[]>(() => parsePromptToTags(node.inputs?.text || ''));
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const promptEditorRef = useRef<PromptEditorModalRef>(null);
 
   useEffect(() => {
     if (tagMode) {
@@ -123,6 +129,20 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
   const handleTextChange = (text: string) => {
     updateNodeInput(workflowId, node.id, 'text', text);
   };
+
+  const handleOpenEditor = useCallback(() => {
+    promptEditorRef.current?.present({
+      initialValue: node.inputs?.text || '',
+      onSave: (value) => {
+        handleTextChange(value);
+        // Also update tags if in tag mode
+        if (tagMode) {
+          setTags(parsePromptToTags(value));
+        }
+      },
+      title: 'Edit Prompt',
+    });
+  }, [node.inputs?.text, tagMode]);
 
   const handleTagSelect = (tagId: string) => {
     if (selectedTagId === tagId) {
@@ -251,6 +271,9 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
         title="Text"
         rightComponent={
           <View className="flex-row items-center gap-2">
+            <Pressable onPress={handleOpenEditor} className="p-1">
+              <Icon as={Maximize2} size="sm" className="text-typography-500" />
+            </Pressable>
             <Text className="text-sm text-typography-500">Tag Edit Mode</Text>
             <Switch size="sm" value={tagMode} onValueChange={handleTagModeChange} />
           </View>
@@ -414,6 +437,7 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
           )}
         </MotiView>
       </SubItem>
+      <PromptEditorModal ref={promptEditorRef} />
     </BaseNode>
   );
 }
