@@ -12,7 +12,7 @@ import {
 } from '@/features/ai-assistant/components/template-editor-modal';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { PromptTemplate } from '@/features/ai-assistant/types';
-import { ChevronRight, Plus } from 'lucide-react-native';
+import { ChevronRight, FileText, Plus } from 'lucide-react-native';
 import { useRef } from 'react';
 
 export default function TemplatesScreen() {
@@ -64,10 +64,13 @@ export default function TemplatesScreen() {
               </Pressable>
             ))
           ) : (
-            <View className="mt-4 items-center rounded-lg bg-background-50 py-8">
-              <Text className="text-sm text-typography-500">No templates yet</Text>
-              <Text className="mt-1 text-xs text-typography-400">
-                Tap "Add" to create your first template
+            <View className="mt-4 items-center rounded-lg bg-background-50 px-6 py-8">
+              <View className="rounded-full bg-background-0 p-3">
+                <Icon as={FileText} size="xl" className="h-9 w-9 text-typography-300" />
+              </View>
+              <Text className="mt-3 text-base font-semibold text-typography-800">No Templates Yet</Text>
+              <Text className="mt-1 text-center text-sm text-typography-500">
+                Tap "Add" to create your first template.
               </Text>
             </View>
           )}

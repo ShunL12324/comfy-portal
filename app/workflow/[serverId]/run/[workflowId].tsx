@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Images, Search, Wand2 } from 'lucide-react-native';
+import { Images, Search, ServerCrash, Wand2 } from 'lucide-react-native';
 import React, { useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
@@ -54,8 +54,18 @@ function RunWorkflowScreenContent() {
 
   if (!server || !workflowRecord) {
     return (
-      <VStack className="flex-1 items-center justify-center">
-        <Text className="text-primary-300">{!server ? 'Server' : 'Workflow'} not found</Text>
+      <VStack className="flex-1 items-center justify-center px-6" space="md">
+        <View className="rounded-full bg-background-50 p-3">
+          <Icon as={ServerCrash} size="xl" className="h-10 w-10 text-typography-300" />
+        </View>
+        <VStack className="items-center" space="xs">
+          <Text className="text-center text-base font-semibold text-typography-800">
+            {!server ? 'Server Not Found' : 'Workflow Not Found'}
+          </Text>
+          <Text className="text-center text-sm text-typography-500">
+            {!server ? 'Please check your server list and try again.' : 'This workflow may have been removed.'}
+          </Text>
+        </VStack>
       </VStack>
     );
   }

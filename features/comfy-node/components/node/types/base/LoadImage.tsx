@@ -1,4 +1,5 @@
 import { Icon } from '@/components/ui/icon';
+import { Menu, MenuItem, MenuItemLabel } from '@/components/ui/menu';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -8,6 +9,7 @@ import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
 import { showToast } from '@/utils/toast';
+import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Image as ImageIcon, X } from 'lucide-react-native';
@@ -22,6 +24,12 @@ interface LoadImageNodeProps {
   node: Node;
   serverId: string;
   workflowId: string;
+}
+
+interface UploadAssetCandidate {
+  uri: string;
+  fileName?: string | null;
+  mimeType?: string | null;
 }
 
 export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
@@ -79,54 +87,103 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     };
   });
 
-  const handleImageUpload = async () => {
-    // Request permission first
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const uploadPickedAsset = async (asset: UploadAssetCandidate) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    progressWidth.value = 0;
 
+    try {
+      const { promise, cancel } = uploadImage(
+        asset.uri,
+        asset.fileName ?? 'image.jpg',
+        serverId,
+        asset.mimeType ?? undefined,
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+      cancelUploadRef.current = cancel;
+
+      const response = await promise;
+      // Add a small delay to ensure the server has processed the image
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setImage(response.previewUrl);
+      updateNodeInput(workflowId, node.id, 'image', response.name);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('canceled')) {
+        // Upload canceled, do nothing
+      } else {
+        showToast.error('Error uploading image', undefined, safeAreaInsets.top + 8);
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      cancelUploadRef.current = null;
+    }
+  };
+
+  const handlePickFromLibrary = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       showToast.error('Permission to access media library is required', undefined, safeAreaInsets.top + 8);
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });
-    if (result.assets?.[0]) {
-      setIsUploading(true);
-      setUploadProgress(0);
-      progressWidth.value = 0;
-
-      try {
-        const { promise, cancel } = uploadImage(
-          result.assets[0].uri,
-          result.assets[0].fileName ?? 'image.jpg',
-          serverId,
-          result.assets[0].mimeType ?? undefined,
-          (progress) => {
-            setUploadProgress(progress);
-          }
-        );
-        cancelUploadRef.current = cancel;
-
-        const response = await promise;
-        // Add a small delay to ensure the server has processed the image
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setImage(response.previewUrl);
-        updateNodeInput(workflowId, node.id, 'image', response.name);
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('canceled')) {
-          // Upload canceled, do nothing
-        } else {
-          showToast.error('Error uploading image', undefined, safeAreaInsets.top + 8);
-        }
-      } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-        cancelUploadRef.current = null;
-      }
+    if (result.canceled || !result.assets?.[0]) {
+      return;
     }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].fileName,
+      mimeType: result.assets[0].mimeType,
+    });
+  };
+
+  const handlePickFromFiles = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['image/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (result.canceled || !result.assets?.[0]) {
+      return;
+    }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].name,
+      mimeType: result.assets[0].mimeType,
+    });
+  };
+
+  const handlePickFromCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      showToast.error('Permission to access camera is required', undefined, safeAreaInsets.top + 8);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+      cameraType: ImagePicker.CameraType.back,
+    });
+    if (result.canceled || !result.assets?.[0]) {
+      return;
+    }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].fileName,
+      mimeType: result.assets[0].mimeType,
+    });
   };
 
   const handleCancelUpload = async () => {
@@ -145,59 +202,97 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
   return (
     <BaseNode node={node}>
       <SubItem title="image">
-        <Pressable
-          onPress={isUploading ? undefined : handleImageUpload}
-          className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
-        >
-          {image ? (
-            <>
-              <Image
-                source={{ uri: image }}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: 12,
-                }}
-                contentFit="contain"
-                transition={200}
-                cachePolicy="memory-disk"
-              />
-              <Pressable
-                onPress={handleClearImage}
-                className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
-              >
-                <Icon as={X} className="h-4 w-4 text-white" />
-              </Pressable>
-            </>
-          ) : !isUploading ? (
-            <VStack space="md" className="h-full w-full items-center justify-center">
-              <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
-              <Text size="sm" className="text-typography-500">
-                Upload Image
-              </Text>
-            </VStack>
-          ) : null}
-          {isUploading && (
-            <VStack space="sm" className="absolute inset-0 items-center justify-center rounded-xl bg-black/50 p-4">
-              <Icon as={ImageIcon} className="h-8 w-8 text-typography-600 mb-2" />
-              <Text size="sm" className="text-typography-600 font-medium">
-                Uploading... {Math.round(uploadProgress * 100)}%
-              </Text>
-              <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
-                <Animated.View
-                  className="h-full bg-primary-500 rounded-full"
-                  style={animatedProgressStyle}
-                />
-              </View>
-              <Pressable
-                onPress={handleCancelUpload}
-                className="mt-2 rounded-full bg-white/20 p-2 active:bg-white/30"
-              >
-                <Icon as={X} className="h-5 w-5 text-white" />
-              </Pressable>
-            </VStack>
+        <Menu
+          placement="bottom"
+          className="rounded-xl border border-background-200 bg-background-100 p-1"
+          trigger={({ ...triggerProps }) => (
+            <Pressable
+              {...triggerProps}
+              onPress={isUploading ? undefined : triggerProps.onPress}
+              className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
+            >
+              {image ? (
+                <>
+                  <Image
+                    source={{ uri: image }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: 12,
+                    }}
+                    contentFit="contain"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                  <Pressable
+                    onPress={handleClearImage}
+                    className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
+                  >
+                    <Icon as={X} className="h-4 w-4 text-white" />
+                  </Pressable>
+                </>
+              ) : !isUploading ? (
+                <VStack space="md" className="h-full w-full items-center justify-center">
+                  <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
+                  <Text size="sm" className="text-typography-500">
+                    Upload Image
+                  </Text>
+                </VStack>
+              ) : null}
+              {isUploading && (
+                <VStack space="sm" className="absolute inset-0 items-center justify-center rounded-xl bg-black/50 p-4">
+                  <Icon as={ImageIcon} className="h-8 w-8 text-typography-600 mb-2" />
+                  <Text size="sm" className="text-typography-600 font-medium">
+                    Uploading... {Math.round(uploadProgress * 100)}%
+                  </Text>
+                  <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
+                    <Animated.View
+                      className="h-full bg-primary-500 rounded-full"
+                      style={animatedProgressStyle}
+                    />
+                  </View>
+                  <Pressable
+                    onPress={handleCancelUpload}
+                    className="mt-2 rounded-full bg-white/20 p-2 active:bg-white/30"
+                  >
+                    <Icon as={X} className="h-5 w-5 text-white" />
+                  </Pressable>
+                </VStack>
+              )}
+            </Pressable>
           )}
-        </Pressable>
+        >
+          <MenuItem
+            key="library"
+            textValue="Photo Library"
+            onPress={() => {
+              void handlePickFromLibrary();
+            }}
+            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+          >
+            <MenuItemLabel size="sm">Photo Library</MenuItemLabel>
+          </MenuItem>
+          <MenuItem
+            key="files"
+            textValue="Files"
+            onPress={() => {
+              void handlePickFromFiles();
+            }}
+            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+          >
+            <MenuItemLabel size="sm">Files</MenuItemLabel>
+          </MenuItem>
+          <MenuItem
+            key="camera"
+            textValue="Camera"
+            onPress={() => {
+              void handlePickFromCamera();
+            }}
+            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+          >
+            <MenuItemLabel size="sm">Camera</MenuItemLabel>
+          </MenuItem>
+        </Menu>
       </SubItem>
     </BaseNode>
   );

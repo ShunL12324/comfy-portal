@@ -1,12 +1,10 @@
 import { AppBar } from '@/components/layout/app-bar';
 import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
-import { Center } from '@/components/ui/center';
-import { Fab, FabIcon, FabLabel } from '@/components/ui/fab';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { FlatList } from '@/components/ui/flat-list';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { RefreshControl } from '@/components/ui/refresh-control';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
@@ -20,17 +18,124 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as apiListWorkflows, ServerWorkflowFile } from '@/services/comfy-api';
 import { showToast } from '@/utils/toast';
 import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, ServerCrash, UploadCloud } from 'lucide-react-native';
+import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud, type LucideIcon } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useColorScheme, useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabView as RNETabView, SceneMap } from 'react-native-tab-view';
+import { TabView as RNETabView } from 'react-native-tab-view';
 
 interface LocalWorkflowsTabProps {
   serverId: string;
   openImportModal: () => void;
 }
+
+interface WorkflowEmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  children?: React.ReactNode;
+  align?: 'center' | 'top';
+}
+
+interface WorkflowTabToggleProps {
+  index: number;
+  onChange: (index: number) => void;
+}
+
+const TOGGLE_CONTAINER_WIDTH = 112;
+const TOGGLE_CONTAINER_HEIGHT = 40;
+const TOGGLE_HORIZONTAL_PADDING = 4;
+const TOGGLE_ITEM_COUNT = 2;
+const TOGGLE_THUMB_WIDTH = (TOGGLE_CONTAINER_WIDTH - TOGGLE_HORIZONTAL_PADDING * 2) / TOGGLE_ITEM_COUNT;
+const TOGGLE_THUMB_HEIGHT = TOGGLE_CONTAINER_HEIGHT - TOGGLE_HORIZONTAL_PADDING * 2;
+const TOGGLE_ANIMATION_STEP = TOGGLE_THUMB_WIDTH;
+
+const WorkflowEmptyState = memo(({ icon, title, description, children, align = 'center' }: WorkflowEmptyStateProps) => {
+  const wrapperClassName = align === 'top' ? 'w-full items-center pt-8' : 'flex-1 items-center justify-center';
+
+  return (
+    <View className="w-full px-5">
+      <View className={wrapperClassName}>
+        <MotiView
+          from={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'timing', duration: 220 }}
+          className="w-full max-w-[360px] items-center"
+        >
+          <VStack space="md" className="items-center">
+            <View className="rounded-full bg-background-50 p-3">
+              <Icon as={icon} size="xl" className="h-10 w-10 text-typography-300" />
+            </View>
+
+            <VStack space="xs" className="items-center">
+              <Text className="text-center text-base font-semibold text-typography-800">{title}</Text>
+              <Text className="text-center text-sm text-typography-500">{description}</Text>
+            </VStack>
+
+            {children}
+          </VStack>
+        </MotiView>
+      </View>
+    </View>
+  );
+});
+
+const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => {
+  const togglePosition = useSharedValue(index === 0 ? 0 : 1);
+
+  useEffect(() => {
+    togglePosition.value = withTiming(index === 0 ? 0 : 1, {
+      duration: 180,
+      easing: Easing.bezier(0.4, 0, 0.2, 1),
+    });
+  }, [index, togglePosition]);
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: togglePosition.value * TOGGLE_ANIMATION_STEP }],
+  }));
+
+  return (
+    <View
+      className="relative rounded-full bg-background-50 p-1"
+      style={{ width: TOGGLE_CONTAINER_WIDTH, height: TOGGLE_CONTAINER_HEIGHT }}
+    >
+      <Animated.View
+        className="absolute left-1 top-1 rounded-full bg-primary-500"
+        style={[{ width: TOGGLE_THUMB_WIDTH, height: TOGGLE_THUMB_HEIGHT }, thumbStyle]}
+      />
+      <HStack className="h-8">
+        <Pressable
+          onPress={() => onChange(0)}
+          accessibilityLabel="Switch to local workflows"
+          className="h-8 items-center justify-center rounded-full"
+          style={{ width: TOGGLE_THUMB_WIDTH }}
+        >
+          <Icon as={Folder} size="sm" className={index === 0 ? 'text-typography-0' : 'text-typography-500'} />
+        </Pressable>
+        <Pressable
+          onPress={() => onChange(1)}
+          accessibilityLabel="Switch to server workflows"
+          className="h-8 items-center justify-center rounded-full"
+          style={{ width: TOGGLE_THUMB_WIDTH }}
+        >
+          <Icon as={ServerIcon} size="sm" className={index === 1 ? 'text-typography-0' : 'text-typography-500'} />
+        </Pressable>
+      </HStack>
+    </View>
+  );
+});
 
 const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTabProps) => {
   const workflows = useWorkflowStore((state) => state.workflow);
@@ -40,26 +145,28 @@ const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTab
   );
 
   const renderEmptyList = () => (
-    <Center className="mt-10 flex-1 px-5">
-      <MotiView
-        from={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'timing', duration: 300 }}
-      >
-        <VStack space="lg" className="items-center px-6">
-          <Icon as={FileSearch} size="xl" className="mb-2 h-16 w-16 text-typography-200" />
-          <VStack space="xs" className="items-center">
-            <Text className="text-center text-sm text-typography-500">
-              No local workflows found for this server.
-            </Text>
-          </VStack>
-        </VStack>
-      </MotiView>
-    </Center>
+    <WorkflowEmptyState
+      icon={FileSearch}
+      title="No Local Workflows"
+      description="Import a workflow JSON file to get started."
+      align="top"
+    />
   );
 
   return (
     <View className="flex-1">
+      <View className="bg-background-0 px-4 pb-2 pt-1">
+        <HStack className="items-center justify-between rounded-lg bg-background-50 px-4 py-3">
+          <VStack space="xs">
+            <Text className="text-sm font-semibold text-typography-900">Local Workflows</Text>
+            <Text className="text-xs text-typography-500">{filteredWorkflows.length} items</Text>
+          </VStack>
+          <Button size="sm" variant="link" onPress={openImportModal}>
+            <ButtonIcon as={UploadCloud} />
+            <ButtonText>Import Workflow</ButtonText>
+          </Button>
+        </HStack>
+      </View>
       <FlatList
         data={filteredWorkflows}
         renderItem={({ item }) => (
@@ -70,17 +177,8 @@ const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTab
         keyExtractor={(item) => item.id}
         numColumns={2}
         ListEmptyComponent={renderEmptyList}
-        contentContainerClassName="px-2.5 pb-20 pt-3"
+        contentContainerClassName="px-2.5 pb-8 pt-2"
       />
-      <Fab
-        size="md"
-        placement="bottom center"
-        className="bg-primary-500"
-        onPress={openImportModal}
-      >
-        <FabIcon as={UploadCloud} className="mr-2" />
-        <FabLabel>Import Workflow</FabLabel>
-      </Fab>
     </View>
   );
 });
@@ -88,13 +186,19 @@ const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTab
 interface ServerWorkflowsTabProps {
   serverId: string;
   isActiveTab: boolean;
+  onRequestClear: () => void;
 }
 
-const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) => {
+const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWorkflowsTabProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
   const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
+  const workflowsToDisplay = useMemo(
+    () => storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync'),
+    [storedWorkflows, serverId]
+  );
   const cancelSyncRef = useRef(false);
+  const hasAutoSyncedRef = useRef(false);
   const syncRunIdRef = useRef(0);
   const refreshingRef = useRef(refreshing);
   const insets = useSafeAreaInsets();
@@ -103,10 +207,29 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
   const [skippedCount, setSkippedCount] = useState(0);
   const [syncedCount, setSyncedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const syncIconRotation = useSharedValue(0);
 
-  const colorScheme = useColorScheme();
-  const refreshControlColor = colorScheme === 'dark' ? '#E0E0E0' : '#333333';
-  const progressBgColor = colorScheme === 'dark' ? '#262626' : '#FAFAFA';
+  useEffect(() => {
+    if (refreshing) {
+      syncIconRotation.value = 0;
+      syncIconRotation.value = withRepeat(
+        withTiming(360, {
+          duration: 800,
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      );
+      return;
+    }
+
+    cancelAnimation(syncIconRotation);
+    syncIconRotation.value = withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) });
+  }, [refreshing, syncIconRotation]);
+
+  const syncIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${syncIconRotation.value}deg` }],
+  }));
 
   const onRefresh = useCallback(async () => {
     const currentRunId = syncRunIdRef.current + 1;
@@ -282,6 +405,14 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
   }, [isActiveTab, refreshing]);
 
   useEffect(() => {
+    if (!isActiveTab || refreshing || hasAutoSyncedRef.current || workflowsToDisplay.length > 0) {
+      return;
+    }
+    hasAutoSyncedRef.current = true;
+    void onRefresh();
+  }, [isActiveTab, refreshing, workflowsToDisplay.length, onRefresh]);
+
+  useEffect(() => {
     cancelSyncRef.current = false;
     refreshingRef.current = refreshing;
 
@@ -293,22 +424,53 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
     };
   }, [refreshing]);
 
-  const workflowsToDisplay = storedWorkflows.filter(wf => wf.serverId === serverId && wf.addMethod === 'server-sync');
-
-  const renderProgress = () => (
-    <HStack space="sm" className="w-full items-center justify-center py-3 px-3 bg-background-50">
-      <Text className="text-xs text-typography-700 text-center">{syncProgressText}</Text>
-    </HStack>
-  );
-
-  const refreshControl = (
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      tintColor={refreshControlColor}
-      colors={[refreshControlColor]}
-      progressBackgroundColor={progressBgColor}
-    />
+  const renderActionRow = () => (
+    <View className="bg-background-0 px-4 pb-2 pt-1">
+      <Animated.View
+        className="rounded-lg bg-background-50 px-4 py-3"
+        layout={LinearTransition.duration(180)}
+      >
+        <HStack className="items-center justify-between">
+          <VStack space="xs">
+            <Text className="text-sm font-semibold text-typography-900">Server Workflows</Text>
+            <Text className="text-xs text-typography-500">Synced {workflowsToDisplay.length} items</Text>
+          </VStack>
+          <HStack space="sm">
+            <Button
+              size="sm"
+              variant="link"
+              disabled={refreshing}
+              onPress={onRefresh}
+            >
+              <Animated.View style={syncIconAnimatedStyle}>
+                <ButtonIcon as={RefreshCw} />
+              </Animated.View>
+              <ButtonText>{refreshing ? 'Syncing' : 'Sync'}</ButtonText>
+            </Button>
+            <Button
+              size="sm"
+              variant="link"
+              action="negative"
+              disabled={refreshing || workflowsToDisplay.length === 0}
+              onPress={onRequestClear}
+            >
+              <ButtonIcon as={Trash2} />
+              <ButtonText>Clear</ButtonText>
+            </Button>
+          </HStack>
+        </HStack>
+        {refreshing && !!syncProgressText && (
+          <Animated.View
+            className="pt-1"
+            layout={LinearTransition.duration(180)}
+            entering={FadeIn.duration(140)}
+            exiting={FadeOut.duration(120)}
+          >
+            <Text className="text-xs text-typography-500">{syncProgressText}</Text>
+          </Animated.View>
+        )}
+      </Animated.View>
+    </View>
   );
 
   const renderMainContent = () => {
@@ -316,46 +478,26 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
       return (
         <ScrollView
           className="flex-1"
-          contentContainerClassName="flex-grow-1 items-center justify-center pt-10 px-5"
-          refreshControl={refreshControl}
+          contentContainerClassName="items-center px-5 pb-6"
         >
-          <MotiView
-            from={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'timing', duration: 300 }}
-            className="items-center"
+          <WorkflowEmptyState
+            icon={ServerCrash}
+            title="No Synced Server Workflows"
+            description="Tap Sync above to refresh."
+            align="top"
           >
-            <Icon as={ServerCrash} size="xl" className="mb-4 h-16 w-16 text-typography-200" />
-            <Text className="text-center text-xl font-medium text-typography-800 mb-5">
-              Sync Workflows from Server
-            </Text>
-
-            <VStack space="lg" className="mb-8 px-4 w-full">
-              <VStack space="sm" className="items-center">
-                <Text className="text-center text-sm text-typography-500">
-                  <Text className="font-bold">Step 1: </Text>Ensure the <Text className="font-semibold">comfy-portal-endpoint</Text> extension is installed on your ComfyUI server.
+            <VStack space="xs" className="w-full rounded-lg bg-background-50 px-4 py-3">
+              <Text className="text-center text-xs text-typography-500">
+                Make sure <Text className="font-medium text-typography-700">comfy-portal-endpoint</Text> is installed
+                and at least one ComfyUI browser tab is connected.
+              </Text>
+              <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="self-center">
+                <Text className="text-xs text-primary-500" style={{ textDecorationLine: 'underline' }}>
+                  Installation guide
                 </Text>
-                <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="mt-1">
-                  <Text
-                    className="text-sm text-primary-500"
-                    style={{ textDecorationLine: 'underline' }}
-                  >
-                    How to install?
-                  </Text>
-                </ExpoLink>
-              </VStack>
-
-              <VStack space="sm" className="items-center">
-                <Text className="text-center text-sm text-typography-500">
-                  <Text className="font-bold">Step 2: </Text>Make sure at least one browser window is open and connected to your ComfyUI server.
-                </Text>
-              </VStack>
+              </ExpoLink>
             </VStack>
-
-            <Text className="text-center text-xs text-typography-400">
-              Pull down to refresh
-            </Text>
-          </MotiView>
+          </WorkflowEmptyState>
         </ScrollView>
       );
     }
@@ -379,8 +521,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
         )}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        contentContainerClassName="px-2.5 pb-20 pt-3"
-        refreshControl={refreshControl}
+        contentContainerClassName="px-2.5 pb-8 pt-2"
         className="flex-1"
       />
     );
@@ -388,7 +529,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
 
   return (
     <View className="flex-1 bg-background-0">
-      {refreshing && renderProgress()}
+      {renderActionRow()}
       {renderMainContent()}
     </View>
   );
@@ -397,6 +538,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab }: ServerWorkflowsTabProps) 
 const WorkflowsScreen = () => {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const workflows = useWorkflowStore((state) => state.workflow);
   const { clearServerSyncedWorkflows } = useWorkflowStore();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -410,17 +552,10 @@ const WorkflowsScreen = () => {
     { key: 'local', title: 'Local' },
     { key: 'server', title: 'Server' },
   ]);
-
-  const LocalSceneComponent = useCallback(() => {
-    if (!serverId) return null;
-    return <LocalWorkflowsTab serverId={serverId} openImportModal={openImportModal} />;
-  }, [serverId, openImportModal]);
-
-  const ServerSceneComponent = useCallback(() => {
-    if (!serverId) return null;
-    const serverTabIndex = routes.findIndex(r => r.key === 'server');
-    return <ServerWorkflowsTab serverId={serverId} isActiveTab={index === serverTabIndex} />;
-  }, [serverId, index, routes]);
+  const serverTabIndex = routes.findIndex((route) => route.key === 'server');
+  const handleRequestClear = useCallback(() => {
+    setIsClearAlertOpen(true);
+  }, []);
 
   const handleClearServerWorkflows = useCallback(() => {
     if (serverId) {
@@ -429,87 +564,68 @@ const WorkflowsScreen = () => {
     }
   }, [serverId, clearServerSyncedWorkflows]);
 
-  const renderScene = useMemo(() => SceneMap({
-    local: LocalSceneComponent,
-    server: ServerSceneComponent,
-  }), [LocalSceneComponent, ServerSceneComponent]);
+  const renderScene = useCallback(({ route }: { route: { key: string } }) => {
+    if (!serverId) return null;
+    if (route.key === 'local') {
+      return <LocalWorkflowsTab serverId={serverId} openImportModal={openImportModal} />;
+    }
+    if (route.key === 'server') {
+      return (
+        <ServerWorkflowsTab
+          serverId={serverId}
+          isActiveTab={index === serverTabIndex}
+          onRequestClear={handleRequestClear}
+        />
+      );
+    }
+    return null;
+  }, [serverId, openImportModal, index, serverTabIndex, handleRequestClear]);
+
+  const serverWorkflowsCount = useMemo(() =>
+    serverId
+      ? workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length
+      : 0,
+    [workflows, serverId]
+  );
 
   if (!server) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-primary-300">Server not found</Text>
+      <View className="flex-1 bg-background-0">
+        <WorkflowEmptyState
+          icon={ServerCrash}
+          title="Server Not Found"
+          description="This server no longer exists in your server list."
+        />
       </View>
     );
   }
   if (!serverId) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-primary-300">Server ID missing</Text>
+      <View className="flex-1 bg-background-0">
+        <WorkflowEmptyState
+          icon={ServerCrash}
+          title="Server ID Missing"
+          description="The current route does not include a valid server ID."
+        />
       </View>
     );
   }
 
-  const workflows = useWorkflowStore((state) => state.workflow);
-  const serverWorkflowsCount = useMemo(() =>
-    workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length,
-    [workflows, serverId]
-  );
-
-  const renderTabBar = useCallback((props: any) => {
-    const rightActionButton = (
-      <Pressable
-        onPress={() => setIsClearAlertOpen(true)}
-        disabled={index !== 1 || serverWorkflowsCount === 0}
-        className={`px-3 py-2 mr-1 active:opacity-60 ${index !== 1 ? 'opacity-0' : (serverWorkflowsCount === 0 ? 'opacity-30' : 'opacity-100')}`}
-      >
-        <Text className={`font-medium text-base ${index !== 1 ? 'text-transparent' : 'text-error-500'}`}>Clear</Text>
-      </Pressable>
-    );
-
-    return (
-      <VStack className="bg-background-0">
-        <AppBar
-          title={server?.name || 'Workflows'}
-          showBack
-          centerTitle={true}
-          rightElement={rightActionButton}
-        />
-        <HStack className="border-b border-outline-200 px-2.5 mt-[-8px]">
-          {props.navigationState.routes.map((route: any, i: number) => {
-            const isActive = index === i;
-            return (
-              <Pressable
-                key={route.key}
-                onPress={() => setIndex(i)}
-                className="flex-1"
-              >
-                <VStack className="items-center py-3">
-                  <Text
-                    className={`text-sm font-medium ${isActive ? 'text-primary-500' : 'text-typography-500'
-                      }`}
-                  >
-                    {route.title}
-                  </Text>
-                </VStack>
-                {isActive && (
-                  <View className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-                )}
-              </Pressable>
-            );
-          })}
-        </HStack>
-      </VStack>
-    );
-  }, [index, server, setIndex, routes, handleClearServerWorkflows]);
-
   return (
     <View className={`flex-1 bg-background-0`}>
+      <AppBar
+        title={server?.name || 'Workflows'}
+        showBack
+        centerTitle={true}
+        rightElement={<WorkflowTabToggle index={index} onChange={setIndex} />}
+      />
       <RNETabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
         onIndexChange={setIndex}
         initialLayout={{ width: layout.width }}
-        renderTabBar={renderTabBar}
+        renderTabBar={() => null}
+        style={{ flex: 1 }}
         lazy
       />
       <ImportWorkflowModal
@@ -530,7 +646,7 @@ const WorkflowsScreen = () => {
           setIsClearAlertOpen(false);
         }}
         title="Clear Synced Workflows"
-        description="This will remove all workflows synced from this server. This action cannot be undone."
+        description={`This will remove ${serverWorkflowsCount} synced workflow${serverWorkflowsCount === 1 ? '' : 's'} from ${server.name}. This action cannot be undone.`}
         confirmText="Clear"
         confirmButtonColor="bg-error-500"
       />

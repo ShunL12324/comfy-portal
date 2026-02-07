@@ -256,10 +256,15 @@ export const MediaPreview = memo(function ParallaxMedia({
         </View>
       ) : (
         <View className="h-full w-full items-center justify-center bg-background-0">
-          <View className="items-center gap-4">
-            <Icon as={ImageIcon} size="xl" className="text-typography-500" />
+          <View className="items-center gap-4 px-6">
+            <View className="rounded-full bg-background-50 p-3">
+              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-typography-300" />
+            </View>
             <View className="items-center gap-1">
-              <Text className="text-sm text-typography-500">No media generated yet</Text>
+              <Text className="text-base font-semibold text-typography-800">No Media Yet</Text>
+              <Text className="text-center text-sm text-typography-500">
+                Generate an image to preview results here.
+              </Text>
               {status === 'generating' && progress.max > 0 && (
                 <Text className="text-xs text-typography-400">
                   Generating... {Math.round((progress.value / progress.max) * 100)}%
