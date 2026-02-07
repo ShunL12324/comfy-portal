@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { toastConfig } from '@/utils/toast';
 import { AnimatePresence, MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
@@ -28,7 +28,7 @@ export const Drawer = ({
   const dimensions = useWindowDimensions();
   const hookInsets = useSafeAreaInsets();
   const insets = propInsets ?? hookInsets;
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const activeTheme = theme ?? 'light';
 
   useEffect(() => {

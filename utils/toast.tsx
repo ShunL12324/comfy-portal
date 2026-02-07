@@ -1,6 +1,6 @@
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react-native';
 import { StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -122,7 +122,7 @@ const getThemedStyles = (isDark: boolean): ThemedStyles =>
  */
 const toastConfig = {
   success: ({ text1, text2 }: CustomToastProps) => {
-    const theme = useThemeStore((state) => state.theme);
+    const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
     return (
@@ -145,7 +145,7 @@ const toastConfig = {
   },
 
   error: ({ text1, text2 }: CustomToastProps) => {
-    const theme = useThemeStore((state) => state.theme);
+    const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
     return (
@@ -168,7 +168,7 @@ const toastConfig = {
   },
 
   info: ({ text1, text2 }: CustomToastProps) => {
-    const theme = useThemeStore((state) => state.theme);
+    const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
     return (

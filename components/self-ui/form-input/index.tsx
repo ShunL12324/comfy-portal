@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -26,7 +26,7 @@ export const FormInput: React.FC<FormInputProps> = ({
   secureTextEntry,
   ...restProps
 }) => {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const isDarkMode = theme === 'dark';
   const [showPassword, setShowPassword] = useState(false);
 

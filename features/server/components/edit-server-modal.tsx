@@ -9,7 +9,7 @@ import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Server } from '@/features/server/types';
 import { validateHost, validatePort } from '@/services/network';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import {
   BottomSheetModal,
   BottomSheetScrollView,
@@ -33,7 +33,7 @@ export const EditServerModal = forwardRef<
   EditServerModalProps
 >((props, ref) => {
   const { serverId } = props;
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const isDarkMode = theme === 'dark';
   const insets = useSafeAreaInsets();
   const updateServer = useServersStore((state) => state.updateServer);

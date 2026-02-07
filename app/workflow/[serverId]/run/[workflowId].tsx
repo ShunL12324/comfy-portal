@@ -20,13 +20,13 @@ import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 
 function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
   const router = useRouter();
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);

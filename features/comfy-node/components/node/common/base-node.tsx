@@ -2,7 +2,7 @@ import { Text } from '@/components/ui/text';
 import { Colors } from '@/constants/Colors';
 import { useGenerationNodeState } from '@/features/generation/context/generation-context';
 import { Node } from '@/features/workflow/types';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { MotiView } from 'moti';
 import { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -15,7 +15,7 @@ export interface BaseNodeProps {
 
 export default function BaseNode({ node, children, badges }: BaseNodeProps) {
   const { isCurrentNode, isGenerating } = useGenerationNodeState(node.id);
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const colors = theme === 'dark' ? Colors.dark : Colors.light;
 
   return (

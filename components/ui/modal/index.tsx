@@ -1,8 +1,8 @@
 'use client';
-import { createModal } from '@gluestack-ui/modal';
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import { useStyleContext, withStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { createModal } from '@gluestack-ui/core/modal/creator';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useStyleContext, withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
 import { AnimatePresence, createMotionAnimatedComponent, Motion } from '@legendapp/motion';
 import { cssInterop } from 'nativewind';
 import React from 'react';

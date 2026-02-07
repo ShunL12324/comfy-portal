@@ -10,7 +10,7 @@ import { VStack } from '@/components/ui/vstack';
 import { Colors } from '@/constants/Colors';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { showToast } from '@/utils/toast';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,7 +30,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const [thumbnail, setThumbnail] = useState(workflow?.thumbnail || '');
   const [error, setError] = useState('');
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const activeTheme = (theme ?? 'light') as keyof typeof Colors;
   const insets = useSafeAreaInsets();
   if (!workflow) return null;

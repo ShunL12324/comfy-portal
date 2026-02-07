@@ -2,11 +2,11 @@
 import React from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
 import { Motion, createMotionAnimatedComponent, AnimatePresence } from '@legendapp/motion';
-import { createPopover } from '@gluestack-ui/popover';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { createPopover } from '@gluestack-ui/core/popover/creator';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 
 const AnimatedPressable = createMotionAnimatedComponent(Pressable);
 const SCOPE = 'POPOVER';

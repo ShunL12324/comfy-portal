@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import RNSlider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
@@ -78,7 +78,7 @@ export function NumberSlider({
   space = 24,
 }: CustomSliderProps) {
   const [localValue, setLocalValue] = useState(controlledValue ?? defaultValue ?? 0);
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useResolvedTheme();
   const colors = Colors[theme === 'dark' ? 'dark' : 'light'];
 
   // Sync external controlled value to internal state

@@ -1,44 +1,41 @@
-import React from 'react';
+'use client';
+import React, { useEffect } from 'react';
+import { View, ViewProps, useColorScheme } from 'react-native';
+import { OverlayProvider } from '@gluestack-ui/core/overlay/creator';
+import { ToastProvider } from '@gluestack-ui/core/toast/creator';
+import { colorScheme as nativewindColorScheme } from 'nativewind';
 import { config } from './config';
-import { ColorSchemeName, useColorScheme, View, ViewProps } from 'react-native';
-import { OverlayProvider } from '@gluestack-ui/overlay';
-import { ToastProvider } from '@gluestack-ui/toast';
-import { colorScheme as colorSchemeNW } from 'nativewind';
 
 type ModeType = 'light' | 'dark' | 'system';
 
-const getColorSchemeName = (colorScheme: ColorSchemeName, mode: ModeType): 'light' | 'dark' => {
-  if (mode === 'system') {
-    return colorScheme ?? 'light';
-  }
-  return mode;
-};
-
 export function GluestackUIProvider({
-  mode = 'light',
-  ...props
+  mode = 'system',
+  children,
+  style,
 }: {
-  mode?: 'light' | 'dark' | 'system';
+  mode?: ModeType;
   children?: React.ReactNode;
   style?: ViewProps['style'];
 }) {
-  const colorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme();
+  const resolvedMode = mode === 'system' ? (systemColorScheme ?? 'light') : mode;
 
-  const colorSchemeName = getColorSchemeName(colorScheme, mode);
-
-  colorSchemeNW.set(mode);
+  useEffect(() => {
+    // 'system' → calls Appearance.setColorScheme(null) to reset global override
+    // 'light'/'dark' → calls Appearance.setColorScheme(value) to force override
+    nativewindColorScheme.set(mode === 'system' ? 'system' : mode);
+  }, [mode]);
 
   return (
     <View
       style={[
-        config[colorSchemeName],
-        // eslint-disable-next-line react-native/no-inline-styles
         { flex: 1, height: '100%', width: '100%' },
-        props.style,
+        resolvedMode === 'dark' ? config.dark : config.light,
+        style,
       ]}
     >
       <OverlayProvider>
-        <ToastProvider>{props.children}</ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </OverlayProvider>
     </View>
   );

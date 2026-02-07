@@ -1,5 +1,5 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
@@ -13,7 +13,7 @@ export const ThemedBottomSheetModal = forwardRef<
   BottomSheetModal,
   BottomSheetModalProps
 >((props, ref) => {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const colors = useThemeColor();
 
   // Define theme-based colors (Subtly Darker Dark BG)

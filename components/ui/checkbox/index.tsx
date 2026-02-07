@@ -1,9 +1,9 @@
 'use client';
-import { createCheckbox } from '@gluestack-ui/checkbox';
-import { IPrimitiveIcon, PrimitiveIcon, UIIcon } from '@gluestack-ui/icon';
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import { useStyleContext, withStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { createCheckbox } from '@gluestack-ui/core/checkbox/creator';
+import { IPrimitiveIcon, PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useStyleContext, withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import React from 'react';
 import type { TextProps, ViewProps } from 'react-native';

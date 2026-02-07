@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -27,7 +27,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
   secureTextEntry,
   ...restProps
 }) => {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const isDarkMode = theme === 'dark';
   const [showPassword, setShowPassword] = useState(false);
 

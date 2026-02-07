@@ -1,12 +1,12 @@
 'use client';
 import React from 'react';
-import { createRadio } from '@gluestack-ui/radio';
+import { createRadio } from '@gluestack-ui/core/radio/creator';
 import { Pressable, View, Platform, Text } from 'react-native';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import { withStyleContext, useStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { withStyleContext, useStyleContext } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
-import { PrimitiveIcon, UIIcon } from '@gluestack-ui/icon';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
+import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 
 const SCOPE = 'Radio';
 

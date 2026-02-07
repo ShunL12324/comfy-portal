@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 
 export function useThemeColor() {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   return Colors[theme === 'dark' ? 'dark' : 'light'];
 }

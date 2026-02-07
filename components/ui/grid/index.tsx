@@ -1,4 +1,4 @@
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import React, { createContext, forwardRef, useContext, useEffect, useMemo, useState } from 'react';
 import { Dimensions, Platform, View, ViewProps } from 'react-native';

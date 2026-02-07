@@ -1,52 +1,37 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { ColorSchemeName } from 'react-native'
+import { useColorScheme } from 'react-native'
+
+type ThemePreference = 'light' | 'dark' | 'system'
 
 interface ThemeState {
-  theme: ColorSchemeName
-  systemTheme: ColorSchemeName
-  isSystemTheme: boolean
-  setTheme: (theme: ColorSchemeName) => void
-  setSystemTheme: (theme: ColorSchemeName) => void
-  toggleTheme: () => void
-  useSystemTheme: () => void
+  /** User's theme preference */
+  preference: ThemePreference
+  setPreference: (preference: ThemePreference) => void
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set, get) => ({
-      theme: 'light',
-      systemTheme: 'light',
-      isSystemTheme: true,
-
-      setTheme: (theme) => set({ theme, isSystemTheme: false }),
-
-      setSystemTheme: (theme) => {
-        set({ systemTheme: theme })
-        if (get().isSystemTheme) {
-          set({ theme })
-        }
-      },
-
-      toggleTheme: () => {
-        const currentTheme = get().theme
-        set({
-          theme: currentTheme === 'dark' ? 'light' : 'dark',
-          isSystemTheme: false,
-        })
-      },
-
-      useSystemTheme: () => {
-        set({
-          isSystemTheme: true,
-          theme: get().systemTheme,
-        })
-      },
+    (set) => ({
+      preference: 'system',
+      setPreference: (preference) => set({ preference }),
     }),
     {
       name: 'theme-storage',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
-) 
+)
+
+/**
+ * Returns the resolved color scheme ('light' | 'dark') based on user preference.
+ * When preference is 'system', follows the OS color scheme.
+ */
+export function useResolvedTheme(): 'light' | 'dark' {
+  const preference = useThemeStore((s) => s.preference)
+  const systemColorScheme = useColorScheme()
+  return preference === 'system'
+    ? (systemColorScheme ?? 'light')
+    : preference
+}

@@ -13,18 +13,8 @@ import { MotiView } from 'moti';
 import { useState } from 'react';
 
 export default function SettingScreen() {
-  const { theme, isSystemTheme, setTheme, useSystemTheme } = useThemeStore();
+  const { preference, setPreference } = useThemeStore();
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
-
-  const handleThemeChange = (value: string) => {
-    if (value === 'system') {
-      useSystemTheme();
-    } else {
-      setTheme(value as 'light' | 'dark');
-    }
-  };
-
-  const currentTheme = isSystemTheme ? 'system' : theme || 'light';
 
   // App Store URL
   const appStoreUrl = 'https://apps.apple.com/us/app/comfy-portal/id6741044736';
@@ -44,7 +34,7 @@ export default function SettingScreen() {
               <Icon as={Palette} size="lg" className="mr-3 text-primary-500" />
               <Text className="text-base font-medium text-typography-900">Theme</Text>
             </View>
-            <SegmentedControl options={['light', 'dark', 'system']} value={currentTheme} onChange={handleThemeChange} />
+            <SegmentedControl options={['light', 'dark', 'system']} value={preference} onChange={(v) => setPreference(v as 'light' | 'dark' | 'system')} />
           </View>
 
           {/* AI Assistant Section */}

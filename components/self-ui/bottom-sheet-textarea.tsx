@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import React from 'react';
 import { StyleSheet, TextInputProps, TextStyle, ViewStyle } from 'react-native';
@@ -17,7 +17,7 @@ export const BottomSheetTextarea: React.FC<BottomSheetTextareaProps> = ({
   minHeight = 80,
   ...restProps
 }) => {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const isDarkMode = theme === 'dark';
 
   const inputBackgroundColor = isDarkMode ? Colors.dark.background[50] : Colors.light.background[50];

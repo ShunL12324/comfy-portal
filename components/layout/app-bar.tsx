@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { ReactNode } from 'react';
@@ -37,7 +37,7 @@ export function AppBar({
   className,
 }: AppBarProps) {
   const router = useRouter();
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
 
   return (
     <View className={`w-full bg-background-0 ${className}`}>

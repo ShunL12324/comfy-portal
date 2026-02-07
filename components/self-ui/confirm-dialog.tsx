@@ -3,7 +3,7 @@ import { Heading } from '@/components/ui/heading';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { AnimatePresence, MotiView } from 'moti';
 import React from 'react';
 import { Modal, Pressable, View } from 'react-native';
@@ -31,7 +31,7 @@ export const ConfirmDialog = ({
   confirmButtonVariant = 'solid',
   confirmButtonColor = 'bg-primary-500',
 }: ConfirmDialogProps) => {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
   const activeTheme = theme ?? 'light';
 
   return (

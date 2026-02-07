@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import {
   BottomSheetFlatList,
   BottomSheetModal
@@ -36,7 +36,7 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
     ref,
   ) {
     const [searchQuery, setSearchQuery] = useState('');
-    const { theme } = useThemeStore();
+    const theme = useResolvedTheme();
     const colors = useThemeColor();
     const bottomSheetRef = useRef<BottomSheetModal>(null);
 

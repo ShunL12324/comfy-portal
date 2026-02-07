@@ -1,6 +1,6 @@
 import { Pressable } from '@/components/ui/pressable';
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { useCallback } from 'react';
 import Animated, { interpolateColor, useAnimatedStyle, useDerivedValue, withSpring } from 'react-native-reanimated';
 
@@ -30,7 +30,7 @@ const SIZES = {
 };
 
 export default function Switch({ value, onValueChange, disabled = false, size = 'md' }: SwitchProps) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useResolvedTheme();
   const isDark = theme === 'dark';
 
   // Animation progress value

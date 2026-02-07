@@ -1,4 +1,4 @@
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
 export const skeletonStyle = tva({
   base: 'h-full w-full',

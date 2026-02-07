@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -56,7 +56,7 @@ export function NumberInput({
   const initialWidth = 74;
   const [localValue, setLocalValue] = useState((value ?? defaultValue).toString());
   const [inputWidth, setInputWidth] = useState(initialWidth);
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
 
   useEffect(() => {
     if (value !== undefined) {

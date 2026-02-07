@@ -1,9 +1,9 @@
 import { Colors } from '@/constants/Colors';
-import { useThemeStore } from '@/store/theme';
+import { useResolvedTheme } from '@/store/theme';
 import { Stack } from 'expo-router';
 
 export default function WorkflowsLayout() {
-  const { theme } = useThemeStore();
+  const theme = useResolvedTheme();
 
   return (
     <Stack

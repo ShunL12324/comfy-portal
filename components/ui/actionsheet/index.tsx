@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { H4 } from '@expo/html-elements';
-import { createActionsheet } from '@gluestack-ui/actionsheet';
+import { createActionsheet } from '@gluestack-ui/core/actionsheet/creator';
 import {
   Pressable,
   View,
@@ -12,9 +12,9 @@ import {
   SectionList,
   PressableProps,
 } from 'react-native';
-import { PrimitiveIcon, UIIcon } from '@gluestack-ui/icon';
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import type { VariantProps } from '@gluestack-ui/nativewind-utils';
+import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import { Motion, AnimatePresence, createMotionAnimatedComponent } from '@legendapp/motion';
 
