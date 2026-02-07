@@ -18,7 +18,7 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as apiListWorkflows, ServerWorkflowFile } from '@/services/comfy-api';
 import { showToast } from '@/utils/toast';
 import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud } from 'lucide-react-native';
+import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud, type LucideIcon } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -34,7 +34,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabView as RNETabView, SceneMap } from 'react-native-tab-view';
+import { TabView as RNETabView } from 'react-native-tab-view';
 
 interface LocalWorkflowsTabProps {
   serverId: string;
@@ -42,7 +42,7 @@ interface LocalWorkflowsTabProps {
 }
 
 interface WorkflowEmptyStateProps {
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description: string;
   children?: React.ReactNode;
@@ -55,8 +55,12 @@ interface WorkflowTabToggleProps {
 }
 
 const TOGGLE_CONTAINER_WIDTH = 112;
-const TOGGLE_THUMB_WIDTH = 52;
-const TOGGLE_ANIMATION_STEP = 52;
+const TOGGLE_CONTAINER_HEIGHT = 40;
+const TOGGLE_HORIZONTAL_PADDING = 4;
+const TOGGLE_ITEM_COUNT = 2;
+const TOGGLE_THUMB_WIDTH = (TOGGLE_CONTAINER_WIDTH - TOGGLE_HORIZONTAL_PADDING * 2) / TOGGLE_ITEM_COUNT;
+const TOGGLE_THUMB_HEIGHT = TOGGLE_CONTAINER_HEIGHT - TOGGLE_HORIZONTAL_PADDING * 2;
+const TOGGLE_ANIMATION_STEP = TOGGLE_THUMB_WIDTH;
 
 const WorkflowEmptyState = memo(({ icon, title, description, children, align = 'center' }: WorkflowEmptyStateProps) => {
   const wrapperClassName = align === 'top' ? 'w-full items-center pt-8' : 'flex-1 items-center justify-center';
@@ -105,11 +109,11 @@ const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => 
   return (
     <View
       className="relative rounded-full bg-background-50 p-1"
-      style={{ width: TOGGLE_CONTAINER_WIDTH, height: 40 }}
+      style={{ width: TOGGLE_CONTAINER_WIDTH, height: TOGGLE_CONTAINER_HEIGHT }}
     >
       <Animated.View
         className="absolute left-1 top-1 rounded-full bg-primary-500"
-        style={[{ width: TOGGLE_THUMB_WIDTH, height: 32 }, thumbStyle]}
+        style={[{ width: TOGGLE_THUMB_WIDTH, height: TOGGLE_THUMB_HEIGHT }, thumbStyle]}
       />
       <HStack className="h-8">
         <Pressable
@@ -189,7 +193,9 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   const [refreshing, setRefreshing] = useState(false);
   const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
   const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
+  const workflowsToDisplay = storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync');
   const cancelSyncRef = useRef(false);
+  const hasAutoSyncedRef = useRef(false);
   const syncRunIdRef = useRef(0);
   const refreshingRef = useRef(refreshing);
   const insets = useSafeAreaInsets();
@@ -396,6 +402,14 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   }, [isActiveTab, refreshing]);
 
   useEffect(() => {
+    if (!isActiveTab || refreshing || hasAutoSyncedRef.current || workflowsToDisplay.length > 0) {
+      return;
+    }
+    hasAutoSyncedRef.current = true;
+    void onRefresh();
+  }, [isActiveTab, refreshing, workflowsToDisplay.length, onRefresh]);
+
+  useEffect(() => {
     cancelSyncRef.current = false;
     refreshingRef.current = refreshing;
 
@@ -406,8 +420,6 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
       }
     };
   }, [refreshing]);
-
-  const workflowsToDisplay = storedWorkflows.filter(wf => wf.serverId === serverId && wf.addMethod === 'server-sync');
 
   const renderActionRow = () => (
     <View className="bg-background-0 px-4 pb-2 pt-1">
@@ -523,6 +535,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
 const WorkflowsScreen = () => {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const workflows = useWorkflowStore((state) => state.workflow);
   const { clearServerSyncedWorkflows } = useWorkflowStore();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -536,23 +549,10 @@ const WorkflowsScreen = () => {
     { key: 'local', title: 'Local' },
     { key: 'server', title: 'Server' },
   ]);
-
-  const LocalSceneComponent = useCallback(() => {
-    if (!serverId) return null;
-    return <LocalWorkflowsTab serverId={serverId} openImportModal={openImportModal} />;
-  }, [serverId, openImportModal]);
-
-  const ServerSceneComponent = useCallback(() => {
-    if (!serverId) return null;
-    const serverTabIndex = routes.findIndex(r => r.key === 'server');
-    return (
-      <ServerWorkflowsTab
-        serverId={serverId}
-        isActiveTab={index === serverTabIndex}
-        onRequestClear={() => setIsClearAlertOpen(true)}
-      />
-    );
-  }, [serverId, index, routes]);
+  const serverTabIndex = routes.findIndex((route) => route.key === 'server');
+  const handleRequestClear = useCallback(() => {
+    setIsClearAlertOpen(true);
+  }, []);
 
   const handleClearServerWorkflows = useCallback(() => {
     if (serverId) {
@@ -561,10 +561,29 @@ const WorkflowsScreen = () => {
     }
   }, [serverId, clearServerSyncedWorkflows]);
 
-  const renderScene = useMemo(() => SceneMap({
-    local: LocalSceneComponent,
-    server: ServerSceneComponent,
-  }), [LocalSceneComponent, ServerSceneComponent]);
+  const renderScene = useCallback(({ route }: { route: { key: string } }) => {
+    if (!serverId) return null;
+    if (route.key === 'local') {
+      return <LocalWorkflowsTab serverId={serverId} openImportModal={openImportModal} />;
+    }
+    if (route.key === 'server') {
+      return (
+        <ServerWorkflowsTab
+          serverId={serverId}
+          isActiveTab={index === serverTabIndex}
+          onRequestClear={handleRequestClear}
+        />
+      );
+    }
+    return null;
+  }, [serverId, openImportModal, index, serverTabIndex, handleRequestClear]);
+
+  const serverWorkflowsCount = useMemo(() =>
+    serverId
+      ? workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length
+      : 0,
+    [workflows, serverId]
+  );
 
   if (!server) {
     return (
@@ -588,12 +607,6 @@ const WorkflowsScreen = () => {
       </View>
     );
   }
-
-  const workflows = useWorkflowStore((state) => state.workflow);
-  const serverWorkflowsCount = useMemo(() =>
-    workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length,
-    [workflows, serverId]
-  );
 
   return (
     <View className={`flex-1 bg-background-0`}>

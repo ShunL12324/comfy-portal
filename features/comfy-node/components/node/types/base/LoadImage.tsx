@@ -8,11 +8,12 @@ import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
 import { showToast } from '@/utils/toast';
+import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Image as ImageIcon, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BaseNode from '../../common/base-node';
@@ -22,6 +23,12 @@ interface LoadImageNodeProps {
   node: Node;
   serverId: string;
   workflowId: string;
+}
+
+interface UploadAssetCandidate {
+  uri: string;
+  fileName?: string | null;
+  mimeType?: string | null;
 }
 
 export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
@@ -79,54 +86,127 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     };
   });
 
-  const handleImageUpload = async () => {
-    // Request permission first
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const uploadPickedAsset = async (asset: UploadAssetCandidate) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    progressWidth.value = 0;
 
+    try {
+      const { promise, cancel } = uploadImage(
+        asset.uri,
+        asset.fileName ?? 'image.jpg',
+        serverId,
+        asset.mimeType ?? undefined,
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+      cancelUploadRef.current = cancel;
+
+      const response = await promise;
+      // Add a small delay to ensure the server has processed the image
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setImage(response.previewUrl);
+      updateNodeInput(workflowId, node.id, 'image', response.name);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('canceled')) {
+        // Upload canceled, do nothing
+      } else {
+        showToast.error('Error uploading image', undefined, safeAreaInsets.top + 8);
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      cancelUploadRef.current = null;
+    }
+  };
+
+  const handlePickFromLibrary = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       showToast.error('Permission to access media library is required', undefined, safeAreaInsets.top + 8);
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });
-    if (result.assets?.[0]) {
-      setIsUploading(true);
-      setUploadProgress(0);
-      progressWidth.value = 0;
-
-      try {
-        const { promise, cancel } = uploadImage(
-          result.assets[0].uri,
-          result.assets[0].fileName ?? 'image.jpg',
-          serverId,
-          result.assets[0].mimeType ?? undefined,
-          (progress) => {
-            setUploadProgress(progress);
-          }
-        );
-        cancelUploadRef.current = cancel;
-
-        const response = await promise;
-        // Add a small delay to ensure the server has processed the image
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setImage(response.previewUrl);
-        updateNodeInput(workflowId, node.id, 'image', response.name);
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('canceled')) {
-          // Upload canceled, do nothing
-        } else {
-          showToast.error('Error uploading image', undefined, safeAreaInsets.top + 8);
-        }
-      } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-        cancelUploadRef.current = null;
-      }
+    if (result.canceled || !result.assets?.[0]) {
+      return;
     }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].fileName,
+      mimeType: result.assets[0].mimeType,
+    });
+  };
+
+  const handlePickFromFiles = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['image/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (result.canceled || !result.assets?.[0]) {
+      return;
+    }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].name,
+      mimeType: result.assets[0].mimeType,
+    });
+  };
+
+  const handlePickFromCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      showToast.error('Permission to access camera is required', undefined, safeAreaInsets.top + 8);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+      cameraType: ImagePicker.CameraType.back,
+    });
+    if (result.canceled || !result.assets?.[0]) {
+      return;
+    }
+
+    await uploadPickedAsset({
+      uri: result.assets[0].uri,
+      fileName: result.assets[0].fileName,
+      mimeType: result.assets[0].mimeType,
+    });
+  };
+
+  const handleImageUpload = () => {
+    Alert.alert('Select Image Source', 'Choose where to load the image from.', [
+      {
+        text: 'Photo Library',
+        onPress: () => {
+          void handlePickFromLibrary();
+        },
+      },
+      {
+        text: 'Files',
+        onPress: () => {
+          void handlePickFromFiles();
+        },
+      },
+      {
+        text: 'Camera',
+        onPress: () => {
+          void handlePickFromCamera();
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const handleCancelUpload = async () => {
