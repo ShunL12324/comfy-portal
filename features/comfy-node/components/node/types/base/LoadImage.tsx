@@ -89,7 +89,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });

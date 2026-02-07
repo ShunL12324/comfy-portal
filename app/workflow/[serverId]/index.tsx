@@ -5,7 +5,6 @@ import { FlatList } from '@/components/ui/flat-list';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { RefreshControl } from '@/components/ui/refresh-control';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
@@ -22,8 +21,18 @@ import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
 import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useColorScheme, useWindowDimensions } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useWindowDimensions } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabView as RNETabView, SceneMap } from 'react-native-tab-view';
 
@@ -95,18 +104,18 @@ const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => 
 
   return (
     <View
-      className="relative rounded-lg bg-background-50 p-1"
+      className="relative rounded-full bg-background-50 p-1"
       style={{ width: TOGGLE_CONTAINER_WIDTH, height: 40 }}
     >
       <Animated.View
-        className="absolute left-1 top-1 rounded-md bg-primary-500"
+        className="absolute left-1 top-1 rounded-full bg-primary-500"
         style={[{ width: TOGGLE_THUMB_WIDTH, height: 32 }, thumbStyle]}
       />
       <HStack className="h-8">
         <Pressable
           onPress={() => onChange(0)}
           accessibilityLabel="Switch to local workflows"
-          className="h-8 items-center justify-center rounded-md"
+          className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
           <Icon as={Folder} size="sm" className={index === 0 ? 'text-typography-0' : 'text-typography-500'} />
@@ -114,7 +123,7 @@ const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => 
         <Pressable
           onPress={() => onChange(1)}
           accessibilityLabel="Switch to server workflows"
-          className="h-8 items-center justify-center rounded-md"
+          className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
           <Icon as={ServerIcon} size="sm" className={index === 1 ? 'text-typography-0' : 'text-typography-500'} />
@@ -189,10 +198,29 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   const [skippedCount, setSkippedCount] = useState(0);
   const [syncedCount, setSyncedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+  const syncIconRotation = useSharedValue(0);
 
-  const colorScheme = useColorScheme();
-  const refreshControlColor = colorScheme === 'dark' ? '#E0E0E0' : '#333333';
-  const progressBgColor = colorScheme === 'dark' ? '#262626' : '#FAFAFA';
+  useEffect(() => {
+    if (refreshing) {
+      syncIconRotation.value = 0;
+      syncIconRotation.value = withRepeat(
+        withTiming(360, {
+          duration: 800,
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      );
+      return;
+    }
+
+    cancelAnimation(syncIconRotation);
+    syncIconRotation.value = withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) });
+  }, [refreshing, syncIconRotation]);
+
+  const syncIconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${syncIconRotation.value}deg` }],
+  }));
 
   const onRefresh = useCallback(async () => {
     const currentRunId = syncRunIdRef.current + 1;
@@ -383,7 +411,10 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
 
   const renderActionRow = () => (
     <View className="bg-background-0 px-4 pb-2 pt-1">
-      <VStack space="sm" className="rounded-lg bg-background-50 px-4 py-3">
+      <Animated.View
+        className="rounded-lg bg-background-50 px-4 py-3"
+        layout={LinearTransition.duration(180)}
+      >
         <HStack className="items-center justify-between">
           <VStack space="xs">
             <Text className="text-sm font-semibold text-typography-900">Server Workflows</Text>
@@ -396,7 +427,9 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
               disabled={refreshing}
               onPress={onRefresh}
             >
-              <ButtonIcon as={RefreshCw} />
+              <Animated.View style={syncIconAnimatedStyle}>
+                <ButtonIcon as={RefreshCw} />
+              </Animated.View>
               <ButtonText>{refreshing ? 'Syncing' : 'Sync'}</ButtonText>
             </Button>
             <Button
@@ -412,20 +445,17 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
           </HStack>
         </HStack>
         {refreshing && !!syncProgressText && (
-          <Text className="text-xs text-typography-500">{syncProgressText}</Text>
+          <Animated.View
+            className="pt-1"
+            layout={LinearTransition.duration(180)}
+            entering={FadeIn.duration(140)}
+            exiting={FadeOut.duration(120)}
+          >
+            <Text className="text-xs text-typography-500">{syncProgressText}</Text>
+          </Animated.View>
         )}
-      </VStack>
+      </Animated.View>
     </View>
-  );
-
-  const refreshControl = (
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      tintColor={refreshControlColor}
-      colors={[refreshControlColor]}
-      progressBackgroundColor={progressBgColor}
-    />
   );
 
   const renderMainContent = () => {
@@ -434,12 +464,11 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
         <ScrollView
           className="flex-1"
           contentContainerClassName="items-center px-5 pb-6"
-          refreshControl={refreshControl}
         >
           <WorkflowEmptyState
             icon={ServerCrash}
             title="No Synced Server Workflows"
-            description="Tap Sync above or pull down to refresh."
+            description="Tap Sync above to refresh."
             align="top"
           >
             <VStack space="xs" className="w-full rounded-lg bg-background-50 px-4 py-3">
@@ -478,7 +507,6 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerClassName="px-2.5 pb-8 pt-2"
-        refreshControl={refreshControl}
         className="flex-1"
       />
     );

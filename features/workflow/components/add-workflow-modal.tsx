@@ -91,7 +91,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.8,
