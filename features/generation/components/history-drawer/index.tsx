@@ -97,7 +97,12 @@ export function HistoryDrawer({
       // Delete both media files and their metadata files
       for (const url of targets) {
         // Delete the media file
-        new File(url).delete();
+        try {
+          new File(url).delete();
+        } catch (error) {
+          void error;
+          continue;
+        }
         // Delete the metadata file
         try {
           new File(`${url}.json`).delete();
