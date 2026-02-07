@@ -1,21 +1,11 @@
-import { View } from '@/components/ui/view';
-import { WebView } from 'react-native-webview';
+import { WebViewPage } from '@/components/common/webview-page';
 
 export default function TermsScreen() {
   return (
-    <View className="flex-1 bg-background-0">
-      <WebView
-        className="flex-1"
-        source={{
-          uri: 'https://shunl12324.github.io/comfy-portal/terms',
-        }}
-        cacheEnabled={false}
-        cacheMode="LOAD_NO_CACHE"
-        incognito={true}
-        style={{
-          backgroundColor: 'transparent',
-        }}
-      />
-    </View>
+    <WebViewPage
+      uri="https://shunl12324.github.io/comfy-portal/terms"
+      loadingTitle="Loading Terms of Service..."
+      slowLoadingTitle="Terms of Service is taking longer than expected"
+    />
   );
 }

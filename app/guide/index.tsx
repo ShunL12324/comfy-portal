@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { WebViewPage } from '@/components/common/webview-page';
 import { HStack } from '@/components/ui/hstack';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -6,44 +7,28 @@ import { VStack } from '@/components/ui/vstack';
 import React, { useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { SceneMap, TabView } from 'react-native-tab-view';
-import { WebView } from 'react-native-webview';
 
 const LocalServerGuide = () => (
-  <WebView
-    className="flex-1 bg-background-0"
-    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
-    source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/local-server',
-    }}
-    cacheEnabled={false}
-    cacheMode="LOAD_NO_CACHE"
-    incognito={true}
+  <WebViewPage
+    uri="https://shunl12324.github.io/comfy-portal/guide/local-server"
+    loadingTitle="Loading Local Server Guide..."
+    slowLoadingTitle="Local Server Guide is taking longer than expected"
   />
 );
 
 const RemoteServerGuide = () => (
-  <WebView
-    className="flex-1 bg-background-0"
-    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
-    source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server',
-    }}
-    cacheEnabled={false}
-    cacheMode="LOAD_NO_CACHE"
-    incognito={true}
+  <WebViewPage
+    uri="https://shunl12324.github.io/comfy-portal/guide/remote-server"
+    loadingTitle="Loading Remote Server Guide..."
+    slowLoadingTitle="Remote Server Guide is taking longer than expected"
   />
 );
 
 const RunPodServerGuide = () => (
-  <WebView
-    className="flex-1 bg-background-0"
-    style={{ backgroundColor: 'rgb(var(--color-background-0))' }}
-    source={{
-      uri: 'https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod',
-    }}
-    cacheEnabled={false}
-    cacheMode="LOAD_NO_CACHE"
-    incognito={true}
+  <WebViewPage
+    uri="https://shunl12324.github.io/comfy-portal/guide/remote-server-runpod"
+    loadingTitle="Loading RunPod Server Guide..."
+    slowLoadingTitle="RunPod Server Guide is taking longer than expected"
   />
 );
 
