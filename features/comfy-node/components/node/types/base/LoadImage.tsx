@@ -46,7 +46,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
 
   useEffect(() => {
     progressWidth.value = withTiming(uploadProgress * 100, { duration: 300 });
-  }, [uploadProgress]);
+  }, [uploadProgress, progressWidth]);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,7 +60,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
         return;
       }
 
-      const baseUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/api/view');
+      const baseUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/view');
       const params = new URLSearchParams();
       params.append('type', 'input');
       params.append('filename', inputImage);
@@ -113,7 +113,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
       if (error instanceof Error && error.message.includes('canceled')) {
         // Upload canceled, do nothing
       } else {
-        showToast.error('Error uploading image', undefined, safeAreaInsets.top + 8);
+        showToast.error('Error uploading image', error instanceof Error ? error.message : undefined, safeAreaInsets.top + 8);
       }
     } finally {
       setIsUploading(false);

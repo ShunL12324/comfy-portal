@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { loadHistoryMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { History } from 'lucide-react-native';
@@ -41,7 +41,7 @@ export function HistoryDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
 
-  const [mediaItems, setMediaItems] = useState<Array<{ url: string; timestamp: number }>>([]);
+  const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | 'selection' | null>(null);
 
@@ -95,16 +95,22 @@ export function HistoryDrawer({
       const targets = deleteTarget === 'selection' ? selectedMedia : [deleteTarget];
 
       // Delete both media files and their metadata files
-      await Promise.all(
-        targets.map(async (url) => {
-          // Delete the media file
-          await FileSystem.deleteAsync(url);
-          // Delete the metadata file
-          await FileSystem.deleteAsync(`${url}.json`).catch(() => {
-            // Ignore error if metadata file doesn't exist
-          });
-        }),
-      );
+      for (const url of targets) {
+        // Delete the media file
+        try {
+          new File(url).delete();
+        } catch (error) {
+          void error;
+          continue;
+        }
+        // Delete the metadata file
+        try {
+          new File(`${url}.json`).delete();
+        } catch (error) {
+          void error;
+          // Ignore error if metadata file doesn't exist
+        }
+      }
 
       // Refresh media
       const updatedMedia = await loadHistoryMedia(serverId, workflowId);
@@ -150,7 +156,7 @@ export function HistoryDrawer({
     } catch (error) {
       console.error('Failed to share media:', error);
     }
-  }, [selectedMedia]);
+  }, [insets.top, selectedMedia]);
 
   const handleSaveSelected = useCallback(async () => {
     if (selectedMedia.length === 0) return;
@@ -176,7 +182,7 @@ export function HistoryDrawer({
       console.error('Failed to save media:', error);
       showToast.error('Save Failed', 'Failed to save some media', insets.top + 8);
     }
-  }, [selectedMedia]);
+  }, [insets.top, selectedMedia]);
 
   const handleDeleteItem = useCallback((url: string) => {
     setDeleteTarget(url);
@@ -194,7 +200,7 @@ export function HistoryDrawer({
         onDelete={() => handleDeleteItem(item.url)}
       />
     ),
-    [isSelectionMode, selectedMedia, onSelectMedia, handleToggleSelect],
+    [isSelectionMode, selectedMedia, onSelectMedia, handleToggleSelect, handleDeleteItem],
   );
 
   const handleLoadMore = useCallback(() => {

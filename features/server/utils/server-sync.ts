@@ -1,6 +1,6 @@
 import { Model, Server } from '@/features/server/types';
 import { buildServerUrl, fetchWithAuth } from '@/services/network';
-import * as FileSystem from 'expo-file-system';
+import { Directory, EncodingType, File, Paths } from 'expo-file-system';
 
 export interface ServerStatus {
   isOnline: boolean;
@@ -37,9 +37,9 @@ async function savePreviewImage(
   modelName: string,
 ): Promise<string | null> {
   try {
-    const previewDir = `${FileSystem.documentDirectory}server/${server.id}/models/${folderName}`;
-    await FileSystem.makeDirectoryAsync(previewDir, { intermediates: true });
-    const previewPath = `${previewDir}/${modelName.split('.')[0]}.webp`;
+    const previewDir = new Directory(Paths.document, 'server', server.id, 'models', folderName);
+    previewDir.create({ intermediates: true, idempotent: true });
+    const previewFile = new File(previewDir, `${modelName.split('.')[0]}.webp`);
 
     const arrayBuffer = await previewResponse.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
@@ -54,12 +54,9 @@ async function savePreviewImage(
 
     const base64 = btoa(binary);
 
-    await FileSystem.writeAsStringAsync(
-      previewPath,
-      base64,
-      { encoding: FileSystem.EncodingType.Base64 }
-    );
-    return previewPath;
+    previewFile.create({ intermediates: true, overwrite: true });
+    previewFile.write(base64, { encoding: EncodingType.Base64 });
+    return previewFile.uri;
   } catch (error) {
     console.warn('Failed to save preview image:', error);
     return null;
@@ -152,6 +149,7 @@ export async function scanServerModels(
         isWindowsServer = systemStats.system?.os === 'nt';
       }
     } catch (error) {
+      void error;
       // Removed system stats error log
     }
     // --- End /system_stats attempt ---
@@ -169,7 +167,8 @@ export async function scanServerModels(
           isCPEEnabled = true;
         }
       }
-    } catch (err) {
+    } catch (error) {
+      void error;
       // Removed extensions error log
     }
     // --- End /extensions attempt ---

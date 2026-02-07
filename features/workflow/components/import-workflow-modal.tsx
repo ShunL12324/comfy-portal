@@ -14,7 +14,7 @@ import { showToast } from '@/utils/toast';
 import * as ExpoClipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { CheckCircle, Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -40,7 +40,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       setName(name.slice(0, 50));
       showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
     }
-  }, [name]);
+  }, [insets.top, name]);
 
   const handleAdd = async () => {
     if (!name.trim()) {
@@ -57,17 +57,13 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
     let finalThumbnail = '';
     if (thumbnail) {
       const ext = thumbnail.split('.').pop();
-      const newPath = `${FileSystem.documentDirectory}workflows/${workflowId}/thumbnail.${ext}`;
+      const workflowDir = new Directory(Paths.document, 'workflows', workflowId);
+      const thumbnailFile = new File(workflowDir, `thumbnail.${ext}`);
 
       try {
-        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}workflows/${workflowId}`, {
-          intermediates: true,
-        });
-        await FileSystem.copyAsync({
-          from: thumbnail,
-          to: newPath,
-        });
-        finalThumbnail = newPath;
+        workflowDir.create({ intermediates: true, idempotent: true });
+        new File(thumbnail).copy(thumbnailFile);
+        finalThumbnail = thumbnailFile.uri;
       } catch (error) {
         console.error('Failed to save thumbnail:', error);
       }
@@ -142,7 +138,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
         return;
       }
 
-      const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const fileContent = await new File(result.assets[0].uri).text();
       const jsonData = JSON.parse(fileContent);
 
       setWorkflowData({

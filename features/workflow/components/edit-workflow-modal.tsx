@@ -12,7 +12,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { useResolvedTheme } from '@/store/theme';
 import { showToast } from '@/utils/toast';
-import * as FileSystem from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -26,21 +26,24 @@ interface EditWorkflowModalProps {
 
 export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowModalProps) {
   const workflow = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
+  const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
   const [name, setName] = useState(workflow?.name || '');
   const [thumbnail, setThumbnail] = useState(workflow?.thumbnail || '');
   const [error, setError] = useState('');
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
   const theme = useResolvedTheme();
   const activeTheme = (theme ?? 'light') as keyof typeof Colors;
   const insets = useSafeAreaInsets();
-  if (!workflow) return null;
 
   useEffect(() => {
     if (name.trim().length > 50) {
       setName(name.slice(0, 50));
       showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
     }
-  }, [name]);
+  }, [insets.top, name]);
+
+  if (!workflow) return null;
 
   const handleUpdate = async () => {
     if (!name.trim()) {
@@ -51,17 +54,13 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
     let finalThumbnail = thumbnail;
     if (thumbnail && thumbnail !== workflow.thumbnail) {
       const ext = thumbnail.split('.').pop();
-      const newPath = `${FileSystem.documentDirectory}workflows/${workflow.id}/thumbnail.${ext}`;
+      const workflowDir = new Directory(Paths.document, 'workflows', workflow.id);
+      const thumbnailFile = new File(workflowDir, `thumbnail.${ext}`);
 
       try {
-        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}workflows/${workflow.id}`, {
-          intermediates: true,
-        });
-        await FileSystem.copyAsync({
-          from: thumbnail,
-          to: newPath,
-        });
-        finalThumbnail = newPath;
+        workflowDir.create({ intermediates: true, idempotent: true });
+        new File(thumbnail).copy(thumbnailFile);
+        finalThumbnail = thumbnailFile.uri;
       } catch (error) {
         console.error('Failed to save thumbnail:', error);
       }
@@ -117,9 +116,6 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
     setError('');
     onClose();
   };
-
-  const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
   const handleDelete = () => {
     removeWorkflow(workflow.id);
