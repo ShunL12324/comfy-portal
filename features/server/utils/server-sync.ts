@@ -1,6 +1,6 @@
 import { Model, Server } from '@/features/server/types';
 import { buildServerUrl, fetchWithAuth } from '@/services/network';
-import { Directory, EncodingType, File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 
 export interface ServerStatus {
   isOnline: boolean;
@@ -55,7 +55,7 @@ async function savePreviewImage(
     const base64 = btoa(binary);
 
     previewFile.create({ intermediates: true, overwrite: true });
-    previewFile.write(base64, { encoding: EncodingType.Base64 });
+    previewFile.write(base64, { encoding: 'base64' });
     return previewFile.uri;
   } catch (error) {
     console.warn('Failed to save preview image:', error);
