@@ -1,5 +1,5 @@
 import { useServersStore } from "@/features/server/stores/server-store";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { buildServerUrl, fetchWithAuth } from "./network";
 
 interface UploadImageResponse {
@@ -69,7 +69,10 @@ export const uploadImage = (
   let task: FileSystem.UploadTask | null = null;
 
   const promise = (async () => {
-    const url = await buildServerUrl(server.useSSL, server.host, server.port, '/upload/image');
+    const uploadPath = server.token
+      ? `/upload/image?token=${encodeURIComponent(server.token)}`
+      : '/upload/image';
+    const url = await buildServerUrl(server.useSSL, server.host, server.port, uploadPath);
 
     task = FileSystem.createUploadTask(
       url,
@@ -81,6 +84,11 @@ export const uploadImage = (
           type: 'input',
           overwrite: 'true',
         },
+        headers: server.token
+          ? {
+            Authorization: `Bearer ${server.token}`,
+          }
+          : undefined,
         mimeType: resolveImageMimeType(fileName, mimeType),
         httpMethod: 'POST',
       },
@@ -94,7 +102,8 @@ export const uploadImage = (
     const uploadResult = await task.uploadAsync();
 
     if (!uploadResult || uploadResult.status !== 200) {
-      throw new Error('Failed to upload image');
+      const details = uploadResult?.body?.slice(0, 200);
+      throw new Error(`Failed to upload image (${uploadResult?.status ?? 'unknown'}): ${details || 'empty response'}`);
     }
 
     const data = JSON.parse(uploadResult.body);
@@ -106,6 +115,9 @@ export const uploadImage = (
     }
     if (data.type) {
       params.append('type', data.type);
+    }
+    if (server.token) {
+      params.append('token', server.token);
     }
     params.append('preview', 'webp;90');
     params.append('channel', 'rgba');
@@ -205,7 +217,7 @@ export const getAndConvertWorkflow = async (serverId: string, filename: string):
         if (errorJson.details) {
           errorDetails += ` (Details: ${errorJson.details})`;
         }
-      } catch (e) {
+      } catch {
         // Not a JSON error response, use the raw text
       }
       throw new Error(`Failed to get and convert workflow: ${response.status} ${errorDetails}`);
