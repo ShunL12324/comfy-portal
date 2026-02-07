@@ -1,5 +1,5 @@
+import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Icon } from '@/components/ui/icon';
-import { Menu, MenuItem, MenuItemLabel } from '@/components/ui/menu';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
@@ -9,6 +9,7 @@ import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
 import { showToast } from '@/utils/toast';
+import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -40,6 +41,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
   const [image, setImage] = useState<string | null>(null);
   const safeAreaInsets = useSafeAreaInsets();
   const cancelUploadRef = useRef<(() => Promise<void>) | null>(null);
+  const sourcePickerModalRef = useRef<BottomSheetModal>(null);
 
   // Animated value for progress
   const progressWidth = useSharedValue(0);
@@ -199,100 +201,121 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     updateNodeInput(workflowId, node.id, 'image', '');
   };
 
+  const handleOpenSourcePicker = () => {
+    if (isUploading) return;
+    sourcePickerModalRef.current?.present();
+  };
+
+  const handleCloseSourcePicker = () => {
+    sourcePickerModalRef.current?.dismiss();
+  };
+
   return (
     <BaseNode node={node}>
       <SubItem title="image">
-        <Menu
-          placement="bottom"
-          className="rounded-xl border border-background-200 bg-background-100 p-1"
-          trigger={({ ...triggerProps }) => (
-            <Pressable
-              {...triggerProps}
-              onPress={isUploading ? undefined : triggerProps.onPress}
-              className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
-            >
-              {image ? (
-                <>
-                  <Image
-                    source={{ uri: image }}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: 12,
-                    }}
-                    contentFit="contain"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                  />
-                  <Pressable
-                    onPress={handleClearImage}
-                    className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
-                  >
-                    <Icon as={X} className="h-4 w-4 text-white" />
-                  </Pressable>
-                </>
-              ) : !isUploading ? (
-                <VStack space="md" className="h-full w-full items-center justify-center">
-                  <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
-                  <Text size="sm" className="text-typography-500">
-                    Upload Image
-                  </Text>
-                </VStack>
-              ) : null}
-              {isUploading && (
-                <VStack space="sm" className="absolute inset-0 items-center justify-center rounded-xl bg-black/50 p-4">
-                  <Icon as={ImageIcon} className="h-8 w-8 text-typography-600 mb-2" />
-                  <Text size="sm" className="text-typography-600 font-medium">
-                    Uploading... {Math.round(uploadProgress * 100)}%
-                  </Text>
-                  <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
-                    <Animated.View
-                      className="h-full bg-primary-500 rounded-full"
-                      style={animatedProgressStyle}
-                    />
-                  </View>
-                  <Pressable
-                    onPress={handleCancelUpload}
-                    className="mt-2 rounded-full bg-white/20 p-2 active:bg-white/30"
-                  >
-                    <Icon as={X} className="h-5 w-5 text-white" />
-                  </Pressable>
-                </VStack>
-              )}
-            </Pressable>
-          )}
+        <Pressable
+          onPress={handleOpenSourcePicker}
+          className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
         >
-          <MenuItem
-            key="library"
-            textValue="Photo Library"
-            onPress={() => {
-              void handlePickFromLibrary();
-            }}
-            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
-          >
-            <MenuItemLabel size="sm">Photo Library</MenuItemLabel>
-          </MenuItem>
-          <MenuItem
-            key="files"
-            textValue="Files"
-            onPress={() => {
-              void handlePickFromFiles();
-            }}
-            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
-          >
-            <MenuItemLabel size="sm">Files</MenuItemLabel>
-          </MenuItem>
-          <MenuItem
-            key="camera"
-            textValue="Camera"
-            onPress={() => {
-              void handlePickFromCamera();
-            }}
-            className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
-          >
-            <MenuItemLabel size="sm">Camera</MenuItemLabel>
-          </MenuItem>
-        </Menu>
+          {image ? (
+            <>
+              <Image
+                source={{ uri: image }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 12,
+                }}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+              <Pressable
+                onPress={(event) => {
+                  event.stopPropagation();
+                  handleClearImage();
+                }}
+                className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
+              >
+                <Icon as={X} className="h-4 w-4 text-white" />
+              </Pressable>
+            </>
+          ) : !isUploading ? (
+            <VStack space="md" className="h-full w-full items-center justify-center">
+              <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
+              <Text size="sm" className="text-typography-500">
+                Upload Image
+              </Text>
+            </VStack>
+          ) : null}
+          {isUploading && (
+            <VStack space="sm" className="absolute inset-0 items-center justify-center rounded-xl bg-black/50 p-4">
+              <Icon as={ImageIcon} className="h-8 w-8 text-typography-600 mb-2" />
+              <Text size="sm" className="text-typography-600 font-medium">
+                Uploading... {Math.round(uploadProgress * 100)}%
+              </Text>
+              <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
+                <Animated.View
+                  className="h-full bg-primary-500 rounded-full"
+                  style={animatedProgressStyle}
+                />
+              </View>
+              <Pressable
+                onPress={(event) => {
+                  event.stopPropagation();
+                  void handleCancelUpload();
+                }}
+                className="mt-2 rounded-full bg-white/20 p-2 active:bg-white/30"
+              >
+                <Icon as={X} className="h-5 w-5 text-white" />
+              </Pressable>
+            </VStack>
+          )}
+        </Pressable>
+
+        <ThemedBottomSheetModal
+          ref={sourcePickerModalRef}
+          index={0}
+          snapPoints={['34%']}
+          topInset={safeAreaInsets.top}
+          enablePanDownToClose
+        >
+          <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: safeAreaInsets.bottom + 16 }}>
+            <VStack space="sm">
+              <Text className="mb-1 text-sm font-semibold text-typography-900">Upload Image</Text>
+
+              <Pressable
+                onPress={() => {
+                  handleCloseSourcePicker();
+                  void handlePickFromLibrary();
+                }}
+                className="rounded-xl bg-background-50 px-4 py-3"
+              >
+                <Text className="text-sm text-typography-900">Photo Library</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  handleCloseSourcePicker();
+                  void handlePickFromFiles();
+                }}
+                className="rounded-xl bg-background-50 px-4 py-3"
+              >
+                <Text className="text-sm text-typography-900">Files</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  handleCloseSourcePicker();
+                  void handlePickFromCamera();
+                }}
+                className="rounded-xl bg-background-50 px-4 py-3"
+              >
+                <Text className="text-sm text-typography-900">Camera</Text>
+              </Pressable>
+            </VStack>
+          </BottomSheetView>
+        </ThemedBottomSheetModal>
       </SubItem>
     </BaseNode>
   );
