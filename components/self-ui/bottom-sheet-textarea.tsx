@@ -31,13 +31,15 @@ export const BottomSheetTextarea: React.FC<BottomSheetTextareaProps> = ({
         {
           backgroundColor: inputBackgroundColor,
           color: inputTextColor,
-          minHeight,
+          // Keep a stable textarea height to avoid layout jitter while typing in bottom sheets.
+          height: minHeight,
         },
         inputStyle,
       ]}
       placeholder={placeholder}
       placeholderTextColor={placeholderTextColor}
       multiline
+      scrollEnabled
       textAlignVertical="top"
       {...restProps}
     />

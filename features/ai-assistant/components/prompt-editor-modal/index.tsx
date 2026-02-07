@@ -40,9 +40,11 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
     const [value, setValue] = useState('');
     const [title, setTitle] = useState('Edit Prompt');
     const [onSaveCallback, setOnSaveCallback] = useState<((value: string) => void) | null>(null);
+    const [sessionKey, setSessionKey] = useState(0);
 
     useImperativeHandle(ref, () => ({
       present: (options) => {
+        setSessionKey((prev) => prev + 1);
         setValue(options.initialValue);
         setTitle(options.title || 'Edit Prompt');
         setOnSaveCallback(() => options.onSave);
@@ -102,18 +104,24 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
       >
         <View className="flex-1">
           {/* Header */}
-          <HStack className="items-center justify-between px-4 pb-3">
-            <Pressable onPress={handleClose} className="p-1">
-              <Icon as={X} size="md" className="text-typography-500" />
-            </Pressable>
+          <HStack className="items-center px-4 pb-3">
+            <View className="flex-1 items-start">
+              <Pressable onPress={handleClose} className="p-1">
+                <Icon as={X} size="md" className="text-typography-500" />
+              </Pressable>
+            </View>
 
-            <Text className="text-base font-semibold text-typography-900">{title}</Text>
+            <View className="flex-1 items-center">
+              <Text className="text-base font-semibold text-typography-900" numberOfLines={1}>
+                {title}
+              </Text>
+            </View>
 
-            <HStack space="sm" className="items-center">
+            <View className="flex-1 items-end">
               <Button size="sm" variant="solid" action="primary" onPress={handleDone} className="rounded-lg px-4">
                 <ButtonText>Done</ButtonText>
               </Button>
-            </HStack>
+            </View>
           </HStack>
 
           {/* Mode Selector */}
@@ -134,7 +142,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
             }}
           >
             {mode === 'Text' && (
-              <TextMode value={value} onChange={handleValueChange} />
+              <TextMode initialValue={value} onChange={handleValueChange} inputKey={sessionKey} />
             )}
             {mode === 'Tag' && (
               <TagMode value={value} onChange={handleValueChange} />
