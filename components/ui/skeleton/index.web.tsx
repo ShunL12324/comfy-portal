@@ -10,7 +10,7 @@ type ISkeletonProps = React.ComponentPropsWithoutRef<'div'> &
   };
 
 const Skeleton = React.forwardRef<HTMLDivElement, ISkeletonProps>(
-  (
+  function Skeleton(
     {
       className,
       variant = 'rounded',
@@ -20,8 +20,8 @@ const Skeleton = React.forwardRef<HTMLDivElement, ISkeletonProps>(
       isLoaded = false,
       ...props
     },
-    ref,
-  ) => {
+    ref
+  ) {
     if (!isLoaded) {
       return (
         <div
@@ -37,7 +37,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, ISkeletonProps>(
     } else {
       return children;
     }
-  },
+  }
 );
 
 type ISkeletonTextProps = React.ComponentPropsWithoutRef<'div'> &
@@ -48,7 +48,18 @@ type ISkeletonTextProps = React.ComponentPropsWithoutRef<'div'> &
   };
 
 const SkeletonText = React.forwardRef<HTMLDivElement, ISkeletonTextProps>(
-  ({ className, _lines, isLoaded = false, startColor = 'bg-background-200', gap = 2, children, ...props }, ref) => {
+  function SkeletonText(
+    {
+      className,
+      _lines,
+      isLoaded = false,
+      startColor = 'bg-background-200',
+      gap = 2,
+      children,
+      ...props
+    },
+    ref
+  ) {
     if (!isLoaded) {
       if (_lines) {
         return (
@@ -83,7 +94,7 @@ const SkeletonText = React.forwardRef<HTMLDivElement, ISkeletonTextProps>(
     } else {
       return children;
     }
-  },
+  }
 );
 
 Skeleton.displayName = 'Skeleton';

@@ -11,9 +11,18 @@ cssInterop(ActivityIndicator, {
 const spinnerStyle = tva({});
 
 const Spinner = React.forwardRef<
-  React.ElementRef<typeof ActivityIndicator>,
+  React.ComponentRef<typeof ActivityIndicator>,
   React.ComponentProps<typeof ActivityIndicator>
->(({ className, color, focusable = false, 'aria-label': ariaLabel = 'loading', ...props }, ref) => {
+>(function Spinner(
+  {
+    className,
+    color,
+    focusable = false,
+    'aria-label': ariaLabel = 'loading',
+    ...props
+  },
+  ref
+) {
   return (
     <ActivityIndicator
       ref={ref}

@@ -2,21 +2,41 @@
 import React from 'react';
 import { createAlertDialog } from '@gluestack-ui/core/alert-dialog/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { withStyleContext, useStyleContext } from '@gluestack-ui/utils/nativewind-utils';
+import {
+  withStyleContext,
+  useStyleContext,
+} from '@gluestack-ui/utils/nativewind-utils';
 
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
-import { Motion, AnimatePresence, createMotionAnimatedComponent } from '@legendapp/motion';
-import { View, Pressable, ScrollView } from 'react-native';
-
-const AnimatedPressable = createMotionAnimatedComponent(Pressable);
+import {
+  Motion,
+  AnimatePresence,
+  createMotionAnimatedComponent,
+  MotionComponentProps,
+} from '@legendapp/motion';
+import { View, Pressable, ScrollView, ViewStyle } from 'react-native';
 
 const SCOPE = 'ALERT_DIALOG';
 
+const RootComponent = withStyleContext(View, SCOPE);
+
+type IMotionViewProps = React.ComponentProps<typeof View> &
+  MotionComponentProps<typeof View, ViewStyle, unknown, unknown, unknown>;
+
+const MotionView = Motion.View as React.ComponentType<IMotionViewProps>;
+
+type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &
+  MotionComponentProps<typeof Pressable, ViewStyle, unknown, unknown, unknown>;
+
+const AnimatedPressable = createMotionAnimatedComponent(
+  Pressable
+) as React.ComponentType<IAnimatedPressableProps>;
+
 const UIAccessibleAlertDialog = createAlertDialog({
-  Root: withStyleContext(View, SCOPE),
+  Root: RootComponent,
   Body: ScrollView,
-  Content: Motion.View,
+  Content: MotionView,
   CloseButton: Pressable,
   Header: View,
   Footer: View,
@@ -24,11 +44,11 @@ const UIAccessibleAlertDialog = createAlertDialog({
   AnimatePresence: AnimatePresence,
 });
 
-cssInterop(Motion.View, { className: 'style' });
+cssInterop(MotionView, { className: 'style' });
 cssInterop(AnimatedPressable, { className: 'style' });
 
 const alertDialogStyle = tva({
-  base: 'group/modal h-full w-full items-center justify-center web:pointer-events-none',
+  base: 'group/modal w-full h-full justify-center items-center web:pointer-events-none',
   parentVariants: {
     size: {
       xs: '',
@@ -41,7 +61,7 @@ const alertDialogStyle = tva({
 });
 
 const alertDialogContentStyle = tva({
-  base: 'overflow-hidden rounded-lg border border-outline-100 bg-background-0 p-6',
+  base: 'bg-background-0 rounded-lg overflow-hidden border border-outline-100 p-6',
   parentVariants: {
     size: {
       xs: 'w-[60%] max-w-[360px]',
@@ -54,62 +74,77 @@ const alertDialogContentStyle = tva({
 });
 
 const alertDialogCloseButtonStyle = tva({
-  base: 'group/alert-dialog-close-button z-10 rounded-sm p-2 outline-0 web:cursor-pointer data-[focus-visible=true]:bg-background-100',
+  base: 'group/alert-dialog-close-button z-10 rounded-sm p-2 data-[focus-visible=true]:bg-background-100 web:cursor-pointer outline-0',
 });
 
 const alertDialogHeaderStyle = tva({
-  base: 'flex-row items-center justify-between',
+  base: 'justify-between items-center flex-row',
 });
 
 const alertDialogFooterStyle = tva({
-  base: 'flex-row items-center justify-end gap-3',
+  base: 'flex-row justify-end items-center gap-3',
 });
 
 const alertDialogBodyStyle = tva({ base: '' });
 
 const alertDialogBackdropStyle = tva({
-  base: 'absolute bottom-0 left-0 right-0 top-0 bg-background-dark web:cursor-default',
+  base: 'absolute left-0 top-0 right-0 bottom-0 bg-background-dark web:cursor-default',
 });
 
-type IAlertDialogProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog> &
+type IAlertDialogProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog
+> &
   VariantProps<typeof alertDialogStyle>;
 
-type IAlertDialogContentProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.Content> &
+type IAlertDialogContentProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.Content
+> &
   VariantProps<typeof alertDialogContentStyle> & { className?: string };
 
-type IAlertDialogCloseButtonProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.CloseButton> &
+type IAlertDialogCloseButtonProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.CloseButton
+> &
   VariantProps<typeof alertDialogCloseButtonStyle>;
 
-type IAlertDialogHeaderProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.Header> &
+type IAlertDialogHeaderProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.Header
+> &
   VariantProps<typeof alertDialogHeaderStyle>;
 
-type IAlertDialogFooterProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.Footer> &
+type IAlertDialogFooterProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.Footer
+> &
   VariantProps<typeof alertDialogFooterStyle>;
 
-type IAlertDialogBodyProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.Body> &
+type IAlertDialogBodyProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.Body
+> &
   VariantProps<typeof alertDialogBodyStyle>;
 
-type IAlertDialogBackdropProps = React.ComponentPropsWithoutRef<typeof UIAccessibleAlertDialog.Backdrop> &
+type IAlertDialogBackdropProps = React.ComponentPropsWithoutRef<
+  typeof UIAccessibleAlertDialog.Backdrop
+> &
   VariantProps<typeof alertDialogBackdropStyle> & { className?: string };
 
-const AlertDialog = React.forwardRef<React.ElementRef<typeof UIAccessibleAlertDialog>, IAlertDialogProps>(
-  ({ className, size = 'md', ...props }, ref) => {
-    return (
-      <UIAccessibleAlertDialog
-        ref={ref}
-        {...props}
-        className={alertDialogStyle({ class: className })}
-        context={{ size }}
-        pointerEvents="box-none"
-      />
-    );
-  },
-);
+const AlertDialog = React.forwardRef<
+  React.ComponentRef<typeof UIAccessibleAlertDialog>,
+  IAlertDialogProps
+>(function AlertDialog({ className, size = 'md', ...props }, ref) {
+  return (
+    <UIAccessibleAlertDialog
+      ref={ref}
+      {...props}
+      className={alertDialogStyle({ class: className })}
+      context={{ size }}
+      pointerEvents="box-none"
+    />
+  );
+});
 
 const AlertDialogContent = React.forwardRef<
-  React.ElementRef<typeof UIAccessibleAlertDialog.Content>,
+  React.ComponentRef<typeof UIAccessibleAlertDialog.Content>,
   IAlertDialogContentProps
->(({ className, size, ...props }, ref) => {
+>(function AlertDialogContent({ className, size, ...props }, ref) {
   const { size: parentSize } = useStyleContext(SCOPE);
 
   return (
@@ -150,9 +185,9 @@ const AlertDialogContent = React.forwardRef<
 });
 
 const AlertDialogCloseButton = React.forwardRef<
-  React.ElementRef<typeof UIAccessibleAlertDialog.CloseButton>,
+  React.ComponentRef<typeof UIAccessibleAlertDialog.CloseButton>,
   IAlertDialogCloseButtonProps
->(({ className, ...props }, ref) => {
+>(function AlertDialogCloseButton({ className, ...props }, ref) {
   return (
     <UIAccessibleAlertDialog.CloseButton
       ref={ref}
@@ -165,9 +200,9 @@ const AlertDialogCloseButton = React.forwardRef<
 });
 
 const AlertDialogHeader = React.forwardRef<
-  React.ElementRef<typeof UIAccessibleAlertDialog.Header>,
+  React.ComponentRef<typeof UIAccessibleAlertDialog.Header>,
   IAlertDialogHeaderProps
->(({ className, ...props }, ref) => {
+>(function AlertDialogHeader({ className, ...props }, ref) {
   return (
     <UIAccessibleAlertDialog.Header
       ref={ref}
@@ -180,9 +215,9 @@ const AlertDialogHeader = React.forwardRef<
 });
 
 const AlertDialogFooter = React.forwardRef<
-  React.ElementRef<typeof UIAccessibleAlertDialog.Footer>,
+  React.ComponentRef<typeof UIAccessibleAlertDialog.Footer>,
   IAlertDialogFooterProps
->(({ className, ...props }, ref) => {
+>(function AlertDialogFooter({ className, ...props }, ref) {
   return (
     <UIAccessibleAlertDialog.Footer
       ref={ref}
@@ -194,24 +229,25 @@ const AlertDialogFooter = React.forwardRef<
   );
 });
 
-const AlertDialogBody = React.forwardRef<React.ElementRef<typeof UIAccessibleAlertDialog.Body>, IAlertDialogBodyProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <UIAccessibleAlertDialog.Body
-        ref={ref}
-        {...props}
-        className={alertDialogBodyStyle({
-          class: className,
-        })}
-      />
-    );
-  },
-);
+const AlertDialogBody = React.forwardRef<
+  React.ComponentRef<typeof UIAccessibleAlertDialog.Body>,
+  IAlertDialogBodyProps
+>(function AlertDialogBody({ className, ...props }, ref) {
+  return (
+    <UIAccessibleAlertDialog.Body
+      ref={ref}
+      {...props}
+      className={alertDialogBodyStyle({
+        class: className,
+      })}
+    />
+  );
+});
 
 const AlertDialogBackdrop = React.forwardRef<
-  React.ElementRef<typeof UIAccessibleAlertDialog.Backdrop>,
+  React.ComponentRef<typeof UIAccessibleAlertDialog.Backdrop>,
   IAlertDialogBackdropProps
->(({ className, ...props }, ref) => {
+>(function AlertDialogBackdrop({ className, ...props }, ref) {
   return (
     <UIAccessibleAlertDialog.Backdrop
       ref={ref}

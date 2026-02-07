@@ -4,7 +4,10 @@ import { Pressable } from 'react-native';
 import { View } from 'react-native';
 import React from 'react';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
-import { withStyleContext, useStyleContext } from '@gluestack-ui/utils/nativewind-utils';
+import {
+  withStyleContext,
+  useStyleContext,
+} from '@gluestack-ui/utils/nativewind-utils';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 
@@ -21,7 +24,7 @@ export const UISlider = createSlider({
 cssInterop(UISlider.Track, { className: 'style' });
 
 const sliderStyle = tva({
-  base: 'items-center justify-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
+  base: 'justify-center items-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
   variants: {
     orientation: {
       horizontal: 'w-full',
@@ -40,7 +43,7 @@ const sliderStyle = tva({
 });
 
 const sliderThumbStyle = tva({
-  base: 'absolute rounded-full bg-primary-500 shadow-hard-1 web:cursor-pointer data-[focus=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[active=true]:bg-primary-600 web:data-[active=true]:outline web:data-[active=true]:outline-4 web:data-[active=true]:outline-primary-400 data-[disabled=true]:bg-primary-500',
+  base: 'bg-primary-500 absolute rounded-full data-[focus=true]:bg-primary-600 data-[active=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[disabled=true]:bg-primary-500 web:cursor-pointer web:data-[active=true]:outline web:data-[active=true]:outline-4 web:data-[active=true]:outline-primary-400 shadow-hard-1',
 
   parentVariants: {
     size: {
@@ -52,7 +55,7 @@ const sliderThumbStyle = tva({
 });
 
 const sliderTrackStyle = tva({
-  base: 'overflow-hidden rounded-lg bg-background-300',
+  base: 'bg-background-300 rounded-lg overflow-hidden',
   parentVariants: {
     orientation: {
       horizontal: 'w-full',
@@ -139,7 +142,7 @@ const sliderTrackStyle = tva({
 });
 
 const sliderFilledTrackStyle = tva({
-  base: 'bg-primary-500 data-[focus=true]:bg-primary-600 data-[hover=true]:bg-primary-600 data-[active=true]:bg-primary-600',
+  base: 'bg-primary-500 data-[focus=true]:bg-primary-600 data-[active=true]:bg-primary-600 data-[hover=true]:bg-primary-600',
   parentVariants: {
     orientation: {
       horizontal: 'h-full',
@@ -148,92 +151,114 @@ const sliderFilledTrackStyle = tva({
   },
 });
 
-type ISliderProps = React.ComponentProps<typeof UISlider> & VariantProps<typeof sliderStyle>;
+type ISliderProps = React.ComponentProps<typeof UISlider> &
+  VariantProps<typeof sliderStyle>;
 
-const Slider = React.forwardRef<React.ElementRef<typeof UISlider>, ISliderProps>(
-  ({ className, size = 'md', orientation = 'horizontal', isReversed = false, ...props }, ref) => {
-    return (
-      <UISlider
-        ref={ref}
-        isReversed={isReversed}
-        orientation={orientation}
-        {...props}
-        className={sliderStyle({
-          orientation,
+const Slider = React.forwardRef<
+  React.ComponentRef<typeof UISlider>,
+  ISliderProps
+>(function Slider(
+  {
+    className,
+    size = 'md',
+    orientation = 'horizontal',
+    isReversed = false,
+    ...props
+  },
+  ref
+) {
+  return (
+    <UISlider
+      ref={ref}
+      isReversed={isReversed}
+      orientation={orientation}
+      {...props}
+      className={sliderStyle({
+        orientation,
+        isReversed,
+        class: className,
+      })}
+      context={{ size, orientation, isReversed }}
+    />
+  );
+});
+
+type ISliderThumbProps = React.ComponentProps<typeof UISlider.Thumb> &
+  VariantProps<typeof sliderThumbStyle>;
+
+const SliderThumb = React.forwardRef<
+  React.ComponentRef<typeof UISlider.Thumb>,
+  ISliderThumbProps
+>(function SliderThumb({ className, size, ...props }, ref) {
+  const { size: parentSize } = useStyleContext(SCOPE);
+
+  return (
+    <UISlider.Thumb
+      ref={ref}
+      {...props}
+      className={sliderThumbStyle({
+        parentVariants: {
+          size: parentSize,
+        },
+        size,
+        class: className,
+      })}
+    />
+  );
+});
+
+type ISliderTrackProps = React.ComponentProps<typeof UISlider.Track> &
+  VariantProps<typeof sliderTrackStyle>;
+
+const SliderTrack = React.forwardRef<
+  React.ComponentRef<typeof UISlider.Track>,
+  ISliderTrackProps
+>(function SliderTrack({ className, ...props }, ref) {
+  const {
+    orientation: parentOrientation,
+    size: parentSize,
+    isReversed,
+  } = useStyleContext(SCOPE);
+
+  return (
+    <UISlider.Track
+      ref={ref}
+      {...props}
+      className={sliderTrackStyle({
+        parentVariants: {
+          orientation: parentOrientation,
+          size: parentSize,
           isReversed,
-          class: className,
-        })}
-        context={{ size, orientation, isReversed }}
-      />
-    );
-  },
-);
+        },
+        class: className,
+      })}
+    />
+  );
+});
 
-type ISliderThumbProps = React.ComponentProps<typeof UISlider.Thumb> & VariantProps<typeof sliderThumbStyle>;
-
-const SliderThumb = React.forwardRef<React.ElementRef<typeof UISlider.Thumb>, ISliderThumbProps>(
-  ({ className, size, ...props }, ref) => {
-    const { size: parentSize } = useStyleContext(SCOPE);
-
-    return (
-      <UISlider.Thumb
-        ref={ref}
-        {...props}
-        className={sliderThumbStyle({
-          parentVariants: {
-            size: parentSize,
-          },
-          size,
-          class: className,
-        })}
-      />
-    );
-  },
-);
-
-type ISliderTrackProps = React.ComponentProps<typeof UISlider.Track> & VariantProps<typeof sliderTrackStyle>;
-
-const SliderTrack = React.forwardRef<React.ElementRef<typeof UISlider.Track>, ISliderTrackProps>(
-  ({ className, ...props }, ref) => {
-    const { orientation: parentOrientation, size: parentSize, isReversed } = useStyleContext(SCOPE);
-
-    return (
-      <UISlider.Track
-        ref={ref}
-        {...props}
-        className={sliderTrackStyle({
-          parentVariants: {
-            orientation: parentOrientation,
-            size: parentSize,
-            isReversed,
-          },
-          class: className,
-        })}
-      />
-    );
-  },
-);
-
-type ISliderFilledTrackProps = React.ComponentProps<typeof UISlider.FilledTrack> &
+type ISliderFilledTrackProps = React.ComponentProps<
+  typeof UISlider.FilledTrack
+> &
   VariantProps<typeof sliderFilledTrackStyle>;
 
-const SliderFilledTrack = React.forwardRef<React.ElementRef<typeof UISlider.FilledTrack>, ISliderFilledTrackProps>(
-  ({ className, ...props }, ref) => {
-    const { orientation: parentOrientation } = useStyleContext(SCOPE);
+const SliderFilledTrack = React.forwardRef<
+  React.ComponentRef<typeof UISlider.FilledTrack>,
+  ISliderFilledTrackProps
+>(function SliderFilledTrack({ className, ...props }, ref) {
+  const { orientation: parentOrientation } = useStyleContext(SCOPE);
 
-    return (
-      <UISlider.FilledTrack
-        ref={ref}
-        {...props}
-        className={sliderFilledTrackStyle({
-          parentVariants: {
-            orientation: parentOrientation,
-          },
-          class: className,
-        })}
-      />
-    );
-  },
-);
+  return (
+    <UISlider.FilledTrack
+      ref={ref}
+      {...props}
+      className={sliderFilledTrackStyle({
+        parentVariants: {
+          orientation: parentOrientation,
+        },
+        class: className,
+      })}
+    />
+  );
+});
 
 export { Slider, SliderThumb, SliderTrack, SliderFilledTrack };

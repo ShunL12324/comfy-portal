@@ -1,37 +1,45 @@
 'use client';
 import React from 'react';
 import { createTooltip } from '@gluestack-ui/core/tooltip/creator';
-import { View, Text } from 'react-native';
+import { View, Text, ViewStyle } from 'react-native';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
-import { Motion, AnimatePresence } from '@legendapp/motion';
+import {
+  Motion,
+  AnimatePresence,
+  MotionComponentProps,
+} from '@legendapp/motion';
 import { cssInterop } from 'nativewind';
+
+type IMotionViewProps = React.ComponentProps<typeof View> &
+  MotionComponentProps<typeof View, ViewStyle, unknown, unknown, unknown>;
+
+const MotionView = Motion.View as React.ComponentType<IMotionViewProps>;
+
 export const UITooltip = createTooltip({
   Root: withStyleContext(View),
-  Content: Motion.View,
+  Content: MotionView,
   Text: Text,
   AnimatePresence: AnimatePresence,
 });
 
-cssInterop(Motion.View, { className: 'style' });
+cssInterop(MotionView, { className: 'style' });
 
 const tooltipStyle = tva({
-  base: 'h-full w-full web:pointer-events-none',
+  base: 'w-full h-full web:pointer-events-none',
 });
 
 const tooltipContentStyle = tva({
-  base: 'rounded-sm bg-background-900 px-3 py-1 web:pointer-events-auto',
+  base: 'py-1 px-3 rounded-sm bg-background-900 web:pointer-events-auto',
 });
 
 const tooltipTextStyle = tva({
-  base: 'text-xs font-normal tracking-normal text-typography-50 web:select-none',
+  base: 'font-normal tracking-normal web:select-none text-xs text-typography-50',
 
   variants: {
     isTruncated: {
-      true: {
-        props: 'line-clamp-1 truncate',
-      },
+      true: 'line-clamp-1 truncate',
     },
     bold: {
       true: 'font-bold',
@@ -44,11 +52,11 @@ const tooltipTextStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      xs: 'text-xs',
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-      xl: 'text-xl',
+      'xs': 'text-xs',
+      'sm': 'text-sm',
+      'md': 'text-base',
+      'lg': 'text-lg',
+      'xl': 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -74,14 +82,23 @@ type ITooltipContentProps = React.ComponentProps<typeof UITooltip.Content> &
 type ITooltipTextProps = React.ComponentProps<typeof UITooltip.Text> &
   VariantProps<typeof tooltipTextStyle> & { className?: string };
 
-const Tooltip = React.forwardRef<React.ElementRef<typeof UITooltip>, ITooltipProps>(({ className, ...props }, ref) => {
-  return <UITooltip ref={ref} className={tooltipStyle({ class: className })} {...props} />;
+const Tooltip = React.forwardRef<
+  React.ComponentRef<typeof UITooltip>,
+  ITooltipProps
+>(function Tooltip({ className, ...props }, ref) {
+  return (
+    <UITooltip
+      ref={ref}
+      className={tooltipStyle({ class: className })}
+      {...props}
+    />
+  );
 });
 
 const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof UITooltip.Content>,
+  React.ComponentRef<typeof UITooltip.Content>,
   ITooltipContentProps & { className?: string }
->(({ className, ...props }, ref) => {
+>(function TooltipContent({ className, ...props }, ref) {
   return (
     <UITooltip.Content
       ref={ref}
@@ -95,10 +112,20 @@ const TooltipContent = React.forwardRef<
 });
 
 const TooltipText = React.forwardRef<
-  React.ElementRef<typeof UITooltip.Text>,
+  React.ComponentRef<typeof UITooltip.Text>,
   ITooltipTextProps & { className?: string }
->(({ size, className, ...props }, ref) => {
-  return <UITooltip.Text ref={ref} className={tooltipTextStyle({ size, class: className })} {...props} />;
+>(function TooltipText({ size, className, ...props }, ref) {
+  return (
+    <UITooltip.Text
+      ref={ref}
+      className={tooltipTextStyle({ size, class: className })}
+      {...props}
+    />
+  );
 });
+
+Tooltip.displayName = 'Tooltip';
+TooltipContent.displayName = 'TooltipContent';
+TooltipText.displayName = 'TooltipText';
 
 export { Tooltip, TooltipContent, TooltipText };
