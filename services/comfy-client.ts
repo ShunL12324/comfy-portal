@@ -1,7 +1,7 @@
 import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
 
 /**
@@ -121,7 +121,8 @@ export class ComfyClient {
       if (!this.isConnected()) {
         try {
           await this.connect();
-        } catch {
+        } catch (error) {
+          void error;
           this.scheduleReconnect();
         }
       }
@@ -259,6 +260,7 @@ export class ComfyClient {
               break;
           }
         } catch (error) {
+          void error;
           // Ignore parse errors for non-JSON messages
         }
       };

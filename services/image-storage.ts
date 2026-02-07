@@ -1,6 +1,6 @@
 import { Workflow } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
-import * as FileSystem from 'expo-file-system';
+import { Directory, EncodingType, File, Paths } from 'expo-file-system';
 
 interface SaveMediaOptions {
   serverId: string;
@@ -8,6 +8,18 @@ interface SaveMediaOptions {
   mediaUrl: string;
   workflow: Workflow;
   delete?: boolean;
+}
+
+function getGeneratedDir(serverId: string, workflowId: string) {
+  return new Directory(Paths.document, 'server', serverId, 'workflows', workflowId, 'generated');
+}
+
+function getThumbnailDir(serverId: string, workflowId: string) {
+  return new Directory(Paths.document, 'server', serverId, 'workflows', workflowId, 'thumbnail');
+}
+
+function ensureDirectory(dir: Directory) {
+  dir.create({ intermediates: true, idempotent: true });
 }
 
 export async function saveGeneratedMedia({
@@ -18,48 +30,47 @@ export async function saveGeneratedMedia({
   delete: shouldDelete,
 }: SaveMediaOptions) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
+    const generatedDir = getGeneratedDir(serverId, workflowId);
 
     if (shouldDelete) {
-      // Extract filename from path
-      const filename = mediaUrl.split('/').pop();
+      const filename = mediaUrl.split('/').pop()?.split('?')[0];
       if (!filename) throw new Error('Invalid media URL');
 
-      // Delete media and metadata
-      await FileSystem.deleteAsync(`${dirPath}/${filename}`);
-      await FileSystem.deleteAsync(`${dirPath}/${filename}.json`).catch(() => { });
+      new File(generatedDir, filename).delete();
+      try {
+        new File(generatedDir, `${filename}.json`).delete();
+      } catch (error) {
+        void error;
+        // Ignore if metadata file doesn't exist
+      }
       return;
     }
 
-    // Create directory if it doesn't exist
-    await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+    ensureDirectory(generatedDir);
 
-    // Generate unique filename
     const uuid = await Crypto.randomUUID();
     const timestamp = new Date().toISOString();
-    
-    // Get extension from original URL or default to png
     const originalExt = mediaUrl.split('.').pop()?.split('?')[0] || 'png';
     const filename = `${timestamp}-${uuid}.${originalExt}`;
 
-    // Download media
-    const filePath = `${dirPath}/${filename}`;
-    await FileSystem.downloadAsync(mediaUrl, filePath);
+    const mediaFile = new File(generatedDir, filename);
+    await File.downloadFileAsync(mediaUrl, mediaFile, { idempotent: true });
 
-    // Save metadata
-    const metadataPath = `${dirPath}/${filename}.json`;
+    const metadataFile = new File(generatedDir, `${filename}.json`);
+    metadataFile.create({ intermediates: true, overwrite: true });
+
     const metadata = {
       timestamp,
       workflow,
       originalUrl: mediaUrl,
     };
-    await FileSystem.writeAsStringAsync(
-      metadataPath,
-      JSON.stringify(metadata, null, 2),
-    );
+
+    metadataFile.write(JSON.stringify(metadata, null, 2), {
+      encoding: EncodingType.UTF8,
+    });
 
     return {
-      path: filePath,
+      path: mediaFile.uri,
       metadata,
     };
   } catch (error) {
@@ -70,36 +81,32 @@ export async function saveGeneratedMedia({
 
 export async function getGeneratedMedia(serverId: string, workflowId: string) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/generated`;
+    const generatedDir = getGeneratedDir(serverId, workflowId);
+    const dirInfo = Paths.info(generatedDir.uri);
 
-    const fileInfo = await FileSystem.getInfoAsync(dirPath);
-    if (!fileInfo.exists) {
-      // create the directory
-      await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
-    } else if (!fileInfo.isDirectory) {
-      // delete the file then create the directory
-      await FileSystem.deleteAsync(dirPath);
-      await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+    if (!dirInfo.exists) {
+      ensureDirectory(generatedDir);
+    } else if (dirInfo.isDirectory === false) {
+      new File(generatedDir.uri).delete();
+      ensureDirectory(generatedDir);
     }
 
-    const files = await FileSystem.readDirectoryAsync(dirPath);
-
     const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.mov'];
-    const mediaItems = files
-      .filter((file) => supportedExtensions.some(ext => file.toLowerCase().endsWith(ext)))
-      .map((file) => ({
-        path: `${dirPath}/${file}`,
-        metadataPath: `${dirPath}/${file}.json`,
-      }));
+    const mediaFiles = generatedDir
+      .list()
+      .filter((entry): entry is File => entry instanceof File)
+      .filter((file) => supportedExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)));
 
     return Promise.all(
-      mediaItems.map(async ({ path, metadataPath }) => {
+      mediaFiles.map(async (file) => {
+        const metadataFile = new File(generatedDir, `${file.name}.json`);
         try {
-          const metadataStr = await FileSystem.readAsStringAsync(metadataPath);
+          const metadataStr = await metadataFile.text();
           const metadata = JSON.parse(metadataStr);
-          return { path, metadata };
-        } catch {
-          return { path, metadata: null };
+          return { path: file.uri, metadata };
+        } catch (error) {
+          void error;
+          return { path: file.uri, metadata: null };
         }
       }),
     );
@@ -140,32 +147,38 @@ export async function saveWorkflowThumbnail({
   mimeType?: string;
 }) {
   try {
-    const dirPath = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}/thumbnail`;
+    const thumbnailDir = getThumbnailDir(serverId, workflowId);
 
     if (shouldDelete) {
-      await FileSystem.deleteAsync(dirPath).catch(() => { });
+      try {
+        thumbnailDir.delete();
+      } catch (error) {
+        void error;
+        // Ignore if directory doesn't exist
+      }
       return;
     }
 
-    // Create directory if it doesn't exist
-    await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+    ensureDirectory(thumbnailDir);
 
-    // Clean up existing thumbnail files
+    // Keep only one thumbnail file.
     try {
-      const files = await FileSystem.readDirectoryAsync(dirPath);
-      await Promise.all(
-        files.map((file) =>
-          FileSystem.deleteAsync(`${dirPath}/${file}`).catch(() => { }),
-        ),
-      );
+      const files = thumbnailDir.list().filter((entry): entry is File => entry instanceof File);
+      files.forEach((file) => {
+        try {
+          file.delete();
+        } catch (error) {
+          void error;
+          // Ignore cleanup failures
+        }
+      });
     } catch (error) {
+      void error;
       // Directory might not exist yet, which is fine
     }
 
-    // Determine file extension
     let ext: string;
     if (mimeType) {
-      // Get extension from MIME type
       switch (mimeType) {
         case 'image/jpeg':
           ext = 'jpg';
@@ -183,28 +196,20 @@ export async function saveWorkflowThumbnail({
           ext = mimeType.split('/')[1] || 'jpg';
       }
     } else {
-      // Try to get extension from uri, fallback to jpg
       ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
     }
 
-    // Generate filename with determined extension
-    const filename = `thumbnail.${ext}`;
-    const filePath = `${dirPath}/${filename}`;
+    const thumbnailFile = new File(thumbnailDir, `thumbnail.${ext}`);
+    thumbnailFile.create({ intermediates: true, overwrite: true });
+    new File(imageUri).copy(thumbnailFile);
 
-    // Copy image to permanent storage
-    await FileSystem.copyAsync({
-      from: imageUri,
-      to: filePath,
-    });
-
-    // Verify the file exists
-    const fileInfo = await FileSystem.getInfoAsync(filePath);
+    const fileInfo = thumbnailFile.info();
     if (!fileInfo.exists) {
       throw new Error('Failed to verify thumbnail file exists after saving');
     }
 
     return {
-      path: filePath,
+      path: thumbnailFile.uri,
     };
   } catch (error) {
     console.error('failed to save/delete workflow thumbnail:', error);
@@ -212,22 +217,30 @@ export async function saveWorkflowThumbnail({
   }
 }
 
-// Helper function to clean up server data
 export async function cleanupServerData(serverId: string) {
   try {
-    const serverDir = `${FileSystem.documentDirectory}server/${serverId}`;
-    await FileSystem.deleteAsync(serverDir).catch(() => { });
+    const serverDir = new Directory(Paths.document, 'server', serverId);
+    try {
+      serverDir.delete();
+    } catch (error) {
+      void error;
+      // Ignore if directory doesn't exist
+    }
   } catch (error) {
     console.error('failed to cleanup server data:', error);
   }
 }
 
-// Helper function to clean up workflow data
 export async function cleanupWorkflowData(serverId: string, workflowId: string) {
   try {
-    const workflowDir = `${FileSystem.documentDirectory}server/${serverId}/workflows/${workflowId}`;
-    await FileSystem.deleteAsync(workflowDir).catch(() => { });
+    const workflowDir = new Directory(Paths.document, 'server', serverId, 'workflows', workflowId);
+    try {
+      workflowDir.delete();
+    } catch (error) {
+      void error;
+      // Ignore if directory doesn't exist
+    }
   } catch (error) {
     console.error('failed to cleanup workflow data:', error);
   }
-} 
+}
