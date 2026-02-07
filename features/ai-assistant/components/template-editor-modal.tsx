@@ -11,7 +11,7 @@ import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { PromptTemplate } from '@/features/ai-assistant/types';
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Info, Trash2, X } from 'lucide-react-native';
+import { Info, X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ import { useAIAssistantStore } from '../stores/ai-assistant-store';
 
 type EditorMode = 'view' | 'edit' | 'add';
 
-interface TemplateEditorModalProps {}
+type TemplateEditorModalProps = Record<string, never>;
 
 export interface TemplateEditorModalRef {
   present: (options: {
@@ -83,7 +83,9 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
       }
     };
 
-    const validateForm = (): boolean => {
+    const getPrimaryActionText = () => (mode === 'add' ? 'Add' : 'Save');
+
+    const validateForm = useCallback((): boolean => {
       let valid = true;
 
       if (!name.trim()) {
@@ -107,7 +109,17 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
       }
 
       return valid;
-    };
+    }, [name, systemPrompt]);
+
+    const handleClose = useCallback(() => {
+      setName('');
+      setSystemPrompt('');
+      setNameError('');
+      setPromptError('');
+      setTemplateId(null);
+      setShowDeleteConfirm(false);
+      bottomSheetModalRef.current?.dismiss();
+    }, []);
 
     const handleSave = useCallback(() => {
       if (!validateForm()) return;
@@ -119,17 +131,7 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
       }
 
       handleClose();
-    }, [mode, name, systemPrompt, templateId, addTemplate, updateTemplate]);
-
-    const handleClose = useCallback(() => {
-      setName('');
-      setSystemPrompt('');
-      setNameError('');
-      setPromptError('');
-      setTemplateId(null);
-      setShowDeleteConfirm(false);
-      bottomSheetModalRef.current?.dismiss();
-    }, []);
+    }, [mode, name, systemPrompt, templateId, addTemplate, updateTemplate, validateForm, handleClose]);
 
     const handleDelete = useCallback(() => {
       if (templateId) {
@@ -143,7 +145,7 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
         <ThemedBottomSheetModal
           ref={bottomSheetModalRef}
           index={0}
-          snapPoints={['85%']}
+          snapPoints={['90%']}
           onDismiss={handleClose}
           topInset={insets.top}
           enablePanDownToClose={true}
@@ -151,106 +153,95 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
           keyboardBlurBehavior="restore"
         >
           <View className="flex-1">
-          {/* Header */}
-          <HStack className="items-center justify-between border-b border-outline-100 px-4 pb-3">
-            <Pressable onPress={handleClose} className="p-1">
-              <Icon as={X} size="md" className="text-typography-500" />
-            </Pressable>
-            <Text className="text-base font-semibold text-typography-900">{getTitle()}</Text>
-            {mode === 'edit' ? (
-              <Pressable onPress={() => setShowDeleteConfirm(true)} className="p-1">
-                <Icon as={Trash2} size="md" className="text-error-500" />
-              </Pressable>
-            ) : (
-              <View style={{ width: 28 }} />
-            )}
-          </HStack>
-
-          <BottomSheetScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: insets.bottom + 24,
-            }}
-          >
-            <VStack space="md" className="pt-4">
-              {/* Name Input */}
-              <BottomSheetFormInput
-                title="Name"
-                error={nameError}
-                value={name}
-                onChangeText={(value: string) => {
-                  setName(value);
-                  setNameError('');
-                }}
-                placeholder="Template name"
-                maxLength={MAX_NAME_LENGTH}
-                editable={!isReadOnly}
-              />
-
-              {/* System Prompt */}
-              <View>
-                <Text className="mb-2 text-sm font-medium text-typography-600">System Prompt</Text>
-                <BottomSheetTextarea
-                  placeholder="Enter system prompt..."
-                  value={systemPrompt}
-                  onChangeText={(value: string) => {
-                    setSystemPrompt(value);
-                    setPromptError('');
-                  }}
-                  minHeight={200}
-                  editable={!isReadOnly}
-                />
-                {promptError ? (
-                  <Text className="mt-1 text-xs text-error-500">{promptError}</Text>
-                ) : null}
+            <HStack className="items-center px-4 pb-3">
+              <View className="flex-1 items-start">
+                <Pressable onPress={handleClose} className="p-1">
+                  <Icon as={X} size="md" className="text-typography-500" />
+                </Pressable>
               </View>
 
-              {/* Info hint */}
-              {!isReadOnly && (
-                <HStack className="items-start rounded-lg bg-primary-50 p-3" space="sm">
-                  <Icon as={Info} size="sm" className="mt-0.5 text-primary-500" />
-                  <Text className="flex-1 text-xs text-primary-700">
-                    Use {'{{user_prompt}}'} as a placeholder where the user's prompt will be inserted.
-                  </Text>
-                </HStack>
-              )}
+              <View className="flex-1 items-center">
+                <Text className="text-base font-semibold text-typography-900">{getTitle()}</Text>
+              </View>
 
-              {/* Action Buttons */}
-              <HStack space="sm" className="mt-4">
-                {isReadOnly ? (
-                  <Button
-                    variant="solid"
-                    action="primary"
-                    onPress={handleClose}
-                    className="flex-1 rounded-lg"
-                  >
-                    <ButtonText>Close</ButtonText>
+              <View className="flex-1 items-end">
+                {!isReadOnly ? (
+                  <Button size="sm" variant="solid" action="primary" onPress={handleSave} className="rounded-lg px-4">
+                    <ButtonText>{getPrimaryActionText()}</ButtonText>
                   </Button>
                 ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      onPress={handleClose}
-                      className="flex-1 rounded-lg"
-                    >
-                      <ButtonText>Cancel</ButtonText>
-                    </Button>
-                    <Button
-                      variant="solid"
-                      action="primary"
-                      onPress={handleSave}
-                      className="flex-1 rounded-lg"
-                    >
-                      <ButtonText>{mode === 'add' ? 'Add' : 'Save'}</ButtonText>
-                    </Button>
-                  </>
+                  <View style={{ width: 72 }} />
                 )}
-              </HStack>
-            </VStack>
-          </BottomSheetScrollView>
-        </View>
-      </ThemedBottomSheetModal>
+              </View>
+            </HStack>
+
+            <BottomSheetScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingBottom: insets.bottom + 24,
+              }}
+            >
+              <VStack space="lg" className="pt-2">
+                <View>
+                  <HStack className="items-center justify-between">
+                    <Text className="text-sm font-semibold text-typography-900">Template Name</Text>
+                    <Text className="text-xs text-typography-500">{name.length}/{MAX_NAME_LENGTH}</Text>
+                  </HStack>
+                  <BottomSheetFormInput
+                    containerStyle={{ marginBottom: 0, marginTop: 8 }}
+                    error={nameError}
+                    value={name}
+                    onChangeText={(value: string) => {
+                      setName(value);
+                      setNameError('');
+                    }}
+                    placeholder="Template name"
+                    maxLength={MAX_NAME_LENGTH}
+                    editable={!isReadOnly}
+                  />
+                </View>
+
+                <View>
+                  <HStack className="items-center justify-between">
+                    <Text className="text-sm font-semibold text-typography-900">System Prompt</Text>
+                    <Text className="rounded-full bg-background-0 px-2 py-0.5 text-xs text-typography-500">
+                      {'{{user_prompt}}'}
+                    </Text>
+                  </HStack>
+                  <View className="mt-2">
+                    <BottomSheetTextarea
+                      placeholder="Enter system prompt..."
+                      value={systemPrompt}
+                      onChangeText={(value: string) => {
+                        setSystemPrompt(value);
+                        setPromptError('');
+                      }}
+                      minHeight={220}
+                      editable={!isReadOnly}
+                    />
+                    {promptError ? (
+                      <Text className="mt-1 text-xs text-error-500">{promptError}</Text>
+                    ) : (
+                      !isReadOnly && (
+                        <HStack className="mt-2 items-center" space="sm">
+                          <Icon as={Info} size="sm" className="text-typography-400" />
+                          <Text className="text-xs text-typography-500">Include the token above in this prompt.</Text>
+                        </HStack>
+                      )
+                    )}
+                  </View>
+                </View>
+
+                {!isReadOnly && mode === 'edit' && (
+                  <Button variant="link" action="negative" onPress={() => setShowDeleteConfirm(true)} className="self-start px-0">
+                    <ButtonText>Delete Template</ButtonText>
+                  </Button>
+                )}
+              </VStack>
+            </BottomSheetScrollView>
+          </View>
+        </ThemedBottomSheetModal>
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}

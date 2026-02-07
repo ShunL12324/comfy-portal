@@ -3,6 +3,7 @@ import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
+import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
@@ -20,7 +21,6 @@ import {
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
 import { useAIAssistantStore } from '../../stores/ai-assistant-store';
 import { TemplateSelector } from './template-selector';
 
@@ -45,6 +45,13 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
   const configured = isConfigured();
+  const assistantTurnCount = conversationHistory.filter((msg) => msg.role === 'assistant').length;
+  const stateLabel = {
+    idle: 'Waiting',
+    loading: 'Generating',
+    success: 'Ready',
+    error: 'Failed',
+  }[optimizeState];
 
   const buildMessages = useCallback((): ChatMessage[] => {
     if (!selectedTemplate) return [];
@@ -52,7 +59,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     const systemPrompt = selectedTemplate.systemPrompt.replace('{{user_prompt}}', initialPrompt);
     const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }];
 
-    // Add conversation history for iterative refinement
     for (const msg of conversationHistory) {
       messages.push({ role: msg.role, content: msg.content });
     }
@@ -75,7 +81,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
 
       const messages = buildMessages();
 
-      // If it's the first request (no history), just add "Please optimize this prompt"
       if (conversationHistory.length === 0) {
         messages.push({ role: 'user', content: 'Please optimize this prompt.' });
       }
@@ -88,7 +93,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
       setOptimizedPrompt(result);
       setOptimizeState('success');
 
-      // Update conversation history
       if (conversationHistory.length === 0) {
         setConversationHistory([
           { role: 'user', content: 'Please optimize this prompt.' },
@@ -109,7 +113,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     setOptimizeState('loading');
     setErrorMessage('');
 
-    // Add user feedback to history
     setConversationHistory((prev) => [...prev, { role: 'user', content: feedback }]);
     setFeedback('');
 
@@ -140,7 +143,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
 
   const handleAccept = useCallback(() => {
     onAccept(optimizedPrompt);
-    // Reset state
     setOptimizeState('idle');
     setOptimizedPrompt('');
     setConversationHistory([]);
@@ -159,7 +161,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     (templateId: string) => {
       setSelectedTemplate(templateId);
       setShowTemplateSelector(false);
-      // Reset state when template changes
       if (optimizeState !== 'idle') {
         handleReject();
       }
@@ -167,60 +168,70 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     [setSelectedTemplate, optimizeState, handleReject],
   );
 
-  // Not configured state
   if (!configured) {
     return (
       <View className="flex-1 items-center justify-center py-8">
-        <Icon as={AlertTriangle} size="xl" className="mb-4 text-warning-500" />
-        <Text className="mb-2 text-center text-base font-medium text-typography-900">
-          AI Not Configured
-        </Text>
-        <Text className="mb-4 text-center text-sm text-typography-500">
-          Please configure your AI provider in settings to use this feature.
-        </Text>
-        <Button variant="solid" action="primary" onPress={onOpenSettings} className="rounded-lg">
-          <ButtonIcon as={Settings} />
-          <ButtonText>Open Settings</ButtonText>
-        </Button>
+        <View className="w-full rounded-2xl bg-warning-50 px-5 py-6">
+          <View className="items-center">
+            <View className="mb-3 rounded-full bg-warning-100 p-2">
+              <Icon as={AlertTriangle} size="md" className="text-warning-600" />
+            </View>
+            <Text className="text-center text-base font-semibold text-typography-900">AI Not Configured</Text>
+            <Text className="mt-1 text-center text-sm text-typography-600">
+              Configure your provider first to use prompt optimization.
+            </Text>
+            <Button variant="solid" action="primary" onPress={onOpenSettings} className="mt-5 rounded-xl px-4">
+              <ButtonIcon as={Settings} />
+              <ButtonText>Open Settings</ButtonText>
+            </Button>
+          </View>
+        </View>
       </View>
     );
   }
 
   return (
-    <VStack className="flex-1" space="md">
-      {/* Template Selector Row */}
-      <HStack className="items-center justify-between">
-        <HStack className="flex-1 items-center" space="sm">
-          <Text className="text-sm font-medium text-typography-600">Template:</Text>
+    <VStack className="flex-1" space="lg">
+      <VStack space="sm">
+        <HStack className="items-center justify-between">
+          <View>
+            <Text className="text-sm font-semibold text-typography-900">Step 1 · Current Prompt</Text>
+          </View>
+          <View className="rounded-full bg-background-0 px-2.5 py-1">
+            <Text className="text-xs font-medium text-typography-500">{initialPrompt.trim().length} chars</Text>
+          </View>
+        </HStack>
+
+        <View className="rounded-2xl bg-background-50 px-3 py-3">
+          <Text className="text-sm leading-5 text-typography-700">{initialPrompt || '(Empty prompt)'}</Text>
+        </View>
+
+        <Text className="text-xs font-medium uppercase tracking-wide text-typography-500">Template</Text>
+        <HStack className="items-center" space="sm">
           <Pressable
             onPress={() => setShowTemplateSelector(!showTemplateSelector)}
-            className="flex-1 flex-row items-center justify-between rounded-lg bg-background-50 px-3 py-2"
+            className="flex-1 flex-row items-center justify-between rounded-xl bg-background-0 px-3 py-2.5"
           >
             <Text className="text-sm text-typography-900" numberOfLines={1}>
               {selectedTemplate?.name || 'Select template'}
             </Text>
             <Icon as={ChevronDown} size="sm" className="text-typography-500" />
           </Pressable>
+
+          <Button
+            variant="solid"
+            action="primary"
+            size="sm"
+            onPress={handleOptimize}
+            disabled={optimizeState === 'loading' || !selectedTemplate}
+            className="rounded-xl px-3"
+          >
+            {optimizeState === 'loading' ? <RotatingSpinner size="sm" /> : <ButtonIcon as={Sparkles} />}
+            <ButtonText>{assistantTurnCount > 0 ? 'Regenerate' : 'Optimize'}</ButtonText>
+          </Button>
         </HStack>
+      </VStack>
 
-        <Button
-          variant="solid"
-          action="primary"
-          size="sm"
-          onPress={handleOptimize}
-          disabled={optimizeState === 'loading' || !selectedTemplate}
-          className="ml-3 rounded-lg"
-        >
-          {optimizeState === 'loading' ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <ButtonIcon as={Sparkles} />
-          )}
-          <ButtonText>Optimize</ButtonText>
-        </Button>
-      </HStack>
-
-      {/* Template Selector Dropdown */}
       {showTemplateSelector && (
         <TemplateSelector
           templates={templates}
@@ -230,112 +241,93 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
         />
       )}
 
-      {/* Current Prompt Display */}
-      <View>
-        <Text className="mb-2 text-sm font-medium text-typography-600">Current Prompt</Text>
-        <View className="rounded-lg bg-background-50 p-3">
-          <Text className="text-sm text-typography-700">
-            {initialPrompt || '(Empty prompt)'}
-          </Text>
-        </View>
-      </View>
+      <MotiView
+        from={{ opacity: 0, translateY: 8 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 220 }}
+      >
+        <VStack space="sm">
+          <HStack className="items-center justify-between">
+            <View>
+              <Text className="text-sm font-semibold text-typography-900">Step 2 · AI Result</Text>
+            </View>
+            <Text className="text-xs font-medium text-typography-500">{stateLabel}</Text>
+          </HStack>
 
-      {/* Result Area */}
-      {optimizeState !== 'idle' && (
-        <MotiView
-          from={{ opacity: 0, translateY: 10 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 200 }}
-        >
-          <View>
-            <Text className="mb-2 text-sm font-medium text-typography-600">AI Result</Text>
+          {optimizeState === 'idle' && (
+            <View className="mt-3 rounded-xl bg-background-50 px-4 py-6">
+              <Text className="text-center text-sm font-medium text-typography-700">No draft yet</Text>
+            </View>
+          )}
 
-            {optimizeState === 'loading' && (
-              <View className="items-center rounded-lg bg-background-50 py-8">
-                <ActivityIndicator size="large" />
-                <Text className="mt-2 text-sm text-typography-500">Optimizing...</Text>
-              </View>
-            )}
+          {optimizeState === 'loading' && (
+            <View className="mt-3 items-center rounded-xl bg-background-50 py-7">
+              <RotatingSpinner size="md" />
+              <Text className="mt-2 text-sm font-medium text-typography-700">Optimizing prompt</Text>
+              <Text className="mt-1 text-xs text-typography-500">This can take a few seconds.</Text>
+            </View>
+          )}
 
-            {optimizeState === 'error' && (
-              <View className="rounded-lg bg-error-50 p-4">
-                <HStack className="items-center" space="sm">
-                  <Icon as={AlertTriangle} size="sm" className="text-error-500" />
-                  <Text className="flex-1 text-sm text-error-700">{errorMessage}</Text>
-                </HStack>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onPress={handleOptimize}
-                  className="mt-3 rounded-lg"
-                >
-                  <ButtonIcon as={RefreshCw} />
-                  <ButtonText>Retry</ButtonText>
-                </Button>
-              </View>
-            )}
-
-            {optimizeState === 'success' && (
-              <VStack space="md">
-                <View className="rounded-lg bg-success-50 p-3">
-                  <Text className="text-sm text-typography-900">{optimizedPrompt}</Text>
+          {optimizeState === 'error' && (
+            <View className="mt-3 rounded-xl bg-error-50 px-3 py-3">
+              <HStack className="items-start" space="sm">
+                <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-error-600" />
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-error-700">Optimization failed</Text>
+                  <Text className="mt-0.5 text-sm text-error-700">{errorMessage}</Text>
                 </View>
+              </HStack>
+              <Button variant="link" size="sm" onPress={handleOptimize} className="mt-3 self-start rounded-lg">
+                <ButtonIcon as={RefreshCw} />
+                <ButtonText>Retry</ButtonText>
+              </Button>
+            </View>
+          )}
 
-                {/* Accept/Reject Buttons */}
-                <HStack space="sm">
+          {optimizeState === 'success' && (
+            <VStack space="md">
+              <View className="rounded-xl bg-success-50 px-3 py-3">
+                <Text className="text-sm leading-5 text-typography-900">{optimizedPrompt}</Text>
+              </View>
+
+              <HStack className="items-center" space="sm">
+                <Button variant="solid" action="positive" size="sm" onPress={handleAccept} className="flex-1 rounded-xl">
+                  <ButtonIcon as={Check} />
+                  <ButtonText>Accept</ButtonText>
+                </Button>
+                <Button variant="link" action="negative" size="sm" onPress={handleReject} className="flex-1 rounded-xl">
+                  <ButtonIcon as={X} />
+                  <ButtonText>Discard</ButtonText>
+                </Button>
+              </HStack>
+
+              <View className="rounded-xl bg-background-50 p-3">
+                <Text className="mb-2 text-xs font-medium uppercase tracking-wide text-typography-500">Refine</Text>
+                <HStack className="items-end" space="sm">
+                  <View className="flex-1">
+                    <BottomSheetTextarea
+                      placeholder="Tell AI what to adjust..."
+                      value={feedback}
+                      onChangeText={setFeedback}
+                      minHeight={56}
+                    />
+                  </View>
                   <Button
                     variant="solid"
-                    action="positive"
+                    action="primary"
                     size="sm"
-                    onPress={handleAccept}
-                    className="flex-1 rounded-lg"
+                    onPress={handleRefinement}
+                    disabled={!feedback.trim()}
+                    className="rounded-xl px-3"
                   >
-                    <ButtonIcon as={Check} />
-                    <ButtonText>Accept</ButtonText>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    action="negative"
-                    size="sm"
-                    onPress={handleReject}
-                    className="flex-1 rounded-lg"
-                  >
-                    <ButtonIcon as={X} />
-                    <ButtonText>Reject</ButtonText>
+                    <ButtonIcon as={Send} />
                   </Button>
                 </HStack>
-
-                {/* Feedback Input for Iteration */}
-                <View>
-                  <Text className="mb-2 text-sm font-medium text-typography-600">
-                    Feedback (optional)
-                  </Text>
-                  <HStack space="sm" className="items-end">
-                    <View className="flex-1">
-                      <BottomSheetTextarea
-                        placeholder="Provide feedback to refine the result..."
-                        value={feedback}
-                        onChangeText={setFeedback}
-                        minHeight={60}
-                      />
-                    </View>
-                    <Button
-                      variant="solid"
-                      action="primary"
-                      size="sm"
-                      onPress={handleRefinement}
-                      disabled={!feedback.trim()}
-                      className="rounded-lg"
-                    >
-                      <ButtonIcon as={Send} />
-                    </Button>
-                  </HStack>
-                </View>
-              </VStack>
-            )}
-          </View>
-        </MotiView>
-      )}
+              </View>
+            </VStack>
+          )}
+        </VStack>
+      </MotiView>
     </VStack>
   );
 }
