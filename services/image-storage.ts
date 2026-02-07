@@ -1,6 +1,6 @@
 import { Workflow } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
-import { Directory, EncodingType, File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 
 interface SaveMediaOptions {
   serverId: string;
@@ -54,7 +54,11 @@ export async function saveGeneratedMedia({
     const filename = `${timestamp}-${uuid}.${originalExt}`;
 
     const mediaFile = new File(generatedDir, filename);
-    await File.downloadFileAsync(mediaUrl, mediaFile, { idempotent: true });
+    if (mediaUrl.startsWith('file://')) {
+      new File(mediaUrl).copy(mediaFile);
+    } else {
+      await File.downloadFileAsync(mediaUrl, mediaFile, { idempotent: true });
+    }
 
     const metadataFile = new File(generatedDir, `${filename}.json`);
     metadataFile.create({ intermediates: true, overwrite: true });
@@ -65,9 +69,7 @@ export async function saveGeneratedMedia({
       originalUrl: mediaUrl,
     };
 
-    metadataFile.write(JSON.stringify(metadata, null, 2), {
-      encoding: EncodingType.UTF8,
-    });
+    metadataFile.write(JSON.stringify(metadata, null, 2), { encoding: 'utf8' });
 
     return {
       path: mediaFile.uri,
