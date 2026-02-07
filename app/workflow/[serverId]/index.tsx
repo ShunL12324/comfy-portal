@@ -193,7 +193,10 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   const [refreshing, setRefreshing] = useState(false);
   const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
   const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
-  const workflowsToDisplay = storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync');
+  const workflowsToDisplay = useMemo(
+    () => storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync'),
+    [storedWorkflows, serverId]
+  );
   const cancelSyncRef = useRef(false);
   const hasAutoSyncedRef = useRef(false);
   const syncRunIdRef = useRef(0);
