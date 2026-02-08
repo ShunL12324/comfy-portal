@@ -13,7 +13,7 @@ import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Image as ImageIcon, X } from 'lucide-react-native';
+import { Camera, Folder, Image as ImageIcon, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -33,6 +33,8 @@ interface UploadAssetCandidate {
   mimeType?: string | null;
 }
 
+type PendingSourcePickerAction = 'library' | 'files' | 'camera' | null;
+
 export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
@@ -42,6 +44,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
   const safeAreaInsets = useSafeAreaInsets();
   const cancelUploadRef = useRef<(() => Promise<void>) | null>(null);
   const sourcePickerModalRef = useRef<BottomSheetModal>(null);
+  const pendingSourcePickerActionRef = useRef<PendingSourcePickerAction>(null);
 
   // Animated value for progress
   const progressWidth = useSharedValue(0);
@@ -49,6 +52,13 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
   useEffect(() => {
     progressWidth.value = withTiming(uploadProgress * 100, { duration: 300 });
   }, [uploadProgress, progressWidth]);
+
+  useEffect(() => {
+    if (isUploading) {
+      pendingSourcePickerActionRef.current = null;
+      sourcePickerModalRef.current?.dismiss();
+    }
+  }, [isUploading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -210,6 +220,35 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     sourcePickerModalRef.current?.dismiss();
   };
 
+  const handleSelectSourcePickerAction = (action: Exclude<PendingSourcePickerAction, null>) => {
+    pendingSourcePickerActionRef.current = action;
+    handleCloseSourcePicker();
+  };
+
+  const handleSourcePickerDismiss = () => {
+    if (isUploading) {
+      pendingSourcePickerActionRef.current = null;
+      return;
+    }
+
+    const action = pendingSourcePickerActionRef.current;
+    pendingSourcePickerActionRef.current = null;
+
+    if (action === 'library') {
+      void handlePickFromLibrary();
+      return;
+    }
+
+    if (action === 'files') {
+      void handlePickFromFiles();
+      return;
+    }
+
+    if (action === 'camera') {
+      void handlePickFromCamera();
+    }
+  };
+
   return (
     <BaseNode node={node}>
       <SubItem title="image">
@@ -279,6 +318,7 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
           snapPoints={['34%']}
           topInset={safeAreaInsets.top}
           enablePanDownToClose
+          onDismiss={handleSourcePickerDismiss}
         >
           <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: safeAreaInsets.bottom + 16 }}>
             <VStack space="sm">
@@ -286,31 +326,31 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
 
               <Pressable
                 onPress={() => {
-                  handleCloseSourcePicker();
-                  void handlePickFromLibrary();
+                  handleSelectSourcePickerAction('library');
                 }}
-                className="rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
               >
+                <Icon as={ImageIcon} className="h-4 w-4 text-typography-700" />
                 <Text className="text-sm text-typography-900">Photo Library</Text>
               </Pressable>
 
               <Pressable
                 onPress={() => {
-                  handleCloseSourcePicker();
-                  void handlePickFromFiles();
+                  handleSelectSourcePickerAction('files');
                 }}
-                className="rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
               >
+                <Icon as={Folder} className="h-4 w-4 text-typography-700" />
                 <Text className="text-sm text-typography-900">Files</Text>
               </Pressable>
 
               <Pressable
                 onPress={() => {
-                  handleCloseSourcePicker();
-                  void handlePickFromCamera();
+                  handleSelectSourcePickerAction('camera');
                 }}
-                className="rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
               >
+                <Icon as={Camera} className="h-4 w-4 text-typography-700" />
                 <Text className="text-sm text-typography-900">Camera</Text>
               </Pressable>
             </VStack>
