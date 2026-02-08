@@ -68,4 +68,22 @@ credentials
 
 # AI
 CLAUDE.md
+AGENTS.md
 store.config.json
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/README.md
+
+# Build output
+build/
+
+# IDE
+.vscode/
+.claude/
+
+# Temp scripts
+check_history_temp.py
