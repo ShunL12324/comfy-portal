@@ -45,13 +45,18 @@ platform :ios do
     )
   end
 
-  desc "Increment build number"
+  desc "Increment build number based on latest TestFlight build"
   lane :bump do
-    increment_build_number(
-      xcodeproj: "ios/ComfyPortal.xcodeproj"
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.sillyl12324.comfy-portal"
     )
-    build_number = get_build_number(xcodeproj: "ios/ComfyPortal.xcodeproj")
-    UI.success("Build number incremented to #{build_number}")
+    new_build_number = latest + 1
+    increment_build_number(
+      xcodeproj: "ios/ComfyPortal.xcodeproj",
+      build_number: new_build_number
+    )
+    UI.success("Build number incremented to #{new_build_number} (was #{latest} on TestFlight)")
   end
 
   desc "Build the app"
