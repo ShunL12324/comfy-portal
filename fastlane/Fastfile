@@ -1,0 +1,140 @@
+# Fastfile for Comfy Portal
+# Documentation: https://docs.fastlane.tools
+
+default_platform(:ios)
+
+# App Store Connect API Key configuration
+def api_key
+  # Check for JSON file first (CI environment)
+  json_key_path = File.expand_path("~/.appstoreconnect/api_key.json")
+  if File.exist?(json_key_path)
+    app_store_connect_api_key(
+      key_id: "82FT2H36TV",
+      issuer_id: "9a16e452-2d62-45dd-b87e-9043389a7e3d",
+      key_content: JSON.parse(File.read(json_key_path))["key"],
+      duration: 1200,
+      in_house: false
+    )
+  else
+    # Fallback to .p8 file (local development)
+    app_store_connect_api_key(
+      key_id: "82FT2H36TV",
+      issuer_id: "9a16e452-2d62-45dd-b87e-9043389a7e3d",
+      key_filepath: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_82FT2H36TV.p8"),
+      duration: 1200,
+      in_house: false
+    )
+  end
+end
+
+platform :ios do
+
+  desc "Sync certificates and provisioning profiles using Match"
+  lane :sync_certificates do
+    match(
+      type: "appstore",
+      api_key: api_key,
+      readonly: is_ci # In CI, only read; locally can create new
+    )
+  end
+
+  desc "Increment build number"
+  lane :bump do
+    increment_build_number(
+      xcodeproj: "ios/ComfyPortal.xcodeproj"
+    )
+    build_number = get_build_number(xcodeproj: "ios/ComfyPortal.xcodeproj")
+    UI.success("Build number incremented to #{build_number}")
+  end
+
+  desc "Build the app"
+  lane :build do
+    sync_certificates
+
+    # Bundle JS first (Expo/React Native)
+    sh("cd .. && npx expo export:embed --platform ios --dev false --bundle-output ios/main.jsbundle --assets-dest ios") rescue nil
+
+    build_app(
+      workspace: "ios/ComfyPortal.xcworkspace",
+      scheme: "ComfyPortal",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "ComfyPortal.ipa"
+    )
+  end
+
+  desc "Upload to TestFlight (internal testing)"
+  lane :beta do
+    bump
+    build
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+
+    UI.success("Successfully uploaded to TestFlight!")
+  end
+
+  desc "Upload to TestFlight and notify external testers"
+  lane :beta_external do
+    bump
+    build
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: false,
+      distribute_external: true,
+      groups: ["External Testers"],
+      changelog: "Bug fixes and improvements"
+    )
+
+    UI.success("Successfully distributed to external testers!")
+  end
+
+  desc "Submit to App Store for review"
+  lane :release do
+    bump
+    build
+
+    upload_to_app_store(
+      api_key: api_key,
+      skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+
+    UI.success("Successfully submitted to App Store for review!")
+  end
+
+  desc "Upload to App Store without submitting for review"
+  lane :upload_only do
+    bump
+    build
+
+    upload_to_app_store(
+      api_key: api_key,
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false
+    )
+
+    UI.success("Successfully uploaded to App Store Connect!")
+  end
+
+  # ============================================
+  # Error Handling
+  # ============================================
+
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+  end
+
+end

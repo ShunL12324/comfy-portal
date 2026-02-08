@@ -8,7 +8,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "comfyportal",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "isTabletOnly": false,
@@ -81,7 +80,11 @@
           "isAccessMediaLocationEnabled": true
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-font",
+      "expo-image",
+      "expo-sharing",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
