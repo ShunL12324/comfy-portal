@@ -54,12 +54,22 @@ platform :ios do
     # Bundle JS first (Expo/React Native)
     sh("cd .. && npx expo export:embed --platform ios --dev false --bundle-output ios/main.jsbundle --assets-dest ios") rescue nil
 
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/ComfyPortal.xcodeproj",
+      team_id: "QUVB58SSQ7",
+      bundle_identifier: "com.sillyl12324.comfy-portal",
+      profile_name: "match AppStore com.sillyl12324.comfy-portal",
+      code_sign_identity: "iPhone Distribution"
+    )
+
     build_app(
       workspace: "ios/ComfyPortal.xcworkspace",
       scheme: "ComfyPortal",
       export_method: "app-store",
       output_directory: "./build",
-      output_name: "ComfyPortal.ipa"
+      output_name: "ComfyPortal.ipa",
+      xcargs: "DEVELOPMENT_TEAM='QUVB58SSQ7'"
     )
   end
 
