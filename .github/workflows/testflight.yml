@@ -67,27 +67,12 @@ jobs:
           mkdir -p ~/.appstoreconnect
           echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/.appstoreconnect/api_key.json
 
-      - name: Setup Keychain
-        run: |
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          security create-keychain -p "temp_password" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "temp_password" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
       - name: Build and Upload to TestFlight
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_NAME: ${{ runner.temp }}/app-signing.keychain-db
-          MATCH_KEYCHAIN_PASSWORD: "temp_password"
         run: |
           if [ "${{ github.event.inputs.distribute_external }}" == "true" ]; then
             bundle exec fastlane beta_external
           else
             bundle exec fastlane beta
           fi
-
-      - name: Clean up keychain
-        if: ${{ always() }}
-        run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true

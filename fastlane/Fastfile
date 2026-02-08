@@ -29,12 +29,19 @@ end
 
 platform :ios do
 
+  # Setup CI environment (keychain, etc.) automatically
+  before_all do
+    if is_ci
+      setup_ci
+    end
+  end
+
   desc "Sync certificates and provisioning profiles using Match"
   lane :sync_certificates do
     match(
       type: "appstore",
       api_key: api_key,
-      readonly: is_ci # In CI, only read; locally can create new
+      readonly: is_ci
     )
   end
 
@@ -51,9 +58,7 @@ platform :ios do
   lane :build do
     sync_certificates
 
-    # Bundle JS first (Expo/React Native)
-    sh("cd .. && npx expo export:embed --platform ios --dev false --bundle-output ios/main.jsbundle --assets-dest ios") rescue nil
-
+    # Configure manual code signing
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/ComfyPortal.xcodeproj",
@@ -68,8 +73,7 @@ platform :ios do
       scheme: "ComfyPortal",
       export_method: "app-store",
       output_directory: "./build",
-      output_name: "ComfyPortal.ipa",
-      xcargs: "DEVELOPMENT_TEAM='QUVB58SSQ7'"
+      output_name: "ComfyPortal.ipa"
     )
   end
 
