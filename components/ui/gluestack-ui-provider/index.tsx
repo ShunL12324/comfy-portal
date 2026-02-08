@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect } from 'react';
-import { View, ViewProps } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Appearance, View, ViewProps } from 'react-native';
 import { OverlayProvider } from '@gluestack-ui/core/overlay/creator';
 import { ToastProvider } from '@gluestack-ui/core/toast/creator';
 import { colorScheme as nativewindColorScheme, useColorScheme } from 'nativewind';
@@ -17,25 +17,30 @@ export function GluestackUIProvider({
   children?: React.ReactNode;
   style?: ViewProps['style'];
 }) {
-  // Use NativeWind's useColorScheme instead of RN's. On RN 0.83+, after
-  // Appearance.setColorScheme(null) (triggered by nativewindColorScheme.set('system')),
-  // RN's useColorScheme() returns null until the native event fires asynchronously.
-  // NativeWind's observable system handles this correctly.
   const { colorScheme: nwColorScheme } = useColorScheme();
-  const resolvedMode = mode === 'system' ? (nwColorScheme ?? 'light') : mode;
+  const prevModeRef = useRef(mode);
 
+  // On cold start with 'system', NativeWind already reads the native
+  // Appearance correctly. Calling nativewindColorScheme.set('system')
+  // would trigger Appearance.setColorScheme(null), which briefly resets
+  // the native color scheme to null → fallback to 'light' → flash.
+  //
+  // We only call set() when mode actually changes (e.g. user switches
+  // theme in settings), or on mount when mode is NOT 'system' (i.e.
+  // user had previously forced light/dark and we need to override).
   useEffect(() => {
-    // Pass the raw user intent to NativeWind. NativeWind handles 'system'
-    // internally by calling Appearance.setColorScheme(null) and then
-    // listening for the native appearance change event via its own
-    // observable system.
-    //
-    // Do NOT pass resolvedMode here — when switching from a forced theme
-    // (e.g. 'light') back to 'system', resolvedMode is stale and would
-    // re-override the Appearance, preventing the switch to the actual
-    // system theme.
-    nativewindColorScheme.set(mode);
+    if (prevModeRef.current !== mode || mode !== 'system') {
+      nativewindColorScheme.set(mode);
+    }
+    prevModeRef.current = mode;
   }, [mode]);
+
+  // For 'system' mode, read the native appearance directly as a
+  // synchronous fallback to avoid the brief null from NativeWind's
+  // observable during cold start.
+  const resolvedMode = mode === 'system'
+    ? (nwColorScheme ?? Appearance.getColorScheme() ?? 'light')
+    : mode;
 
   return (
     <View

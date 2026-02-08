@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Appearance } from 'react-native'
 import { useColorScheme } from 'nativewind'
 
 type ThemePreference = 'light' | 'dark' | 'system'
@@ -28,11 +29,10 @@ export const useThemeStore = create<ThemeState>()(
  * Returns the resolved color scheme ('light' | 'dark') based on user preference.
  * When preference is 'system', follows the OS color scheme.
  *
- * Uses NativeWind's useColorScheme instead of RN's useColorScheme because on
- * RN 0.83+, after Appearance.setColorScheme(null) (which NativeWind calls when
- * color scheme is set to 'system'), RN's useColorScheme() returns null until
- * the native appearanceChanged event fires asynchronously. NativeWind's own
- * observable system handles this correctly via its Appearance.addChangeListener.
+ * Uses NativeWind's useColorScheme with a synchronous Appearance.getColorScheme()
+ * fallback. On cold start, NativeWind's observable may not have the system value
+ * yet (returns undefined), so we read the native Appearance directly to avoid
+ * a brief flash of the wrong theme.
  */
 export function useResolvedTheme(): 'light' | 'dark' {
   const preference = useThemeStore((s) => s.preference)
@@ -40,5 +40,5 @@ export function useResolvedTheme(): 'light' | 'dark' {
   if (preference !== 'system') {
     return preference
   }
-  return nwColorScheme ?? 'light'
+  return nwColorScheme ?? Appearance.getColorScheme() ?? 'light'
 }
