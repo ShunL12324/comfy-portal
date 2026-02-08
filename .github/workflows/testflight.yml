@@ -40,6 +40,19 @@ jobs:
         with:
           version: 10
 
+      # ── pnpm store cache ──────────────────────────────────
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -49,8 +62,40 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # Generate ios/ without running pod install
       - name: Expo prebuild
-        run: npx expo prebuild --clean
+        run: npx expo prebuild --clean --no-install
+
+      # ── CocoaPods cache ───────────────────────────────────
+      # Restore cached Pods based on the generated Podfile.lock.
+      # This avoids re-downloading and re-compiling all native
+      # dependencies when they haven't changed.
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Install CocoaPods
+        run: |
+          if [ -f "ios/Pods/Manifest.lock" ] && diff ios/Podfile.lock ios/Pods/Manifest.lock > /dev/null 2>&1; then
+            echo "✅ Pods cache is valid, skipping pod install"
+          else
+            echo "⏳ Installing CocoaPods..."
+            cd ios && pod install
+          fi
+
+      # ── Xcode DerivedData cache ───────────────────────────
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            deriveddata-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}-
+            deriveddata-${{ runner.os }}-
 
       - name: Setup SSH for Match
         uses: webfactory/ssh-agent@v0.9.0
