@@ -2,11 +2,8 @@ name: Deploy to TestFlight
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+    tags:
+      - 'release-*'
   workflow_dispatch:
     inputs:
       distribute_external:
