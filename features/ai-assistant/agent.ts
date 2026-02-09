@@ -27,22 +27,27 @@ export interface ExecutedToolCall {
 export class Agent {
   private aiService: AIService;
   private toolRegistry: ToolRegistry;
-  private systemPrompt: string;
+  private systemPromptBuilder: () => string;
 
   constructor(
     aiService: AIService,
     toolRegistry: ToolRegistry,
-    systemPrompt: string,
+    systemPromptBuilder: string | (() => string),
   ) {
     this.aiService = aiService;
     this.toolRegistry = toolRegistry;
-    this.systemPrompt = systemPrompt;
+    this.systemPromptBuilder =
+      typeof systemPromptBuilder === 'string'
+        ? () => systemPromptBuilder
+        : systemPromptBuilder;
   }
 
   /**
    * Run the agent with a conversation history.
    * Handles the tool calling loop automatically:
    *   send → parse tool_calls → execute → feed results back → repeat until text response
+   *
+   * The system prompt is rebuilt each call so it always contains the latest workflow state.
    */
   async run(
     conversationHistory: ChatMessage[],
@@ -52,9 +57,12 @@ export class Agent {
     const tools = this.toolRegistry.getDefinitions();
     const allExecutedCalls: ExecutedToolCall[] = [];
 
+    // Build system prompt fresh each run (includes latest workflow state)
+    const systemPrompt = this.systemPromptBuilder();
+
     // Build initial messages
     const messages: APIMessage[] = [
-      { role: 'system', content: this.systemPrompt },
+      { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: userMessage },
     ];

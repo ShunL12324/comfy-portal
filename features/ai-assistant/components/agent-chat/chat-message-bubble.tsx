@@ -2,32 +2,17 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { AgentChatMessage, NodeChange } from '@/features/ai-assistant/types';
-import { ArrowRight, Bot, Check, Undo2, User } from 'lucide-react-native';
+import { ArrowRight, Bot, Check, User } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import React, { useCallback } from 'react';
-import { Pressable } from 'react-native';
+import React from 'react';
 
 interface ChatMessageBubbleProps {
   message: AgentChatMessage;
-  onApplyChanges?: (changes: NodeChange[]) => void;
-  onUndoChanges?: (changes: NodeChange[]) => void;
 }
 
-export function ChatMessageBubble({ message, onApplyChanges, onUndoChanges }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
   const hasChanges = message.changes && message.changes.length > 0;
-
-  const handleApply = useCallback(() => {
-    if (message.changes && onApplyChanges) {
-      onApplyChanges(message.changes);
-    }
-  }, [message.changes, onApplyChanges]);
-
-  const handleUndo = useCallback(() => {
-    if (message.changes && onUndoChanges) {
-      onUndoChanges(message.changes);
-    }
-  }, [message.changes, onUndoChanges]);
 
   return (
     <MotiView
@@ -61,36 +46,18 @@ export function ChatMessageBubble({ message, onApplyChanges, onUndoChanges }: Ch
           </Text>
         </View>
 
-        {/* Changes card */}
+        {/* Changes card — informational, changes are auto-applied by tools */}
         {hasChanges && (
           <View className="mt-2 w-full rounded-xl border border-outline-50 bg-background-50 p-3">
-            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-typography-500">
-              Parameter Changes
-            </Text>
+            <View className="mb-2 flex-row items-center gap-1.5">
+              <Icon as={Check} size="2xs" className="text-success-600" />
+              <Text className="text-xs font-semibold uppercase tracking-wide text-typography-500">
+                Applied Changes
+              </Text>
+            </View>
             {message.changes!.map((change, index) => (
               <ChangeItem key={`${change.nodeId}-${change.inputKey}-${index}`} change={change} />
             ))}
-
-            {/* Apply / Undo buttons */}
-            <View className="mt-2.5 flex-row gap-2">
-              {!message.changesApplied ? (
-                <Pressable
-                  onPress={handleApply}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-typography-900 py-2 active:bg-typography-800"
-                >
-                  <Icon as={Check} size="xs" className="text-typography-0" />
-                  <Text className="text-xs font-semibold text-typography-0">Apply</Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  onPress={handleUndo}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-background-200 py-2 active:bg-background-300"
-                >
-                  <Icon as={Undo2} size="xs" className="text-typography-700" />
-                  <Text className="text-xs font-semibold text-typography-700">Undo</Text>
-                </Pressable>
-              )}
-            </View>
           </View>
         )}
       </View>
@@ -107,6 +74,7 @@ export function ChatMessageBubble({ message, onApplyChanges, onUndoChanges }: Ch
 
 function ChangeItem({ change }: { change: NodeChange }) {
   const formatValue = (val: any): string => {
+    if (val === undefined || val === null) return '—';
     if (typeof val === 'string') {
       return val.length > 40 ? `${val.substring(0, 40)}...` : val;
     }
@@ -115,18 +83,19 @@ function ChangeItem({ change }: { change: NodeChange }) {
 
   return (
     <View className="mb-1.5 rounded-lg bg-background-0 px-2.5 py-2">
-      <Text className="text-xs font-medium text-primary-600" numberOfLines={1}>
-        {change.nodeTitle}
-      </Text>
-      <Text className="mt-0.5 text-xs text-typography-500" numberOfLines={1}>
-        {change.inputKey}
+      <Text className="text-xs text-typography-500" numberOfLines={1}>
+        {change.nodeTitle ? `${change.nodeTitle} · ` : ''}{change.inputKey}
       </Text>
       <View className="mt-1 flex-row items-center gap-1.5">
-        <Text className="flex-1 text-xs text-typography-400" numberOfLines={1}>
-          {formatValue(change.oldValue)}
-        </Text>
-        <Icon as={ArrowRight} size="2xs" className="text-typography-300" />
-        <Text className="flex-1 text-xs font-medium text-typography-900" numberOfLines={1}>
+        {change.oldValue !== undefined && (
+          <>
+            <Text className="flex-1 text-xs text-typography-400" numberOfLines={1}>
+              {formatValue(change.oldValue)}
+            </Text>
+            <Icon as={ArrowRight} size="2xs" className="text-typography-300" />
+          </>
+        )}
+        <Text className={`flex-1 text-xs font-medium text-typography-900`} numberOfLines={1}>
           {formatValue(change.newValue)}
         </Text>
       </View>
