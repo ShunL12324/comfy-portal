@@ -2,18 +2,25 @@
 
 <div align="center">
   <img src="assets/images/icon.png" width="120" alt="Comfy Portal Logo" style="border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
-  
+
   <h3>Your Native iOS Companion for ComfyUI</h3>
 
   <p>
     <a href="https://apps.apple.com/us/app/comfy-portal/id6741044736">
       <img src="https://img.shields.io/badge/App_Store-Download-0D96F6?style=flat-square&logo=app-store&logoColor=white" alt="Download on the App Store">
     </a>
+    <a href="https://github.com/ShunL12324/comfy-portal/actions/workflows/testflight.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/ShunL12324/comfy-portal/testflight.yml?style=flat-square&label=TestFlight%20Build" alt="TestFlight Build">
+    </a>
+    <img src="https://img.shields.io/badge/Platform-iOS%2015.1+-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform: iOS 15.1+">
+    <a href="https://github.com/ShunL12324/comfy-portal/stargazers">
+      <img src="https://img.shields.io/github/stars/ShunL12324/comfy-portal?style=flat-square" alt="GitHub Stars">
+    </a>
+    <a href="https://github.com/ShunL12324/comfy-portal/issues">
+      <img src="https://img.shields.io/github/issues/ShunL12324/comfy-portal?style=flat-square" alt="GitHub Issues">
+    </a>
     <a href="LICENSE">
       <img src="https://img.shields.io/badge/License-Custom-F5C518?style=flat-square" alt="License">
-    </a>
-    <a href="https://github.com/ShunL12324/comfy-portal/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/ShunL12324/comfy-portal/eas-build.yml?style=flat-square" alt="Build Status">
     </a>
   </p>
 </div>
@@ -36,14 +43,21 @@
 
 ## Interface
 
-| Workflow View | Generation Progress | Model Selector |
-| :---: | :---: | :---: |
-| <img src="repo-assets/screenshot-1.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-2.png" width="240" style="border-radius: 12px;"> | <img src="repo-assets/screenshot-3.png" width="240" style="border-radius: 12px;"> |
+<div align="center">
+  <img src="repo-assets/store-images/screenshot-1.png" width="200">
+  <img src="repo-assets/store-images/screenshot-2.png" width="200">
+  <img src="repo-assets/store-images/screenshot-3.png" width="200">
+  <br>
+  <img src="repo-assets/store-images/screenshot-4.png" width="200">
+  <img src="repo-assets/store-images/screenshot-5.png" width="200">
+  <img src="repo-assets/store-images/screenshot-6.png" width="200">
+</div>
 
 ## Latest Updates
 
 | Version | Date | Changes |
 | :--- | :--- | :--- |
+| **v1.0.5** | 2025-02-08 | • **Feature**: AI-powered prompt enhancement for text-to-image workflows<br>• **Feature**: GetImageSize node support<br>• **Improvement**: LoadImage node with image preview and multiple source options<br>• **Improvement**: Workflow tab UI and empty states<br>• **Fix**: Dark mode flash on app launch<br>• **Fix**: Keyboard handling in modals and text inputs<br>• **Upgrade**: Expo SDK 55 with React Native 0.83 |
 | **v1.0.4** | 2025-12-01 | • **Documentation**: Migrated to VitePress<br>• **Feature**: Smooth upload progress & cancellation<br>• **Fix**: Video preview issues resolved<br>• **Docs**: Added extension recommendation |
 
 ## Quick Start
@@ -78,6 +92,7 @@ To unlock full functionality, including **workflow synchronization** and enhance
 ### Prerequisites
 - macOS with Xcode 15.0+
 - Node.js 18+
+- pnpm 8+
 - CocoaPods
 
 ### Build Steps
@@ -90,7 +105,7 @@ To unlock full functionality, including **workflow synchronization** and enhance
 
 2. **Install dependencies**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Run on iOS Simulator/Device**
@@ -103,6 +118,18 @@ This project is available for **personal and educational use**. Commercial usage
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Star History
+
+<div align="center">
+  <a href="https://star-history.com/#ShunL12324/comfy-portal&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ShunL12324/comfy-portal&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ShunL12324/comfy-portal&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ShunL12324/comfy-portal&type=Date" />
+    </picture>
+  </a>
+</div>
 
 ---
 <div align="center">
