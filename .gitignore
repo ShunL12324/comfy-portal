@@ -40,7 +40,7 @@ output/
 output/*.png
 
 
-tools/
+/tools/
 
 
 # andriod & ios
