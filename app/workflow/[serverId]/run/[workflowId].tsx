@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Images, Search, ServerCrash, Wand2 } from 'lucide-react-native';
-import React, { useMemo, useRef, useState } from 'react';
+import { Bot, Images, Search, ServerCrash, Wand2 } from 'lucide-react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import { RunPageHeaderStatus } from '@/features/generation/components/run-page-h
 
 import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
+import { AgentChatSheet, AgentChatSheetRef } from '@/features/ai-assistant/components/agent-chat';
+import { NodeChange } from '@/features/ai-assistant/types';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
@@ -30,6 +32,8 @@ function RunWorkflowScreenContent() {
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const agentChatRef = useRef<AgentChatSheetRef>(null);
+  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
@@ -41,6 +45,24 @@ function RunWorkflowScreenContent() {
     router.back();
     return null;
   }
+
+  const handleApplyChanges = useCallback(
+    (changes: NodeChange[]) => {
+      for (const change of changes) {
+        updateNodeInput(workflowId as string, change.nodeId, change.inputKey, change.newValue);
+      }
+    },
+    [workflowId, updateNodeInput],
+  );
+
+  const handleUndoChanges = useCallback(
+    (changes: NodeChange[]) => {
+      for (const change of changes) {
+        updateNodeInput(workflowId as string, change.nodeId, change.inputKey, change.oldValue);
+      }
+    },
+    [workflowId, updateNodeInput],
+  );
 
   const handleGenerate = () => {
     if (!server || !workflowRecord) return;
@@ -101,9 +123,14 @@ function RunWorkflowScreenContent() {
           <RunPageHeaderStatus serverName={server.name} />
         }
         rightElement={
-          <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => setIsHistoryOpen(true)}>
-            <Icon as={Images} size="md" className="text-primary-500" />
-          </Button>
+          <HStack className="items-center" space="xs">
+            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => agentChatRef.current?.present()}>
+              <Icon as={Bot} size="md" className="text-primary-500" />
+            </Button>
+            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => setIsHistoryOpen(true)}>
+              <Icon as={Images} size="md" className="text-primary-500" />
+            </Button>
+          </HStack>
         }
         className="relative z-30 bg-background-0"
       />
@@ -200,6 +227,14 @@ function RunWorkflowScreenContent() {
         serverId={serverId as string}
         workflowId={workflowRecord?.id}
         onSelectMedia={handleSelectHistoryMedia}
+      />
+
+      <AgentChatSheet
+        ref={agentChatRef}
+        workflowId={workflowId as string}
+        serverId={serverId as string}
+        onApplyChanges={handleApplyChanges}
+        onUndoChanges={handleUndoChanges}
       />
     </View>
   );
