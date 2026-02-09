@@ -77,14 +77,18 @@ export function NumberSlider({
   thumbSize = 24,
   space = 24,
 }: CustomSliderProps) {
-  const [localValue, setLocalValue] = useState(controlledValue ?? defaultValue ?? 0);
+  const [localValue, setLocalValue] = useState(() => {
+    const initial = controlledValue ?? defaultValue ?? 0;
+    return typeof initial === 'number' && !isNaN(initial) ? initial : 0;
+  });
   const theme = useResolvedTheme();
   const colors = Colors[theme === 'dark' ? 'dark' : 'light'];
 
   // Sync external controlled value to internal state
   useEffect(() => {
     if (controlledValue !== undefined) {
-      setLocalValue(controlledValue);
+      const num = typeof controlledValue === 'number' && !isNaN(controlledValue) ? controlledValue : 0;
+      setLocalValue(num);
     }
   }, [controlledValue]);
 
@@ -94,7 +98,8 @@ export function NumberSlider({
 
   const formatValue = useCallback(
     (val: number) => {
-      return val.toFixed(precision());
+      const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+      return num.toFixed(precision());
     },
     [precision],
   );
