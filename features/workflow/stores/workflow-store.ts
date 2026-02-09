@@ -1,4 +1,4 @@
-import { WorkflowRecord } from '@/features/workflow/types';
+import { Workflow, WorkflowRecord } from '@/features/workflow/types';
 import { cleanupWorkflowData } from '@/services/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
@@ -12,6 +12,7 @@ interface WorkflowStoreState {
   updateWorkflow: (id: string, updates: Partial<Omit<WorkflowRecord, 'id'>>) => void;
   updateUsage: (id: string) => void;
   updateNodeInput: (workflowId: string, nodeId: string, inputKey: string, value: any) => void;
+  restoreWorkflowData: (workflowId: string, data: Workflow) => void;
   clearServerSyncedWorkflows: (serverId: string) => void;
 }
 
@@ -79,6 +80,13 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
               },
             };
           }),
+        })),
+
+      restoreWorkflowData: (workflowId, data) =>
+        set((state) => ({
+          workflow: state.workflow.map((workflow) =>
+            workflow.id === workflowId ? { ...workflow, data } : workflow,
+          ),
         })),
 
       clearServerSyncedWorkflows: (serverId) =>

@@ -19,7 +19,6 @@ import { RunPageHeaderStatus } from '@/features/generation/components/run-page-h
 import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { AgentChatSheet, AgentChatSheetRef } from '@/features/ai-assistant/components/agent-chat';
-import { NodeChange } from '@/features/ai-assistant/types';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
@@ -33,7 +32,6 @@ function RunWorkflowScreenContent() {
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const agentChatRef = useRef<AgentChatSheetRef>(null);
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
@@ -45,24 +43,6 @@ function RunWorkflowScreenContent() {
     router.back();
     return null;
   }
-
-  const handleApplyChanges = useCallback(
-    (changes: NodeChange[]) => {
-      for (const change of changes) {
-        updateNodeInput(workflowId as string, change.nodeId, change.inputKey, change.newValue);
-      }
-    },
-    [workflowId, updateNodeInput],
-  );
-
-  const handleUndoChanges = useCallback(
-    (changes: NodeChange[]) => {
-      for (const change of changes) {
-        updateNodeInput(workflowId as string, change.nodeId, change.inputKey, change.oldValue);
-      }
-    },
-    [workflowId, updateNodeInput],
-  );
 
   const handleGenerate = () => {
     if (!server || !workflowRecord) return;
@@ -233,8 +213,7 @@ function RunWorkflowScreenContent() {
         ref={agentChatRef}
         workflowId={workflowId as string}
         serverId={serverId as string}
-        onApplyChanges={handleApplyChanges}
-        onUndoChanges={handleUndoChanges}
+        onRunWorkflow={handleGenerate}
       />
     </View>
   );

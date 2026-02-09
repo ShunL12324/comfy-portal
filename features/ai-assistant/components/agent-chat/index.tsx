@@ -7,7 +7,11 @@ import { AgentChatMessage, ChatMessage, NodeChange } from '@/features/ai-assista
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { Agent } from '@/features/ai-assistant/agent';
 import { ToolRegistry } from '@/features/ai-assistant/tools/registry';
-import { createWorkflowTools } from '@/features/ai-assistant/tools/workflow-tools';
+import {
+  createWorkflowTools,
+  serializeWorkflowForPrompt,
+} from '@/features/ai-assistant/tools/workflow-tools';
+import { WorkflowHistory } from '@/features/ai-assistant/tools/workflow-history';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { AIService } from '@/services/ai-service';
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -27,18 +31,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatInput } from './chat-input';
 import { ChatMessageBubble } from './chat-message-bubble';
 
-const SYSTEM_PROMPT = `You are an AI assistant integrated into a ComfyUI workflow app called Comfy Portal.
+const BASE_SYSTEM_PROMPT = `You are an AI assistant integrated into a ComfyUI workflow app called Comfy Portal.
 
-You can view and modify the user's workflow parameters using the tools provided.
+You help users adjust their image generation workflow parameters through natural conversation.
 
-Guidelines:
-- When the user asks to change workflow parameters, ALWAYS call get_workflow_state first to see the current state.
-- Use update_node_input or batch_update_nodes to make changes.
+## Available Tools
+- **update_node_input**: Update a single node parameter.
+- **batch_update_nodes**: Update multiple parameters at once (preferred for multiple changes).
+- **run_workflow**: Trigger image generation (equivalent to pressing the Generate button).
+- **undo**: Revert the last change(s). Can be called multiple times.
+
+## Guidelines
+- The current workflow state is provided below. Use node IDs and input keys exactly as shown.
+- Each parameter has a type annotation (int, float, string, boolean, toggle). Provide values matching the type.
 - For prompt text (CLIPTextEncode nodes), write high-quality Stable Diffusion / Flux prompts.
 - For numeric parameters (steps, cfg, denoise, etc.), use your knowledge of best practices.
-- Be concise in your responses. After making changes, briefly summarize what you did.
+- Use batch_update_nodes when changing multiple parameters to keep undo atomic.
+- Be concise. After making changes, briefly summarize what you did.
 - If the user's request is ambiguous, ask for clarification.
-- Respond in the same language the user uses.`;
+- Respond in the same language the user uses.
+
+## Current Workflow State
+\`\`\`
+{WORKFLOW_CONTEXT}
+\`\`\``;
 
 export interface AgentChatSheetRef {
   present: () => void;
@@ -48,12 +64,11 @@ export interface AgentChatSheetRef {
 interface AgentChatSheetProps {
   workflowId: string;
   serverId: string;
-  onApplyChanges: (changes: NodeChange[]) => void;
-  onUndoChanges: (changes: NodeChange[]) => void;
+  onRunWorkflow: () => void;
 }
 
 export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>(
-  ({ workflowId, serverId, onApplyChanges, onUndoChanges }, ref) => {
+  ({ workflowId, serverId, onRunWorkflow }, ref) => {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -65,6 +80,10 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
     const configured = isConfigured();
     const scrollViewRef = useRef<ScrollView>(null);
     const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+    const restoreWorkflowData = useWorkflowStore((state) => state.restoreWorkflowData);
+
+    // Persistent history instance (survives re-renders, cleared on chat clear)
+    const historyRef = useRef(new WorkflowHistory());
 
     // Build the agent with tools
     const agent = useMemo(() => {
@@ -85,11 +104,27 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
         updateNodeInput: (nodeId, inputKey, value) => {
           updateNodeInput(workflowId, nodeId, inputKey, value);
         },
+        restoreWorkflowData: (data) => {
+          restoreWorkflowData(workflowId, data);
+        },
+        runWorkflow: () => {
+          onRunWorkflow();
+        },
+        history: historyRef.current,
       });
       workflowTools.forEach((tool) => registry.register(tool));
 
-      return new Agent(aiService, registry, SYSTEM_PROMPT);
-    }, [provider, workflowId, updateNodeInput]);
+      // System prompt builder — called fresh each agent.run() to include latest workflow state
+      const buildSystemPrompt = () => {
+        const wf = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
+        const workflowContext = wf?.data
+          ? serializeWorkflowForPrompt(wf.data)
+          : '(empty workflow)';
+        return BASE_SYSTEM_PROMPT.replace('{WORKFLOW_CONTEXT}', workflowContext);
+      };
+
+      return new Agent(aiService, registry, buildSystemPrompt);
+    }, [provider, workflowId, updateNodeInput, restoreWorkflowData, onRunWorkflow]);
 
     useImperativeHandle(ref, () => ({
       present: () => bottomSheetRef.current?.present(),
@@ -135,42 +170,37 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
 
           // Build NodeChange objects from executed tool calls
           const changes: NodeChange[] = [];
-          const workflowData = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data || {};
-
           for (const call of result.executedToolCalls) {
             if (call.name === 'update_node_input') {
-              const node = workflowData[call.args.node_id];
-              if (node) {
-                changes.push({
-                  nodeId: call.args.node_id,
-                  nodeTitle: node._meta?.title || node.class_type || 'Unknown',
-                  inputKey: call.args.input_key,
-                  oldValue: node.inputs[call.args.input_key],
-                  newValue: call.args.value,
-                });
-              }
+              changes.push({
+                nodeId: call.args.node_id,
+                nodeTitle: '', // filled from result text
+                inputKey: call.args.input_key,
+                oldValue: undefined,
+                newValue: call.args.value,
+              });
             } else if (call.name === 'batch_update_nodes' && Array.isArray(call.args.updates)) {
               for (const update of call.args.updates) {
-                const node = workflowData[update.node_id];
-                if (node) {
-                  changes.push({
-                    nodeId: update.node_id,
-                    nodeTitle: node._meta?.title || node.class_type || 'Unknown',
-                    inputKey: update.input_key,
-                    oldValue: node.inputs[update.input_key],
-                    newValue: update.value,
-                  });
-                }
+                changes.push({
+                  nodeId: update.node_id,
+                  nodeTitle: '',
+                  inputKey: update.input_key,
+                  oldValue: undefined,
+                  newValue: update.value,
+                });
               }
             }
           }
+
+          const hasRun = result.executedToolCalls.some((c) => c.name === 'run_workflow');
+          const hasUndo = result.executedToolCalls.some((c) => c.name === 'undo');
 
           const assistantMessage: AgentChatMessage = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
             content: result.content,
             changes: changes.length > 0 ? changes : undefined,
-            changesApplied: changes.length > 0 ? true : undefined, // Already applied by tools
+            changesApplied: changes.length > 0 ? true : undefined,
             timestamp: Date.now(),
           };
           setMessages((prev) => [...prev, assistantMessage]);
@@ -193,37 +223,13 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
           setIsLoading(false);
         }
       },
-      [agent, chatHistory, provider?.temperature, workflowId],
-    );
-
-    const handleApplyChanges = useCallback(
-      (changes: NodeChange[]) => {
-        onApplyChanges(changes);
-        // Mark message as applied
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.changes === changes ? { ...msg, changesApplied: true } : msg,
-          ),
-        );
-      },
-      [onApplyChanges],
-    );
-
-    const handleUndoChanges = useCallback(
-      (changes: NodeChange[]) => {
-        onUndoChanges(changes);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.changes === changes ? { ...msg, changesApplied: false } : msg,
-          ),
-        );
-      },
-      [onUndoChanges],
+      [agent, chatHistory, provider?.temperature],
     );
 
     const handleClearChat = useCallback(() => {
       setMessages([]);
       setChatHistory([]);
+      historyRef.current.clear();
     }, []);
 
     const handleOpenSettings = useCallback(() => {
@@ -287,8 +293,6 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
                     <ChatMessageBubble
                       key={msg.id}
                       message={msg}
-                      onApplyChanges={handleApplyChanges}
-                      onUndoChanges={handleUndoChanges}
                     />
                   ))
                 )}
@@ -339,10 +343,10 @@ function NotConfiguredView({ onOpenSettings }: { onOpenSettings: () => void }) {
           </Text>
           <Pressable
             onPress={onOpenSettings}
-            className="mt-4 flex-row items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 active:bg-primary-600"
+            className="mt-4 flex-row items-center gap-2 rounded-xl bg-typography-900 px-5 py-2.5 active:opacity-80"
           >
-            <Icon as={Settings} size="sm" className="text-white" />
-            <Text className="text-sm font-semibold text-white">Open Settings</Text>
+            <Icon as={Settings} size="sm" className="text-typography-0" />
+            <Text className="text-sm font-semibold text-typography-0">Open Settings</Text>
           </Pressable>
         </View>
       </View>
