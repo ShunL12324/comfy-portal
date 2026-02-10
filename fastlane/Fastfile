@@ -157,3 +157,118 @@ platform :ios do
   end
 
 end
+
+# ============================================
+# Android Platform
+# ============================================
+
+platform :android do
+
+  before_all do
+    if is_ci
+      setup_ci
+    end
+  end
+
+  desc "Increment versionCode based on latest Google Play internal track"
+  lane :bump do
+    # Read current versionCode from build.gradle
+    build_gradle = File.read("../android/app/build.gradle")
+    current_version_code = build_gradle.match(/versionCode\s+(\d+)/)[1].to_i
+
+    # Try to get latest version code from Google Play
+    begin
+      version_codes = google_play_track_version_codes(
+        track: "internal",
+        package_name: "com.sillyl12324.comfyportal"
+      )
+      latest = version_codes.max || 0
+    rescue => e
+      UI.important("Could not fetch version codes from Google Play: #{e.message}")
+      latest = current_version_code
+    end
+
+    new_version_code = [latest, current_version_code].max + 1
+
+    # Update versionCode in build.gradle
+    updated_gradle = build_gradle.gsub(/versionCode\s+\d+/, "versionCode #{new_version_code}")
+    File.write("../android/app/build.gradle", updated_gradle)
+
+    UI.success("versionCode incremented to #{new_version_code} (was #{current_version_code} local, #{latest} on Google Play)")
+  end
+
+  desc "Build Android AAB using Gradle"
+  lane :build do
+    # Generate native project if needed
+    sh("cd .. && npx expo prebuild --platform android --clean")
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "../android"
+    )
+
+    # Copy AAB to build directory
+    sh("mkdir -p ../build")
+    sh("cp ../android/app/build/outputs/bundle/release/app-release.aab ../build/ComfyPortal.aab")
+    UI.success("Android AAB built at build/ComfyPortal.aab")
+  end
+
+  desc "Upload to Google Play internal testing track"
+  lane :beta do
+    upload_to_play_store(
+      track: "internal",
+      aab: "./build/ComfyPortal.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+
+    UI.success("Successfully uploaded to Google Play internal testing!")
+  end
+
+  desc "Upload to Google Play production"
+  lane :release do
+    upload_to_play_store(
+      track: "production",
+      aab: "./build/ComfyPortal.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+
+    UI.success("Successfully uploaded to Google Play production!")
+  end
+
+  desc "Promote internal testing to production"
+  lane :promote do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+
+    UI.success("Successfully promoted to production!")
+  end
+
+  desc "Build and upload to internal testing"
+  lane :deploy do
+    bump
+    build
+    beta
+  end
+
+  # ============================================
+  # Error Handling
+  # ============================================
+
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+  end
+
+end

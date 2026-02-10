@@ -87,3 +87,4 @@ build/
 
 # Temp scripts
 check_history_temp.py
+play-store-credentials.json

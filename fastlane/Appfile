@@ -11,3 +11,10 @@ team_id("QUVB58SSQ7")
 for_platform :ios do
   app_identifier("com.sillyl12324.comfy-portal")
 end
+
+for_platform :android do
+  # CI: use decoded file from GitHub Secrets; Local: use home directory
+  ci_json_path = File.expand_path("~/.google/play-store-credentials.json")
+  json_key_file(ci_json_path) if File.exist?(ci_json_path)
+  package_name("com.sillyl12324.comfyportal")
+end
