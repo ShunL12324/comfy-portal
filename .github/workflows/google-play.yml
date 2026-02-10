@@ -81,10 +81,6 @@ jobs:
           mkdir -p ~/.google
           echo "$GOOGLE_PLAY_JSON_KEY" | base64 --decode > ~/.google/play-store-credentials.json
 
-      # ── Expo Prebuild (without --clean to leverage caches) ─
-      - name: Expo prebuild (Android)
-        run: npx expo prebuild --platform android
-
       # ── Gradle caches ───────────────────────────────────
       # Cache Gradle wrapper, dependencies, and build outputs
       - name: Cache Gradle

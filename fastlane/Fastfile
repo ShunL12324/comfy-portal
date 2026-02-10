@@ -199,8 +199,11 @@ platform :android do
 
   desc "Build Android AAB using Gradle"
   lane :build do
-    # Generate native project if needed (no --clean to leverage build caches)
+    # Generate native project (android/ is gitignored, must prebuild in CI)
     sh("cd .. && npx expo prebuild --platform android")
+
+    # Ensure gradlew is executable (may lose permission after prebuild)
+    sh("chmod +x ../android/gradlew")
 
     gradle(
       task: "bundle",
