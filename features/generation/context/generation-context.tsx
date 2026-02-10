@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -243,7 +244,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
                   });
 
                   if (result) {
-                    const localMediaUrl = result.path.startsWith('file://') ? result.path : `file://${result.path}`;
+                    // On web, paths are already HTTP URLs; on native, ensure file:// prefix
+                    const localMediaUrl = Platform.OS === 'web'
+                      ? result.path
+                      : result.path.startsWith('file://') ? result.path : `file://${result.path}`;
                     savedMediaPaths.push(localMediaUrl);
                   }
                 }
