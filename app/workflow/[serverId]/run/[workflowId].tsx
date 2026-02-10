@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Images, Search, ServerCrash, Settings, Trash2, Wand2 } from 'lucide-react-native';
+import { Images, Search, ServerCrash, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, useWindowDimensions, View } from 'react-native';
 
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -16,15 +15,18 @@ import { AppBar } from '@/components/layout/app-bar';
 import { SheetTabToggle } from '@/components/self-ui/sheet-tab-toggle';
 import { HistoryDrawer } from '@/features/generation/components/history-drawer';
 import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
+import { GenerateActionButton } from '@/features/generation/components/generate-action-button';
 
 import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
 import { MediaPreview } from '@/features/generation/components/media-preview';
-import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
+import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { TabView } from 'react-native-tab-view';
+
+import { Button } from '@/components/ui/button';
 
 const TAB_ROUTES = [
   { key: 'nodes', title: 'Nodes' },
@@ -74,7 +76,7 @@ function NodesTabContent({
       <BottomSheetScrollView
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: 100,
+          paddingBottom: 24,
           backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
         }}
         style={{
@@ -112,7 +114,6 @@ function RunWorkflowScreenContent() {
   // TabView state
   const [tabIndex, setTabIndex] = useState(0);
 
-  const { status } = useGenerationStatus();
   const { generate, setGeneratedMedia } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,10 +127,6 @@ function RunWorkflowScreenContent() {
     setGeneratedMedia([url]);
     setIsHistoryOpen(false);
   }, [setGeneratedMedia]);
-
-  const handleOpenSettings = useCallback(() => {
-    router.push('/settings/ai-assistant');
-  }, [router]);
 
   const handleTabChange = useCallback((newIndex: number) => {
     setTabIndex(newIndex);
@@ -184,12 +181,11 @@ function RunWorkflowScreenContent() {
           workflowId={workflowId as string}
           serverId={serverId as string}
           onRunWorkflow={handleGenerate}
-          onOpenSettings={handleOpenSettings}
         />
       );
     }
     return null;
-  }, [nodes, searchQuery, serverId, workflowId, theme, handleGenerate, handleOpenSettings]);
+  }, [nodes, searchQuery, serverId, workflowId, theme, handleGenerate]);
 
   // Early returns after all hooks
   if (!workflowRecord) {
@@ -259,25 +255,20 @@ function RunWorkflowScreenContent() {
         keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
       >
-        {/* Sheet Header: toggle + contextual actions */}
+        {/* Sheet Header: toggle + contextual actions + generate button */}
         <View className="flex-row items-center justify-between px-4 pb-2 bg-background-0">
           <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
-          {tabIndex === 1 && (
-            <HStack className="items-center" space="xs">
+          <HStack className="items-center" space="xs">
+            {tabIndex === 1 && (
               <Pressable
                 onPress={() => aiChatTabRef.current?.clearChat()}
                 className="rounded-lg p-2 active:bg-background-100"
               >
                 <Icon as={Trash2} size="sm" className="text-typography-400" />
               </Pressable>
-              <Pressable
-                onPress={handleOpenSettings}
-                className="rounded-lg p-2 active:bg-background-100"
-              >
-                <Icon as={Settings} size="sm" className="text-typography-400" />
-              </Pressable>
-            </HStack>
-          )}
+            )}
+            <GenerateActionButton onGenerate={handleGenerate} />
+          </HStack>
         </View>
 
         <TabView
@@ -291,22 +282,6 @@ function RunWorkflowScreenContent() {
           style={{ flex: 1 }}
         />
       </BottomSheet>
-
-      <View className="relative z-30 h-20 bg-background-0 px-4">
-        <Button
-          size="xl"
-          variant="solid"
-          action="primary"
-          onPress={handleGenerate}
-          disabled={status === 'generating'}
-          className="rounded-lg active:bg-primary-600 disabled:opacity-50"
-        >
-          <ButtonIcon as={Wand2} size="sm" />
-          <ButtonText className="text-md font-semibold">
-            {status === 'generating' ? 'Generating...' : 'Generate'}
-          </ButtonText>
-        </Button>
-      </View>
 
       <HistoryDrawer
         isOpen={isHistoryOpen}

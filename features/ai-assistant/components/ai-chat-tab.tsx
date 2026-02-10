@@ -25,6 +25,7 @@ import React, {
   useState,
 } from 'react';
 import { Pressable, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ChatInput } from './agent-chat/chat-input';
 import { ChatMessageBubble } from './agent-chat/chat-message-bubble';
 
@@ -62,11 +63,27 @@ interface AIChatTabProps {
   workflowId: string;
   serverId: string;
   onRunWorkflow: () => void;
-  onOpenSettings: () => void;
+}
+
+/** Returns true if the error looks like an AI provider configuration issue */
+function isConfigError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('api request failed') ||
+    msg.includes('network request failed') ||
+    msg.includes('invalid api') ||
+    msg.includes('401') ||
+    msg.includes('403') ||
+    msg.includes('invalid_api_key') ||
+    msg.includes('model_not_found') ||
+    msg.includes('connection') ||
+    msg.includes('fetch')
+  );
 }
 
 export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
-  ({ workflowId, serverId, onRunWorkflow, onOpenSettings }, ref) => {
+  ({ workflowId, serverId, onRunWorkflow }, ref) => {
     const [messages, setMessages] = useState<AgentChatMessage[]>([]);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +92,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     const scrollViewRef = useRef<ScrollView>(null);
     const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
     const restoreWorkflowData = useWorkflowStore((state) => state.restoreWorkflowData);
+    const router = useRouter();
 
     // Persistent history instance (survives re-renders, cleared on chat clear)
     const historyRef = useRef(new WorkflowHistory());
@@ -201,10 +219,14 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             { role: 'assistant', content: result.content },
           ]);
         } catch (error) {
+          const configError = isConfigError(error);
           const errorMessage: AgentChatMessage = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
+            content: configError
+              ? `Request failed — your AI provider may be misconfigured.\n\n${error instanceof Error ? error.message : 'Unknown error'}`
+              : `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
+            isConfigError: configError || undefined,
             timestamp: Date.now(),
           };
           setMessages((prev) => [...prev, errorMessage]);
@@ -216,7 +238,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     );
 
     if (!configured) {
-      return <NotConfiguredView onOpenSettings={onOpenSettings} />;
+      return <NotConfiguredView />;
     }
 
     return (
@@ -237,6 +259,11 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
               <ChatMessageBubble
                 key={msg.id}
                 message={msg}
+                renderFooter={
+                  msg.isConfigError ? (
+                    <ConfigErrorAction onPress={() => router.push('/settings/ai-assistant')} />
+                  ) : undefined
+                }
               />
             ))
           )}
@@ -267,7 +294,8 @@ function EmptyStateView() {
   );
 }
 
-function NotConfiguredView({ onOpenSettings }: { onOpenSettings: () => void }) {
+function NotConfiguredView() {
+  const router = useRouter();
   return (
     <View className="flex-1 items-center justify-center px-6 py-12">
       <View className="w-full rounded-2xl bg-warning-50 px-5 py-6">
@@ -282,7 +310,7 @@ function NotConfiguredView({ onOpenSettings }: { onOpenSettings: () => void }) {
             Set up your API provider to use the AI Agent.
           </Text>
           <Pressable
-            onPress={onOpenSettings}
+            onPress={() => router.push('/settings/ai-assistant')}
             className="mt-4 flex-row items-center gap-2 rounded-xl bg-typography-900 px-5 py-2.5 active:opacity-80"
           >
             <Icon as={Settings} size="sm" className="text-typography-0" />
@@ -291,6 +319,18 @@ function NotConfiguredView({ onOpenSettings }: { onOpenSettings: () => void }) {
         </View>
       </View>
     </View>
+  );
+}
+
+function ConfigErrorAction({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="mt-2 flex-row items-center gap-1.5 rounded-lg bg-warning-100 px-3 py-2 active:opacity-80"
+    >
+      <Icon as={Settings} size="xs" className="text-warning-700" />
+      <Text className="text-xs font-semibold text-warning-700">Check AI Configuration</Text>
+    </Pressable>
   );
 }
 

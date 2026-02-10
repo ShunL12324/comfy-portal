@@ -29,6 +29,7 @@ interface GenerationContextType {
   isGenerating: boolean;
   generate: (workflow: Record<string, Node>, workflowId: string, serverId: string) => Promise<void>;
   reset: () => void;
+  cancel: () => Promise<void>;
   setGeneratedMedia: (urls: string[]) => void;
   registerNodeHooks: (nodeId: string, hooks: NodeLifecycleHooks) => void;
   unregisterNodeHooks: (nodeId: string) => void;
@@ -40,6 +41,7 @@ interface GenerationStatus {
   status: 'idle' | 'generating' | 'downloading' | 'error' | 'success';
   currentNodeId?: string;
   generatedMedia: string[];
+  queueRemaining: number;
 }
 
 interface GenerationProgress {
@@ -56,6 +58,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
     generatedMedia: [],
+    queueRemaining: 0,
   });
 
   const [progress, setProgress] = useState<GenerationProgress>({
@@ -118,6 +121,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       ...prev,
       status: 'idle',
       currentNodeId: undefined,
+      queueRemaining: 0,
     }));
     lastProgressPercentRef.current = 0;
     setProgress({
@@ -134,6 +138,16 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   const unregisterNodeHooks = useCallback((nodeId: string) => {
     delete nodeHooksRef.current[nodeId];
   }, []);
+
+  const cancel = useCallback(async () => {
+    if (!comfyClient.current) return;
+    try {
+      await comfyClient.current.interrupt();
+    } catch (error) {
+      console.error('Failed to interrupt:', error);
+    }
+    reset();
+  }, [reset]);
 
   const setGeneratedMedia = useCallback((urls: string[]) => {
     setStatus((prev) => ({ ...prev, generatedMedia: urls }));
@@ -197,6 +211,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           },
           onNodeComplete: (node, completed, total) => {
             handleNodeProgress(completed, total);
+          },
+          onQueueUpdate: (queueRemaining) => {
+            setStatus((prev) => ({ ...prev, queueRemaining }));
           },
           onDownloadProgress: (_, progress) => {
             setStatus((prev) => {
@@ -284,11 +301,12 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     () => ({
       generate,
       reset,
+      cancel,
       setGeneratedMedia,
       registerNodeHooks,
       unregisterNodeHooks,
     }),
-    [generate, reset, registerNodeHooks, unregisterNodeHooks, setGeneratedMedia],
+    [generate, reset, cancel, registerNodeHooks, unregisterNodeHooks, setGeneratedMedia],
   );
 
   return (

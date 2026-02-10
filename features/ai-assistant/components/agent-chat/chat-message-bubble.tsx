@@ -12,9 +12,10 @@ import Markdown from 'react-native-markdown-display';
 
 interface ChatMessageBubbleProps {
   message: AgentChatMessage;
+  renderFooter?: React.ReactNode;
 }
 
-export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
   const hasChanges = message.changes && message.changes.length > 0;
   const theme = useResolvedTheme();
@@ -228,6 +229,9 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             ))}
           </View>
         )}
+
+        {/* Optional footer (e.g. config error action) */}
+        {renderFooter}
       </View>
 
       {/* Avatar for user */}

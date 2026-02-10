@@ -57,6 +57,12 @@ interface ProgressCallback {
    * @param progress - Download progress percentage (0-100)
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
+
+  /**
+   * Called when the server queue status updates
+   * @param queueRemaining - Number of items remaining in the queue
+   */
+  onQueueUpdate?: (queueRemaining: number) => void;
 }
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
@@ -71,6 +77,7 @@ export class ComfyClient {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private currentPromptId: string | null = null;
 
   constructor(options: ComfyClientOptions) {
     this.host = options.host;
@@ -78,6 +85,23 @@ export class ComfyClient {
     this.useSSL = options.useSSL;
     this.clientId = Crypto.randomUUID();
     this.token = options.token;
+  }
+
+  /**
+   * Sends an interrupt request to the ComfyUI server to cancel the current generation.
+   * @throws Error if the interrupt request fails
+   */
+  async interrupt(): Promise<void> {
+    const path = this.token ? `/interrupt?token=${this.token}` : '/interrupt';
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const body = this.currentPromptId
+      ? JSON.stringify({ prompt_id: this.currentPromptId })
+      : '{}';
+    await fetchWithAuth(url, this.token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
   }
 
   /**
@@ -217,7 +241,7 @@ export class ComfyClient {
           const message = JSON.parse(event.data);
 
           // Only process whitelisted message types
-          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success'] as const;
+          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success', 'status'] as const;
           if (!validMessageTypes.includes(message.type)) {
             return;
           }
@@ -253,6 +277,12 @@ export class ComfyClient {
               this.ws?.removeEventListener('message', handleMessage);
               callbacks.onError?.(message.data.error || 'Unknown error');
               resolve(false);
+              break;
+
+            case 'status':
+              callbacks.onQueueUpdate?.(
+                message.data?.status?.exec_info?.queue_remaining ?? 0,
+              );
               break;
 
             case 'executed':
@@ -384,6 +414,7 @@ export class ComfyClient {
   async generate(workflow: Workflow, callbacks: ProgressCallback): Promise<string[]> {
     try {
       const promptId = await this.queuePrompt(workflow);
+      this.currentPromptId = promptId;
       const success = await this.trackProgress(promptId, workflow, callbacks);
       if (!success) {
         throw new Error('Generation failed');
@@ -429,6 +460,8 @@ export class ComfyClient {
     } catch (error) {
       callbacks.onError?.(error instanceof Error ? error.message : 'Unknown error');
       throw error;
+    } finally {
+      this.currentPromptId = null;
     }
   }
 } 
