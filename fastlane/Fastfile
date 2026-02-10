@@ -205,10 +205,14 @@ platform :android do
     # Ensure gradlew is executable (may lose permission after prebuild)
     sh("chmod +x ../android/gradlew")
 
+    # Use absolute path for project_dir to avoid path resolution issues
+    project_root = File.expand_path("../..", __dir__)
+    android_dir = File.join(project_root, "android")
+
     gradle(
       task: "bundle",
       build_type: "Release",
-      project_dir: "../android"
+      project_dir: android_dir
     )
 
     # Copy AAB to build directory
