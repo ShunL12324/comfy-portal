@@ -21,3 +21,7 @@
 [   61205ms] [ERROR] Unexpected text node: . A text node cannot be a child of a <View>. @ http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app:478280
 [   61206ms] [ERROR] Unexpected text node: . A text node cannot be a child of a <View>. @ http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app:478280
 [   61206ms] [ERROR] Unexpected text node: . A text node cannot be a child of a <View>. @ http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app:478280
+[ 1641371ms] [WARNING] Disconnected from Metro (1006)
+To reconnect:
+- Ensure that Metro is running and available on the same network
+- Reload this app (will trigger further help if Metro cannot be connected to) @ http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app:60854
