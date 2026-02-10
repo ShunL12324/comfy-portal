@@ -24,6 +24,15 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
         type: 'sourceFile',
       };
     }
+
+    // Replace @gorhom/bottom-sheet with web shim (BottomSheetTextInput crashes on web)
+    // Skip if the import originates from our shim to avoid circular resolution
+    if (moduleName === '@gorhom/bottom-sheet' && !context.originModulePath?.includes('shims/')) {
+      return {
+        filePath: path.resolve(__dirname, 'shims/gorhom-bottom-sheet.web.ts'),
+        type: 'sourceFile',
+      };
+    }
   }
   return context.resolveRequest(context, moduleName, platform);
 };
