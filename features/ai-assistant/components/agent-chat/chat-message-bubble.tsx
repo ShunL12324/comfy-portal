@@ -7,71 +7,8 @@ import { useResolvedTheme } from '@/store/theme';
 import { ArrowRight, Bot, Check, User } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useMemo } from 'react';
-import { StreamdownRN } from 'streamdown-rn';
-import type { ThemeConfig } from 'streamdown-rn';
-
-// Custom themes matching the app's black/white color scheme
-const lightMarkdownTheme: ThemeConfig = {
-  colors: {
-    background: 'transparent',
-    foreground: Colors.light.typography[900],
-    muted: Colors.light.typography[500],
-    accent: Colors.light.primary[500],
-    codeBackground: Colors.light.background[100],
-    codeForeground: Colors.light.typography[900],
-    border: Colors.light.outline[100],
-    link: Colors.light.primary[500],
-    syntaxDefault: Colors.light.typography[900],
-    syntaxKeyword: '#d73a49',
-    syntaxString: '#032f62',
-    syntaxNumber: '#005cc5',
-    syntaxComment: Colors.light.typography[400],
-    syntaxFunction: '#6f42c1',
-    syntaxClass: '#e36209',
-    syntaxOperator: '#d73a49',
-  },
-  fonts: {
-    regular: undefined,
-    bold: undefined,
-    mono: 'Menlo',
-  },
-  spacing: {
-    block: 8,
-    inline: 2,
-    indent: 12,
-  },
-};
-
-const darkMarkdownTheme: ThemeConfig = {
-  colors: {
-    background: 'transparent',
-    foreground: Colors.dark.typography[900],
-    muted: Colors.dark.typography[500],
-    accent: Colors.dark.primary[500],
-    codeBackground: Colors.dark.background[100],
-    codeForeground: Colors.dark.typography[900],
-    border: Colors.dark.outline[100],
-    link: Colors.dark.primary[500],
-    syntaxDefault: Colors.dark.typography[900],
-    syntaxKeyword: '#ff7b72',
-    syntaxString: '#a5d6ff',
-    syntaxNumber: '#79c0ff',
-    syntaxComment: Colors.dark.typography[400],
-    syntaxFunction: '#d2a8ff',
-    syntaxClass: '#ffa657',
-    syntaxOperator: '#ff7b72',
-  },
-  fonts: {
-    regular: undefined,
-    bold: undefined,
-    mono: 'Menlo',
-  },
-  spacing: {
-    block: 8,
-    inline: 2,
-    indent: 12,
-  },
-};
+import { StyleSheet } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 
 interface ChatMessageBubbleProps {
   message: AgentChatMessage;
@@ -81,7 +18,170 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
   const hasChanges = message.changes && message.changes.length > 0;
   const theme = useResolvedTheme();
-  const markdownTheme = theme === 'dark' ? darkMarkdownTheme : lightMarkdownTheme;
+
+  const mdStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        body: {
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: 14,
+          lineHeight: 20,
+        },
+        heading1: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginTop: 8,
+          marginBottom: 4,
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        heading2: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          marginTop: 6,
+          marginBottom: 4,
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        heading3: {
+          fontSize: 16,
+          fontWeight: '600',
+          marginTop: 4,
+          marginBottom: 2,
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        heading4: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        heading5: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        heading6: {
+          fontSize: 12,
+          fontWeight: '600',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        paragraph: {
+          marginTop: 0,
+          marginBottom: 6,
+        },
+        strong: {
+          fontWeight: 'bold',
+        },
+        em: {
+          fontStyle: 'italic',
+        },
+        s: {
+          textDecorationLine: 'line-through',
+        },
+        link: {
+          color: theme === 'dark' ? Colors.dark.primary[400] : Colors.light.primary[500],
+          textDecorationLine: 'underline',
+        },
+        blockquote: {
+          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
+          borderColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
+          borderLeftWidth: 3,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          marginVertical: 4,
+        },
+        code_inline: {
+          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
+          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          borderWidth: 1,
+          borderRadius: 4,
+          paddingHorizontal: 4,
+          paddingVertical: 1,
+          fontSize: 12,
+          fontFamily: 'Menlo',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        code_block: {
+          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
+          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          borderWidth: 1,
+          borderRadius: 6,
+          padding: 8,
+          fontSize: 12,
+          fontFamily: 'Menlo',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        fence: {
+          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
+          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          borderWidth: 1,
+          borderRadius: 6,
+          padding: 8,
+          fontSize: 12,
+          fontFamily: 'Menlo',
+          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+        },
+        bullet_list: {
+          marginVertical: 2,
+        },
+        ordered_list: {
+          marginVertical: 2,
+        },
+        list_item: {
+          flexDirection: 'row',
+          justifyContent: 'flex-start',
+          marginVertical: 1,
+        },
+        bullet_list_icon: {
+          marginLeft: 4,
+          marginRight: 6,
+          color: theme === 'dark' ? Colors.dark.typography[500] : Colors.light.typography[500],
+        },
+        bullet_list_content: {
+          flex: 1,
+        },
+        ordered_list_icon: {
+          marginLeft: 4,
+          marginRight: 6,
+          color: theme === 'dark' ? Colors.dark.typography[500] : Colors.light.typography[500],
+        },
+        ordered_list_content: {
+          flex: 1,
+        },
+        hr: {
+          backgroundColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
+          height: 1,
+          marginVertical: 8,
+        },
+        table: {
+          borderWidth: 1,
+          borderColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
+          borderRadius: 4,
+          marginVertical: 4,
+        },
+        tr: {
+          borderBottomWidth: 1,
+          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[50],
+          flexDirection: 'row',
+        },
+        th: {
+          flex: 1,
+          padding: 4,
+          fontWeight: 'bold',
+          fontSize: 12,
+        },
+        td: {
+          flex: 1,
+          padding: 4,
+          fontSize: 12,
+        },
+        image: {
+          flex: 1,
+          borderRadius: 6,
+        },
+        text: {},
+        textgroup: {},
+      }),
+    [theme],
+  );
 
   return (
     <MotiView
@@ -107,12 +207,9 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           </View>
         ) : (
           <View className="rounded-2xl rounded-bl-md bg-background-100 px-3.5 py-2.5">
-            <StreamdownRN
-              theme={markdownTheme}
-              isComplete={true}
-            >
+            <Markdown style={mdStyles} mergeStyle={false}>
               {message.content}
-            </StreamdownRN>
+            </Markdown>
           </View>
         )}
 
