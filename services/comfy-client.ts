@@ -2,6 +2,7 @@ import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
 import { generateUUID } from '@/utils/uuid';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
 
 /**
@@ -370,6 +371,13 @@ export class ComfyClient {
       path += `&token=${this.token}`;
     }
     const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+
+    // On web, skip file system download — just return the URL directly
+    // The browser can load remote images via <img src="...">
+    if (Platform.OS === 'web') {
+      return url;
+    }
+
     const response = await fetchWithAuth(url, this.token);
 
     if (!response.ok) {
