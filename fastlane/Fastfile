@@ -202,18 +202,11 @@ platform :android do
     # Generate native project (android/ is gitignored, must prebuild in CI)
     sh("cd .. && npx expo prebuild --platform android")
 
-    # Ensure gradlew is executable (may lose permission after prebuild)
+    # Ensure gradlew is executable
     sh("chmod +x ../android/gradlew")
 
-    # Use absolute path for project_dir to avoid path resolution issues
-    project_root = File.expand_path("../..", __dir__)
-    android_dir = File.join(project_root, "android")
-
-    gradle(
-      task: "bundle",
-      build_type: "Release",
-      project_dir: android_dir
-    )
+    # Build AAB using shell command (avoids Fastlane gradle() path issues)
+    sh("cd ../android && ./gradlew bundleRelease")
 
     # Copy AAB to build directory
     sh("mkdir -p ../build")
