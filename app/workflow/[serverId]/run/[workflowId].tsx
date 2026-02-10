@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Bot, Images, Search, ServerCrash, Wand2 } from 'lucide-react-native';
+import { Images, Search, ServerCrash, Settings, Trash2, Wand2 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
@@ -13,68 +13,138 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 
 import { AppBar } from '@/components/layout/app-bar';
+import { SheetTabToggle } from '@/components/self-ui/sheet-tab-toggle';
 import { HistoryDrawer } from '@/features/generation/components/history-drawer';
 import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 
 import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
-import { AgentChatSheet, AgentChatSheetRef } from '@/features/ai-assistant/components/agent-chat';
+import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { TabView } from 'react-native-tab-view';
+
+const TAB_ROUTES = [
+  { key: 'nodes', title: 'Nodes' },
+  { key: 'ai', title: 'AI' },
+];
+
+function NodesTabContent({
+  nodes,
+  searchQuery,
+  setSearchQuery,
+  serverId,
+  workflowId,
+  theme,
+}: {
+  nodes: any[];
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  serverId: string;
+  workflowId: string;
+  theme: string;
+}) {
+  return (
+    <View className="flex-1 bg-background-0">
+      <View className="px-4 pt-4 pb-2 bg-background-0">
+        <HStack
+          className="items-center rounded-lg bg-background-0 px-3 py-3"
+          style={{
+            borderWidth: 1,
+            borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
+          }}
+        >
+          <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
+          <BottomSheetTextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search nodes..."
+            placeholderTextColor={theme === 'light' ? Colors.light.typography[400] : Colors.dark.typography[400]}
+            style={{
+              flex: 1,
+              color: theme === 'light' ? Colors.light.typography[900] : Colors.dark.typography[900],
+              fontSize: 14,
+              padding: 0,
+            }}
+          />
+        </HStack>
+      </View>
+      <BottomSheetScrollView
+        contentContainerStyle={{
+          padding: 16,
+          paddingBottom: 100,
+          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
+        }}
+        style={{
+          flex: 1,
+          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
+        }}
+      >
+        {nodes.map((node: any) => (
+          <NodeComponent
+            key={node.id}
+            node={node}
+            serverId={serverId}
+            workflowId={workflowId}
+          />
+        ))}
+      </BottomSheetScrollView>
+    </View>
+  );
+}
 
 function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
   const router = useRouter();
   const theme = useResolvedTheme();
+  const layout = useWindowDimensions();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const agentChatRef = useRef<AgentChatSheetRef>(null);
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
+  const aiChatTabRef = useRef<AIChatTabRef>(null);
+  const sheetSnapIndexRef = useRef(1);
+
+  // TabView state
+  const [tabIndex, setTabIndex] = useState(0);
 
   const { status } = useGenerationStatus();
   const { generate, setGeneratedMedia } = useGenerationActions();
 
-  if (!workflowRecord) {
-    router.back();
-    return null;
-  }
-
-  const handleGenerate = () => {
-    if (!server || !workflowRecord) return;
-    generate(workflowRecord.data, workflowRecord.id, server.id);
-  };
-
-  const handleSelectHistoryMedia = (url: string) => {
-    setGeneratedMedia([url]);
-    setIsHistoryOpen(false);
-  };
-
-  if (!server || !workflowRecord) {
-    return (
-      <VStack className="flex-1 items-center justify-center px-6" space="md">
-        <View className="rounded-full bg-background-50 p-3">
-          <Icon as={ServerCrash} size="xl" className="h-10 w-10 text-typography-300" />
-        </View>
-        <VStack className="items-center" space="xs">
-          <Text className="text-center text-base font-semibold text-typography-800">
-            {!server ? 'Server Not Found' : 'Workflow Not Found'}
-          </Text>
-          <Text className="text-center text-sm text-typography-500">
-            {!server ? 'Please check your server list and try again.' : 'This workflow may have been removed.'}
-          </Text>
-        </VStack>
-      </VStack>
-    );
-  }
-
   const [searchQuery, setSearchQuery] = useState('');
 
+  const handleGenerate = useCallback(() => {
+    if (!server || !workflowRecord) return;
+    generate(workflowRecord.data, workflowRecord.id, server.id);
+  }, [server, workflowRecord, generate]);
+
+  const handleSelectHistoryMedia = useCallback((url: string) => {
+    setGeneratedMedia([url]);
+    setIsHistoryOpen(false);
+  }, [setGeneratedMedia]);
+
+  const handleOpenSettings = useCallback(() => {
+    router.push('/settings/ai-assistant');
+  }, [router]);
+
+  const handleTabChange = useCallback((newIndex: number) => {
+    setTabIndex(newIndex);
+    // Auto-expand sheet when switching to AI tab at minimum snap
+    if (newIndex === 1 && sheetSnapIndexRef.current === 0) {
+      sheetRef.current?.snapToIndex(1);
+    }
+  }, []);
+
+  const handleSheetChange = useCallback((index: number) => {
+    sheetSnapIndexRef.current = index;
+  }, []);
+
   const nodes = useMemo(() => {
+    if (!workflowRecord) return [];
     const allNodes = Object.values(workflowRecord.data);
     const sorted = allNodes.sort((a: any, b: any) => {
       const aId = parseInt(a.id);
@@ -92,7 +162,58 @@ function RunWorkflowScreenContent() {
         type.toLowerCase().includes(lowerQuery) ||
         inputs.toLowerCase().includes(lowerQuery);
     });
-  }, [workflowRecord.data, searchQuery]);
+  }, [workflowRecord, searchQuery]);
+
+  const renderScene = useCallback(({ route }: { route: { key: string } }) => {
+    if (route.key === 'nodes') {
+      return (
+        <NodesTabContent
+          nodes={nodes}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          serverId={serverId as string}
+          workflowId={workflowId as string}
+          theme={theme}
+        />
+      );
+    }
+    if (route.key === 'ai') {
+      return (
+        <AIChatTab
+          ref={aiChatTabRef}
+          workflowId={workflowId as string}
+          serverId={serverId as string}
+          onRunWorkflow={handleGenerate}
+          onOpenSettings={handleOpenSettings}
+        />
+      );
+    }
+    return null;
+  }, [nodes, searchQuery, serverId, workflowId, theme, handleGenerate, handleOpenSettings]);
+
+  // Early returns after all hooks
+  if (!workflowRecord) {
+    router.back();
+    return null;
+  }
+
+  if (!server) {
+    return (
+      <VStack className="flex-1 items-center justify-center px-6" space="md">
+        <View className="rounded-full bg-background-50 p-3">
+          <Icon as={ServerCrash} size="xl" className="h-10 w-10 text-typography-300" />
+        </View>
+        <VStack className="items-center" space="xs">
+          <Text className="text-center text-base font-semibold text-typography-800">
+            Server Not Found
+          </Text>
+          <Text className="text-center text-sm text-typography-500">
+            Please check your server list and try again.
+          </Text>
+        </VStack>
+      </VStack>
+    );
+  }
 
   return (
     <View className="z-0 flex-1 bg-background-0">
@@ -104,9 +225,6 @@ function RunWorkflowScreenContent() {
         }
         rightElement={
           <HStack className="items-center" space="xs">
-            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => agentChatRef.current?.present()}>
-              <Icon as={Bot} size="md" className="text-primary-500" />
-            </Button>
             <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => setIsHistoryOpen(true)}>
               <Icon as={Images} size="md" className="text-primary-500" />
             </Button>
@@ -125,6 +243,7 @@ function RunWorkflowScreenContent() {
         index={1}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        onChange={handleSheetChange}
         backgroundStyle={{
           backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
           borderWidth: 1,
@@ -140,49 +259,37 @@ function RunWorkflowScreenContent() {
         keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
       >
-        <View className="px-4 pt-4 pb-2 bg-background-0">
-          <HStack
-            className="items-center rounded-lg bg-background-0 px-3 py-3"
-            style={{
-              borderWidth: 1,
-              borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
-            }}
-          >
-            <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
-            <BottomSheetTextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search nodes..."
-              placeholderTextColor={theme === 'light' ? Colors.light.typography[400] : Colors.dark.typography[400]}
-              style={{
-                flex: 1,
-                color: theme === 'light' ? Colors.light.typography[900] : Colors.dark.typography[900],
-                fontSize: 14,
-                padding: 0,
-              }}
-            />
-          </HStack>
+        {/* Sheet Header: toggle + contextual actions */}
+        <View className="flex-row items-center justify-between px-4 pb-2 bg-background-0">
+          <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
+          {tabIndex === 1 && (
+            <HStack className="items-center" space="xs">
+              <Pressable
+                onPress={() => aiChatTabRef.current?.clearChat()}
+                className="rounded-lg p-2 active:bg-background-100"
+              >
+                <Icon as={Trash2} size="sm" className="text-typography-400" />
+              </Pressable>
+              <Pressable
+                onPress={handleOpenSettings}
+                className="rounded-lg p-2 active:bg-background-100"
+              >
+                <Icon as={Settings} size="sm" className="text-typography-400" />
+              </Pressable>
+            </HStack>
+          )}
         </View>
-        <BottomSheetScrollView
-          contentContainerStyle={{
-            padding: 16,
-            paddingBottom: 100,
-            backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-          }}
-          style={{
-            flex: 1,
-            backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-          }}
-        >
-          {nodes.map((node: any) => (
-            <NodeComponent
-              key={node.id}
-              node={node}
-              serverId={serverId as string}
-              workflowId={workflowId as string}
-            />
-          ))}
-        </BottomSheetScrollView>
+
+        <TabView
+          navigationState={{ index: tabIndex, routes: TAB_ROUTES }}
+          renderScene={renderScene}
+          onIndexChange={handleTabChange}
+          initialLayout={{ width: layout.width }}
+          renderTabBar={() => null}
+          swipeEnabled={false}
+          lazy
+          style={{ flex: 1 }}
+        />
       </BottomSheet>
 
       <View className="relative z-30 h-20 bg-background-0 px-4">
@@ -207,13 +314,6 @@ function RunWorkflowScreenContent() {
         serverId={serverId as string}
         workflowId={workflowRecord?.id}
         onSelectMedia={handleSelectHistoryMedia}
-      />
-
-      <AgentChatSheet
-        ref={agentChatRef}
-        workflowId={workflowId as string}
-        serverId={serverId as string}
-        onRunWorkflow={handleGenerate}
       />
     </View>
   );

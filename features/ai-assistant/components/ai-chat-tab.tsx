@@ -2,7 +2,6 @@ import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { AgentChatMessage, ChatMessage, NodeChange } from '@/features/ai-assistant/types';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { Agent } from '@/features/ai-assistant/agent';
@@ -14,9 +13,8 @@ import {
 import { WorkflowHistory } from '@/features/ai-assistant/tools/workflow-history';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { AIService } from '@/services/ai-service';
-import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useRouter } from 'expo-router';
-import { AlertTriangle, Bot, Settings, Trash2 } from 'lucide-react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { AlertTriangle, Bot, Settings } from 'lucide-react-native';
 import React, {
   forwardRef,
   useCallback,
@@ -26,10 +24,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Keyboard, Pressable, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChatInput } from './chat-input';
-import { ChatMessageBubble } from './chat-message-bubble';
+import { Pressable, ScrollView } from 'react-native';
+import { ChatInput } from './agent-chat/chat-input';
+import { ChatMessageBubble } from './agent-chat/chat-message-bubble';
 
 const BASE_SYSTEM_PROMPT = `You are an AI assistant integrated into a ComfyUI workflow app called Comfy Portal.
 
@@ -56,23 +53,20 @@ You help users adjust their image generation workflow parameters through natural
 {WORKFLOW_CONTEXT}
 \`\`\``;
 
-export interface AgentChatSheetRef {
-  present: () => void;
-  dismiss: () => void;
+export interface AIChatTabRef {
+  clearChat: () => void;
+  hasMessages: () => boolean;
 }
 
-interface AgentChatSheetProps {
+interface AIChatTabProps {
   workflowId: string;
   serverId: string;
   onRunWorkflow: () => void;
+  onOpenSettings: () => void;
 }
 
-export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>(
-  ({ workflowId, serverId, onRunWorkflow }, ref) => {
-    const insets = useSafeAreaInsets();
-    const router = useRouter();
-    const bottomSheetRef = useRef<BottomSheetModal>(null);
-
+export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
+  ({ workflowId, serverId, onRunWorkflow, onOpenSettings }, ref) => {
     const [messages, setMessages] = useState<AgentChatMessage[]>([]);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -126,18 +120,16 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
       return new Agent(aiService, registry, buildSystemPrompt);
     }, [provider, workflowId, updateNodeInput, restoreWorkflowData, onRunWorkflow]);
 
-    useImperativeHandle(ref, () => ({
-      present: () => bottomSheetRef.current?.present(),
-      dismiss: () => bottomSheetRef.current?.dismiss(),
-    }));
-
-    // Keyboard workaround for bottom sheet
-    useEffect(() => {
-      const sub = Keyboard.addListener('keyboardWillHide', () => {
-        bottomSheetRef.current?.snapToIndex(0);
-      });
-      return () => sub.remove();
+    const handleClearChat = useCallback(() => {
+      setMessages([]);
+      setChatHistory([]);
+      historyRef.current.clear();
     }, []);
+
+    useImperativeHandle(ref, () => ({
+      clearChat: handleClearChat,
+      hasMessages: () => messages.length > 0,
+    }));
 
     // Auto-scroll to bottom when messages change
     useEffect(() => {
@@ -174,7 +166,7 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
             if (call.name === 'update_node_input') {
               changes.push({
                 nodeId: call.args.node_id,
-                nodeTitle: '', // filled from result text
+                nodeTitle: '',
                 inputKey: call.args.input_key,
                 oldValue: undefined,
                 newValue: call.args.value,
@@ -191,9 +183,6 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
               }
             }
           }
-
-          const hasRun = result.executedToolCalls.some((c) => c.name === 'run_workflow');
-          const hasUndo = result.executedToolCalls.some((c) => c.name === 'undo');
 
           const assistantMessage: AgentChatMessage = {
             id: (Date.now() + 1).toString(),
@@ -226,90 +215,41 @@ export const AgentChatSheet = forwardRef<AgentChatSheetRef, AgentChatSheetProps>
       [agent, chatHistory, provider?.temperature],
     );
 
-    const handleClearChat = useCallback(() => {
-      setMessages([]);
-      setChatHistory([]);
-      historyRef.current.clear();
-    }, []);
-
-    const handleOpenSettings = useCallback(() => {
-      bottomSheetRef.current?.dismiss();
-      router.push('/settings/ai-assistant');
-    }, [router]);
+    if (!configured) {
+      return <NotConfiguredView onOpenSettings={onOpenSettings} />;
+    }
 
     return (
-      <ThemedBottomSheetModal
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={['100%']}
-        enableDynamicSizing={false}
-        topInset={insets.top}
-        enablePanDownToClose
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-      >
-        <View className="flex-1">
-          {/* Header */}
-          <View className="flex-row items-center justify-between border-b border-outline-50 px-4 pb-3">
-            <View className="flex-row items-center gap-2">
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-100">
-                <Icon as={Bot} size="sm" className="text-primary-600" />
-              </View>
-              <View>
-                <Text className="text-sm font-semibold text-typography-900">AI Agent</Text>
-                <Text className="text-xs text-typography-500">Workflow Assistant</Text>
-              </View>
-            </View>
-            <View className="flex-row items-center gap-1">
-              {messages.length > 0 && (
-                <Pressable onPress={handleClearChat} className="rounded-lg p-2 active:bg-background-100">
-                  <Icon as={Trash2} size="sm" className="text-typography-400" />
-                </Pressable>
-              )}
-              <Pressable onPress={handleOpenSettings} className="rounded-lg p-2 active:bg-background-100">
-                <Icon as={Settings} size="sm" className="text-typography-400" />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Content */}
-          {!configured ? (
-            <NotConfiguredView onOpenSettings={handleOpenSettings} />
+      <View className="flex-1">
+        <BottomSheetScrollView
+          ref={scrollViewRef as any}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: 8,
+            flexGrow: 1,
+          }}
+        >
+          {messages.length === 0 ? (
+            <EmptyStateView />
           ) : (
-            <>
-              <BottomSheetScrollView
-                ref={scrollViewRef as any}
-                style={{ flex: 1 }}
-                contentContainerStyle={{
-                  padding: 16,
-                  paddingBottom: 8,
-                  flexGrow: 1,
-                }}
-              >
-                {messages.length === 0 ? (
-                  <EmptyStateView />
-                ) : (
-                  messages.map((msg) => (
-                    <ChatMessageBubble
-                      key={msg.id}
-                      message={msg}
-                    />
-                  ))
-                )}
-                {isLoading && <TypingIndicator />}
-              </BottomSheetScrollView>
-
-              <ChatInput onSend={handleSend} disabled={isLoading} />
-              <View style={{ height: insets.bottom }} />
-            </>
+            messages.map((msg) => (
+              <ChatMessageBubble
+                key={msg.id}
+                message={msg}
+              />
+            ))
           )}
-        </View>
-      </ThemedBottomSheetModal>
+          {isLoading && <TypingIndicator />}
+        </BottomSheetScrollView>
+
+        <ChatInput onSend={handleSend} disabled={isLoading} />
+      </View>
     );
   },
 );
 
-AgentChatSheet.displayName = 'AgentChatSheet';
+AIChatTab.displayName = 'AIChatTab';
 
 function EmptyStateView() {
   return (
