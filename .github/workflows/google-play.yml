@@ -81,20 +81,34 @@ jobs:
           mkdir -p ~/.google
           echo "$GOOGLE_PLAY_JSON_KEY" | base64 --decode > ~/.google/play-store-credentials.json
 
-      # ── Expo Prebuild ────────────────────────────────────
+      # ── Expo Prebuild (without --clean to leverage caches) ─
       - name: Expo prebuild (Android)
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform android
 
-      # ── Gradle cache ─────────────────────────────────────
+      # ── Gradle caches ───────────────────────────────────
+      # Cache Gradle wrapper, dependencies, and build outputs
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/**/*.gradle*') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/build.gradle', 'android/app/build.gradle') }}
           restore-keys: |
             gradle-${{ runner.os }}-
+
+      # Cache the entire android build directory (compiled classes, CMake outputs, R8, etc.)
+      # This is the biggest time saver - CMake native builds for 4 architectures take 10+ min
+      - name: Cache Android build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            android/.gradle
+            android/app/build
+            android/app/.cxx
+          key: android-build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'android/app/build.gradle', 'android/gradle.properties') }}
+          restore-keys: |
+            android-build-${{ runner.os }}-
 
       # ── Build & Deploy ───────────────────────────────────
       - name: Build and Upload to Google Play

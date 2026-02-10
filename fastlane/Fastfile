@@ -199,8 +199,8 @@ platform :android do
 
   desc "Build Android AAB using Gradle"
   lane :build do
-    # Generate native project if needed
-    sh("cd .. && npx expo prebuild --platform android --clean")
+    # Generate native project if needed (no --clean to leverage build caches)
+    sh("cd .. && npx expo prebuild --platform android")
 
     gradle(
       task: "bundle",
