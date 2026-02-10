@@ -53,8 +53,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         ]}>
           {title}
         </Text>
-      )}
-
+      )}{/* no whitespace between View children */}
       <View style={[
         styles.inputContainer,
         { backgroundColor: inputBackgroundColor },
@@ -71,9 +70,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
           placeholderTextColor={placeholderTextColor}
           secureTextEntry={isPasswordInput && !showPassword}
           {...restProps}
-        />
-
-        {isPasswordInput && (
+        />{isPasswordInput && (
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
@@ -86,9 +83,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
             )}
           </TouchableOpacity>
         )}
-      </View>
-
-      {error && (
+      </View>{error && (
         <Text style={[
           styles.error,
           { color: errorTextColor },
