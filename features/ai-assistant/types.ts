@@ -43,5 +43,7 @@ export interface AgentChatMessage {
   changes?: NodeChange[];
   /** Whether changes have been applied */
   changesApplied?: boolean;
+  /** Whether this message represents an AI provider config error */
+  isConfigError?: boolean;
   timestamp: number;
 }
