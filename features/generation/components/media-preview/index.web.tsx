@@ -1,7 +1,6 @@
 import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
-import { Image } from 'expo-image';
 import { ImageIcon, X } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -122,16 +121,15 @@ export const MediaPreview = memo(function ParallaxMedia({
                       </View>
                     </View>
                   ) : (
-                    <Image
-                      source={{ uri: mediaUrl }}
+                    <img
+                      src={mediaUrl}
                       style={{
                         width: screenWidth,
                         height: screenHeight,
-                        aspectRatio: undefined,
+                        objectFit: 'contain',
+                        objectPosition: 'top',
                       }}
-                      contentFit="contain"
-                      contentPosition="top"
-                      cachePolicy="memory-disk"
+                      alt="Generated media"
                     />
                   )}
                 </Pressable>
