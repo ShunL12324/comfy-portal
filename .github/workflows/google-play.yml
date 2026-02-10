@@ -85,6 +85,36 @@ jobs:
       - name: Expo prebuild (Android)
         run: npx expo prebuild --platform android
 
+      # ── Inject release signing config into build.gradle ─
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # Copy keystore to android/app/
+          cp ~/.android-keystore/comfy-portal-upload.keystore android/app/comfy-portal-upload.keystore
+
+          # Inject release signingConfig into android/app/build.gradle
+          sed -i '/signingConfigs {/,/^    }/ {
+            /debug {/,/}/ {
+              /}/ a\
+        release {\
+            storeFile file("comfy-portal-upload.keystore")\
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""\
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\
+        }
+            }
+          }' android/app/build.gradle
+
+          # Replace signingConfig in release buildType from debug to release
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
+
+          # Verify the changes
+          echo "=== Signing config ==="
+          grep -A 20 "signingConfigs" android/app/build.gradle | head -25
+
       # ── Gradle caches ───────────────────────────────────
       # Cache Gradle wrapper, dependencies, and build outputs
       - name: Cache Gradle
@@ -113,14 +143,10 @@ jobs:
       # ── Build & Deploy ───────────────────────────────────
       - name: Build and Upload to Google Play
         env:
-          ANDROID_KEYSTORE_FILE: comfy-portal-upload.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # Copy keystore to android/app/ so Gradle can find it
-          cp ~/.android-keystore/comfy-portal-upload.keystore android/app/comfy-portal-upload.keystore
-
           if [ "${{ github.event.inputs.track }}" == "production" ]; then
             bundle exec fastlane android bump
             bundle exec fastlane android build

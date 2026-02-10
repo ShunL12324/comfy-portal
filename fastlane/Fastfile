@@ -199,8 +199,11 @@ platform :android do
 
   desc "Build Android AAB using Gradle"
   lane :build do
-    # Generate native project (android/ is gitignored, must prebuild in CI)
-    sh("cd .. && npx expo prebuild --platform android")
+    # Generate native project only if android/ doesn't exist yet
+    # In CI, prebuild + signing injection is done in the workflow before Fastlane
+    unless File.exist?("../android/app/build.gradle")
+      sh("cd .. && npx expo prebuild --platform android")
+    end
 
     # Ensure gradlew is executable
     sh("chmod +x ../android/gradlew")
