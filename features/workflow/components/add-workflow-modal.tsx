@@ -19,7 +19,7 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 import { Asset } from 'expo-asset';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import * as ImagePicker from 'expo-image-picker';
 import { Circle, CircleCheck, ImagePlus, Scroll } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -99,7 +99,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
 
     if (!result.canceled) {
       try {
-        const tempId = await Crypto.randomUUID();
+        const tempId = await generateUUID();
         const savedImage = await saveWorkflowThumbnail({
           serverId,
           workflowId: tempId,
@@ -139,7 +139,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
 
         if (asset.localUri) {
           // Save the preset thumbnail
-          const tempId = await Crypto.randomUUID();
+          const tempId = await generateUUID();
           const savedImage = await saveWorkflowThumbnail({
             serverId,
             workflowId: tempId,

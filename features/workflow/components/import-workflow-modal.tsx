@@ -12,7 +12,7 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 import * as ExpoClipboard from 'expo-clipboard';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import * as DocumentPicker from 'expo-document-picker';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -53,7 +53,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       return;
     }
 
-    const workflowId = Crypto.randomUUID();
+    const workflowId = generateUUID();
     let finalThumbnail = '';
     if (thumbnail) {
       const ext = thumbnail.split('.').pop();
@@ -98,7 +98,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
 
     if (!result.canceled) {
       try {
-        const tempId = await Crypto.randomUUID();
+        const tempId = await generateUUID();
         const savedImage = await saveWorkflowThumbnail({
           serverId,
           workflowId: tempId,

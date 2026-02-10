@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -60,7 +60,7 @@ export const useAIAssistantStore = create<AIAssistantState>()(
         set({
           provider: {
             ...provider,
-            id: Crypto.randomUUID(),
+            id: generateUUID(),
           },
         });
       },
@@ -84,7 +84,7 @@ export const useAIAssistantStore = create<AIAssistantState>()(
       addTemplate: (template) => {
         const newTemplate: PromptTemplate = {
           ...template,
-          id: Crypto.randomUUID(),
+          id: generateUUID(),
           isBuiltIn: false,
           createdAt: new Date(),
         };
