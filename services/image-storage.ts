@@ -1,5 +1,5 @@
 import { Workflow } from '@/features/workflow/types';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import { Directory, File, Paths } from 'expo-file-system';
 
 interface SaveMediaOptions {
@@ -48,7 +48,7 @@ export async function saveGeneratedMedia({
 
     ensureDirectory(generatedDir);
 
-    const uuid = await Crypto.randomUUID();
+    const uuid = await generateUUID();
     const timestamp = new Date().toISOString();
     const originalExt = mediaUrl.split('.').pop()?.split('?')[0] || 'png';
     const filename = `${timestamp}-${uuid}.${originalExt}`;

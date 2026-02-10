@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
@@ -38,7 +38,7 @@ const parsePromptToTags = (prompt: string): Tag[] => {
     .map((tag) => {
       const match = tag.match(/^\((.*?):(\d+(?:\.\d+)?)\)$/);
       return {
-        id: Crypto.randomUUID(),
+        id: generateUUID(),
         text: match ? match[1] : tag,
         strength: extractTagStrength(tag),
       };
@@ -149,7 +149,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
     }
 
     const newTagObj: Tag = {
-      id: Crypto.randomUUID(),
+      id: generateUUID(),
       text: newTag.trim(),
       strength: 1,
     };

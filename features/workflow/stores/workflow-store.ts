@@ -1,7 +1,7 @@
 import { Workflow, WorkflowRecord } from '@/features/workflow/types';
 import { cleanupWorkflowData } from '@/services/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -24,7 +24,7 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
       addWorkflow: (workflow) => {
         const newWorkflow: WorkflowRecord = {
           ...workflow,
-          id: Crypto.randomUUID(),
+          id: generateUUID(),
           createdAt: new Date(),
         };
         set((state) => ({

@@ -2,7 +2,7 @@ import { Model, Server } from '@/features/server/types';
 import { checkMultipleServers, checkServerStatus } from '@/features/server/utils/server-sync';
 import { cleanupServerData } from '@/services/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -42,7 +42,7 @@ export const useServersStore = create<ServersState>()(
       addServer: (server) => {
         const newServer: Server = {
           ...server,
-          id: Crypto.randomUUID(),
+          id: generateUUID(),
           status: 'offline',
         };
         set((state) => ({

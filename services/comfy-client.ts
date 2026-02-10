@@ -1,6 +1,6 @@
 import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
-import * as Crypto from 'expo-crypto';
+import { generateUUID } from '@/utils/uuid';
 import * as FileSystem from 'expo-file-system/legacy';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
 
@@ -83,7 +83,7 @@ export class ComfyClient {
     this.host = options.host;
     this.port = options.port;
     this.useSSL = options.useSSL;
-    this.clientId = Crypto.randomUUID();
+    this.clientId = generateUUID();
     this.token = options.token;
   }
 
