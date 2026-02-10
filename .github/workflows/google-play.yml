@@ -92,26 +92,8 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # Copy keystore to android/app/
           cp ~/.android-keystore/comfy-portal-upload.keystore android/app/comfy-portal-upload.keystore
-
-          # Inject release signingConfig into android/app/build.gradle
-          sed -i '/signingConfigs {/,/^    }/ {
-            /debug {/,/}/ {
-              /}/ a\
-        release {\
-            storeFile file("comfy-portal-upload.keystore")\
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""\
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\
-        }
-            }
-          }' android/app/build.gradle
-
-          # Replace signingConfig in release buildType from debug to release
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
-
-          # Verify the changes
+          python3 .github/scripts/inject-signing-config.py android/app/build.gradle
           echo "=== Signing config ==="
           grep -A 20 "signingConfigs" android/app/build.gradle | head -25
 
