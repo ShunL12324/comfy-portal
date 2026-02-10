@@ -19,6 +19,7 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const hasChanges = message.changes && message.changes.length > 0;
   const theme = useResolvedTheme();
 
+  // StyleSheet.create required by react-native-markdown-display API — cannot use NativeWind here
   const mdStyles = useMemo(
     () =>
       StyleSheet.create({
