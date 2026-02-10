@@ -54,6 +54,7 @@ ios/
 # VitePress
 docs/.vitepress/dist
 docs/.vitepress/cache
+docs/comfyui-api-reference.md
 
 # .env
 .env*
