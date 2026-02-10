@@ -33,6 +33,58 @@ function inferType(value: any): string {
 }
 
 /**
+ * Coerce and validate a new value against the original value's type.
+ * Returns { value, error } — if error is set, the value is invalid.
+ */
+function coerceValue(
+  newValue: any,
+  oldValue: any,
+): { value: any; error?: string } {
+  const oldType = typeof oldValue;
+
+  // number (int or float)
+  if (oldType === 'number') {
+    if (typeof newValue === 'number') {
+      if (!isFinite(newValue)) return { value: newValue, error: 'Value must be a finite number.' };
+      // Preserve int vs float: if original was int, round the new value
+      return { value: Number.isInteger(oldValue) ? Math.round(newValue) : newValue };
+    }
+    if (typeof newValue === 'string') {
+      const parsed = Number(newValue);
+      if (isNaN(parsed)) return { value: newValue, error: `Cannot convert "${newValue}" to a number.` };
+      return { value: Number.isInteger(oldValue) ? Math.round(parsed) : parsed };
+    }
+    return { value: newValue, error: `Expected a number but got ${typeof newValue}.` };
+  }
+
+  // boolean
+  if (oldType === 'boolean') {
+    if (typeof newValue === 'boolean') return { value: newValue };
+    if (newValue === 'true') return { value: true };
+    if (newValue === 'false') return { value: false };
+    if (typeof newValue === 'number') return { value: newValue !== 0 };
+    return { value: newValue, error: `Expected a boolean but got ${typeof newValue} "${newValue}".` };
+  }
+
+  // string — including "enable"/"disable" toggle
+  if (oldType === 'string') {
+    // toggle validation
+    if (oldValue === 'enable' || oldValue === 'disable') {
+      const str = String(newValue).toLowerCase();
+      if (str === 'enable' || str === 'disable') return { value: str };
+      if (str === 'true' || str === '1' || str === 'on') return { value: 'enable' };
+      if (str === 'false' || str === '0' || str === 'off') return { value: 'disable' };
+      return { value: newValue, error: `Toggle parameter only accepts "enable" or "disable", got "${newValue}".` };
+    }
+    // regular string — coerce anything to string
+    return { value: String(newValue) };
+  }
+
+  // unknown type — pass through
+  return { value: newValue };
+}
+
+/**
  * Format a value for display, truncating long strings.
  */
 function formatValue(value: any, maxLen: number = 120): string {
@@ -126,14 +178,20 @@ export function createWorkflowTools(ctx: WorkflowToolsContext): AgentTool[] {
       if (node.inputs[input_key] === undefined)
         return `Error: Input "${input_key}" not found on node "${node_id}".`;
 
-      // Save snapshot before modification
       const title = node._meta?.title || node.class_type || 'Unknown';
-      ctx.history.push(data, `Update ${title}.${input_key}`);
-
       const oldValue = node.inputs[input_key];
-      ctx.updateNodeInput(node_id, input_key, value);
 
-      return `Updated [Node ${node_id}] ${title}: ${input_key} = ${formatValue(oldValue)} → ${formatValue(value)}`;
+      // Validate & coerce before saving snapshot
+      const coerced = coerceValue(value, oldValue);
+      if (coerced.error) {
+        return `Error: ${coerced.error} (node "${node_id}", input "${input_key}")`;
+      }
+
+      // Save snapshot before modification
+      ctx.history.push(data, `Update ${title}.${input_key}`);
+      ctx.updateNodeInput(node_id, input_key, coerced.value);
+
+      return `Updated [Node ${node_id}] ${title}: ${input_key} = ${formatValue(oldValue)} → ${formatValue(coerced.value)}`;
     },
   };
 
@@ -174,28 +232,51 @@ export function createWorkflowTools(ctx: WorkflowToolsContext): AgentTool[] {
 
       const data = ctx.getWorkflowData();
 
-      // Save a single snapshot before the entire batch
-      ctx.history.push(data, `Batch update (${updates.length} changes)`);
+      // Pre-validate all updates before saving snapshot
+      const validated: {
+        node_id: string;
+        input_key: string;
+        oldValue: any;
+        newValue: any;
+        title: string;
+      }[] = [];
+      const errors: string[] = [];
 
-      const results: string[] = [];
       for (const update of updates) {
         const { node_id, input_key, value } = update;
         const node = data[node_id];
 
         if (!node) {
-          results.push(`Error: Node "${node_id}" not found.`);
+          errors.push(`Error: Node "${node_id}" not found.`);
           continue;
         }
         if (Array.isArray(node.inputs[input_key])) {
-          results.push(`Error: "${input_key}" on node "${node_id}" is a linked input.`);
+          errors.push(`Error: "${input_key}" on node "${node_id}" is a linked input.`);
           continue;
         }
 
         const oldValue = node.inputs[input_key];
-        ctx.updateNodeInput(node_id, input_key, value);
+        const coerced = coerceValue(value, oldValue);
+        if (coerced.error) {
+          errors.push(`Error: ${coerced.error} (node "${node_id}", input "${input_key}")`);
+          continue;
+        }
+
         const title = node._meta?.title || node.class_type || 'Unknown';
+        validated.push({ node_id, input_key, oldValue, newValue: coerced.value, title });
+      }
+
+      // Only save snapshot if at least one update is valid
+      if (validated.length > 0) {
+        ctx.history.push(data, `Batch update (${validated.length} changes)`);
+      }
+
+      // Apply validated updates
+      const results: string[] = [...errors];
+      for (const { node_id, input_key, oldValue, newValue, title } of validated) {
+        ctx.updateNodeInput(node_id, input_key, newValue);
         results.push(
-          `[Node ${node_id}] ${title}: ${input_key} = ${formatValue(oldValue)} → ${formatValue(value)}`,
+          `[Node ${node_id}] ${title}: ${input_key} = ${formatValue(oldValue)} → ${formatValue(newValue)}`,
         );
       }
 
