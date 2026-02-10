@@ -1,3 +1,4 @@
+import '@/utils/web-crypto-polyfill';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Colors } from '@/constants/Colors';
 import '@/global.css';
