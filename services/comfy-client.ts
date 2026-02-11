@@ -58,15 +58,22 @@ interface ProgressCallback {
    * @param progress - Download progress percentage (0-100)
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
-
-  /**
-   * Called when the server queue status updates
-   * @param queueRemaining - Number of items remaining in the queue
-   */
-  onQueueUpdate?: (queueRemaining: number) => void;
 }
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+
+/**
+ * A single queue item: [priority, prompt_id, prompt, extra_data, outputs_to_execute]
+ */
+export type QueueItem = [number, string, Record<string, any>, Record<string, any>, string[]];
+
+/**
+ * Response from GET /queue
+ */
+export interface QueueResponse {
+  queue_running: QueueItem[];
+  queue_pending: QueueItem[];
+}
 
 export class ComfyClient {
   private clientId: string;
@@ -79,6 +86,9 @@ export class ComfyClient {
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private currentPromptId: string | null = null;
+
+  /** Persistent callback for queue status updates — fires on every WS 'status' message */
+  onQueueUpdate?: (queueRemaining: number) => void;
 
   constructor(options: ComfyClientOptions) {
     this.host = options.host;
@@ -106,6 +116,47 @@ export class ComfyClient {
   }
 
   /**
+   * Retrieves the current queue state from the ComfyUI server.
+   * @returns Object with queue_running and queue_pending arrays
+   */
+  async getQueue(): Promise<QueueResponse> {
+    const path = this.token ? `/queue?token=${this.token}` : '/queue';
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const response = await fetchWithAuth(url, this.token);
+    if (!response.ok) {
+      throw new Error('Failed to get queue');
+    }
+    return response.json();
+  }
+
+  /**
+   * Deletes specific items from the queue.
+   * @param promptIds - Array of prompt IDs to remove
+   */
+  async deleteQueueItems(promptIds: string[]): Promise<void> {
+    const path = this.token ? `/queue?token=${this.token}` : '/queue';
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    await fetchWithAuth(url, this.token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delete: promptIds }),
+    });
+  }
+
+  /**
+   * Clears the entire pending queue.
+   */
+  async clearQueue(): Promise<void> {
+    const path = this.token ? `/queue?token=${this.token}` : '/queue';
+    const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    await fetchWithAuth(url, this.token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clear: true }),
+    });
+  }
+
+  /**
    * Sets up a new WebSocket connection with event handlers.
    * @param wsUrl - The WebSocket URL to connect to
    * @returns Promise that resolves when the connection is established
@@ -127,6 +178,21 @@ export class ComfyClient {
       this.ws.onerror = (error) => {
         reject(error);
       };
+
+      // Persistent listener for queue status updates
+      this.ws.addEventListener('message', (event: MessageEvent) => {
+        try {
+          if (typeof event.data !== 'string') return;
+          const message = JSON.parse(event.data);
+          if (message.type === 'status') {
+            this.onQueueUpdate?.(
+              message.data?.status?.exec_info?.queue_remaining ?? 0,
+            );
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      });
     });
   }
 
@@ -242,7 +308,7 @@ export class ComfyClient {
           const message = JSON.parse(event.data);
 
           // Only process whitelisted message types
-          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success', 'status'] as const;
+          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success'] as const;
           if (!validMessageTypes.includes(message.type)) {
             return;
           }
@@ -278,12 +344,6 @@ export class ComfyClient {
               this.ws?.removeEventListener('message', handleMessage);
               callbacks.onError?.(message.data.error || 'Unknown error');
               resolve(false);
-              break;
-
-            case 'status':
-              callbacks.onQueueUpdate?.(
-                message.data?.status?.exec_info?.queue_remaining ?? 0,
-              );
               break;
 
             case 'executed':

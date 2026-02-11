@@ -38,6 +38,9 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
           if (workflow) {
             // Clean up preset data
             cleanupWorkflowData(workflow.serverId, id).catch(console.error);
+            // Clean up associated chat session (lazy require to avoid side-effect issues)
+            const { useChatSessionStore } = require('@/features/ai-assistant/stores/chat-session-store');
+            useChatSessionStore.getState().clearSession(workflow.serverId, id);
           }
           return {
             workflow: state.workflow.filter((p) => p.id !== id),
@@ -99,7 +102,10 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
           // Perform cleanup for each workflow being removed
           // This is similar to removeWorkflow, but we are batching the state update
           workflowsToRemove.forEach(workflow => {
-            cleanupWorkflowData(workflow.serverId, workflow.id).catch(console.warn); // Changed to console.warn
+            cleanupWorkflowData(workflow.serverId, workflow.id).catch(console.warn);
+            // Clean up associated chat session (lazy require to avoid side-effect issues)
+            const { useChatSessionStore } = require('@/features/ai-assistant/stores/chat-session-store');
+            useChatSessionStore.getState().clearSession(workflow.serverId, workflow.id);
           });
 
           return {

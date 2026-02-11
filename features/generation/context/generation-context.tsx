@@ -6,7 +6,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { ComfyClient } from '@/services/comfy-client';
+import { ComfyClient, QueueResponse } from '@/services/comfy-client';
 import { saveGeneratedMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 
@@ -31,6 +31,9 @@ interface GenerationContextType {
   generate: (workflow: Record<string, Node>, workflowId: string, serverId: string) => Promise<void>;
   reset: () => void;
   cancel: () => Promise<void>;
+  getQueue: () => Promise<QueueResponse>;
+  deleteQueueItems: (promptIds: string[]) => Promise<void>;
+  clearQueue: () => Promise<void>;
   setGeneratedMedia: (urls: string[]) => void;
   registerNodeHooks: (nodeId: string, hooks: NodeLifecycleHooks) => void;
   unregisterNodeHooks: (nodeId: string) => void;
@@ -122,7 +125,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       ...prev,
       status: 'idle',
       currentNodeId: undefined,
-      queueRemaining: 0,
+      // Note: queueRemaining is NOT reset here — it's managed by the persistent WebSocket listener
     }));
     lastProgressPercentRef.current = 0;
     setProgress({
@@ -150,6 +153,21 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     reset();
   }, [reset]);
 
+  const getQueue = useCallback(async (): Promise<QueueResponse> => {
+    if (!comfyClient.current) return { queue_running: [], queue_pending: [] };
+    return comfyClient.current.getQueue();
+  }, []);
+
+  const deleteQueueItems = useCallback(async (promptIds: string[]) => {
+    if (!comfyClient.current) return;
+    await comfyClient.current.deleteQueueItems(promptIds);
+  }, []);
+
+  const clearQueue = useCallback(async () => {
+    if (!comfyClient.current) return;
+    await comfyClient.current.clearQueue();
+  }, []);
+
   const setGeneratedMedia = useCallback((urls: string[]) => {
     setStatus((prev) => ({ ...prev, generatedMedia: urls }));
   }, []);
@@ -169,6 +187,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           useSSL: server.useSSL,
           token: server.token,
         });
+        comfyClient.current.onQueueUpdate = (queueRemaining) => {
+          setStatus((prev) => ({ ...prev, queueRemaining }));
+        };
       }
 
       try {
@@ -212,9 +233,6 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           },
           onNodeComplete: (node, completed, total) => {
             handleNodeProgress(completed, total);
-          },
-          onQueueUpdate: (queueRemaining) => {
-            setStatus((prev) => ({ ...prev, queueRemaining }));
           },
           onDownloadProgress: (_, progress) => {
             setStatus((prev) => {
@@ -306,11 +324,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       generate,
       reset,
       cancel,
+      getQueue,
+      deleteQueueItems,
+      clearQueue,
       setGeneratedMedia,
       registerNodeHooks,
       unregisterNodeHooks,
     }),
-    [generate, reset, cancel, registerNodeHooks, unregisterNodeHooks, setGeneratedMedia],
+    [generate, reset, cancel, getQueue, deleteQueueItems, clearQueue, registerNodeHooks, unregisterNodeHooks, setGeneratedMedia],
   );
 
   return (

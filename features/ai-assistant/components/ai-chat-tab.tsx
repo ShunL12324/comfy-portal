@@ -4,6 +4,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { AgentChatMessage, ChatMessage, NodeChange } from '@/features/ai-assistant/types';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
+import { useChatSessionStore } from '@/features/ai-assistant/stores/chat-session-store';
 import { Agent } from '@/features/ai-assistant/agent';
 import { ToolRegistry } from '@/features/ai-assistant/tools/registry';
 import {
@@ -54,6 +55,10 @@ You help users adjust their image generation workflow parameters through natural
 {WORKFLOW_CONTEXT}
 \`\`\``;
 
+// Stable empty arrays to avoid creating new references on every render
+const EMPTY_MESSAGES: AgentChatMessage[] = [];
+const EMPTY_HISTORY: ChatMessage[] = [];
+
 export interface AIChatTabRef {
   clearChat: () => void;
   hasMessages: () => boolean;
@@ -84,8 +89,24 @@ function isConfigError(error: unknown): boolean {
 
 export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
   ({ workflowId, serverId, onRunWorkflow }, ref) => {
-    const [messages, setMessages] = useState<AgentChatMessage[]>([]);
-    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    // Persisted chat state — split selectors with stable empty array fallbacks
+    const messages = useChatSessionStore(
+      useCallback(
+        (state): AgentChatMessage[] =>
+          state.sessions[`${serverId}:${workflowId}`]?.messages ?? EMPTY_MESSAGES,
+        [serverId, workflowId],
+      ),
+    );
+    const chatHistory = useChatSessionStore(
+      useCallback(
+        (state): ChatMessage[] =>
+          state.sessions[`${serverId}:${workflowId}`]?.chatHistory ?? EMPTY_HISTORY,
+        [serverId, workflowId],
+      ),
+    );
+    const addMessage = useChatSessionStore((state) => state.addMessage);
+    const clearSession = useChatSessionStore((state) => state.clearSession);
+
     const [isLoading, setIsLoading] = useState(false);
     const { provider, isConfigured } = useAIAssistantStore();
     const configured = isConfigured();
@@ -139,10 +160,9 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     }, [provider, workflowId, updateNodeInput, restoreWorkflowData, onRunWorkflow]);
 
     const handleClearChat = useCallback(() => {
-      setMessages([]);
-      setChatHistory([]);
+      clearSession(serverId, workflowId);
       historyRef.current.clear();
-    }, []);
+    }, [clearSession, serverId, workflowId]);
 
     useImperativeHandle(ref, () => ({
       clearChat: handleClearChat,
@@ -168,7 +188,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
           content: text,
           timestamp: Date.now(),
         };
-        setMessages((prev) => [...prev, userMessage]);
+        addMessage(serverId, workflowId, userMessage);
         setIsLoading(true);
 
         try {
@@ -210,11 +230,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             changesApplied: changes.length > 0 ? true : undefined,
             timestamp: Date.now(),
           };
-          setMessages((prev) => [...prev, assistantMessage]);
-
-          // Update conversation history
-          setChatHistory((prev) => [
-            ...prev,
+          addMessage(serverId, workflowId, assistantMessage, [
             { role: 'user', content: text },
             { role: 'assistant', content: result.content },
           ]);
@@ -229,12 +245,12 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             isConfigError: configError || undefined,
             timestamp: Date.now(),
           };
-          setMessages((prev) => [...prev, errorMessage]);
+          addMessage(serverId, workflowId, errorMessage);
         } finally {
           setIsLoading(false);
         }
       },
-      [agent, chatHistory, provider?.temperature],
+      [agent, chatHistory, provider?.temperature, addMessage, serverId, workflowId],
     );
 
     if (!configured) {
