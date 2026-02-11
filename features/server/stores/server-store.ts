@@ -54,6 +54,9 @@ export const useServersStore = create<ServersState>()(
         set((state) => {
           // Clean up server data
           cleanupServerData(id).catch(console.error);
+          // Clean up all chat sessions for this server (lazy require to avoid side-effect issues)
+          const { useChatSessionStore } = require('@/features/ai-assistant/stores/chat-session-store');
+          useChatSessionStore.getState().clearServerSessions(id);
           return {
             servers: state.servers.filter((s) => s.id !== id),
           };

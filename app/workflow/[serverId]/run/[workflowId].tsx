@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Search, ServerCrash, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, useWindowDimensions, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -24,14 +24,8 @@ import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { TabView } from 'react-native-tab-view';
 
 import { Button } from '@/components/ui/button';
-
-const TAB_ROUTES = [
-  { key: 'nodes', title: 'Nodes' },
-  { key: 'ai', title: 'AI' },
-];
 
 function NodesTabContent({
   nodes,
@@ -101,7 +95,6 @@ function RunWorkflowScreenContent() {
   const { serverId, workflowId } = useLocalSearchParams();
   const router = useRouter();
   const theme = useResolvedTheme();
-  const layout = useWindowDimensions();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -111,7 +104,7 @@ function RunWorkflowScreenContent() {
   const aiChatTabRef = useRef<AIChatTabRef>(null);
   const sheetSnapIndexRef = useRef(1);
 
-  // TabView state
+  // Tab state — simple index, no longer driven by react-native-tab-view
   const [tabIndex, setTabIndex] = useState(0);
 
   const { generate, setGeneratedMedia } = useGenerationActions();
@@ -160,32 +153,6 @@ function RunWorkflowScreenContent() {
         inputs.toLowerCase().includes(lowerQuery);
     });
   }, [workflowRecord, searchQuery]);
-
-  const renderScene = useCallback(({ route }: { route: { key: string } }) => {
-    if (route.key === 'nodes') {
-      return (
-        <NodesTabContent
-          nodes={nodes}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          serverId={serverId as string}
-          workflowId={workflowId as string}
-          theme={theme}
-        />
-      );
-    }
-    if (route.key === 'ai') {
-      return (
-        <AIChatTab
-          ref={aiChatTabRef}
-          workflowId={workflowId as string}
-          serverId={serverId as string}
-          onRunWorkflow={handleGenerate}
-        />
-      );
-    }
-    return null;
-  }, [nodes, searchQuery, serverId, workflowId, theme, handleGenerate]);
 
   // Early returns after all hooks
   if (!workflowRecord) {
@@ -271,16 +238,27 @@ function RunWorkflowScreenContent() {
           </HStack>
         </View>
 
-        <TabView
-          navigationState={{ index: tabIndex, routes: TAB_ROUTES }}
-          renderScene={renderScene}
-          onIndexChange={handleTabChange}
-          initialLayout={{ width: layout.width }}
-          renderTabBar={() => null}
-          swipeEnabled={false}
-          lazy
-          style={{ flex: 1 }}
-        />
+        {/* Tab content — simple conditional render replaces TabView to avoid
+            react-native-pager-view's native ViewPager firing spurious
+            onPageSelected(0) events when the keyboard opens, which was
+            resetting the active tab back to the nodes list. */}
+        {tabIndex === 0 ? (
+          <NodesTabContent
+            nodes={nodes}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            serverId={serverId as string}
+            workflowId={workflowId as string}
+            theme={theme}
+          />
+        ) : (
+          <AIChatTab
+            ref={aiChatTabRef}
+            workflowId={workflowId as string}
+            serverId={serverId as string}
+            onRunWorkflow={handleGenerate}
+          />
+        )}
       </BottomSheet>
 
       <HistoryDrawer
