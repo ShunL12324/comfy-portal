@@ -2,8 +2,14 @@ import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
 /**
- * Generate a UUID that works across all platforms.
- * On web without Secure Context (non-HTTPS), falls back to a manual implementation.
+ * Unified cross-platform UUID generator.
+ *
+ * This is the ONLY function app code should use to create UUIDs.
+ * On native it delegates to expo-crypto; on web it falls back to a manual
+ * implementation when crypto.randomUUID is unavailable (non-Secure Context).
+ *
+ * NOTE: Third-party libraries may call crypto.randomUUID directly.
+ * The global polyfill in shims/crypto-random-uuid.web.ts covers that case.
  */
 export function generateUUID(): string {
   try {
