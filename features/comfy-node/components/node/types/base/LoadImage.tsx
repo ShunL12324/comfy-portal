@@ -81,6 +81,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       fileName,
       mimeType: null,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedImageUri, isUploading]);
 
   useEffect(() => {

@@ -3,7 +3,9 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Colors } from '@/constants/Colors';
 import '@/global.css';
 import { useResolvedTheme, useThemeStore } from '@/store/theme';
+import { useServersStore } from '@/features/server/stores/server-store';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { toastConfig, showToast } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -84,7 +86,20 @@ function RootLayoutNav() {
     }
 
     // TODO: When multiple Quick Actions exist, show a picker instead of using the first one
-    const action = actions[0];
+    // Validate that the target server and workflow still exist
+    const servers = useServersStore.getState().servers;
+    const workflows = useWorkflowStore.getState().workflow;
+    const validAction = actions.find(
+      (a) => servers.some((s) => s.id === a.serverId) && workflows.some((w) => w.id === a.workflowId),
+    );
+
+    if (!validAction) {
+      showToast.error('Quick Action target no longer exists', 'Please reconfigure from a Load Image node', insets.top + 8);
+      clearSharedPayloads();
+      return;
+    }
+
+    const action = validAction;
     // Clear stack to avoid piling up routes on repeated shares
     if (router.canDismiss()) {
       router.dismissAll();

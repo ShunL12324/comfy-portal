@@ -9,12 +9,11 @@ interface QuickActionState {
   addAction: (action: Omit<QuickAction, 'id' | 'createdAt'>) => void;
   removeAction: (id: string) => void;
   updateAction: (id: string, updates: Partial<Omit<QuickAction, 'id' | 'createdAt'>>) => void;
-  getActionsForNode: (serverId: string, workflowId: string, nodeId: string) => QuickAction[];
 }
 
 export const useQuickActionStore = create<QuickActionState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       actions: [],
 
       addAction: (action) => {
@@ -39,15 +38,6 @@ export const useQuickActionStore = create<QuickActionState>()(
             a.id === id ? { ...a, ...updates } : a,
           ),
         })),
-
-      getActionsForNode: (serverId, workflowId, nodeId) => {
-        return get().actions.filter(
-          (a) =>
-            a.serverId === serverId &&
-            a.workflowId === workflowId &&
-            a.targetNodeId === nodeId,
-        );
-      },
     }),
     {
       name: 'quick-action-storage',
