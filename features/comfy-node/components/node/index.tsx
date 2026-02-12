@@ -7,11 +7,12 @@ interface NodeProps {
   node: Node;
   serverId: string;
   workflowId: string;
+  sharedImageUri?: string;
 }
 
-const NodeComponent = memo(function NodeComponent({ node, serverId, workflowId }: NodeProps) {
+const NodeComponent = memo(function NodeComponent({ node, serverId, workflowId, sharedImageUri }: NodeProps) {
   const NodeContent = getNodeComponent(node.class_type);
-  return <NodeContent node={node} serverId={serverId} workflowId={workflowId} />;
+  return <NodeContent node={node} serverId={serverId} workflowId={workflowId} sharedImageUri={sharedImageUri} />;
 });
 
 export default NodeComponent;

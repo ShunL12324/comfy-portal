@@ -13,8 +13,9 @@ import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Folder, Image as ImageIcon, X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { Camera, Folder, Image as ImageIcon, Share, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ interface LoadImageNodeProps {
   node: Node;
   serverId: string;
   workflowId: string;
+  sharedImageUri?: string;
 }
 
 interface UploadAssetCandidate {
@@ -35,9 +37,16 @@ interface UploadAssetCandidate {
 
 type PendingSourcePickerAction = 'library' | 'files' | 'camera' | null;
 
-export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
+export default function LoadImage({ node, serverId, workflowId, sharedImageUri }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const addQuickAction = useQuickActionStore((state) => state.addAction);
+  const removeQuickAction = useQuickActionStore((state) => state.removeAction);
+  const hasQuickAction = useQuickActionStore((state) =>
+    state.actions.some(
+      (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
+    ),
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [image, setImage] = useState<string | null>(null);
@@ -59,6 +68,21 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
       sourcePickerModalRef.current?.dismiss();
     }
   }, [isUploading]);
+
+  // Auto-upload shared image from Share Extension
+  const sharedImageHandled = useRef(false);
+  useEffect(() => {
+    if (!sharedImageUri || sharedImageHandled.current || isUploading) return;
+    sharedImageHandled.current = true;
+
+    const fileName = sharedImageUri.split('/').pop() || 'shared_image.jpg';
+    uploadPickedAsset({
+      uri: sharedImageUri,
+      fileName,
+      mimeType: null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedImageUri, isUploading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -249,8 +273,53 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     }
   };
 
+  const handleToggleQuickAction = useCallback(() => {
+    if (hasQuickAction) {
+      // Remove existing quick actions for this node
+      const existing = useQuickActionStore.getState().actions.filter(
+        (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
+      );
+      existing.forEach((a) => { removeQuickAction(a.id); });
+      showToast.success('Quick Action removed', undefined, safeAreaInsets.top + 8);
+    } else {
+      const workflow = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
+      const name = workflow?.name
+        ? `${workflow.name} - ${node._meta?.title || 'Image'}`
+        : node._meta?.title || 'Load Image';
+      addQuickAction({
+        name,
+        serverId,
+        workflowId,
+        targetNodeId: node.id,
+      });
+      showToast.success('Quick Action enabled', 'Share images from Photos to this node', safeAreaInsets.top + 8);
+    }
+  }, [hasQuickAction, removeQuickAction, addQuickAction, serverId, workflowId, node.id, node._meta?.title, safeAreaInsets.top]);
+
   return (
-    <BaseNode node={node}>
+    <BaseNode
+      node={node}
+      badges={
+        <Pressable
+          onPress={handleToggleQuickAction}
+          className={`flex-row items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${
+            hasQuickAction
+              ? 'bg-primary-500 active:bg-primary-600'
+              : 'bg-background-50 active:bg-background-100'
+          }`}
+        >
+          <Icon
+            as={Share}
+            className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
+          />
+          <Text
+            className={`text-xs font-medium ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
+          >
+            Quick Action
+          </Text>
+        </Pressable>
+      }
+    >
       <SubItem title="image">
         <Pressable
           onPress={handleOpenSourcePicker}

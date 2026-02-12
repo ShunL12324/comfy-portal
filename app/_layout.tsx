@@ -3,11 +3,15 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Colors } from '@/constants/Colors';
 import '@/global.css';
 import { useResolvedTheme, useThemeStore } from '@/store/theme';
-import { toastConfig } from '@/utils/toast';
+import { useServersStore } from '@/features/server/stores/server-store';
+import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { toastConfig, showToast } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { useIncomingShare } from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -53,12 +57,65 @@ function RootLayoutNav() {
   const insets = useSafeAreaInsets();
   const preference = useThemeStore((s) => s.preference);
   const colorScheme = useResolvedTheme();
+  const router = useRouter();
+  const { resolvedSharedPayloads, clearSharedPayloads, isResolving } = useIncomingShare();
 
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Handle incoming shared images
+  useEffect(() => {
+    if (isResolving || resolvedSharedPayloads.length === 0) return;
+
+    const payload = resolvedSharedPayloads[0];
+
+    if (payload.contentType !== 'image' || !payload.contentUri) {
+      clearSharedPayloads();
+      return;
+    }
+
+    const actions = useQuickActionStore.getState().actions;
+
+    if (actions.length === 0) {
+      showToast.error('No Quick Actions configured', 'Create one from a Load Image node first', insets.top + 8);
+      clearSharedPayloads();
+      return;
+    }
+
+    // TODO: When multiple Quick Actions exist, show a picker instead of using the first one
+    // Validate that the target server and workflow still exist
+    const servers = useServersStore.getState().servers;
+    const workflows = useWorkflowStore.getState().workflow;
+    const validAction = actions.find(
+      (a) => servers.some((s) => s.id === a.serverId) && workflows.some((w) => w.id === a.workflowId),
+    );
+
+    if (!validAction) {
+      showToast.error('Quick Action target no longer exists', 'Please reconfigure from a Load Image node', insets.top + 8);
+      clearSharedPayloads();
+      return;
+    }
+
+    const action = validAction;
+    // Clear stack to avoid piling up routes on repeated shares
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
+    router.push({
+      pathname: '/workflow/[serverId]/run/[workflowId]',
+      params: {
+        serverId: action.serverId,
+        workflowId: action.workflowId,
+        sharedImageUri: payload.contentUri,
+        targetNodeId: action.targetNodeId,
+      },
+    });
+    clearSharedPayloads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResolving, resolvedSharedPayloads]);
 
   if (!loaded) {
     return null;

@@ -12,6 +12,7 @@
       "supportsTablet": false,
       "isTabletOnly": false,
       "bundleIdentifier": "com.sillyl12324.comfy-portal",
+      "appleTeamId": "QUVB58SSQ7",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -83,7 +84,18 @@
       "expo-video",
       "expo-font",
       "expo-image",
-      "expo-sharing",
+      [
+        "expo-sharing",
+        {
+          "ios": {
+            "enabled": true,
+            "appGroupId": "group.com.sillyl12324.comfy-portal",
+            "activationRule": {
+              "supportsImageWithMaxCount": 1
+            }
+          }
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {
@@ -94,7 +106,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": "841218f8-f7aa-4f62-8687-d1e2abaa3e5d"
+        "projectId": "841218f8-f7aa-4f62-8687-d1e2abaa3e5d",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "expo-sharing-extension",
+                  "bundleIdentifier": "com.sillyl12324.comfy-portal.expo-sharing-extension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.sillyl12324.comfy-portal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }

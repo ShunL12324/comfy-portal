@@ -102,9 +102,17 @@ export const QueueBadge = memo(() => {
     <>
       <Pressable
         onPress={handleOpen}
-        className="ml-1.5 h-8 w-8 items-center justify-center rounded-full bg-background-100 active:bg-background-200"
+        className={`ml-1.5 h-8 w-8 items-center justify-center rounded-full active:opacity-80 ${
+          queueRemaining > 0
+            ? 'bg-warning-500'
+            : 'bg-background-100 active:bg-background-200'
+        }`}
       >
-        <Text className="text-[10px] font-bold text-typography-500">
+        <Text
+          className={`text-[10px] font-bold ${
+            queueRemaining > 0 ? 'text-white' : 'text-typography-500'
+          }`}
+        >
           {queueRemaining}
         </Text>
       </Pressable>

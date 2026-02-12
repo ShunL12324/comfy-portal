@@ -44,6 +44,7 @@ interface NodeContentProps {
   node: Node;
   serverId: string;
   workflowId: string;
+  sharedImageUri?: string;
 }
 
 export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> = {

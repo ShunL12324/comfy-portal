@@ -7,7 +7,10 @@ storage_mode("git")
 
 type("appstore") # Default type, can be: appstore, adhoc, development, enterprise
 
-app_identifier("com.sillyl12324.comfy-portal")
+app_identifier([
+  "com.sillyl12324.comfy-portal",
+  "com.sillyl12324.comfy-portal.expo-sharing-extension"
+])
 
 team_id("QUVB58SSQ7")
 
