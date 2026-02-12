@@ -278,7 +278,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       const existing = useQuickActionStore.getState().actions.filter(
         (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
       );
-      existing.forEach((a) => removeQuickAction(a.id));
+      existing.forEach((a) => { removeQuickAction(a.id); });
       showToast.success('Quick Action removed', undefined, safeAreaInsets.top + 8);
     } else {
       const workflow = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);

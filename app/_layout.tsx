@@ -71,6 +71,7 @@ function RootLayoutNav() {
     const payload = resolvedSharedPayloads[0];
 
     if (payload.contentType !== 'image' || !payload.contentUri) {
+      clearSharedPayloads();
       return;
     }
 
