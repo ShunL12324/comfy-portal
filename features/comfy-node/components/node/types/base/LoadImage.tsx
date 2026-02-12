@@ -13,8 +13,9 @@ import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Folder, Image as ImageIcon, X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { Camera, Folder, Image as ImageIcon, Share, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +39,13 @@ type PendingSourcePickerAction = 'library' | 'files' | 'camera' | null;
 export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const addQuickAction = useQuickActionStore((state) => state.addAction);
+  const removeQuickAction = useQuickActionStore((state) => state.removeAction);
+  const hasQuickAction = useQuickActionStore((state) =>
+    state.actions.some(
+      (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
+    ),
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [image, setImage] = useState<string | null>(null);
@@ -249,9 +257,42 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
     }
   };
 
+  const handleToggleQuickAction = useCallback(() => {
+    if (hasQuickAction) {
+      // Remove existing quick actions for this node
+      const existing = useQuickActionStore.getState().actions.filter(
+        (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
+      );
+      existing.forEach((a) => removeQuickAction(a.id));
+      showToast.success('Quick Action removed', undefined, safeAreaInsets.top + 8);
+    } else {
+      const workflow = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
+      const name = workflow?.name
+        ? `${workflow.name} - ${node._meta?.title || 'Image'}`
+        : node._meta?.title || 'Load Image';
+      addQuickAction({
+        name,
+        serverId,
+        workflowId,
+        targetNodeId: node.id,
+      });
+      showToast.success('Quick Action created', 'Available in iOS Share Sheet', safeAreaInsets.top + 8);
+    }
+  }, [hasQuickAction, removeQuickAction, addQuickAction, serverId, workflowId, node.id, node._meta?.title, safeAreaInsets.top]);
+
   return (
     <BaseNode node={node}>
-      <SubItem title="image">
+      <SubItem
+        title="image"
+        rightComponent={
+          <Pressable
+            onPress={handleToggleQuickAction}
+            className={`rounded-lg p-1 ${hasQuickAction ? 'bg-primary-500' : 'active:bg-background-100'}`}
+          >
+            <Icon as={Share} className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-white' : 'text-typography-400'}`} />
+          </Pressable>
+        }
+      >
         <Pressable
           onPress={handleOpenSourcePicker}
           className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Search, ServerCrash, Trash2 } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { HStack } from '@/components/ui/hstack';
@@ -23,9 +23,12 @@ import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-c
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
-import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput, BottomSheetScrollViewMethods } from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
+import { uploadImage } from '@/services/comfy-api';
+import { showToast } from '@/utils/toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function NodesTabContent({
   nodes,
@@ -34,6 +37,7 @@ function NodesTabContent({
   serverId,
   workflowId,
   theme,
+  targetNodeId,
 }: {
   nodes: any[];
   searchQuery: string;
@@ -41,7 +45,34 @@ function NodesTabContent({
   serverId: string;
   workflowId: string;
   theme: string;
+  targetNodeId?: string;
 }) {
+  const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
+  const nodePositions = useRef<Record<string, number>>({});
+  const hasScrolled = useRef(false);
+
+  const handleNodeLayout = useCallback((nodeId: string, y: number) => {
+    nodePositions.current[nodeId] = y;
+  }, []);
+
+  // Scroll to target node after all nodes are laid out and sheet is ready
+  useEffect(() => {
+    if (!targetNodeId || hasScrolled.current) return;
+
+    const timer = setTimeout(() => {
+      const y = nodePositions.current[targetNodeId];
+      if (y !== undefined && scrollRef.current) {
+        hasScrolled.current = true;
+        scrollRef.current.scrollTo({ y, animated: true });
+        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 1000);
+        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 2000);
+        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 3000);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [targetNodeId, nodes]);
+
   return (
     <View className="flex-1 bg-background-0">
       <View className="px-4 pt-4 pb-2 bg-background-0">
@@ -68,6 +99,7 @@ function NodesTabContent({
         </HStack>
       </View>
       <BottomSheetScrollView
+        ref={scrollRef}
         contentContainerStyle={{
           padding: 16,
           paddingBottom: 24,
@@ -79,12 +111,16 @@ function NodesTabContent({
         }}
       >
         {nodes.map((node: any) => (
-          <NodeComponent
+          <View
             key={node.id}
-            node={node}
-            serverId={serverId}
-            workflowId={workflowId}
-          />
+            onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
+          >
+            <NodeComponent
+              node={node}
+              serverId={serverId}
+              workflowId={workflowId}
+            />
+          </View>
         ))}
       </BottomSheetScrollView>
     </View>
@@ -92,7 +128,12 @@ function NodesTabContent({
 }
 
 function RunWorkflowScreenContent() {
-  const { serverId, workflowId } = useLocalSearchParams();
+  const { serverId, workflowId, sharedImageUri, targetNodeId } = useLocalSearchParams<{
+    serverId: string;
+    workflowId: string;
+    sharedImageUri?: string;
+    targetNodeId?: string;
+  }>();
   const router = useRouter();
   const theme = useResolvedTheme();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
@@ -110,6 +151,26 @@ function RunWorkflowScreenContent() {
   const { generate, setGeneratedMedia } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const insets = useSafeAreaInsets();
+  const sharedImageHandled = useRef(false);
+
+  // Auto-upload shared image to target LoadImage node
+  useEffect(() => {
+    if (!sharedImageUri || !targetNodeId || !serverId || sharedImageHandled.current) return;
+    sharedImageHandled.current = true;
+
+    const fileName = sharedImageUri.split('/').pop() || 'shared_image.jpg';
+    const { promise } = uploadImage(fileName.includes('.') ? sharedImageUri : sharedImageUri, fileName, serverId as string);
+
+    promise
+      .then((response) => {
+        useWorkflowStore.getState().updateNodeInput(workflowId as string, targetNodeId, 'image', response.name);
+        showToast.success('Image loaded', 'Shared image ready', insets.top + 8);
+      })
+      .catch((error) => {
+        showToast.error('Failed to upload shared image', error instanceof Error ? error.message : undefined, insets.top + 8);
+      });
+  }, [sharedImageUri, targetNodeId, serverId, workflowId, insets.top]);
 
   const handleGenerate = useCallback(() => {
     if (!server || !workflowRecord) return;
@@ -203,7 +264,7 @@ function RunWorkflowScreenContent() {
 
       <BottomSheet
         ref={sheetRef}
-        index={1}
+        index={sharedImageUri ? 2 : 1}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
         onChange={handleSheetChange}
@@ -250,6 +311,7 @@ function RunWorkflowScreenContent() {
             serverId={serverId as string}
             workflowId={workflowId as string}
             theme={theme}
+            targetNodeId={targetNodeId}
           />
         ) : (
           <AIChatTab

@@ -3,11 +3,13 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Colors } from '@/constants/Colors';
 import '@/global.css';
 import { useResolvedTheme, useThemeStore } from '@/store/theme';
-import { toastConfig } from '@/utils/toast';
+import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { toastConfig, showToast } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { useIncomingShare } from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -53,12 +55,38 @@ function RootLayoutNav() {
   const insets = useSafeAreaInsets();
   const preference = useThemeStore((s) => s.preference);
   const colorScheme = useResolvedTheme();
+  const router = useRouter();
+  const { resolvedSharedPayloads, clearSharedPayloads, isResolving } = useIncomingShare();
 
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Handle incoming shared images
+  useEffect(() => {
+    if (isResolving || resolvedSharedPayloads.length === 0) return;
+
+    const payload = resolvedSharedPayloads[0];
+
+    if (payload.contentType !== 'image' || !payload.contentUri) {
+      return;
+    }
+
+    const actions = useQuickActionStore.getState().actions;
+
+    if (actions.length === 0) {
+      showToast.error('No Quick Actions configured', 'Create one from a Load Image node first', insets.top + 8);
+      clearSharedPayloads();
+      return;
+    }
+
+    const action = actions[0];
+    router.push(`/workflow/${action.serverId}/run/${action.workflowId}?sharedImageUri=${encodeURIComponent(payload.contentUri)}&targetNodeId=${action.targetNodeId}`);
+    clearSharedPayloads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResolving, resolvedSharedPayloads]);
 
   if (!loaded) {
     return null;

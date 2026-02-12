@@ -63,7 +63,7 @@ platform :ios do
   lane :build do
     sync_certificates
 
-    # Configure manual code signing
+    # Configure manual code signing for main app
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/ComfyPortal.xcodeproj",
@@ -71,6 +71,17 @@ platform :ios do
       bundle_identifier: "com.sillyl12324.comfy-portal",
       profile_name: "match AppStore com.sillyl12324.comfy-portal",
       code_sign_identity: "iPhone Distribution"
+    )
+
+    # Configure manual code signing for share extension
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/ComfyPortal.xcodeproj",
+      team_id: "QUVB58SSQ7",
+      bundle_identifier: "com.sillyl12324.comfy-portal.expo-sharing-extension",
+      profile_name: "match AppStore com.sillyl12324.comfy-portal.expo-sharing-extension",
+      code_sign_identity: "iPhone Distribution",
+      targets: ["expo-sharing-extension"]
     )
 
     build_app(
