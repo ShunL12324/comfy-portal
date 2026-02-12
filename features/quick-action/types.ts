@@ -5,5 +5,6 @@ export interface QuickAction {
   workflowId: string;
   /** The node ID of the LoadImage node to receive the shared image */
   targetNodeId: string;
-  createdAt: Date;
+  /** Unix timestamp in milliseconds */
+  createdAt: number;
 }

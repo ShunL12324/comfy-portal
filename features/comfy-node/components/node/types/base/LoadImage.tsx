@@ -26,6 +26,7 @@ interface LoadImageNodeProps {
   node: Node;
   serverId: string;
   workflowId: string;
+  sharedImageUri?: string;
 }
 
 interface UploadAssetCandidate {
@@ -36,7 +37,7 @@ interface UploadAssetCandidate {
 
 type PendingSourcePickerAction = 'library' | 'files' | 'camera' | null;
 
-export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeProps) {
+export default function LoadImage({ node, serverId, workflowId, sharedImageUri }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const addQuickAction = useQuickActionStore((state) => state.addAction);
@@ -67,6 +68,20 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
       sourcePickerModalRef.current?.dismiss();
     }
   }, [isUploading]);
+
+  // Auto-upload shared image from Share Extension
+  const sharedImageHandled = useRef(false);
+  useEffect(() => {
+    if (!sharedImageUri || sharedImageHandled.current || isUploading) return;
+    sharedImageHandled.current = true;
+
+    const fileName = sharedImageUri.split('/').pop() || 'shared_image.jpg';
+    uploadPickedAsset({
+      uri: sharedImageUri,
+      fileName,
+      mimeType: null,
+    });
+  }, [sharedImageUri, isUploading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -276,23 +291,35 @@ export default function LoadImage({ node, serverId, workflowId }: LoadImageNodeP
         workflowId,
         targetNodeId: node.id,
       });
-      showToast.success('Quick Action created', 'Available in iOS Share Sheet', safeAreaInsets.top + 8);
+      showToast.success('Quick Action enabled', 'Share images from Photos to this node', safeAreaInsets.top + 8);
     }
   }, [hasQuickAction, removeQuickAction, addQuickAction, serverId, workflowId, node.id, node._meta?.title, safeAreaInsets.top]);
 
   return (
-    <BaseNode node={node}>
-      <SubItem
-        title="image"
-        rightComponent={
-          <Pressable
-            onPress={handleToggleQuickAction}
-            className={`rounded-lg p-1 ${hasQuickAction ? 'bg-primary-500' : 'active:bg-background-100'}`}
+    <BaseNode
+      node={node}
+      badges={
+        <Pressable
+          onPress={handleToggleQuickAction}
+          className={`flex-row items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${
+            hasQuickAction
+              ? 'bg-primary-500 active:bg-primary-600'
+              : 'bg-background-50 active:bg-background-100'
+          }`}
+        >
+          <Icon
+            as={Share}
+            className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
+          />
+          <Text
+            className={`text-xs font-medium ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
           >
-            <Icon as={Share} className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-white' : 'text-typography-400'}`} />
-          </Pressable>
-        }
-      >
+            Quick Action
+          </Text>
+        </Pressable>
+      }
+    >
+      <SubItem title="image">
         <Pressable
           onPress={handleOpenSourcePicker}
           className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"

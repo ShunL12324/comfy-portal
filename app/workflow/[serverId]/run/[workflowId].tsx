@@ -26,8 +26,6 @@ import { useResolvedTheme } from '@/store/theme';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput, BottomSheetScrollViewMethods } from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
-import { uploadImage } from '@/services/comfy-api';
-import { showToast } from '@/utils/toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function NodesTabContent({
@@ -38,6 +36,7 @@ function NodesTabContent({
   workflowId,
   theme,
   targetNodeId,
+  sharedImageUri,
 }: {
   nodes: any[];
   searchQuery: string;
@@ -46,6 +45,7 @@ function NodesTabContent({
   workflowId: string;
   theme: string;
   targetNodeId?: string;
+  sharedImageUri?: string;
 }) {
   const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
   const nodePositions = useRef<Record<string, number>>({});
@@ -59,18 +59,23 @@ function NodesTabContent({
   useEffect(() => {
     if (!targetNodeId || hasScrolled.current) return;
 
-    const timer = setTimeout(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    const scrollToTarget = () => {
       const y = nodePositions.current[targetNodeId];
       if (y !== undefined && scrollRef.current) {
         hasScrolled.current = true;
         scrollRef.current.scrollTo({ y, animated: true });
-        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 1000);
-        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 2000);
-        setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), 3000);
+        // Retry a few times to handle BottomSheet layout settling
+        for (const delay of [1000, 2000, 3000]) {
+          timers.push(setTimeout(() => scrollRef.current?.scrollTo({ y, animated: true }), delay));
+        }
       }
-    }, 2000);
+    };
 
-    return () => clearTimeout(timer);
+    timers.push(setTimeout(scrollToTarget, 2000));
+
+    return () => timers.forEach(clearTimeout);
   }, [targetNodeId, nodes]);
 
   return (
@@ -119,6 +124,7 @@ function NodesTabContent({
               node={node}
               serverId={serverId}
               workflowId={workflowId}
+              sharedImageUri={targetNodeId === node.id ? sharedImageUri : undefined}
             />
           </View>
         ))}
@@ -152,25 +158,6 @@ function RunWorkflowScreenContent() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const insets = useSafeAreaInsets();
-  const sharedImageHandled = useRef(false);
-
-  // Auto-upload shared image to target LoadImage node
-  useEffect(() => {
-    if (!sharedImageUri || !targetNodeId || !serverId || sharedImageHandled.current) return;
-    sharedImageHandled.current = true;
-
-    const fileName = sharedImageUri.split('/').pop() || 'shared_image.jpg';
-    const { promise } = uploadImage(fileName.includes('.') ? sharedImageUri : sharedImageUri, fileName, serverId as string);
-
-    promise
-      .then((response) => {
-        useWorkflowStore.getState().updateNodeInput(workflowId as string, targetNodeId, 'image', response.name);
-        showToast.success('Image loaded', 'Shared image ready', insets.top + 8);
-      })
-      .catch((error) => {
-        showToast.error('Failed to upload shared image', error instanceof Error ? error.message : undefined, insets.top + 8);
-      });
-  }, [sharedImageUri, targetNodeId, serverId, workflowId, insets.top]);
 
   const handleGenerate = useCallback(() => {
     if (!server || !workflowRecord) return;
@@ -312,6 +299,7 @@ function RunWorkflowScreenContent() {
             workflowId={workflowId as string}
             theme={theme}
             targetNodeId={targetNodeId}
+            sharedImageUri={sharedImageUri}
           />
         ) : (
           <AIChatTab

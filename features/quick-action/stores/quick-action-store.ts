@@ -21,7 +21,7 @@ export const useQuickActionStore = create<QuickActionState>()(
         const newAction: QuickAction = {
           ...action,
           id: generateUUID(),
-          createdAt: new Date(),
+          createdAt: Date.now(),
         };
         set((state) => ({
           actions: [...state.actions, newAction],

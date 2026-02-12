@@ -82,8 +82,21 @@ function RootLayoutNav() {
       return;
     }
 
+    // TODO: When multiple Quick Actions exist, show a picker instead of using the first one
     const action = actions[0];
-    router.push(`/workflow/${action.serverId}/run/${action.workflowId}?sharedImageUri=${encodeURIComponent(payload.contentUri)}&targetNodeId=${action.targetNodeId}`);
+    // Clear stack to avoid piling up routes on repeated shares
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
+    router.push({
+      pathname: '/workflow/[serverId]/run/[workflowId]',
+      params: {
+        serverId: action.serverId,
+        workflowId: action.workflowId,
+        sharedImageUri: payload.contentUri,
+        targetNodeId: action.targetNodeId,
+      },
+    });
     clearSharedPayloads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResolving, resolvedSharedPayloads]);
