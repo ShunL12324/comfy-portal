@@ -22,8 +22,9 @@ export const useQuickActionStore = create<QuickActionState>()(
           id: generateUUID(),
           createdAt: Date.now(),
         };
-        set((state) => ({
-          actions: [...state.actions, newAction],
+        // Only one Quick Action can be active at a time
+        set(() => ({
+          actions: [newAction],
         }));
       },
 
