@@ -92,7 +92,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, val
     <View className={`${containerStyle} ${className}`} onLayout={onLayout}>
       <Animated.View className={sliderBaseStyle} style={sliderStyle} />
       {options.map((option) => (
-        <AnimatedPressable key={option} className={pressableBaseStyle} style={{ flex: 1 }} onPress={() => onChange(option)}>
+        <AnimatedPressable key={option} className={`${pressableBaseStyle} flex-1`} onPress={() => onChange(option)}>
           <Text className={getTextStyle(value === option)}>{option}</Text>
         </AnimatedPressable>
       ))}

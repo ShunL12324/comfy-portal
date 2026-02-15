@@ -166,7 +166,7 @@ export const MediaPreview = memo(function ParallaxMedia({
             avoidKeyboard={false}
             closeOnOverlayClick
             size="full"
-            style={{ margin: 0, padding: 0 }}
+            className="m-0 p-0"
           >
             <ModalBackdrop />
             <ModalContent

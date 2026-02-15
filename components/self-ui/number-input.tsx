@@ -162,7 +162,7 @@ export function NumberInput({
           mass: 0.7,
         }}
       >
-        <Input variant="outline" className={styles.input} style={{ borderWidth: 0 }}>
+        <Input variant="outline" className={`${styles.input} border-0`}>
           <InputField
             keyboardType="numeric"
             value={localValue}

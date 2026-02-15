@@ -122,10 +122,10 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
           />
           <BottomSheetFlatList
             data={filteredOptions}
-            keyExtractor={(item) => item.value}
+            keyExtractor={(item: SelectorOption) => item.value}
             renderItem={
               renderItem
-                ? ({ item }) => React.createElement(React.Fragment, null, renderItem(item, item.value === value))
+                ? ({ item }: { item: SelectorOption }) => React.createElement(React.Fragment, null, renderItem(item, item.value === value))
                 : defaultRenderItem
             }
             numColumns={numColumns}

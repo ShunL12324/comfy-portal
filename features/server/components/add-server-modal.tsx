@@ -213,7 +213,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
                 />
               </VStack>
 
-              <HStack space="sm" style={{ marginTop: 12 }}>
+              <HStack space="sm" className="mt-3">
                 <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100 py-2">
                   <ButtonText className="text-primary-400">Cancel</ButtonText>
                 </Button>

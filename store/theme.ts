@@ -40,5 +40,6 @@ export function useResolvedTheme(): 'light' | 'dark' {
   if (preference !== 'system') {
     return preference
   }
+  // @ts-expect-error — ColorSchemeName includes 'unspecified' but we always fall back to 'light'
   return nwColorScheme ?? Appearance.getColorScheme() ?? 'light'
 }

@@ -92,10 +92,7 @@ export const ZoomableMedia = memo(function ZoomableMedia({
   // Image: Use Zoomable for zoom handling
   return (
     <Pressable
-      style={{
-        flex: 1,
-        backgroundColor: 'black',
-      }}
+      className="flex-1 bg-black"
       onLongPress={onLongPress}
       delayLongPress={500}
     >

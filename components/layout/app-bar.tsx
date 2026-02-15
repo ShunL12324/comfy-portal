@@ -59,7 +59,7 @@ export function AppBar({
     <View className={`w-full bg-background-0 ${className}`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="relative items-center justify-between">
-          <HStack className="items-center" style={{ minWidth: 50 }}>
+          <HStack className="items-center min-w-[50px]">
             {showBack && (
               <Button variant="link" className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0" onPress={() => router.back()}>
                 <Icon as={ChevronLeft} size="xl" className="text-typography-950" />
@@ -89,7 +89,7 @@ export function AppBar({
             </View>
           )}
           {centerElement && <View className="absolute left-0 right-0 items-center">{centerElement}</View>}
-          <View style={{ minWidth: 50 }}>
+          <View className="min-w-[50px]">
             {rightElement}
           </View>
         </HStack>

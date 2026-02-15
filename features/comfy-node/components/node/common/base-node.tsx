@@ -28,10 +28,7 @@ export default function BaseNode({ node, children, badges }: BaseNodeProps) {
         type: 'timing',
         duration: 200,
       }}
-      className="my-2 rounded-lg bg-background-0 p-4"
-      style={{
-        borderWidth: 1,
-      }}
+      className="my-2 rounded-lg border bg-background-0 p-4"
     >
       <View className="mb-2 flex-row items-center justify-between">
         <Text

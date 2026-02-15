@@ -27,7 +27,7 @@ export function SearchHeader({
   rightElement,
 }: SearchHeaderProps) {
   const [localValue, setLocalValue] = useState(searchQuery);
-  const debounceTimeout = useRef<NodeJS.Timeout>();
+  const debounceTimeout = useRef<NodeJS.Timeout>(undefined);
   const colors = useThemeColor();
 
   const handleChange = useCallback(
@@ -45,12 +45,12 @@ export function SearchHeader({
 
   return (
     <VStack space="md">
-      <Text className="pb-2 pt-4 text-lg font-medium text-primary-500" style={{ paddingHorizontal: 16 }}>
+      <Text className="px-4 pb-2 pt-4 text-lg font-medium text-primary-500">
         {title}
       </Text>
 
       {showSearch && (
-        <Box className="pb-4" style={{ paddingHorizontal: 16 }}>
+        <Box className="px-4 pb-4">
           <HStack space="sm" className="items-center">
             <View
               style={{
@@ -63,7 +63,7 @@ export function SearchHeader({
                 height: 40,
               }}
             >
-              <Icon as={Search} size="sm" className="text-background-400" style={{ marginRight: 8 }} />
+              <Icon as={Search} size="sm" className="mr-2 text-background-400" />
               <BottomSheetTextInput
                 placeholder={searchPlaceholder}
                 value={localValue}

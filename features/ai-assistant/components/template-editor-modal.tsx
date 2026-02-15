@@ -19,7 +19,8 @@ import { useAIAssistantStore } from '../stores/ai-assistant-store';
 
 type EditorMode = 'view' | 'edit' | 'add';
 
-type TemplateEditorModalProps = Record<string, never>;
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface TemplateEditorModalProps {}
 
 export interface TemplateEditorModalRef {
   present: (options: {
@@ -170,7 +171,7 @@ export const TemplateEditorModal = forwardRef<TemplateEditorModalRef, TemplateEd
                     <ButtonText>{getPrimaryActionText()}</ButtonText>
                   </Button>
                 ) : (
-                  <View style={{ width: 72 }} />
+                  <View className="w-[72px]" />
                 )}
               </View>
             </HStack>

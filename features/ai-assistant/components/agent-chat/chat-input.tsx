@@ -28,8 +28,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask AI to a
   return (
     <View className="px-4 py-2">
       <View
-        className="flex-row items-end rounded-[20px] border border-outline-50 bg-background-50 pl-3.5 pr-1 py-1"
-        style={{ minHeight: 44 }}
+        className="flex-row items-end rounded-[20px] border border-outline-50 bg-background-50 pl-3.5 pr-1 py-1 min-h-[44px]"
       >
         {/* BottomSheetTextInput requires style prop — cannot use className (third-party limitation) */}
         <BottomSheetTextInput
