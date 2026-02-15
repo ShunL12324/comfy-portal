@@ -7,14 +7,6 @@ export interface AIProvider {
   temperature: number;
 }
 
-export interface PromptTemplate {
-  id: string;
-  name: string;
-  systemPrompt: string;
-  isBuiltIn: boolean;
-  createdAt: Date;
-}
-
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;

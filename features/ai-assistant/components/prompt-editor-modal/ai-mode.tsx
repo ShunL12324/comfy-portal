@@ -2,7 +2,6 @@ import { BottomSheetTextarea } from '@/components/self-ui/bottom-sheet-textarea'
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
@@ -12,7 +11,6 @@ import { AIService } from '@/services/ai-service';
 import {
   AlertTriangle,
   Check,
-  ChevronDown,
   RefreshCw,
   Send,
   Settings,
@@ -22,7 +20,21 @@ import {
 import { MotiView } from 'moti';
 import React, { useCallback, useState } from 'react';
 import { useAIAssistantStore } from '../../stores/ai-assistant-store';
-import { TemplateSelector } from './template-selector';
+
+// Built-in system prompt for prompt enhancement
+const SYSTEM_PROMPT = `You are an expert at enhancing image generation prompts for Stable Diffusion and similar AI image generators.
+
+Your task is to take the user's prompt and enhance it with more vivid, detailed descriptions while preserving the original intent.
+
+Rules:
+1. Add descriptive details about lighting, atmosphere, style, and composition
+2. Keep the core subject and concept from the original prompt
+3. Use comma-separated tags/phrases common in image generation
+4. Output in the same language as the input prompt
+5. Do not add explanations, just output the enhanced prompt directly
+
+User's prompt:
+{{user_prompt}}`;
 
 interface AIModeProps {
   initialPrompt: string;
@@ -33,17 +45,14 @@ interface AIModeProps {
 type OptimizeState = 'idle' | 'loading' | 'success' | 'error';
 
 export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps) {
-  const { provider, templates, selectedTemplateId, setSelectedTemplate, isConfigured } =
-    useAIAssistantStore();
+  const { provider, isConfigured, customPrompt } = useAIAssistantStore();
 
   const [optimizeState, setOptimizeState] = useState<OptimizeState>('idle');
   const [optimizedPrompt, setOptimizedPrompt] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [feedback, setFeedback] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
   const configured = isConfigured();
   const assistantTurnCount = conversationHistory.filter((msg) => msg.role === 'assistant').length;
   const stateLabel = {
@@ -54,9 +63,10 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
   }[optimizeState];
 
   const buildMessages = useCallback((): ChatMessage[] => {
-    if (!selectedTemplate) return [];
-
-    const systemPrompt = selectedTemplate.systemPrompt.replace('{{user_prompt}}', initialPrompt);
+    let systemPrompt = SYSTEM_PROMPT.replace('{{user_prompt}}', initialPrompt);
+    if (customPrompt.trim()) {
+      systemPrompt += `\n\nAdditional instructions from user:\n${customPrompt}`;
+    }
     const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }];
 
     for (const msg of conversationHistory) {
@@ -64,10 +74,10 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     }
 
     return messages;
-  }, [selectedTemplate, initialPrompt, conversationHistory]);
+  }, [initialPrompt, conversationHistory, customPrompt]);
 
   const handleOptimize = useCallback(async () => {
-    if (!provider || !selectedTemplate) return;
+    if (!provider) return;
 
     setOptimizeState('loading');
     setErrorMessage('');
@@ -105,7 +115,7 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
       setOptimizeState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Optimization failed');
     }
-  }, [provider, selectedTemplate, buildMessages, conversationHistory]);
+  }, [provider, buildMessages, conversationHistory]);
 
   const handleRefinement = useCallback(async () => {
     if (!feedback.trim() || !provider) return;
@@ -157,17 +167,6 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
     setErrorMessage('');
   }, []);
 
-  const handleTemplateSelect = useCallback(
-    (templateId: string) => {
-      setSelectedTemplate(templateId);
-      setShowTemplateSelector(false);
-      if (optimizeState !== 'idle') {
-        handleReject();
-      }
-    },
-    [setSelectedTemplate, optimizeState, handleReject],
-  );
-
   if (!configured) {
     return (
       <View className="flex-1 items-center justify-center py-8">
@@ -206,40 +205,18 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
           <Text className="text-sm leading-5 text-typography-700">{initialPrompt || '(Empty prompt)'}</Text>
         </View>
 
-        <Text className="text-xs font-medium uppercase tracking-wide text-typography-500">Template</Text>
-        <HStack className="items-center" space="sm">
-          <Pressable
-            onPress={() => setShowTemplateSelector(!showTemplateSelector)}
-            className="flex-1 flex-row items-center justify-between rounded-xl bg-background-0 px-3 py-2.5"
-          >
-            <Text className="text-sm text-typography-900" numberOfLines={1}>
-              {selectedTemplate?.name || 'Select template'}
-            </Text>
-            <Icon as={ChevronDown} size="sm" className="text-typography-500" />
-          </Pressable>
-
-          <Button
-            variant="solid"
-            action="primary"
-            size="sm"
-            onPress={handleOptimize}
-            disabled={optimizeState === 'loading' || !selectedTemplate}
-            className="rounded-xl px-3"
-          >
-            {optimizeState === 'loading' ? <RotatingSpinner size="sm" /> : <ButtonIcon as={Sparkles} />}
-            <ButtonText>{assistantTurnCount > 0 ? 'Regenerate' : 'Optimize'}</ButtonText>
-          </Button>
-        </HStack>
+        <Button
+          variant="solid"
+          action="primary"
+          size="sm"
+          onPress={handleOptimize}
+          disabled={optimizeState === 'loading'}
+          className="rounded-xl"
+        >
+          {optimizeState === 'loading' ? <RotatingSpinner size="sm" /> : <ButtonIcon as={Sparkles} />}
+          <ButtonText>{assistantTurnCount > 0 ? 'Regenerate' : 'Optimize'}</ButtonText>
+        </Button>
       </VStack>
-
-      {showTemplateSelector && (
-        <TemplateSelector
-          templates={templates}
-          selectedTemplateId={selectedTemplateId}
-          onSelect={handleTemplateSelect}
-          onClose={() => setShowTemplateSelector(false)}
-        />
-      )}
 
       <MotiView
         from={{ opacity: 0, translateY: 8 }}
