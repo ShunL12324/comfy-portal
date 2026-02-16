@@ -51,7 +51,7 @@ export const Drawer = ({
     const ratio = sizeMap[size];
 
     if (anchor === 'left' || anchor === 'right') {
-      return dimensions.width * ratio;
+      return Math.min(dimensions.width * ratio, 480);
     }
     return dimensions.height * ratio;
   };

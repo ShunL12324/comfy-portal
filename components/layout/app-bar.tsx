@@ -17,7 +17,7 @@ const SIDE_SLOT_MIN_WIDTH = 50;
 const BACK_BUTTON_RESERVED_WIDTH = 40;
 const TITLE_SAFE_GAP = 8;
 const MIN_TITLE_WIDTH = 72;
-const MAX_TITLE_WIDTH = 320;
+const MAX_TITLE_WIDTH = 480;
 
 interface AppBarProps {
   title: string;

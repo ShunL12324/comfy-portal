@@ -71,8 +71,8 @@ export default function HomeScreen() {
         }
       />
 
-      <ScrollView className="flex-1">
-        <VStack space="md" className="px-5 pb-6">
+      <ScrollView className="flex-1" contentContainerStyle={{ alignItems: 'center' }}>
+        <VStack space="md" className="px-5 pb-6 w-full" style={{ maxWidth: 640 }}>
           {servers.length > 0 ? (
             servers.map((server, index) => <ServerCard key={server.id} id={server.id} index={index} />)
           ) : (

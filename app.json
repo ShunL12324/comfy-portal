@@ -4,13 +4,14 @@
     "slug": "comfy-portal",
     "version": "1.0.7",
     "owner": "sillyl12324",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "comfyportal",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "isTabletOnly": false,
+      "requireFullScreen": false,
       "bundleIdentifier": "com.sillyl12324.comfy-portal",
       "appleTeamId": "QUVB58SSQ7",
       "config": {
