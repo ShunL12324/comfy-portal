@@ -21,6 +21,7 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
@@ -124,6 +125,7 @@ function RootLayoutNav() {
   return (
     <>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
         <GluestackUIProvider mode={preference}>
           <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
               <BottomSheetModalProvider>
@@ -143,6 +145,7 @@ function RootLayoutNav() {
               <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </ThemeProvider>
         </GluestackUIProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
       <Toast config={toastConfig} topOffset={insets.top + 8} />
     </>

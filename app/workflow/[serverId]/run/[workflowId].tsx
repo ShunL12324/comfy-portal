@@ -21,7 +21,7 @@ import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
 import { MediaPreview } from '@/features/generation/components/media-preview';
-import { AdaptiveScrollView, AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
+import { AdaptiveKeyboardAwareScrollView, AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
 import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
@@ -80,6 +80,25 @@ function NodesTabContent({
     return () => timers.forEach(clearTimeout);
   }, [targetNodeId, nodes]);
 
+  const bgColor = theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0];
+
+  const nodeList = nodes.map((node: any) => (
+    <View
+      key={node.id}
+      onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
+    >
+      <NodeComponent
+        node={node}
+        serverId={serverId}
+        workflowId={workflowId}
+        sharedImageUri={targetNodeId === node.id ? sharedImageUri : undefined}
+      />
+    </View>
+  ));
+
+  const scrollContentStyle = { padding: 16, paddingBottom: 24, backgroundColor: bgColor };
+  const scrollStyle = { flex: 1 as const, backgroundColor: bgColor };
+
   return (
     <View className="flex-1 bg-background-0">
       <View className="px-4 pt-4 pb-2 bg-background-0">
@@ -105,32 +124,14 @@ function NodesTabContent({
           />
         </HStack>
       </View>
-      <AdaptiveScrollView
+      <AdaptiveKeyboardAwareScrollView
         ref={scrollRef}
-        contentContainerStyle={{
-          padding: 16,
-          paddingBottom: 24,
-          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-        }}
-        style={{
-          flex: 1,
-          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-        }}
+        bottomOffset={20}
+        contentContainerStyle={scrollContentStyle}
+        style={scrollStyle}
       >
-        {nodes.map((node: any) => (
-          <View
-            key={node.id}
-            onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
-          >
-            <NodeComponent
-              node={node}
-              serverId={serverId}
-              workflowId={workflowId}
-              sharedImageUri={targetNodeId === node.id ? sharedImageUri : undefined}
-            />
-          </View>
-        ))}
-      </AdaptiveScrollView>
+        {nodeList}
+      </AdaptiveKeyboardAwareScrollView>
     </View>
   );
 }
@@ -258,6 +259,7 @@ function RunWorkflowScreenContent() {
           </View>
           <View
             style={{
+              flex: 1,
               width: panelWidth,
               borderLeftWidth: 1,
               borderLeftColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],

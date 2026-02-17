@@ -137,7 +137,7 @@ export function NumberSlider({
   );
 
   return (
-    <View className="flex-1">
+    <View>
       <View className={styles.container}>
         <View className={styles.value}>
           <Text size="sm" bold className="text-typography-900">
