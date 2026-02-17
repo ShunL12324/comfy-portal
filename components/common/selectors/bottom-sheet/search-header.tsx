@@ -1,10 +1,10 @@
+import { AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Search } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -64,7 +64,7 @@ export function SearchHeader({
               }}
             >
               <Icon as={Search} size="sm" className="mr-2 text-background-400" />
-              <BottomSheetTextInput
+              <AdaptiveTextInput
                 placeholder={searchPlaceholder}
                 value={localValue}
                 onChangeText={handleChange}

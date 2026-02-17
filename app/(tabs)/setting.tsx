@@ -27,7 +27,7 @@ export default function SettingScreen() {
     <View className="flex-1 bg-background-0">
       <AppBar title="Setting" titleSize="xl" />
       <ScrollView className="flex-1">
-        <View className="px-5">
+        <View className="px-5 w-full">
           {/* Theme Section */}
           <View className="py-4">
             <View className="mb-4 flex-row items-center">

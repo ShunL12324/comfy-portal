@@ -1,4 +1,4 @@
-import { BottomSheetTextarea } from '@/components/self-ui/bottom-sheet-textarea';
+import { StyledTextarea } from '@/components/self-ui/styled-textarea';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import {
@@ -52,7 +52,7 @@ export default function TextEncodeQwenImageEditPlus({
           </Pressable>
         }
       >
-        <BottomSheetTextarea
+        <StyledTextarea
           placeholder="Enter prompt here..."
           value={node.inputs?.prompt || ''}
           onChangeText={handleTextChange}

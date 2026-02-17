@@ -165,11 +165,34 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
+    let result: ImagePicker.ImagePickerResult;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    try {
+      // Wrap with timeout — expo-image-picker can hang on iPad for certain photos
+      const pickerPromise = ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+        shouldDownloadFromNetwork: true,
+      });
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('PICKER_TIMEOUT')), 30000);
+      });
+      result = await Promise.race([pickerPromise, timeoutPromise]);
+    } catch (pickerError) {
+      if (pickerError instanceof Error && pickerError.message === 'PICKER_TIMEOUT') {
+        showToast.error(
+          'Photo Library timed out',
+          'Try using "Files" instead',
+          safeAreaInsets.top + 8,
+        );
+      } else {
+        showToast.error('Failed to pick image', pickerError instanceof Error ? pickerError.message : undefined, safeAreaInsets.top + 8);
+      }
+      return;
+    } finally {
+      clearTimeout(timeoutId!);
+    }
     if (result.canceled || !result.assets?.[0]) {
       return;
     }
@@ -323,7 +346,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       <SubItem title="image">
         <Pressable
           onPress={handleOpenSourcePicker}
-          className="relative h-48 flex-1 items-center justify-center rounded-xl bg-background-50"
+          className="relative h-48 w-full items-center justify-center rounded-xl bg-background-50"
         >
           {image ? (
             <>

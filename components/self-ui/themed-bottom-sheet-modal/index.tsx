@@ -6,7 +6,8 @@ import {
   BottomSheetModal,
   BottomSheetModalProps,
 } from '@gorhom/bottom-sheet';
-import React, { forwardRef, useCallback } from 'react';
+import React, { forwardRef, useCallback, useMemo } from 'react';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 
 // Define the component using forwardRef
 export const ThemedBottomSheetModal = forwardRef<
@@ -15,6 +16,7 @@ export const ThemedBottomSheetModal = forwardRef<
 >((props, ref) => {
   const theme = useResolvedTheme();
   const colors = useThemeColor();
+  const { width } = useWindowDimensions();
 
   // Define theme-based colors (Subtly Darker Dark BG)
   const handleColor = colors.outline[500];
@@ -36,6 +38,14 @@ export const ThemedBottomSheetModal = forwardRef<
     [],
   );
 
+  const ipadStyle = useMemo(
+    () =>
+      width >= 768
+        ? { marginHorizontal: (width - 540) / 2 }
+        : undefined,
+    [width],
+  );
+
   return (
     <BottomSheetModal
       ref={ref} // Forward the ref
@@ -43,6 +53,7 @@ export const ThemedBottomSheetModal = forwardRef<
       backgroundStyle={{ backgroundColor: backgroundColor }}
       backdropComponent={renderBackdrop} // Add backdrop component
       {...props} // Pass down all other props
+      style={StyleSheet.flatten([ipadStyle, props.style])}
     />
   );
 });

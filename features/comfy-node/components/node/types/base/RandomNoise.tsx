@@ -82,9 +82,9 @@ export default function RandomNoise({ node, serverId, workflowId }: RandomNoiseP
               </View>
             </TouchableOpacity>
           </View>
-          <View className="flex-row items-start justify-end gap-2">
+          <View className="flex-row items-start gap-2">
             <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
-            <Text size="sm" className="text-xs text-typography-500">
+            <Text size="sm" className="flex-1 text-xs text-typography-500">
               Using the same seed will not trigger image generation again.
             </Text>
           </View>

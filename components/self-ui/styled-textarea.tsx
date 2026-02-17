@@ -1,16 +1,16 @@
 import { Colors } from '@/constants/Colors';
 import { useResolvedTheme } from '@/store/theme';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import React from 'react';
 import { StyleSheet, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import { AdaptiveTextInput } from './adaptive-sheet-components';
 
-interface BottomSheetTextareaProps extends Omit<TextInputProps, 'multiline'> {
+interface StyledTextareaProps extends Omit<TextInputProps, 'multiline'> {
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   minHeight?: number;
 }
 
-export const BottomSheetTextarea: React.FC<BottomSheetTextareaProps> = ({
+export const StyledTextarea: React.FC<StyledTextareaProps> = ({
   containerStyle,
   inputStyle,
   placeholder,
@@ -25,7 +25,7 @@ export const BottomSheetTextarea: React.FC<BottomSheetTextareaProps> = ({
   const placeholderTextColor = isDarkMode ? Colors.dark.typography[400] : Colors.light.typography[400];
 
   return (
-    <BottomSheetTextInput
+    <AdaptiveTextInput
       style={[
         styles.input,
         {

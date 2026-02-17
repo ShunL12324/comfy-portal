@@ -26,9 +26,9 @@ export default function SaveImage({ node, serverId, workflowId }: SaveImageProps
             onChangeText={(value) => updateNodeInput(workflowId, node.id, 'filename_prefix', value)}
           />
         </Input>
-        <View className="mt-2 flex-row items-start justify-end gap-2">
+        <View className="mt-2 flex-row items-start gap-2">
           <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
-          <Text size="sm" className="text-xs text-typography-500">
+          <Text size="sm" className="flex-1 text-xs text-typography-500">
             This will only affect the filename of the image stored on the server.
           </Text>
         </View>

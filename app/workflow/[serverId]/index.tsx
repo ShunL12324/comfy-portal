@@ -22,6 +22,7 @@ import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -139,6 +140,8 @@ const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => 
 
 const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTabProps) => {
   const workflows = useWorkflowStore((state) => state.workflow);
+  const { layout } = useDeviceLayout();
+  const numColumns = layout === 'expanded' ? 4 : layout === 'regular' ? 3 : 2;
   const filteredWorkflows = useMemo(() =>
     workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod !== 'server-sync'),
     [workflows, serverId]
@@ -168,14 +171,15 @@ const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTab
         </HStack>
       </View>
       <FlatList
+        key={numColumns}
         data={filteredWorkflows}
         renderItem={({ item }) => (
-          <View className="w-1/2 p-1.5">
+          <View style={{ width: `${100 / numColumns}%` }} className="p-1.5">
             <WorkflowCard id={item.id} />
           </View>
         )}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={numColumns}
         ListEmptyComponent={renderEmptyList}
         contentContainerClassName="px-2.5 pb-8 pt-2"
       />
@@ -193,6 +197,8 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   const [refreshing, setRefreshing] = useState(false);
   const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
   const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
+  const { layout } = useDeviceLayout();
+  const numColumns = layout === 'expanded' ? 4 : layout === 'regular' ? 3 : 2;
   const workflowsToDisplay = useMemo(
     () => storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync'),
     [storedWorkflows, serverId]
@@ -504,6 +510,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
 
     return (
       <FlatList
+        key={numColumns}
         data={workflowsToDisplay}
         renderItem={({ item, index }) => (
           <MotiView
@@ -514,13 +521,14 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
               duration: 300,
               delay: index * 50,
             }}
-            className="w-1/2 p-1.5"
+            style={{ width: `${100 / numColumns}%` }}
+            className="p-1.5"
           >
             <WorkflowCard id={item.id} />
           </MotiView>
         )}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={numColumns}
         contentContainerClassName="px-2.5 pb-8 pt-2"
         className="flex-1"
       />

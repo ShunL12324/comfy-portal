@@ -57,6 +57,7 @@ export const MediaPreview = memo(function ParallaxMedia({
   const { generatedMedia, status } = useGenerationStatus();
   const { progress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -90,7 +91,13 @@ export const MediaPreview = memo(function ParallaxMedia({
   };
 
   return (
-    <View className="relative w-full flex-1 flex-col items-start justify-start">
+    <View
+      className="relative w-full flex-1 flex-col items-start justify-start"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setContainerSize({ width, height });
+      }}
+    >
       {generatedMedia.length > 0 ? (
         <View className="h-auto w-full flex-1 justify-start">
           <PagerView
@@ -114,8 +121,8 @@ export const MediaPreview = memo(function ParallaxMedia({
                     <Image
                       source={{ uri: mediaUrl }}
                       style={{
-                        width: screenWidth,
-                        height: screenHeight,
+                        width: containerSize.width || screenWidth,
+                        height: containerSize.height || screenHeight,
                         aspectRatio: undefined,
                       }}
                       contentFit="contain"

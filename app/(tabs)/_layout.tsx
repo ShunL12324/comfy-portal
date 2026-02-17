@@ -1,38 +1,40 @@
-import { Tabs } from 'expo-router';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { Tabs, usePathname, useRouter } from 'expo-router';
 import React from 'react';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Sidebar } from '../../components/layout/sidebar';
 import { TabBar, TabRoute } from '../../components/layout/tab-bar';
 
 export default function TabLayout() {
-  // Helper function to determine active tab name based on index
-  const getActiveTabNameByIndex = (index: number): TabRoute => {
-    switch (index) {
-      case 0:
-        return 'server';
-      case 1:
-        return 'explore';
-      case 2:
-        return 'setting';
-      default:
-        return 'server'; // Default to first tab
-    }
+  const { isTabletWidth } = useDeviceLayout();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const getActiveTabFromPathname = (): TabRoute => {
+    if (pathname === '/setting' || pathname.startsWith('/setting')) return 'setting';
+    if (pathname === '/explore' || pathname.startsWith('/explore')) return 'explore';
+    return 'server';
   };
 
-  // Helper function to determine active tab name based on route name
-  // This aligns better with how Expo Router handles names
   const getActiveTabNameByRoute = (routeName: string): TabRoute => {
     if (routeName === 'index') return 'server';
     if (routeName === 'explore') return 'explore';
     if (routeName === 'setting') return 'setting';
-    return 'server'; // Default
+    return 'server';
   };
 
-  return (
+  const handleSidebarTabChange = (tab: TabRoute) => {
+    const screenName = tab === 'server' ? '/' : `/${tab}`;
+    router.navigate(screenName as any);
+  };
+
+  const tabs = (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-      }}
+      screenOptions={{ headerShown: false }}
       tabBar={(props) => {
-        // Get the current route name from the state
+        if (isTabletWidth) return null;
+
         const currentRouteName = props.state.routes[props.state.index]?.name;
         const activeTab = getActiveTabNameByRoute(currentRouteName);
 
@@ -40,7 +42,6 @@ export default function TabLayout() {
           <TabBar
             activeTab={activeTab}
             onChangeTab={(tab: TabRoute) => {
-              // Map TabRoute back to screen name for navigation
               const screenName = tab === 'server' ? 'index' : tab;
               props.navigation.navigate(screenName);
             }}
@@ -48,24 +49,29 @@ export default function TabLayout() {
         );
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Servers',
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-        }}
-      />
-      <Tabs.Screen
-        name="setting"
-        options={{
-          title: 'Settings',
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Servers' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="setting" options={{ title: 'Settings' }} />
     </Tabs>
+  );
+
+  if (isTabletWidth) {
+    return (
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        <Sidebar
+          activeTab={getActiveTabFromPathname()}
+          onChangeTab={handleSidebarTabChange}
+        />
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          {tabs}
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      {tabs}
+    </SafeAreaView>
   );
 }

@@ -21,12 +21,14 @@ import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
 import { MediaPreview } from '@/features/generation/components/media-preview';
+import { AdaptiveKeyboardAwareScrollView, AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
+import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
-import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput, BottomSheetScrollViewMethods } from '@gorhom/bottom-sheet';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import BottomSheet from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function NodesTabContent({
   nodes,
@@ -47,7 +49,7 @@ function NodesTabContent({
   targetNodeId?: string;
   sharedImageUri?: string;
 }) {
-  const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
+  const scrollRef = useRef<any>(null);
   const nodePositions = useRef<Record<string, number>>({});
   const hasScrolled = useRef(false);
 
@@ -78,6 +80,25 @@ function NodesTabContent({
     return () => timers.forEach(clearTimeout);
   }, [targetNodeId, nodes]);
 
+  const bgColor = theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0];
+
+  const nodeList = nodes.map((node: any) => (
+    <View
+      key={node.id}
+      onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
+    >
+      <NodeComponent
+        node={node}
+        serverId={serverId}
+        workflowId={workflowId}
+        sharedImageUri={targetNodeId === node.id ? sharedImageUri : undefined}
+      />
+    </View>
+  ));
+
+  const scrollContentStyle = { padding: 16, paddingBottom: 24, backgroundColor: bgColor };
+  const scrollStyle = { flex: 1 as const, backgroundColor: bgColor };
+
   return (
     <View className="flex-1 bg-background-0">
       <View className="px-4 pt-4 pb-2 bg-background-0">
@@ -89,7 +110,7 @@ function NodesTabContent({
           }}
         >
           <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
-          <BottomSheetTextInput
+          <AdaptiveTextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search nodes..."
@@ -103,32 +124,14 @@ function NodesTabContent({
           />
         </HStack>
       </View>
-      <BottomSheetScrollView
+      <AdaptiveKeyboardAwareScrollView
         ref={scrollRef}
-        contentContainerStyle={{
-          padding: 16,
-          paddingBottom: 24,
-          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-        }}
-        style={{
-          flex: 1,
-          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-        }}
+        bottomOffset={20}
+        contentContainerStyle={scrollContentStyle}
+        style={scrollStyle}
       >
-        {nodes.map((node: any) => (
-          <View
-            key={node.id}
-            onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
-          >
-            <NodeComponent
-              node={node}
-              serverId={serverId}
-              workflowId={workflowId}
-              sharedImageUri={targetNodeId === node.id ? sharedImageUri : undefined}
-            />
-          </View>
-        ))}
-      </BottomSheetScrollView>
+        {nodeList}
+      </AdaptiveKeyboardAwareScrollView>
     </View>
   );
 }
@@ -157,7 +160,11 @@ function RunWorkflowScreenContent() {
   const { generate, setGeneratedMedia } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const insets = useSafeAreaInsets();
+  const { layout, isLandscape, width: screenWidth } = useDeviceLayout();
+  const useSplitLayout = layout !== 'compact' && isLandscape;
+  const panelWidth = useSplitLayout
+    ? Math.min(480, Math.max(360, screenWidth * 0.35))
+    : 0;
 
   const handleGenerate = useCallback(() => {
     if (!server || !workflowRecord) return;
@@ -231,6 +238,7 @@ function RunWorkflowScreenContent() {
       <AppBar
         showBack
         title={workflowRecord.name}
+        showBottomBorder={useSplitLayout}
         centerElement={
           <RunPageHeaderStatus serverName={server.name} />
         }
@@ -244,72 +252,122 @@ function RunWorkflowScreenContent() {
         className="relative z-30 bg-background-0"
       />
 
-      <MediaPreview
-        workflowId={workflowRecord.id}
-        serverId={serverId as string}
-      />
-
-      <BottomSheet
-        ref={sheetRef}
-        index={sharedImageUri ? 2 : 1}
-        snapPoints={snapPoints}
-        enableDynamicSizing={false}
-        onChange={handleSheetChange}
-        backgroundStyle={{
-          backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-          borderWidth: 1,
-          borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: theme === 'light' ? Colors.light.background[300] : Colors.dark.background[300],
-          width: 48,
-        }}
-        handleStyle={{
-          height: 32,
-        }}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-      >
-        {/* Sheet Header: toggle + contextual actions + generate button */}
-        <View className="flex-row items-center justify-between px-4 pb-2 bg-background-0">
-          <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
-          <HStack className="items-center" space="xs">
-            {tabIndex === 1 && (
-              <Pressable
-                onPress={() => aiChatTabRef.current?.clearChat()}
-                className="rounded-lg p-2 active:bg-background-100"
-              >
-                <Icon as={Trash2} size="sm" className="text-typography-400" />
-              </Pressable>
-            )}
-            <GenerateActionButton onGenerate={handleGenerate} />
-          </HStack>
+      {useSplitLayout ? (
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <View style={{ flex: 1 }}>
+            <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} />
+          </View>
+          <View
+            style={{
+              width: panelWidth,
+              borderLeftWidth: 1,
+              borderLeftColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
+            }}
+          >
+            {/* Panel Header */}
+            <View className="flex-row items-center justify-between px-4 py-3 bg-background-0">
+              <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
+              <HStack className="items-center" space="xs">
+                {tabIndex === 1 && (
+                  <Pressable
+                    onPress={() => aiChatTabRef.current?.clearChat()}
+                    className="rounded-lg p-2 active:bg-background-100"
+                  >
+                    <Icon as={Trash2} size="sm" className="text-typography-400" />
+                  </Pressable>
+                )}
+                <GenerateActionButton onGenerate={handleGenerate} />
+              </HStack>
+            </View>
+            {/* Panel Content */}
+            <BottomSheetProvider isInSheet={false}>
+              <View style={{ flex: 1 }}>
+                {tabIndex === 0 ? (
+                    <NodesTabContent
+                      nodes={nodes}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      serverId={serverId as string}
+                      workflowId={workflowId as string}
+                      theme={theme}
+                      targetNodeId={targetNodeId}
+                      sharedImageUri={sharedImageUri}
+                    />
+                ) : (
+                  <AIChatTab
+                    ref={aiChatTabRef}
+                    workflowId={workflowId as string}
+                    serverId={serverId as string}
+                    onRunWorkflow={handleGenerate}
+                  />
+                )}
+              </View>
+            </BottomSheetProvider>
+          </View>
         </View>
+      ) : (
+        <>
+          <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} />
 
-        {/* Tab content — simple conditional render replaces TabView to avoid
-            react-native-pager-view's native ViewPager firing spurious
-            onPageSelected(0) events when the keyboard opens, which was
-            resetting the active tab back to the nodes list. */}
-        {tabIndex === 0 ? (
-          <NodesTabContent
-            nodes={nodes}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            serverId={serverId as string}
-            workflowId={workflowId as string}
-            theme={theme}
-            targetNodeId={targetNodeId}
-            sharedImageUri={sharedImageUri}
-          />
-        ) : (
-          <AIChatTab
-            ref={aiChatTabRef}
-            workflowId={workflowId as string}
-            serverId={serverId as string}
-            onRunWorkflow={handleGenerate}
-          />
-        )}
-      </BottomSheet>
+          <BottomSheet
+            ref={sheetRef}
+            index={sharedImageUri ? 2 : 1}
+            snapPoints={snapPoints}
+            enableDynamicSizing={false}
+            onChange={handleSheetChange}
+            backgroundStyle={{
+              backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
+              borderWidth: 1,
+              borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
+            }}
+            handleIndicatorStyle={{
+              backgroundColor: theme === 'light' ? Colors.light.background[300] : Colors.dark.background[300],
+              width: 48,
+            }}
+            handleStyle={{
+              height: 32,
+            }}
+            keyboardBehavior="extend"
+            keyboardBlurBehavior="restore"
+          >
+            {/* Sheet Header: toggle + contextual actions + generate button */}
+            <View className="flex-row items-center justify-between px-4 pb-2 bg-background-0">
+              <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
+              <HStack className="items-center" space="xs">
+                {tabIndex === 1 && (
+                  <Pressable
+                    onPress={() => aiChatTabRef.current?.clearChat()}
+                    className="rounded-lg p-2 active:bg-background-100"
+                  >
+                    <Icon as={Trash2} size="sm" className="text-typography-400" />
+                  </Pressable>
+                )}
+                <GenerateActionButton onGenerate={handleGenerate} />
+              </HStack>
+            </View>
+
+            {tabIndex === 0 ? (
+              <NodesTabContent
+                nodes={nodes}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                serverId={serverId as string}
+                workflowId={workflowId as string}
+                theme={theme}
+                targetNodeId={targetNodeId}
+                sharedImageUri={sharedImageUri}
+              />
+            ) : (
+              <AIChatTab
+                ref={aiChatTabRef}
+                workflowId={workflowId as string}
+                serverId={serverId as string}
+                onRunWorkflow={handleGenerate}
+              />
+            )}
+          </BottomSheet>
+        </>
+      )}
 
       <HistoryDrawer
         isOpen={isHistoryOpen}

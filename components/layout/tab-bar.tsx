@@ -1,16 +1,15 @@
 import { Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
-import { Dimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HStack } from '../ui/hstack';
 import { Icon } from '../ui/icon';
 import { Pressable } from '../ui/pressable';
 import { Text } from '../ui/text';
 import { VStack } from '../ui/vstack';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_TABS = 2;
-const TAB_WIDTH = SCREEN_WIDTH / NUM_TABS;
 
 export type TabRoute = 'server' | 'explore' | 'setting';
 
@@ -40,25 +39,29 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
 };
 
 export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const tabWidth = width / NUM_TABS;
+
   const getTranslateX = (tab: TabRoute) => {
     switch (tab) {
       case 'server':
         return 40;
       case 'explore':
-        return TAB_WIDTH + 40;
+        return tabWidth + 40;
       case 'setting':
-        return TAB_WIDTH + 40;
+        return tabWidth + 40;
       default:
         return 40;
     }
   };
 
   return (
-    <VStack className={`border-t border-outline-0 bg-background-0`}>
+    <VStack className={`border-t border-outline-0 bg-background-0`} style={{ paddingBottom: insets.bottom }}>
       <HStack space="xs" className="relative">
         <MotiView
           className="absolute h-0.5 rounded-xl bg-typography-950"
-          style={{ width: TAB_WIDTH - 80 }}
+          style={{ width: tabWidth - 80 }}
           animate={{
             translateX: getTranslateX(activeTab),
           }}
