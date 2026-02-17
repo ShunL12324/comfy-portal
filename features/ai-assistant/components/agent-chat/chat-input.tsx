@@ -5,6 +5,7 @@ import { useResolvedTheme } from '@/store/theme';
 import { Send } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -16,6 +17,8 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask AI to a
   const [text, setText] = useState('');
   const theme = useResolvedTheme();
   const isDark = theme === 'dark';
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 8);
 
   const canSend = text.trim().length > 0 && !disabled;
 
@@ -26,7 +29,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask AI to a
   }, [text, canSend, onSend]);
 
   return (
-    <View className="px-4 py-2">
+    <View className="px-4 py-2" style={{ paddingBottom: bottomPadding }}>
       <View
         className="flex-row items-end rounded-[20px] border border-outline-50 bg-background-50 pl-3.5 pr-1 py-1 min-h-[44px]"
       >
