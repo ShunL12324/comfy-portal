@@ -159,8 +159,11 @@ function RunWorkflowScreenContent() {
   const { generate, setGeneratedMedia } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const { layout, isLandscape } = useDeviceLayout();
+  const { layout, isLandscape, width: screenWidth } = useDeviceLayout();
   const useSplitLayout = layout !== 'compact' && isLandscape;
+  const panelWidth = useSplitLayout
+    ? Math.min(480, Math.max(360, screenWidth * 0.35))
+    : 0;
 
   const handleGenerate = useCallback(() => {
     if (!server || !workflowRecord) return;
@@ -255,7 +258,7 @@ function RunWorkflowScreenContent() {
           </View>
           <View
             style={{
-              width: 400,
+              width: panelWidth,
               borderLeftWidth: 1,
               borderLeftColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
             }}
