@@ -66,10 +66,13 @@ export const AdaptiveKeyboardAwareScrollView = forwardRef<ScrollView, KeyboardAw
 );
 AdaptiveKeyboardAwareScrollView.displayName = 'AdaptiveKeyboardAwareScrollView';
 
-export function AdaptiveFlatList<T>(props: FlatListProps<T>) {
-  const isInSheet = useIsInBottomSheet();
-  if (isInSheet) {
-    return <BottomSheetFlatList {...(props as any)} />;
-  }
-  return <FlatList {...props} />;
-}
+export const AdaptiveFlatList = forwardRef<FlatList, FlatListProps<any>>(
+  (props, ref) => {
+    const isInSheet = useIsInBottomSheet();
+    if (isInSheet) {
+      return <BottomSheetFlatList ref={ref as any} {...(props as any)} />;
+    }
+    return <FlatList ref={ref as any} {...props} />;
+  },
+);
+AdaptiveFlatList.displayName = 'AdaptiveFlatList';

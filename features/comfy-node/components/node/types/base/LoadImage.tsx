@@ -166,6 +166,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
     }
 
     let result: ImagePicker.ImagePickerResult;
+    let timeoutId: ReturnType<typeof setTimeout>;
     try {
       // Wrap with timeout — expo-image-picker can hang on iPad for certain photos
       const pickerPromise = ImagePicker.launchImageLibraryAsync({
@@ -174,9 +175,9 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         quality: 1,
         shouldDownloadFromNetwork: true,
       });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('PICKER_TIMEOUT')), 30000),
-      );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('PICKER_TIMEOUT')), 30000);
+      });
       result = await Promise.race([pickerPromise, timeoutPromise]);
     } catch (pickerError) {
       if (pickerError instanceof Error && pickerError.message === 'PICKER_TIMEOUT') {
@@ -189,6 +190,8 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         showToast.error('Failed to pick image', pickerError instanceof Error ? pickerError.message : undefined, safeAreaInsets.top + 8);
       }
       return;
+    } finally {
+      clearTimeout(timeoutId!);
     }
     if (result.canceled || !result.assets?.[0]) {
       return;

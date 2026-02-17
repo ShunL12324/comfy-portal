@@ -259,7 +259,6 @@ function RunWorkflowScreenContent() {
           </View>
           <View
             style={{
-              flex: 1,
               width: panelWidth,
               borderLeftWidth: 1,
               borderLeftColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],

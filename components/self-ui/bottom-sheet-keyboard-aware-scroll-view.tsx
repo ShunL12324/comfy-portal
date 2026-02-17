@@ -8,7 +8,7 @@ import {
   createBottomSheetScrollableComponent,
   type BottomSheetScrollViewMethods,
 } from '@gorhom/bottom-sheet';
-import type { BottomSheetScrollViewProps } from '@gorhom/bottom-sheet/src/components/bottomSheetScrollable/types';
+import type { BottomSheetScrollViewProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetScrollable/types';
 import Reanimated from 'react-native-reanimated';
 
 const AnimatedScrollView =
