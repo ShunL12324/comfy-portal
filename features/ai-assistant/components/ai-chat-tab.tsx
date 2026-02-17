@@ -1,3 +1,4 @@
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -14,7 +15,6 @@ import {
 import { WorkflowHistory } from '@/features/ai-assistant/tools/workflow-history';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { AIService } from '@/services/ai-service';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertTriangle, Bot, Settings } from 'lucide-react-native';
 import React, {
   forwardRef,
@@ -259,7 +259,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
 
     return (
       <View className="flex-1">
-        <BottomSheetScrollView
+        <AdaptiveScrollView
           ref={scrollViewRef as any}
           style={{ flex: 1 }}
           contentContainerStyle={{
@@ -284,7 +284,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             ))
           )}
           {isLoading && <TypingIndicator />}
-        </BottomSheetScrollView>
+        </AdaptiveScrollView>
 
         <ChatInput onSend={handleSend} disabled={isLoading} />
       </View>

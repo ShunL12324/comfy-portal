@@ -1,9 +1,9 @@
 import { Colors } from '@/constants/Colors';
 import { useResolvedTheme } from '@/store/theme';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInputProps, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { AdaptiveTextInput } from '../adaptive-sheet-components';
 
 interface BottomSheetFormInputProps extends TextInputProps {
   title?: string;
@@ -57,7 +57,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         { backgroundColor: inputBackgroundColor },
         inputContainerStyle
       ]}>
-        <BottomSheetTextInput
+        <AdaptiveTextInput
           style={[
             styles.input,
             { color: inputTextColor },

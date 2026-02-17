@@ -1,3 +1,4 @@
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
 import { SegmentedControl } from '@/components/self-ui/segmented-control';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Button, ButtonText } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -134,7 +135,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
           </View>
 
           {/* Content Area */}
-          <BottomSheetScrollView
+          <AdaptiveScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{
               paddingHorizontal: 16,
@@ -154,7 +155,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
                 onOpenSettings={handleOpenSettings}
               />
             )}
-          </BottomSheetScrollView>
+          </AdaptiveScrollView>
         </View>
       </ThemedBottomSheetModal>
     );

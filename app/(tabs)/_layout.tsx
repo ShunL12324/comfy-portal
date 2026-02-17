@@ -2,6 +2,7 @@ import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sidebar } from '../../components/layout/sidebar';
 import { TabBar, TabRoute } from '../../components/layout/tab-bar';
 
@@ -61,12 +62,16 @@ export default function TabLayout() {
           activeTab={getActiveTabFromPathname()}
           onChangeTab={handleSidebarTabChange}
         />
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           {tabs}
-        </View>
+        </SafeAreaView>
       </View>
     );
   }
 
-  return tabs;
+  return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      {tabs}
+    </SafeAreaView>
+  );
 }

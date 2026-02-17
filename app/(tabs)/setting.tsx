@@ -26,8 +26,8 @@ export default function SettingScreen() {
   return (
     <View className="flex-1 bg-background-0">
       <AppBar title="Setting" titleSize="xl" />
-      <ScrollView className="flex-1" contentContainerStyle={{ alignItems: 'center' }}>
-        <View className="px-5 w-full" style={{ maxWidth: 640 }}>
+      <ScrollView className="flex-1">
+        <View className="px-5 w-full">
           {/* Theme Section */}
           <View className="py-4">
             <View className="mb-4 flex-row items-center">

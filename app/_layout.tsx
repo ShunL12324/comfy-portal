@@ -21,7 +21,7 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from 'react-native-reanimated';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -126,7 +126,6 @@ function RootLayoutNav() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <GluestackUIProvider mode={preference}>
           <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
-            <SafeAreaView className="flex-1 bg-background-0">
               <BottomSheetModalProvider>
                 <Stack
                   screenOptions={{
@@ -142,7 +141,6 @@ function RootLayoutNav() {
               </BottomSheetModalProvider>
 
               <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            </SafeAreaView>
           </ThemeProvider>
         </GluestackUIProvider>
       </GestureHandlerRootView>

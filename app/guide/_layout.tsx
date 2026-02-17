@@ -1,15 +1,15 @@
 import { Stack } from 'expo-router';
-import { View } from '@/components/ui/view';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GuideLayout() {
   return (
-    <View className="flex-1 bg-background-0">
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }

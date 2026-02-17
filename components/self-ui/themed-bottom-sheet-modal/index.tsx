@@ -41,7 +41,7 @@ export const ThemedBottomSheetModal = forwardRef<
   const ipadStyle = useMemo(
     () =>
       width >= 768
-        ? { maxWidth: 540, alignSelf: 'center' as const, width: '100%' as const }
+        ? { marginHorizontal: (width - 540) / 2 }
         : undefined,
     [width],
   );

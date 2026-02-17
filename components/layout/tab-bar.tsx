@@ -2,6 +2,7 @@ import { Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HStack } from '../ui/hstack';
 import { Icon } from '../ui/icon';
 import { Pressable } from '../ui/pressable';
@@ -39,6 +40,7 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
 
 export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const tabWidth = width / NUM_TABS;
 
   const getTranslateX = (tab: TabRoute) => {
@@ -55,7 +57,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
   };
 
   return (
-    <VStack className={`border-t border-outline-0 bg-background-0`}>
+    <VStack className={`border-t border-outline-0 bg-background-0`} style={{ paddingBottom: insets.bottom }}>
       <HStack space="xs" className="relative">
         <MotiView
           className="absolute h-0.5 rounded-xl bg-typography-950"

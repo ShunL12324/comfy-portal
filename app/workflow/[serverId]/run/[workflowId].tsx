@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Images, Search, ServerCrash, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView as RNScrollView, TextInput as RNTextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -21,10 +21,12 @@ import { Colors } from '@/constants/Colors';
 import NodeComponent from '@/features/comfy-node/components/node';
 import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
 import { MediaPreview } from '@/features/generation/components/media-preview';
+import { AdaptiveScrollView, AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
+import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import BottomSheet from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,7 +40,6 @@ function NodesTabContent({
   theme,
   targetNodeId,
   sharedImageUri,
-  isInSheet = true,
 }: {
   nodes: any[];
   searchQuery: string;
@@ -48,10 +49,7 @@ function NodesTabContent({
   theme: string;
   targetNodeId?: string;
   sharedImageUri?: string;
-  isInSheet?: boolean;
 }) {
-  const ScrollContainer = isInSheet ? BottomSheetScrollView : RNScrollView;
-  const SearchInput = isInSheet ? BottomSheetTextInput : RNTextInput;
   const scrollRef = useRef<any>(null);
   const nodePositions = useRef<Record<string, number>>({});
   const hasScrolled = useRef(false);
@@ -94,7 +92,7 @@ function NodesTabContent({
           }}
         >
           <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
-          <SearchInput
+          <AdaptiveTextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search nodes..."
@@ -108,7 +106,7 @@ function NodesTabContent({
           />
         </HStack>
       </View>
-      <ScrollContainer
+      <AdaptiveScrollView
         ref={scrollRef}
         contentContainerStyle={{
           padding: 16,
@@ -133,7 +131,7 @@ function NodesTabContent({
             />
           </View>
         ))}
-      </ScrollContainer>
+      </AdaptiveScrollView>
     </View>
   );
 }
@@ -238,6 +236,7 @@ function RunWorkflowScreenContent() {
       <AppBar
         showBack
         title={workflowRecord.name}
+        showBottomBorder={useSplitLayout}
         centerElement={
           <RunPageHeaderStatus serverName={server.name} />
         }
@@ -279,28 +278,29 @@ function RunWorkflowScreenContent() {
               </HStack>
             </View>
             {/* Panel Content */}
-            <View style={{ flex: 1 }}>
-              {tabIndex === 0 ? (
-                <NodesTabContent
-                  nodes={nodes}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  serverId={serverId as string}
-                  workflowId={workflowId as string}
-                  theme={theme}
-                  targetNodeId={targetNodeId}
-                  sharedImageUri={sharedImageUri}
-                  isInSheet={false}
-                />
-              ) : (
-                <AIChatTab
-                  ref={aiChatTabRef}
-                  workflowId={workflowId as string}
-                  serverId={serverId as string}
-                  onRunWorkflow={handleGenerate}
-                />
-              )}
-            </View>
+            <BottomSheetProvider isInSheet={false}>
+              <View style={{ flex: 1 }}>
+                {tabIndex === 0 ? (
+                    <NodesTabContent
+                      nodes={nodes}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      serverId={serverId as string}
+                      workflowId={workflowId as string}
+                      theme={theme}
+                      targetNodeId={targetNodeId}
+                      sharedImageUri={sharedImageUri}
+                    />
+                ) : (
+                  <AIChatTab
+                    ref={aiChatTabRef}
+                    workflowId={workflowId as string}
+                    serverId={serverId as string}
+                    onRunWorkflow={handleGenerate}
+                  />
+                )}
+              </View>
+            </BottomSheetProvider>
           </View>
         </View>
       ) : (

@@ -29,6 +29,7 @@ interface AppBarProps {
   centerElement?: ReactNode;
   bottomElement?: ReactNode;
   className?: string;
+  showBottomBorder?: boolean;
 }
 
 export function AppBar({
@@ -41,6 +42,7 @@ export function AppBar({
   centerElement,
   bottomElement,
   className,
+  showBottomBorder,
 }: AppBarProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -56,7 +58,7 @@ export function AppBar({
   }, [centerElement, centerTitle, showBack, width]);
 
   return (
-    <View className={`w-full bg-background-0 ${className}`}>
+    <View className={`w-full bg-background-0 ${showBottomBorder ? 'border-b border-outline-50' : ''} ${className}`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="relative items-center justify-between">
           <HStack className="items-center min-w-[50px]">

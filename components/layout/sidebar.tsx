@@ -1,6 +1,8 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
+import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HStack } from '../ui/hstack';
 import { Icon } from '../ui/icon';
@@ -14,6 +16,7 @@ interface SidebarItemProps {
   label: string;
   isActive: boolean;
   onPress: () => void;
+  colors: ReturnType<typeof useThemeColor>;
 }
 
 interface SidebarProps {
@@ -21,14 +24,16 @@ interface SidebarProps {
   onChangeTab: (tab: TabRoute) => void;
 }
 
-const SIDEBAR_WIDTH = 240;
+const SIDEBAR_MIN_WIDTH = 220;
+const SIDEBAR_MAX_WIDTH = 320;
+const SIDEBAR_WIDTH_RATIO = 0.25;
 
-const SidebarItem = ({ icon, label, isActive, onPress }: SidebarItemProps) => {
+const SidebarItem = ({ icon, label, isActive, onPress, colors }: SidebarItemProps) => {
   return (
     <Pressable onPress={onPress} className="rounded-xl">
       <MotiView
         animate={{
-          backgroundColor: isActive ? 'rgba(0,0,0,0.05)' : 'transparent',
+          backgroundColor: isActive ? colors.background[100] : 'transparent',
         }}
         transition={{ type: 'timing', duration: 200 }}
         style={{ borderRadius: 12 }}
@@ -53,36 +58,30 @@ const SidebarItem = ({ icon, label, isActive, onPress }: SidebarItemProps) => {
 
 export const Sidebar = ({ activeTab, onChangeTab }: SidebarProps) => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColor();
+  const { width } = useWindowDimensions();
+  const sidebarWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width * SIDEBAR_WIDTH_RATIO));
 
   return (
     <VStack
       className="border-r border-outline-0 bg-background-0"
-      style={{ width: SIDEBAR_WIDTH, paddingTop: insets.top }}
+      style={{ width: sidebarWidth, paddingTop: insets.top }}
     >
-      {/* App title */}
-      <HStack className="px-5 pb-4 pt-4">
-        <Text size="xl" className="font-bold text-typography-950">
-          Comfy Portal
-        </Text>
-      </HStack>
-
       {/* Navigation items */}
-      <VStack space="xs" className="flex-1 px-3 pt-2">
+      <VStack space="xs" className="px-3 pt-4">
         <SidebarItem
           icon={Server}
           label="Servers"
           isActive={activeTab === 'server'}
           onPress={() => onChangeTab('server')}
+          colors={colors}
         />
-
-        {/* Spacer pushes Settings to bottom */}
-        <VStack className="flex-1" />
-
         <SidebarItem
           icon={Settings2}
           label="Settings"
           isActive={activeTab === 'setting'}
           onPress={() => onChangeTab('setting')}
+          colors={colors}
         />
       </VStack>
 

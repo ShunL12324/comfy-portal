@@ -1,3 +1,4 @@
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
 import { AppBar } from '@/components/layout/app-bar';
 import { BottomSheetTextarea } from '@/components/self-ui/bottom-sheet-textarea';
 import { FormInput } from '@/components/self-ui/form-input';
@@ -13,7 +14,7 @@ import { VStack } from '@/components/ui/vstack';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { AIService } from '@/services/ai-service';
 import { showToast } from '@/utils/toast';
-import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { CircleCheck, CircleX, Pencil, X } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard } from 'react-native';
@@ -188,7 +189,7 @@ export default function AIAssistantScreen() {
         snapPoints={snapPoints}
         enableDynamicSizing={false}
       >
-        <BottomSheetScrollView>
+        <AdaptiveScrollView>
           <VStack className="px-5 pb-8" space="md">
             <HStack className="items-center justify-between">
               <Pressable onPress={() => promptSheetRef.current?.dismiss()}>
@@ -211,7 +212,7 @@ export default function AIAssistantScreen() {
               minHeight={200}
             />
           </VStack>
-        </BottomSheetScrollView>
+        </AdaptiveScrollView>
       </ThemedBottomSheetModal>
     </View>
   );
