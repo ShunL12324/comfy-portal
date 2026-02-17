@@ -1,6 +1,6 @@
 import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
 import { AppBar } from '@/components/layout/app-bar';
-import { BottomSheetTextarea } from '@/components/self-ui/bottom-sheet-textarea';
+import { StyledTextarea } from '@/components/self-ui/styled-textarea';
 import { FormInput } from '@/components/self-ui/form-input';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { NumberSlider } from '@/components/self-ui/slider';
@@ -205,7 +205,7 @@ export default function AIAssistantScreen() {
               Custom instructions injected into the AI system prompt. Use this to guide the AI's style, language, or focus.
             </Text>
 
-            <BottomSheetTextarea
+            <StyledTextarea
               placeholder="e.g. Always use anime style, prefer warm lighting, output in Japanese..."
               value={draftPrompt}
               onChangeText={setDraftPrompt}

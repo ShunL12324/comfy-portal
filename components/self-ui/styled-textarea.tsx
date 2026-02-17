@@ -4,13 +4,13 @@ import React from 'react';
 import { StyleSheet, TextInputProps, TextStyle, ViewStyle } from 'react-native';
 import { AdaptiveTextInput } from './adaptive-sheet-components';
 
-interface BottomSheetTextareaProps extends Omit<TextInputProps, 'multiline'> {
+interface StyledTextareaProps extends Omit<TextInputProps, 'multiline'> {
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   minHeight?: number;
 }
 
-export const BottomSheetTextarea: React.FC<BottomSheetTextareaProps> = ({
+export const StyledTextarea: React.FC<StyledTextareaProps> = ({
   containerStyle,
   inputStyle,
   placeholder,

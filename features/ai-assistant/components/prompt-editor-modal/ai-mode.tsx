@@ -1,4 +1,4 @@
-import { BottomSheetTextarea } from '@/components/self-ui/bottom-sheet-textarea';
+import { StyledTextarea } from '@/components/self-ui/styled-textarea';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -282,7 +282,7 @@ export function AIMode({ initialPrompt, onAccept, onOpenSettings }: AIModeProps)
                 <Text className="mb-2 text-xs font-medium uppercase tracking-wide text-typography-500">Refine</Text>
                 <HStack className="items-end" space="sm">
                   <View className="flex-1">
-                    <BottomSheetTextarea
+                    <StyledTextarea
                       placeholder="Tell AI what to adjust..."
                       value={feedback}
                       onChangeText={setFeedback}
