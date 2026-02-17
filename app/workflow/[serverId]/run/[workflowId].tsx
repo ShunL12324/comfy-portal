@@ -29,7 +29,6 @@ import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import BottomSheet from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function NodesTabContent({
   nodes,
@@ -160,7 +159,6 @@ function RunWorkflowScreenContent() {
   const { generate, setGeneratedMedia } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const insets = useSafeAreaInsets();
   const { layout, isLandscape } = useDeviceLayout();
   const useSplitLayout = layout !== 'compact' && isLandscape;
 

@@ -27,6 +27,7 @@ export const AdaptiveTextInput = forwardRef<TextInput, TextInputProps>(
   (props, ref) => {
     const isInSheet = useIsInBottomSheet();
     const Component = isInSheet ? BottomSheetTextInput : TextInput;
+    // ref type differs between BottomSheetTextInput and TextInput — cast required
     return <Component ref={ref as any} {...props} />;
   },
 );
@@ -36,6 +37,7 @@ export const AdaptiveScrollView = forwardRef<ScrollView, ScrollViewProps>(
   (props, ref) => {
     const isInSheet = useIsInBottomSheet();
     if (isInSheet) {
+      // ref type differs between BottomSheetScrollView and ScrollView — cast required
       return <BottomSheetScrollView ref={ref as any} {...(props as any)} />;
     }
     return <ScrollView ref={ref} {...props} />;
