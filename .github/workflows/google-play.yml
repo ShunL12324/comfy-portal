@@ -166,22 +166,19 @@ jobs:
           echo "APK built at build/ComfyPortal.apk"
 
       - name: Create GitHub Release with APK
-        if: startsWith(github.ref, 'refs/tags/release-') || startsWith(github.ref, 'refs/heads/release-')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Extract version from ref (works for both tags and branches)
-          REF_NAME="${GITHUB_REF#refs/tags/}"
-          REF_NAME="${REF_NAME#refs/heads/}"
-          VERSION="${REF_NAME#release-}"
-          TAG="release-${VERSION}"
+          # Extract version from app.json
+          VERSION=$(node -p "require('./app.json').expo.version")
+          TAG="release-v${VERSION}"
           CHANGELOG=$(cat fastlane/metadata/android/en-US/changelogs/default.txt)
           # Create or update release
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" build/ComfyPortal.apk --clobber
           else
             gh release create "$TAG" \
-              --title "Comfy Portal $VERSION" \
+              --title "Comfy Portal v${VERSION}" \
               --notes "$CHANGELOG" \
               build/ComfyPortal.apk
           fi
