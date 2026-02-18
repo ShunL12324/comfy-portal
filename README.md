@@ -73,7 +73,7 @@ Get the latest version from the App Store or Google Play.
 
 <a href="https://apps.apple.com/us/app/comfy-portal/id6741044736">
   <img src="assets/badges/app-store.svg" alt="Download on the App Store" height="40">
-</a>
+</a>&nbsp;&nbsp;
 <a href="https://play.google.com/store/apps/details?id=com.sillyl12324.comfyportal">
   <img src="assets/badges/google-play.svg" alt="Get it on Google Play" height="40">
 </a>
