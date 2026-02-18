@@ -3,16 +3,22 @@
 <div align="center">
   <img src="assets/images/icon.png" width="120" alt="Comfy Portal Logo" style="border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
 
-  <h3>Your Native iOS Companion for ComfyUI</h3>
+  <h3>Your Native iOS & Android Companion for ComfyUI</h3>
 
   <p>
     <a href="https://apps.apple.com/us/app/comfy-portal/id6741044736">
       <img src="https://img.shields.io/badge/App_Store-Download-0D96F6?style=flat-square&logo=app-store&logoColor=white" alt="Download on the App Store">
     </a>
+    <a href="https://play.google.com/store/apps/details?id=com.sillyl12324.comfyportal">
+      <img src="https://img.shields.io/badge/Google_Play-Download-414141?style=flat-square&logo=google-play&logoColor=white" alt="Get it on Google Play">
+    </a>
     <a href="https://github.com/ShunL12324/comfy-portal/actions/workflows/testflight.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/ShunL12324/comfy-portal/testflight.yml?style=flat-square&label=TestFlight%20Build" alt="TestFlight Build">
     </a>
-    <img src="https://img.shields.io/badge/Platform-iOS%2015.1+-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform: iOS 15.1+">
+    <a href="https://github.com/ShunL12324/comfy-portal/actions/workflows/google-play.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/ShunL12324/comfy-portal/google-play.yml?style=flat-square&label=Google%20Play%20Build" alt="Google Play Build">
+    </a>
+    <img src="https://img.shields.io/badge/Platform-iOS%2015.1+%20%7C%20Android-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform: iOS 15.1+ | Android">
     <a href="https://github.com/ShunL12324/comfy-portal/stargazers">
       <img src="https://img.shields.io/github/stars/ShunL12324/comfy-portal?style=flat-square" alt="GitHub Stars">
     </a>
@@ -27,7 +33,7 @@
 
 ---
 
-**Comfy Portal** is a professional, native iOS client designed for [ComfyUI](https://github.com/comfyanonymous/ComfyUI). It bridges the gap between desktop power and mobile convenience, offering a seamless experience for AI artists and developers.
+**Comfy Portal** is a professional, native iOS & Android client designed for [ComfyUI](https://github.com/comfyanonymous/ComfyUI). It bridges the gap between desktop power and mobile convenience, offering a seamless experience for AI artists and developers.
 
 > **Note**: This is an unofficial client and is not affiliated with the ComfyUI project.
 
