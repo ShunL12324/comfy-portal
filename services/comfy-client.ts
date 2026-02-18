@@ -47,12 +47,6 @@ interface ProgressCallback {
   onComplete?: (mediaUrls: string[]) => void;
 
   /**
-   * Called when an error occurs during generation
-   * @param error - Error message
-   */
-  onError?: (error: string) => void;
-
-  /**
    * Called when downloading generated media
    * @param filename - Name of the file being downloaded
    * @param progress - Download progress percentage (0-100)
@@ -530,8 +524,6 @@ export class ComfyClient {
 
       callbacks.onComplete?.(mediaUrls);
       return mediaUrls;
-    } catch (error) {
-      throw error;
     } finally {
       this.currentPromptId = null;
     }
