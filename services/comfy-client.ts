@@ -47,12 +47,6 @@ interface ProgressCallback {
   onComplete?: (mediaUrls: string[]) => void;
 
   /**
-   * Called when an error occurs during generation
-   * @param error - Error message
-   */
-  onError?: (error: string) => void;
-
-  /**
    * Called when downloading generated media
    * @param filename - Name of the file being downloaded
    * @param progress - Download progress percentage (0-100)
@@ -279,7 +273,7 @@ export class ComfyClient {
    * @param promptId - The ID of the prompt being executed
    * @param workflow - The workflow being executed
    * @param callbacks - Callbacks for progress updates
-   * @returns Promise that resolves to true if generation succeeds
+   * @returns Promise that resolves to a result object indicating success or failure with error details
    * @throws Error if WebSocket is not connected
    * @private
    */
@@ -287,7 +281,7 @@ export class ComfyClient {
     promptId: string,
     workflow: Workflow,
     callbacks: ProgressCallback,
-  ): Promise<boolean> {
+  ): Promise<{ success: true } | { success: false; error: string }> {
     return new Promise((resolve, reject) => {
       if (!this.ws) {
         reject(new Error('WebSocket not connected'));
@@ -336,15 +330,20 @@ export class ComfyClient {
                 }
               } else if (message.data.prompt_id === promptId) {
                 this.ws?.removeEventListener('message', handleMessage);
-                resolve(true);
+                resolve({ success: true });
               }
               break;
 
-            case 'execution_error':
+            case 'execution_error': {
               this.ws?.removeEventListener('message', handleMessage);
-              callbacks.onError?.(message.data.error || 'Unknown error');
-              resolve(false);
+              const errorMsg = message.data?.exception_message
+                || message.data?.error
+                || 'Unknown error';
+              const nodeType = message.data?.node_type;
+              const detail = nodeType ? `[${nodeType}] ${errorMsg}` : errorMsg;
+              resolve({ success: false, error: detail.trim() });
               break;
+            }
 
             case 'executed':
             case 'execution_success':
@@ -483,9 +482,9 @@ export class ComfyClient {
     try {
       const promptId = await this.queuePrompt(workflow);
       this.currentPromptId = promptId;
-      const success = await this.trackProgress(promptId, workflow, callbacks);
-      if (!success) {
-        throw new Error('Generation failed');
+      const result = await this.trackProgress(promptId, workflow, callbacks);
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
       const history = await this.getHistory(promptId);
@@ -525,9 +524,6 @@ export class ComfyClient {
 
       callbacks.onComplete?.(mediaUrls);
       return mediaUrls;
-    } catch (error) {
-      callbacks.onError?.(error instanceof Error ? error.message : 'Unknown error');
-      throw error;
     } finally {
       this.currentPromptId = null;
     }

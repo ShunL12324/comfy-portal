@@ -300,17 +300,12 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
               reset();
             }
           },
-          onError: (error) => {
-            console.error('Generation error:', error);
-            showToast.error('Generation Failed', error || 'An unexpected error occurred.', insets.top + 8);
-            reset();
-          },
         });
       } catch (error) {
-        console.error('Unexpected error during generation:', error);
+        console.error('Generation error:', error);
         showToast.error(
-          'Error',
-          error instanceof Error ? error.message : 'An unexpected error occurred during generation.',
+          'Generation Failed',
+          error instanceof Error ? error.message : 'An unexpected error occurred.',
           insets.top + 8,
         );
         reset();
