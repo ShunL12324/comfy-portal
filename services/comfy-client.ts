@@ -340,10 +340,16 @@ export class ComfyClient {
               }
               break;
 
-            case 'execution_error':
+            case 'execution_error': {
               this.ws?.removeEventListener('message', handleMessage);
-              resolve({ success: false, error: message.data.error || 'Unknown error' });
+              const errorMsg = message.data?.exception_message
+                || message.data?.error
+                || 'Unknown error';
+              const nodeType = message.data?.node_type;
+              const detail = nodeType ? `[${nodeType}] ${errorMsg}` : errorMsg;
+              resolve({ success: false, error: detail.trim() });
               break;
+            }
 
             case 'executed':
             case 'execution_success':
