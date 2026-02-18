@@ -109,12 +109,26 @@ jobs:
           mkdir -p ~/.appstoreconnect
           echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/.appstoreconnect/api_key.json
 
+      - name: Generate changelog from git log
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^release-' | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"• %s" --no-merges | head -20)
+          else
+            CHANGELOG=$(git log --pretty=format:"• %s" --no-merges -20)
+          fi
+          # TestFlight has 4000 char limit
+          echo "$CHANGELOG" | head -c 4000 > /tmp/changelog.txt
+          echo "=== Changelog ==="
+          cat /tmp/changelog.txt
+
       - name: Build and Upload to TestFlight
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
         run: |
+          CHANGELOG=$(cat /tmp/changelog.txt)
           if [ "${{ github.event.inputs.distribute_external }}" == "true" ]; then
-            bundle exec fastlane beta_external
+            bundle exec fastlane beta_external changelog:"$CHANGELOG"
           else
-            bundle exec fastlane beta
+            bundle exec fastlane beta changelog:"$CHANGELOG"
           fi

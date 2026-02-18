@@ -94,21 +94,22 @@ platform :ios do
   end
 
   desc "Upload to TestFlight (internal testing)"
-  lane :beta do
+  lane :beta do |options|
     bump
     build
 
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true,
-      distribute_external: false
+      distribute_external: false,
+      changelog: options[:changelog] || "Bug fixes and improvements"
     )
 
     UI.success("Successfully uploaded to TestFlight!")
   end
 
   desc "Upload to TestFlight and notify external testers"
-  lane :beta_external do
+  lane :beta_external do |options|
     bump
     build
 
@@ -117,7 +118,7 @@ platform :ios do
       skip_waiting_for_build_processing: false,
       distribute_external: true,
       groups: ["External Testers"],
-      changelog: "Bug fixes and improvements"
+      changelog: options[:changelog] || "Bug fixes and improvements"
     )
 
     UI.success("Successfully distributed to external testers!")
