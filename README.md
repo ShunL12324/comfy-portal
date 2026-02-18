@@ -41,7 +41,7 @@
 
 | Feature | Description |
 | :--- | :--- |
-| **Native Experience** | Built with React Native and Expo for a smooth, responsive iOS feel. |
+| **Native Experience** | Built with React Native and Expo for a smooth, responsive native feel. |
 | **Real-time Monitor** | Watch generation progress step-by-step and preview images instantly. |
 | **Seamless Connect** | Connect to local (LAN) or remote (Cloud/RunPod) ComfyUI instances. |
 | **Workflow Manager** | View, manage, and execute your complex workflows on the go. |
@@ -99,10 +99,11 @@ To unlock full functionality, including **workflow synchronization** and enhance
 ## Development
 
 ### Prerequisites
-- macOS with Xcode 15.0+
 - Node.js 18+
 - pnpm 8+
-- CocoaPods
+- macOS with Xcode 15.0+ (for iOS)
+- Android Studio (for Android)
+- CocoaPods (for iOS)
 
 ### Build Steps
 
@@ -117,9 +118,10 @@ To unlock full functionality, including **workflow synchronization** and enhance
    pnpm install
    ```
 
-3. **Run on iOS Simulator/Device**
+3. **Run on Simulator/Device**
    ```bash
-   npx expo run:ios
+   npx expo run:ios      # iOS
+   npx expo run:android  # Android
    ```
 
 ## License
