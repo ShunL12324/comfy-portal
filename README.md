@@ -69,10 +69,13 @@
 ## Quick Start
 
 ### 1. Download App
-Get the latest version directly from the App Store.
+Get the latest version from the App Store or Google Play.
 
 <a href="https://apps.apple.com/us/app/comfy-portal/id6741044736">
   <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="50">
+</a>
+<a href="https://play.google.com/store/apps/details?id=com.sillyl12324.comfyportal">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" height="50">
 </a>
 
 ### 2. Setup Server
