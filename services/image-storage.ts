@@ -202,7 +202,6 @@ export async function saveWorkflowThumbnail({
     }
 
     const thumbnailFile = new File(thumbnailDir, `thumbnail.${ext}`);
-    thumbnailFile.create({ intermediates: true, overwrite: true });
     new File(imageUri).copy(thumbnailFile);
 
     const fileInfo = thumbnailFile.info();
