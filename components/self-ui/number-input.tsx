@@ -90,7 +90,7 @@ export function NumberInput({
   };
 
   const handleInputChange = (text: string) => {
-    // 允许输入负号和小数点
+    // Allow minus sign and decimal point
     if (text === '-' || text === '.' || text === '-.') {
       setLocalValue(text);
       return;
@@ -98,12 +98,12 @@ export function NumberInput({
 
     const numValue = Number(text);
 
-    // 如果不是有效数字，不更新
+    // Skip update if not a valid number
     if (isNaN(numValue)) {
       return;
     }
 
-    // 检查是否超出范围
+    // Check if out of range
     if (numValue > maxValue) {
       const formattedValue = maxValue.toFixed(decimalPlaces);
       setLocalValue(formattedValue);
@@ -120,7 +120,7 @@ export function NumberInput({
       return;
     }
 
-    // 值在范围内，正常更新
+    // Value is within range, update normally
     setLocalValue(text);
     setInputWidth(calculateTextWidth(text));
     onChange?.(numValue);

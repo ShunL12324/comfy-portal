@@ -30,7 +30,7 @@ export const FormInput: React.FC<FormInputProps> = ({
   const isDarkMode = theme === 'dark';
   const [showPassword, setShowPassword] = useState(false);
 
-  // 基于主题的颜色选择
+  // Theme-based color selection
   const inputBackgroundColor = isDarkMode ? Colors.dark.background[50] : Colors.light.background[0];
   const inputTextColor = isDarkMode ? Colors.dark.typography[800] : Colors.light.typography[950];
   const placeholderTextColor = isDarkMode ? Colors.dark.typography[400] : Colors.light.typography[400];
@@ -39,7 +39,7 @@ export const FormInput: React.FC<FormInputProps> = ({
   const errorTextColor = isDarkMode ? Colors.dark.error[500] : Colors.light.error[500];
   const iconColor = isDarkMode ? Colors.dark.typography[600] : Colors.light.typography[600];
   
-  // 确定是否显示密码切换按钮
+  // Determine whether to show password toggle
   const isPasswordInput = secureTextEntry === true;
 
   return (
@@ -65,7 +65,7 @@ export const FormInput: React.FC<FormInputProps> = ({
           style={[
             styles.input,
             { color: inputTextColor },
-            // 如果是密码输入框，调整右侧padding以留出图标空间
+            // Adjust right padding for password icon
             isPasswordInput && { paddingRight: 40 },
             inputStyle
           ]}
@@ -105,27 +105,27 @@ export const FormInput: React.FC<FormInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 10, // 减少底部间距
+    marginBottom: 10,
   },
   title: {
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 4, // 减少标题和输入框的间距
+    marginBottom: 4,
   },
   inputContainer: {
     borderWidth: 0,
     borderRadius: 8,
     overflow: 'hidden',
-    position: 'relative', // 用于定位眼睛图标
+    position: 'relative',
   },
   input: {
-    height: 36, // 减少输入框高度
+    height: 36,
     paddingHorizontal: 12,
     fontSize: 14,
   },
   error: {
     fontSize: 12,
-    marginTop: 2, // 减少错误信息的上边距
+    marginTop: 2,
   },
   eyeIcon: {
     position: 'absolute',

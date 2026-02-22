@@ -29,7 +29,7 @@ interface CustomSliderProps {
   onChangeEnd?: (value: number) => void;
   /** Whether to show the buttons (default: true) */
   showButtons?: boolean;
-  /** 小数位数（默认自动根据step计算） */
+  /** Decimal places (auto-calculated from step by default) */
   decimalPlaces?: number;
   /** Thumb size in pixels (default: 32) */
   thumbSize?: number;

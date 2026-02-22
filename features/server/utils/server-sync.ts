@@ -8,8 +8,8 @@ export interface ServerStatus {
 }
 
 export interface CheckServerOptions {
-  timeout?: number; // 超时时间，默认 3000ms
-  endpoint?: string; // 检测的端点，默认 '/'
+  timeout?: number; // Timeout in ms, default 3000
+  endpoint?: string; // Health check endpoint, default '/'
 }
 
 interface SystemStats {

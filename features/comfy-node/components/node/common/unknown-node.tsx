@@ -24,7 +24,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
   const { isCurrentNode, isGenerating } = useGenerationNodeState(node.id);
   const inputs = node.inputs;
 
-  // 过滤出非数组类型的输入
+  // Filter out non-array type inputs
   const displayableInputs = Object.entries(inputs).filter(([_, value]) => !Array.isArray(value));
 
   const handleRequestSupport = () => {
@@ -35,7 +35,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
 
   const renderInput = (key: string, value: any) => {
     if (typeof value === 'string') {
-      // 如果值是 'enable' 或 'disable'，使用Switch
+      // Use Switch for 'enable'/'disable' values
       if (value === 'enable' || value === 'disable') {
         return (
           <SubItem key={key} title={key}>
@@ -49,7 +49,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
           </SubItem>
         );
       }
-      // 其他字符串使用Input
+      // Use Input for other strings
       return (
         <SubItem key={key} title={key}>
           <Input className="rounded-lg border-0 bg-background-50">
@@ -65,7 +65,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         </SubItem>
       );
     }
-    // 对于数字类型，使用Input，但设置keyboardType为numeric
+    // Use Input with numeric keyboard for number types
     if (typeof value === 'number') {
       return (
         <SubItem key={key} title={key}>
@@ -86,7 +86,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         </SubItem>
       );
     }
-    // 对于布尔值，使用Switch
+    // Use Switch for boolean values
     if (typeof value === 'boolean') {
       return (
         <SubItem key={key} title={key}>
@@ -100,7 +100,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         </SubItem>
       );
     }
-    // 对于其他类型，显示只读文本
+    // Display read-only text for other types
     return (
       <SubItem key={key} title={key}>
         <Text className="text-typography-500">{JSON.stringify(value)}</Text>

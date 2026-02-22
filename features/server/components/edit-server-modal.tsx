@@ -38,7 +38,7 @@ export const EditServerModal = forwardRef<
   const insets = useSafeAreaInsets();
   const updateServer = useServersStore((state) => state.updateServer);
 
-  // 状态管理
+  // State management
   const [name, setName] = useState('');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('8188');
@@ -50,7 +50,7 @@ export const EditServerModal = forwardRef<
 
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
-  // 加载服务器数据
+  // Load server data
   const loadServerData = useCallback(() => {
     const server = useServersStore.getState().servers.find(s => s.id === serverId);
     if (server) {
@@ -62,7 +62,7 @@ export const EditServerModal = forwardRef<
     }
   }, [serverId]);
 
-  // 表单验证
+  // Form validation
   const validateName = (value: string) => {
     if (value.length === 0) {
       return 'Name is required';
@@ -73,7 +73,7 @@ export const EditServerModal = forwardRef<
     return '';
   };
 
-  // 保存服务器数据
+  // Save server data
   const handleSave = () => {
     const newNameError = validateName(name);
     const newHostError = validateHost(host);
@@ -98,7 +98,7 @@ export const EditServerModal = forwardRef<
     handleClose();
   };
 
-  // 关闭modal并重置表单
+  // Close modal and reset form
   const handleClose = useCallback(() => {
     setNameError('');
     setHostError('');
@@ -106,7 +106,7 @@ export const EditServerModal = forwardRef<
     bottomSheetModalRef.current?.dismiss();
   }, []);
 
-  // 暴露present方法
+  // Expose present method
   useImperativeHandle(ref, () => ({
     present: () => {
       loadServerData();
