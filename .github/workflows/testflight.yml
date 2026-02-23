@@ -64,6 +64,8 @@ jobs:
 
       # Generate ios/ without running pod install
       - name: Expo prebuild
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npx expo prebuild --clean --no-install
 
       # ── CocoaPods cache ───────────────────────────────────
@@ -125,6 +127,7 @@ jobs:
       - name: Build and Upload to TestFlight
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           CHANGELOG=$(cat /tmp/changelog.txt)
           if [ "${{ github.event.inputs.distribute_external }}" == "true" ]; then

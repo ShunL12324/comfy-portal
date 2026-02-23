@@ -86,6 +86,8 @@ jobs:
 
       # ── Expo Prebuild (android/ is gitignored, must generate in CI) ─
       - name: Expo prebuild (Android)
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npx expo prebuild --platform android
 
       # ── Inject release signing config into build.gradle ─
@@ -148,6 +150,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           if [ "${{ github.event.inputs.track }}" == "production" ]; then
             bundle exec fastlane android bump

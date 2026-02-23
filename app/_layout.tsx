@@ -24,6 +24,18 @@ import {
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://98d5701ad9a66997c72863211e66306a@o4509226334683136.ingest.us.sentry.io/4510933704048640',
+  sendDefaultPii: false,
+  enableLogs: true,
+
+  // Session Replay — record 10% of sessions, 100% on error
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration()],
+});
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -152,4 +164,4 @@ function RootLayoutNav() {
   );
 }
 
-export default RootLayoutNav;
+export default Sentry.wrap(RootLayoutNav);

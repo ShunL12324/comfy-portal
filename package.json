@@ -34,6 +34,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/drawer": "^7.8.1",
     "@react-navigation/native": "^7.0.14",
+    "@sentry/react-native": "^8.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "buffer": "^6.0.3",
     "expo": "55.0.0-preview.10",
