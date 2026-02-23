@@ -5,7 +5,7 @@ permalink: /privacy/
 
 # Privacy Policy
 
-Last updated: February 1, 2025
+Last updated: February 23, 2026
 
 ## Introduction
 
@@ -13,11 +13,28 @@ Welcome to Comfy Portal. We take your privacy seriously and want to be transpare
 
 ## Data Collection
 
-**We do not collect any personal information or usage data.** Comfy Portal operates as a standalone tool with all data stored locally on your device:
+**We do not collect any personal information.** Comfy Portal operates as a standalone tool with all user data stored locally on your device:
 
 - **Server Connections:** Your ComfyUI server addresses are stored locally on your device only
 - **Generated Images:** All images are processed and stored locally
 - **App Settings:** Your preferences and settings are stored locally on your device
+
+### Crash Reporting & Error Monitoring
+
+We use [Sentry](https://sentry.io) to collect anonymous crash reports and error logs to help us improve app stability. Sentry collects:
+
+- Crash stack traces and error logs
+- Device information (OS version, device model)
+- App version
+- Session replay on errors (to help reproduce and fix issues)
+
+Sentry does **not** collect:
+
+- Personal identifiable information (IP addresses, usernames, etc.)
+- Your ComfyUI workflow content or generated images
+- Server connection credentials
+
+For more information, see [Sentry's Privacy Policy](https://sentry.io/privacy/).
 
 ## Local Storage
 
@@ -31,20 +48,21 @@ We have no access to any of this information as it never leaves your device.
 
 ## System Crash Reports
 
-While we do not collect crash data directly, please be aware that:
+In addition to our Sentry integration, please be aware that:
 
-- Your device's operating system (iOS/Android) may collect crash reports
+- Your device's operating system (iOS/Android) may collect its own crash reports
 - These system-level crash reports are handled by Apple/Google according to their respective privacy policies
-- You can control crash reporting settings through your device's system settings
+- You can control system crash reporting settings through your device's settings
 
 ## Third-Party Services
 
-The app connects only to:
+The app connects to:
 
 - Your self-hosted ComfyUI servers (as configured by you)
+- [Sentry](https://sentry.io) for anonymous crash reporting and error monitoring
 - Our GitHub Pages for displaying this privacy policy and terms of service
 
-We do not use any analytics services, tracking tools, or other third-party services that collect data.
+We do not use any analytics services or tracking tools that collect personal data.
 
 ## Third-Party Server Usage
 
