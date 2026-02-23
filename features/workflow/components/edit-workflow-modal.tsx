@@ -37,6 +37,14 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
+    if (isOpen && workflow) {
+      setName(workflow.name);
+      setThumbnail(workflow.thumbnail || '');
+      setError('');
+    }
+  }, [isOpen, workflow?.name, workflow?.thumbnail]);
+
+  useEffect(() => {
     if (name.trim().length > 50) {
       setName(name.slice(0, 50));
       showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
