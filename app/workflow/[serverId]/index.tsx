@@ -494,8 +494,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
           >
             <VStack space="xs" className="w-full rounded-lg bg-background-50 px-4 py-3">
               <Text className="text-center text-xs text-typography-500">
-                Make sure <Text className="font-medium text-typography-700">comfy-portal-endpoint</Text> is installed
-                and at least one ComfyUI browser tab is connected.
+                Make sure <Text className="font-medium text-typography-700">comfy-portal-endpoint</Text> is installed on the server side.
               </Text>
               <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="self-center">
                 <Text className="text-xs text-primary-500 underline">
