@@ -45,12 +45,15 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
 
     // Workaround: manually restore position when keyboard hides
     // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
+    // Guard with isVisible to prevent conflicts with other BottomSheets.
     useEffect(() => {
       const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-        bottomSheetRef.current?.snapToIndex(0);
+        if (isVisible) {
+          bottomSheetRef.current?.snapToIndex(0);
+        }
       });
       return () => hideSubscription.remove();
-    }, []);
+    }, [isVisible]);
 
     // Define theme-based colors matching ThemedBottomSheetModal
     const backgroundColor = theme === 'dark'

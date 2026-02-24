@@ -8,16 +8,16 @@ import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useRouter } from 'expo-router';
+
 import { X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AIMode } from './ai-mode';
+
 import { TagMode } from './tag-mode';
 import { TextMode } from './text-mode';
 
-type EditorMode = 'Text' | 'Tag' | 'AI';
+type EditorMode = 'Text' | 'Tag';
 
 interface PromptEditorModalProps {
   // Props can be extended as needed
@@ -33,7 +33,6 @@ export interface PromptEditorModalRef {
 
 export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorModalProps>(
   (props, ref) => {
-    const router = useRouter();
     const insets = useSafeAreaInsets();
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
@@ -42,6 +41,10 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
     const [title, setTitle] = useState('Edit Prompt');
     const [onSaveCallback, setOnSaveCallback] = useState<((value: string) => void) | null>(null);
     const [sessionKey, setSessionKey] = useState(0);
+    // Track whether the modal is currently presented, so the global
+    // keyboardWillHide listener only fires snapToIndex when this sheet
+    // is actually visible — prevents conflicts with other BottomSheets.
+    const isPresentedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       present: (options) => {
@@ -51,6 +54,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
         setOnSaveCallback(() => options.onSave);
         setMode('Text');
         bottomSheetModalRef.current?.present();
+        isPresentedRef.current = true;
       },
     }));
 
@@ -58,12 +62,15 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
     // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
     useEffect(() => {
       const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-        bottomSheetModalRef.current?.snapToIndex(0);
+        if (isPresentedRef.current) {
+          bottomSheetModalRef.current?.snapToIndex(0);
+        }
       });
       return () => hideSubscription.remove();
     }, []);
 
     const handleClose = useCallback(() => {
+      isPresentedRef.current = false;
       bottomSheetModalRef.current?.dismiss();
     }, []);
 
@@ -74,22 +81,12 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
       handleClose();
     }, [value, onSaveCallback, handleClose]);
 
-    const handleOpenSettings = useCallback(() => {
-      handleClose();
-      router.push('/settings/ai-assistant');
-    }, [router, handleClose]);
-
     const handleModeChange = useCallback((newMode: string) => {
       setMode(newMode as EditorMode);
     }, []);
 
     const handleValueChange = useCallback((newValue: string) => {
       setValue(newValue);
-    }, []);
-
-    const handleAIAccept = useCallback((optimizedValue: string) => {
-      setValue(optimizedValue);
-      setMode('Text');
     }, []);
 
     return (
@@ -102,6 +99,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
         enablePanDownToClose={true}
         keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
+        onDismiss={() => { isPresentedRef.current = false; }}
       >
         <View className="flex-1">
           {/* Header */}
@@ -128,7 +126,7 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
           {/* Mode Selector */}
           <View className="px-4 py-3">
             <SegmentedControl
-              options={['Text', 'Tag', 'AI']}
+              options={['Text', 'Tag']}
               value={mode}
               onChange={handleModeChange}
             />
@@ -147,13 +145,6 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
             )}
             {mode === 'Tag' && (
               <TagMode value={value} onChange={handleValueChange} />
-            )}
-            {mode === 'AI' && (
-              <AIMode
-                initialPrompt={value}
-                onAccept={handleAIAccept}
-                onOpenSettings={handleOpenSettings}
-              />
             )}
           </AdaptiveScrollView>
         </View>

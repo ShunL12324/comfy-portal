@@ -100,17 +100,24 @@ export const EditServerModal = forwardRef<
 
   // Close modal and reset form
   const handleClose = useCallback(() => {
+    isPresentedRef.current = false;
     setNameError('');
     setHostError('');
     setPortError('');
     bottomSheetModalRef.current?.dismiss();
   }, []);
 
+  // Track whether the modal is currently presented, so the global
+  // keyboardWillHide listener only fires snapToIndex when this sheet
+  // is actually visible — prevents conflicts with other BottomSheets.
+  const isPresentedRef = useRef(false);
+
   // Expose present method
   useImperativeHandle(ref, () => ({
     present: () => {
       loadServerData();
       bottomSheetModalRef.current?.present();
+      isPresentedRef.current = true;
     },
   }));
 
@@ -118,7 +125,9 @@ export const EditServerModal = forwardRef<
   // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
   useEffect(() => {
     const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-      bottomSheetModalRef.current?.snapToIndex(0);
+      if (isPresentedRef.current) {
+        bottomSheetModalRef.current?.snapToIndex(0);
+      }
     });
     return () => hideSubscription.remove();
   }, []);

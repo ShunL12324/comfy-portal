@@ -45,11 +45,16 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
     const [portError, setPortError] = React.useState('');
 
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    // Track whether the modal is currently presented, so the global
+    // keyboardWillHide listener only fires snapToIndex when this sheet
+    // is actually visible — prevents conflicts with other BottomSheets.
+    const isPresentedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       present: () => {
         checkClipboard();
         bottomSheetModalRef.current?.present();
+        isPresentedRef.current = true;
       },
     }));
 
@@ -57,7 +62,9 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
     // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
     useEffect(() => {
       const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-        bottomSheetModalRef.current?.snapToIndex(0);
+        if (isPresentedRef.current) {
+          bottomSheetModalRef.current?.snapToIndex(0);
+        }
       });
       return () => hideSubscription.remove();
     }, []);
@@ -124,6 +131,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
     };
 
     const handleClose = useCallback(() => {
+      isPresentedRef.current = false;
       setName('');
       setHost('');
       setPort('8188');
