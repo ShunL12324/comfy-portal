@@ -90,7 +90,7 @@ export function AppBar({
               </VStack>
             </View>
           )}
-          {centerElement && <View className="absolute left-0 right-0 items-center">{centerElement}</View>}
+          {centerElement && <View className="absolute left-0 right-0 items-center" pointerEvents="box-none">{centerElement}</View>}
           <View className="min-w-[50px]">
             {rightElement}
           </View>

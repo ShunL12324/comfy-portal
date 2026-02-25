@@ -13,7 +13,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 
 import { AppBar } from '@/components/layout/app-bar';
 import { SheetTabToggle } from '@/components/self-ui/sheet-tab-toggle';
-import { HistoryDrawer } from '@/features/generation/components/history-drawer';
+import { HistoryGallerySheet } from '@/features/generation/components/history-gallery-sheet';
 import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 import { GenerateActionButton } from '@/features/generation/components/generate-action-button';
 
@@ -26,7 +26,7 @@ import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
 
@@ -147,11 +147,11 @@ function RunWorkflowScreenContent() {
   const theme = useResolvedTheme();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
   const aiChatTabRef = useRef<AIChatTabRef>(null);
+  const historySheetRef = useRef<BottomSheetModal>(null);
   const sheetSnapIndexRef = useRef(1);
 
   // Tab state — simple index, no longer driven by react-native-tab-view
@@ -173,7 +173,7 @@ function RunWorkflowScreenContent() {
 
   const handleSelectHistoryMedia = useCallback((url: string) => {
     setGeneratedMedia([url]);
-    setIsHistoryOpen(false);
+    historySheetRef.current?.dismiss();
   }, [setGeneratedMedia]);
 
   const handleTabChange = useCallback((newIndex: number) => {
@@ -244,7 +244,7 @@ function RunWorkflowScreenContent() {
         }
         rightElement={
           <HStack className="items-center" space="xs">
-            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => setIsHistoryOpen(true)}>
+            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => historySheetRef.current?.present()}>
               <Icon as={Images} size="md" className="text-primary-500" />
             </Button>
           </HStack>
@@ -369,9 +369,8 @@ function RunWorkflowScreenContent() {
         </>
       )}
 
-      <HistoryDrawer
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
+      <HistoryGallerySheet
+        ref={historySheetRef}
         serverId={serverId as string}
         workflowId={workflowRecord?.id}
         onSelectMedia={handleSelectHistoryMedia}
