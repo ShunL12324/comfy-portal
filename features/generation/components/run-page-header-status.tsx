@@ -7,7 +7,7 @@ interface RunPageHeaderStatusProps {
 
 export function RunPageHeaderStatus({ serverName }: RunPageHeaderStatusProps) {
   const { status } = useGenerationStatus();
-  const { progress, downloadProgress } = useGenerationProgress();
+  const { progress, downloadProgress, nodeProgress } = useGenerationProgress();
 
   return (
     <ServerStatus
@@ -15,6 +15,7 @@ export function RunPageHeaderStatus({ serverName }: RunPageHeaderStatusProps) {
       downloading={status === 'downloading'}
       downloadProgress={downloadProgress}
       generationProgress={progress}
+      nodeProgress={nodeProgress}
       name={serverName}
     />
   );

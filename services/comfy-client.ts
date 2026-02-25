@@ -1,6 +1,6 @@
 import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
-import { generateUUID } from '@/utils/uuid';
+
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
@@ -52,7 +52,29 @@ interface ProgressCallback {
    * @param progress - Download progress percentage (0-100)
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
+
+  /**
+   * Called right after the prompt is queued, before tracking begins.
+   * @param promptId - The server-assigned prompt ID
+   */
+  onQueued?: (promptId: string) => void;
 }
+
+/**
+ * Error thrown when a generation is intentionally aborted
+ * (cancelled, superseded by a new generation, or disconnected).
+ * Consumers can use `instanceof` to distinguish from real failures.
+ */
+export class GenerationAbortedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'GenerationAbortedError';
+  }
+}
+
+type GenerationResult =
+  | { success: true }
+  | { success: false; error: string; aborted?: boolean };
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
@@ -69,6 +91,19 @@ export interface QueueResponse {
   queue_pending: QueueItem[];
 }
 
+/**
+ * Per-prompt tracking state for concurrent generation support.
+ */
+interface TrackedPrompt {
+  promptId: string;
+  callbacks: ProgressCallback;
+  nodeCount: number;
+  finishedNodes: Set<string>;
+  resolve: (result: GenerationResult) => void;
+  lastActivity: number;
+  started: boolean;
+}
+
 export class ComfyClient {
   private clientId: string;
   private ws: WebSocket | null = null;
@@ -79,7 +114,14 @@ export class ComfyClient {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: NodeJS.Timeout | null = null;
-  private currentPromptId: string | null = null;
+  private disposed: boolean = false;
+
+  // Multi-prompt tracking: each queued prompt gets its own slot
+  private trackedPrompts = new Map<string, TrackedPrompt>();
+  // The "active" prompt is the one currently shown in the UI (latest queued)
+  private activePromptId: string | null = null;
+  private readonly TIMEOUT_MS = 600_000; // 10 minutes with no activity
+  private timeoutCheckInterval: NodeJS.Timeout | null = null;
 
   /** Persistent callback for queue status updates — fires on every WS 'status' message */
   onQueueUpdate?: (queueRemaining: number) => void;
@@ -88,25 +130,23 @@ export class ComfyClient {
     this.host = options.host;
     this.port = options.port;
     this.useSSL = options.useSSL;
-    this.clientId = generateUUID();
+    this.clientId = `comfy-portal-${options.host}-${options.port}`;
     this.token = options.token;
   }
 
   /**
-   * Sends an interrupt request to the ComfyUI server to cancel the current generation.
+   * Sends an interrupt request to the ComfyUI server to cancel all tracked generations.
    * @throws Error if the interrupt request fails
    */
   async interrupt(): Promise<void> {
     const path = this.token ? `/interrupt?token=${this.token}` : '/interrupt';
     const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
-    const body = this.currentPromptId
-      ? JSON.stringify({ prompt_id: this.currentPromptId })
-      : '{}';
     await fetchWithAuth(url, this.token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body,
+      body: '{}',
     });
+    this.resolveAllTracked({ success: false, error: 'Cancelled', aborted: true });
   }
 
   /**
@@ -173,20 +213,7 @@ export class ComfyClient {
         reject(error);
       };
 
-      // Persistent listener for queue status updates
-      this.ws.addEventListener('message', (event: MessageEvent) => {
-        try {
-          if (typeof event.data !== 'string') return;
-          const message = JSON.parse(event.data);
-          if (message.type === 'status') {
-            this.onQueueUpdate?.(
-              message.data?.status?.exec_info?.queue_remaining ?? 0,
-            );
-          }
-        } catch {
-          // Ignore parse errors
-        }
-      });
+      this.ws.addEventListener('message', this.handleMessage);
     });
   }
 
@@ -195,6 +222,7 @@ export class ComfyClient {
    * @private
    */
   private scheduleReconnect() {
+    if (this.disposed) return;
     if (this.reconnectTimer) return;
     if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
 
@@ -248,11 +276,15 @@ export class ComfyClient {
    * Closes the WebSocket connection and stops all monitoring/reconnection attempts.
    */
   disconnect() {
+    this.disposed = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.resolveAllTracked({ success: false, error: 'Disconnected', aborted: true });
+    this.stopTimeoutCheck();
     if (this.ws) {
+      this.ws.removeEventListener('message', this.handleMessage);
       this.ws.close();
       this.ws = null;
     }
@@ -267,13 +299,222 @@ export class ComfyClient {
   }
 
   /**
+   * Whether a generation is currently being tracked (promise pending).
+   */
+  isGenerating(): boolean {
+    return this.trackedPrompts.size > 0;
+  }
+
+  /**
+   * After a reconnect, check if any tracked prompts already completed on the server.
+   */
+  async recoverIfCompleted(): Promise<void> {
+    if (this.trackedPrompts.size === 0) return;
+
+    try {
+      const queue = await this.getQueue();
+      for (const [promptId, tracked] of this.trackedPrompts) {
+        const isRunning = queue.queue_running.some((item) => item[1] === promptId);
+        const isPending = queue.queue_pending.some((item) => item[1] === promptId);
+
+        if (!isRunning && !isPending) {
+          try {
+            const history = await this.getHistory(promptId);
+            if (history[promptId]) {
+              this.resolveTracked(promptId, { success: true });
+              continue;
+            }
+          } catch {
+            // History fetch failed
+          }
+          this.resolveTracked(promptId, { success: false, error: 'Generation lost after reconnect' });
+        }
+      }
+    } catch {
+      // Queue check failed — leave tracking as-is, timeout will catch it
+    }
+  }
+
+  private resolveTracked(promptId: string, result: GenerationResult) {
+    const tracked = this.trackedPrompts.get(promptId);
+    if (!tracked) return;
+    this.trackedPrompts.delete(promptId);
+    if (this.activePromptId === promptId) {
+      this.activePromptId = null;
+    }
+    if (this.trackedPrompts.size === 0) this.stopTimeoutCheck();
+    tracked.resolve(result);
+  }
+
+  private resolveAllTracked(result: GenerationResult) {
+    const prompts = [...this.trackedPrompts.values()];
+    this.trackedPrompts.clear();
+    this.activePromptId = null;
+    this.stopTimeoutCheck();
+    for (const tracked of prompts) {
+      tracked.resolve(result);
+    }
+  }
+
+  /** Touch last-activity timestamp for a tracked prompt. */
+  private touchActivity(promptId: string) {
+    const tracked = this.trackedPrompts.get(promptId);
+    if (tracked) tracked.lastActivity = Date.now();
+  }
+
+  /** Start the periodic timeout check if not already running. */
+  private startTimeoutCheck() {
+    if (this.timeoutCheckInterval) return;
+    this.timeoutCheckInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [promptId, tracked] of this.trackedPrompts) {
+        if (now - tracked.lastActivity > this.TIMEOUT_MS) {
+          this.resolveTracked(promptId, {
+            success: false,
+            error: 'Generation timed out (no response for 10 minutes)',
+          });
+        }
+      }
+    }, 30_000); // check every 30s
+  }
+
+  private stopTimeoutCheck() {
+    if (this.timeoutCheckInterval) {
+      clearInterval(this.timeoutCheckInterval);
+      this.timeoutCheckInterval = null;
+    }
+  }
+
+  /** Find the tracked prompt a message belongs to. */
+  private findTracked(msgPromptId?: string): TrackedPrompt | undefined {
+    if (msgPromptId) return this.trackedPrompts.get(msgPromptId);
+    if (this.activePromptId) return this.trackedPrompts.get(this.activePromptId);
+    return undefined;
+  }
+
+  private handleMessage = (event: MessageEvent) => {
+    try {
+      if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
+        return;
+      }
+
+      const message = JSON.parse(event.data);
+
+      if (message.type === 'status') {
+        this.onQueueUpdate?.(
+          message.data?.status?.exec_info?.queue_remaining ?? 0,
+        );
+        return;
+      }
+
+      if (this.trackedPrompts.size === 0) return;
+
+      const msgPromptId = message.data?.prompt_id as string | undefined;
+
+      switch (message.type) {
+        case 'execution_start': {
+          const tracked = msgPromptId ? this.trackedPrompts.get(msgPromptId) : undefined;
+          if (tracked) {
+            tracked.started = true;
+            this.activePromptId = msgPromptId!;
+            this.touchActivity(msgPromptId!);
+          }
+          break;
+        }
+
+        case 'progress': {
+          const tracked = this.findTracked(msgPromptId);
+          if (tracked) {
+            tracked.callbacks.onProgress?.(message.data.value, message.data.max);
+            this.touchActivity(tracked.promptId);
+          }
+          break;
+        }
+
+        case 'progress_state': {
+          const tracked = this.findTracked(msgPromptId);
+          if (!tracked) break;
+          const nodes = message.data?.nodes;
+          if (!nodes) break;
+          for (const [nodeId, info] of Object.entries(nodes)) {
+            const { state } = info as { state: string };
+            if (state === 'running' && !tracked.finishedNodes.has(nodeId)) {
+              tracked.callbacks.onNodeStart?.(nodeId);
+            }
+            if (state === 'finished' && !tracked.finishedNodes.has(nodeId)) {
+              tracked.finishedNodes.add(nodeId);
+              tracked.callbacks.onNodeComplete?.(nodeId, tracked.nodeCount, tracked.finishedNodes.size);
+            }
+          }
+          this.touchActivity(tracked.promptId);
+          break;
+        }
+
+        case 'execution_cached': {
+          const tracked = this.findTracked(msgPromptId);
+          if (tracked && message.data?.nodes) {
+            for (const node of message.data.nodes) {
+              if (!tracked.finishedNodes.has(node)) {
+                tracked.finishedNodes.add(node);
+                tracked.callbacks.onNodeComplete?.(node, tracked.nodeCount, tracked.finishedNodes.size);
+              }
+            }
+            this.touchActivity(tracked.promptId);
+          }
+          break;
+        }
+
+        case 'executing': {
+          if (message.data.node !== null) {
+            const tracked = this.findTracked(msgPromptId);
+            if (tracked) {
+              tracked.callbacks.onNodeStart?.(message.data.node);
+            }
+          } else if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
+            this.resolveTracked(msgPromptId, { success: true });
+          }
+          break;
+        }
+
+        case 'executed': {
+          const tracked = this.findTracked(msgPromptId);
+          if (tracked && message.data?.node) {
+            const nodeId = message.data.node;
+            if (!tracked.finishedNodes.has(nodeId)) {
+              tracked.finishedNodes.add(nodeId);
+              tracked.callbacks.onNodeComplete?.(nodeId, tracked.nodeCount, tracked.finishedNodes.size);
+            }
+            this.touchActivity(tracked.promptId);
+          }
+          break;
+        }
+
+        case 'execution_error': {
+          if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
+            const errorMsg = message.data?.exception_message
+              || message.data?.error
+              || 'Unknown error';
+            const nodeType = message.data?.node_type;
+            const detail = nodeType ? `[${nodeType}] ${errorMsg}` : errorMsg;
+            this.resolveTracked(msgPromptId, { success: false, error: detail.trim() });
+          }
+          break;
+        }
+      }
+    } catch {
+      // Ignore parse errors for non-JSON messages
+    }
+  };
+
+  /**
    * Tracks the progress of a workflow execution.
-   * Monitors WebSocket messages for various execution events and updates progress through callbacks.
-   * 
+   * Adds the prompt to the tracked map and returns a promise that resolves
+   * when the generation completes, fails, or times out.
+   *
    * @param promptId - The ID of the prompt being executed
    * @param workflow - The workflow being executed
    * @param callbacks - Callbacks for progress updates
-   * @returns Promise that resolves to a result object indicating success or failure with error details
+   * @returns Promise that resolves to a result object indicating success or failure
    * @throws Error if WebSocket is not connected
    * @private
    */
@@ -281,81 +522,23 @@ export class ComfyClient {
     promptId: string,
     workflow: Workflow,
     callbacks: ProgressCallback,
-  ): Promise<{ success: true } | { success: false; error: string }> {
-    return new Promise((resolve, reject) => {
-      if (!this.ws) {
-        reject(new Error('WebSocket not connected'));
-        return;
-      }
+  ): Promise<GenerationResult> {
+    if (!this.ws) {
+      return Promise.reject(new Error('WebSocket not connected'));
+    }
 
-      // Get all node IDs from the workflow
-      const nodeIds = Object.keys(workflow);
-      const finishedNodes: string[] = [];
-
-      const handleMessage = (event: MessageEvent) => {
-        try {
-          // Skip non-JSON messages
-          if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
-            return;
-          }
-
-          const message = JSON.parse(event.data);
-
-          // Only process whitelisted message types
-          const validMessageTypes = ['progress', 'execution_cached', 'executing', 'execution_error', 'executed', 'execution_success'] as const;
-          if (!validMessageTypes.includes(message.type)) {
-            return;
-          }
-
-          switch (message.type) {
-            case 'progress':
-              callbacks.onProgress?.(message.data.value, message.data.max);
-              break;
-
-            case 'execution_cached':
-              for (const node of message.data.nodes) {
-                if (!finishedNodes.includes(node)) {
-                  finishedNodes.push(node);
-                  callbacks.onNodeComplete?.(node, nodeIds.length, finishedNodes.length);
-                }
-              }
-              break;
-
-            case 'executing':
-              if (message.data.node !== null) {
-                callbacks.onNodeStart?.(message.data.node);
-                if (!finishedNodes.includes(message.data.node)) {
-                  finishedNodes.push(message.data.node);
-                  callbacks.onNodeComplete?.(message.data.node, nodeIds.length, finishedNodes.length);
-                }
-              } else if (message.data.prompt_id === promptId) {
-                this.ws?.removeEventListener('message', handleMessage);
-                resolve({ success: true });
-              }
-              break;
-
-            case 'execution_error': {
-              this.ws?.removeEventListener('message', handleMessage);
-              const errorMsg = message.data?.exception_message
-                || message.data?.error
-                || 'Unknown error';
-              const nodeType = message.data?.node_type;
-              const detail = nodeType ? `[${nodeType}] ${errorMsg}` : errorMsg;
-              resolve({ success: false, error: detail.trim() });
-              break;
-            }
-
-            case 'executed':
-            case 'execution_success':
-              break;
-          }
-        } catch (error) {
-          void error;
-          // Ignore parse errors for non-JSON messages
-        }
-      };
-
-      this.ws.addEventListener('message', handleMessage);
+    return new Promise((resolve) => {
+      this.trackedPrompts.set(promptId, {
+        promptId,
+        callbacks,
+        nodeCount: Object.keys(workflow).length,
+        finishedNodes: new Set(),
+        resolve,
+        lastActivity: Date.now(),
+        started: false,
+      });
+      this.activePromptId = promptId;
+      this.startTimeoutCheck();
     });
   }
 
@@ -461,6 +644,88 @@ export class ComfyClient {
   }
 
   /**
+   * Recover a previously queued generation after navigating away and back.
+   * Sets up WS tracking FIRST (to avoid missing messages), then checks
+   * queue status. If the prompt already completed, resolves immediately.
+   *
+   * @param promptId - The prompt ID to recover
+   * @param callbacks - Callbacks for progress updates and completion
+   * @returns Promise that resolves to an array of media URLs, or empty if lost
+   */
+  async recoverGeneration(
+    promptId: string,
+    callbacks: ProgressCallback,
+  ): Promise<string[]> {
+    // Set up tracking BEFORE checking queue to avoid missing WS messages.
+    const trackPromise = this.trackProgress(promptId, {}, callbacks);
+
+    // Now check if the prompt already completed
+    try {
+      const queue = await this.getQueue();
+      const isRunning = queue.queue_running.some((item) => item[1] === promptId);
+      const isPending = queue.queue_pending.some((item) => item[1] === promptId);
+
+      if (!isRunning && !isPending) {
+        // Already done — resolve tracking immediately so we can fetch results
+        this.resolveTracked(promptId, { success: true });
+      }
+    } catch {
+      this.resolveTracked(promptId, { success: false, error: 'Failed to check queue status' });
+    }
+
+    const result = await trackPromise;
+    if (!result.success) {
+      if (result.aborted) {
+        throw new GenerationAbortedError(result.error);
+      }
+      throw new Error(result.error);
+    }
+
+    return this.fetchAndDownloadResults(promptId, callbacks);
+  }
+
+  /**
+   * Fetches history for a prompt and downloads all generated media.
+   * Shared by generate() and recoverGeneration().
+   * @private
+   */
+  private async fetchAndDownloadResults(
+    promptId: string,
+    callbacks: ProgressCallback,
+  ): Promise<string[]> {
+    const history = await this.getHistory(promptId);
+    const outputs = history[promptId]?.outputs;
+    if (!outputs) return [];
+
+    const mediaUrls: string[] = [];
+    const allMedia: { filename: string; subfolder: string; type: string }[] = [];
+
+    for (const nodeId in outputs) {
+      const nodeOutput = outputs[nodeId];
+      if (nodeOutput.images) allMedia.push(...nodeOutput.images);
+      if (nodeOutput.gifs) allMedia.push(...nodeOutput.gifs);
+      if (nodeOutput.videos) allMedia.push(...nodeOutput.videos);
+      if (nodeOutput.audio) allMedia.push(...nodeOutput.audio);
+    }
+
+    const outputMedia = allMedia.filter((img) => img.type === 'output');
+    const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
+
+    for (const media of mediaToDownload) {
+      const mediaUrl = await this.downloadMedia(
+        media.filename,
+        media.subfolder,
+        media.type,
+        callbacks,
+      );
+      mediaUrls.push(mediaUrl);
+    }
+
+    callbacks.onComplete?.(mediaUrls);
+    return mediaUrls;
+  }
+
+  /**
    * Generates media using the provided workflow.
    * Handles the complete generation process including:
    * - Queueing the workflow
@@ -479,53 +744,16 @@ export class ComfyClient {
    * @throws Error if generation fails at any stage
    */
   async generate(workflow: Workflow, callbacks: ProgressCallback): Promise<string[]> {
-    try {
-      const promptId = await this.queuePrompt(workflow);
-      this.currentPromptId = promptId;
-      const result = await this.trackProgress(promptId, workflow, callbacks);
-      if (!result.success) {
-        throw new Error(result.error);
+    const promptId = await this.queuePrompt(workflow);
+    callbacks.onQueued?.(promptId);
+    const result = await this.trackProgress(promptId, workflow, callbacks);
+    if (!result.success) {
+      if (result.aborted) {
+        throw new GenerationAbortedError(result.error);
       }
-
-      const history = await this.getHistory(promptId);
-      const outputs = history[promptId].outputs;
-      const mediaUrls: string[] = [];
-
-      const allMedia: { filename: string; subfolder: string; type: string }[] = [];
-      for (const nodeId in outputs) {
-        const nodeOutput = outputs[nodeId];
-        if (nodeOutput.images) {
-          allMedia.push(...nodeOutput.images);
-        }
-        if (nodeOutput.gifs) {
-          allMedia.push(...nodeOutput.gifs);
-        }
-        if (nodeOutput.videos) {
-          allMedia.push(...nodeOutput.videos);
-        }
-        if (nodeOutput.audio) {
-          allMedia.push(...nodeOutput.audio);
-        }
-      }
-
-      // Filter media: if we have "output" type, use only those. Otherwise use "temp".
-      const outputMedia = allMedia.filter((img) => img.type === 'output');
-      const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
-
-      for (const media of mediaToDownload) {
-        const mediaUrl = await this.downloadMedia(
-          media.filename,
-          media.subfolder,
-          media.type,
-          callbacks
-        );
-        mediaUrls.push(mediaUrl);
-      }
-
-      callbacks.onComplete?.(mediaUrls);
-      return mediaUrls;
-    } finally {
-      this.currentPromptId = null;
+      throw new Error(result.error);
     }
+
+    return this.fetchAndDownloadResults(promptId, callbacks);
   }
 } 

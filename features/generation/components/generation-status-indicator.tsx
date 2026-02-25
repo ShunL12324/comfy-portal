@@ -17,6 +17,11 @@ interface ServerStatusProps {
     value: number;
     max: number;
   };
+  /** Node execution progress */
+  nodeProgress?: {
+    completed: number;
+    total: number;
+  };
   /** Server name to display */
   name: string;
 }
@@ -33,6 +38,7 @@ export function ServerStatus({
   downloading = false,
   downloadProgress = 0,
   generationProgress,
+  nodeProgress,
   name,
 }: ServerStatusProps) {
   let color = 'success';
@@ -40,9 +46,21 @@ export function ServerStatus({
 
   if (generating) {
     color = 'warning';
-    if (generationProgress) {
-      const progress = Math.round((generationProgress.value / generationProgress.max) * 100) || 0;
-      status = `Generating ${progress}%`;
+    const hasProgress = generationProgress && generationProgress.max > 0;
+    const hasNodes = nodeProgress && nodeProgress.total > 0;
+    const progressPct = hasProgress
+      ? `${Math.round((generationProgress.value / generationProgress.max) * 100)}%`
+      : '';
+    const nodePart = hasNodes
+      ? `(${nodeProgress.completed}/${nodeProgress.total})`
+      : '';
+
+    if (progressPct && nodePart) {
+      status = `Generating ${progressPct} ${nodePart}`;
+    } else if (progressPct) {
+      status = `Generating ${progressPct}`;
+    } else if (nodePart) {
+      status = `Generating ${nodePart}`;
     } else {
       status = 'Generating';
     }

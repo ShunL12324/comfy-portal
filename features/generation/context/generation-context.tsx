@@ -1,12 +1,12 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AppState, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { ComfyClient, QueueResponse } from '@/services/comfy-client';
+import { ComfyClient, GenerationAbortedError, QueueResponse } from '@/services/comfy-client';
 import { saveGeneratedMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 
@@ -58,6 +58,18 @@ const GenerationStatusContext = createContext<GenerationStatus | null>(null);
 const GenerationProgressContext = createContext<GenerationProgress | null>(null);
 const GenerationActionsContext = createContext<Omit<GenerationContextType, 'state' | 'generatedMedia' | 'isGenerating'> | null>(null);
 
+/**
+ * Module-level state that survives provider remounts.
+ * Stores in-flight generation info so we can recover results
+ * after navigating away and back.
+ */
+interface PendingGeneration {
+  promptId: string;
+  serverId: string;
+  workflowId: string;
+}
+let pendingGenerations: PendingGeneration[] = [];
+
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
@@ -77,6 +89,138 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   const insets = useSafeAreaInsets();
 
   const lastProgressPercentRef = useRef(0);
+
+  // Disconnect WebSocket when provider unmounts (leaving run page).
+  // Don't interrupt — the server generation continues and we recover via pendingGenerations.
+  useEffect(() => {
+    return () => {
+      const client = comfyClient.current;
+      if (client) {
+        client.disconnect();
+      }
+      comfyClient.current = null;
+    };
+  }, []);
+
+  // Recover generations that were in-flight when the user navigated away.
+  // pendingGenerations is module-level so it survives provider remounts.
+  useEffect(() => {
+    if (pendingGenerations.length === 0) return;
+
+    const toRecover = [...pendingGenerations];
+    // Use the first entry's serverId to find the server (all should be same server)
+    const server = useServersStore.getState().servers.find((s) => s.id === toRecover[0].serverId);
+    if (!server) {
+      pendingGenerations = [];
+      return;
+    }
+
+    let cancelled = false;
+
+    const recover = async () => {
+      const client = new ComfyClient({
+        host: server.host,
+        port: server.port.toString(),
+        useSSL: server.useSSL,
+        token: server.token,
+      });
+      client.onQueueUpdate = (queueRemaining) => {
+        setStatus((prev) => ({ ...prev, queueRemaining }));
+      };
+      comfyClient.current = client;
+
+      try {
+        await client.connect();
+      } catch {
+        pendingGenerations = [];
+        return;
+      }
+
+      if (cancelled) {
+        client.disconnect();
+        return;
+      }
+
+      setStatus((prev) => ({ ...prev, status: 'generating' }));
+
+      // Recover all pending prompts concurrently
+      const recoverOne = async (pending: PendingGeneration) => {
+        try {
+          await client.recoverGeneration(pending.promptId, {
+            onProgress: handleProgress,
+            onNodeStart: (nodeId) => {
+              setStatus((prev) => ({ ...prev, currentNodeId: nodeId }));
+            },
+            onNodeComplete: (nodeId, total, completed) => {
+              handleNodeProgress(completed, total);
+            },
+            onDownloadProgress: (_, dlProgress) => {
+              setStatus((prev) => {
+                if (prev.status === 'downloading') return prev;
+                return { ...prev, status: 'downloading' };
+              });
+              debouncedSetProgress({ downloadProgress: dlProgress });
+            },
+            onComplete: async (mediaUrls) => {
+              useWorkflowStore.getState().updateUsage(pending.workflowId);
+              if (mediaUrls.length > 0) {
+                await saveAndSetMedia(mediaUrls, pending.serverId, pending.workflowId, {});
+              }
+            },
+          });
+        } catch (error) {
+          if (!(error instanceof GenerationAbortedError)) {
+            console.warn('Recovery failed for prompt:', pending.promptId, error);
+          }
+        } finally {
+          // Remove this prompt from pending
+          pendingGenerations = pendingGenerations.filter((p) => p.promptId !== pending.promptId);
+        }
+      };
+
+      await Promise.all(toRecover.map(recoverOne));
+
+      // All recovered — reset if no more pending
+      if (pendingGenerations.length === 0) {
+        reset();
+      }
+    };
+
+    recover();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle app foreground/background transitions
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const subscription = AppState.addEventListener('change', async (nextState) => {
+      if (nextState !== 'active') return;
+      const client = comfyClient.current;
+      if (!client) return;
+
+      // App returned to foreground — reconnect if needed
+      if (!client.isConnected()) {
+        try {
+          await client.connect();
+        } catch {
+          // Reconnect failed — if generation was active, it'll hit timeout
+          return;
+        }
+      }
+
+      // If a generation is in-flight, check if it completed while we were away
+      if (client.isGenerating()) {
+        await client.recoverIfCompleted();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   // Debounce progress updates to avoid excessive re-renders
   const debouncedSetProgress = useDebouncedCallback(
@@ -109,11 +253,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
   const handleNodeProgress = useCallback(
     (completed: number, total: number) => {
-      debouncedSetProgress({
+      // Don't debounce — node completions are infrequent and must not be
+      // swallowed by the shared debouncedSetProgress used for sampler progress.
+      setProgress((prev) => ({
+        ...prev,
         nodeProgress: { completed, total },
-      });
+      }));
     },
-    [debouncedSetProgress],
+    [],
   );
 
   const reset = useCallback(() => {
@@ -144,6 +291,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const cancel = useCallback(async () => {
+    pendingGenerations = [];
     if (!comfyClient.current) return;
     try {
       await comfyClient.current.interrupt();
@@ -172,6 +320,27 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     setStatus((prev) => ({ ...prev, generatedMedia: urls }));
   }, []);
 
+  /** Save downloaded media to local storage and update preview. Shared by generate & recovery. */
+  const saveAndSetMedia = useCallback(
+    async (mediaUrls: string[], serverId: string, workflowId: string, workflow: Record<string, Node>) => {
+      const savedPaths: string[] = [];
+      for (const mediaUrl of mediaUrls) {
+        const result = await saveGeneratedMedia({ serverId, mediaUrl, workflow, workflowId });
+        if (result) {
+          const localUrl = Platform.OS === 'web'
+            ? result.path
+            : result.path.startsWith('file://') ? result.path : `file://${result.path}`;
+          savedPaths.push(localUrl);
+        }
+      }
+      if (savedPaths.length > 0) {
+        setGeneratedMedia(savedPaths);
+      }
+      return savedPaths;
+    },
+    [setGeneratedMedia],
+  );
+
   const generate = useCallback(
     async (workflow: Record<string, Node>, workflowId: string, serverId: string) => {
       const server = useServersStore.getState().servers.find((s) => s.id === serverId);
@@ -193,7 +362,6 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       }
 
       try {
-        reset();
         setStatus((prev) => ({ ...prev, status: 'generating' }));
 
         // Call onPre hooks for all nodes
@@ -221,59 +389,46 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
               'Unable to connect to server. Please check your server status.',
               insets.top + 8,
             );
-            reset();
+            if (!comfyClient.current.isGenerating()) reset();
             return;
           }
         }
 
+        let currentPromptId: string | null = null;
+
         await comfyClient.current.generate(workflowForExecution, {
+          onQueued: (promptId) => {
+            currentPromptId = promptId;
+            pendingGenerations.push({ promptId, serverId, workflowId });
+          },
           onProgress: handleProgress,
           onNodeStart: (nodeId) => {
             setStatus((prev) => ({ ...prev, currentNodeId: nodeId }));
           },
-          onNodeComplete: (node, completed, total) => {
+          onNodeComplete: (nodeId, total, completed) => {
             handleNodeProgress(completed, total);
           },
-          onDownloadProgress: (_, progress) => {
-            setStatus((prev) => {
-              if (prev.status === 'downloading') return prev;
-              return { ...prev, status: 'downloading' };
-            });
-            debouncedSetProgress({ downloadProgress: progress });
+          onDownloadProgress: (_, dlProgress) => {
+            // Only show download progress if this is the last generation
+            if (!comfyClient.current || !comfyClient.current.isGenerating()) {
+              setStatus((prev) => {
+                if (prev.status === 'downloading') return prev;
+                return { ...prev, status: 'downloading' };
+              });
+              debouncedSetProgress({ downloadProgress: dlProgress });
+            }
           },
           onComplete: async (mediaUrls) => {
+            // isGenerating() checks trackedPrompts AFTER this prompt was already resolved,
+            // so it reflects whether OTHER generations are still in-flight.
+            const isLastGeneration = !comfyClient.current?.isGenerating();
+
             try {
               useWorkflowStore.getState().updateUsage(workflowId);
 
               if (mediaUrls.length > 0) {
-                debouncedSetProgress({
-                  progress: { value: progress.progress.max, max: progress.progress.max },
-                });
-
-                await new Promise((resolve) => setTimeout(resolve, 300));
-
-                const savedMediaPaths: string[] = [];
-                for (const mediaUrl of mediaUrls) {
-                  const result = await saveGeneratedMedia({
-                    serverId,
-                    mediaUrl,
-                    workflow: workflowForExecution,
-                    workflowId,
-                  });
-
-                  if (result) {
-                    // On web, paths are already HTTP URLs; on native, ensure file:// prefix
-                    const localMediaUrl = Platform.OS === 'web'
-                      ? result.path
-                      : result.path.startsWith('file://') ? result.path : `file://${result.path}`;
-                    savedMediaPaths.push(localMediaUrl);
-                  }
-                }
-
-                if (savedMediaPaths.length > 0) {
-                  setGeneratedMedia(savedMediaPaths);
-                } else {
-                  console.error('Failed to save generated media');
+                const saved = await saveAndSetMedia(mediaUrls, serverId, workflowId, workflowForExecution);
+                if (saved.length === 0) {
                   showToast.error('Save Failed', 'Unable to save the generated media.', insets.top + 8);
                 }
               } else {
@@ -290,28 +445,51 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
                 }),
               );
             } catch (error) {
-              console.error('Error in generation completion:', error);
               showToast.error(
                 'Error',
                 error instanceof Error ? error.message : 'An unexpected error occurred.',
                 insets.top + 8,
               );
             } finally {
-              reset();
+              // Remove this prompt from pending
+              if (currentPromptId) {
+                pendingGenerations = pendingGenerations.filter((p) => p.promptId !== currentPromptId);
+              }
+              // Only reset to idle if no more generations are tracked
+              if (isLastGeneration) {
+                setStatus((prev) => ({
+                  ...prev,
+                  status: 'idle',
+                  currentNodeId: undefined,
+                }));
+                lastProgressPercentRef.current = 0;
+                setProgress({
+                  progress: { value: 0, max: 0 },
+                  nodeProgress: { completed: 0, total: 0 },
+                  downloadProgress: 0,
+                });
+              }
             }
           },
         });
       } catch (error) {
+        if (error instanceof GenerationAbortedError) {
+          // Don't reset — other generations may still be in-flight
+          return;
+        }
         console.error('Generation error:', error);
         showToast.error(
           'Generation Failed',
           error instanceof Error ? error.message : 'An unexpected error occurred.',
           insets.top + 8,
         );
-        reset();
+        if (!comfyClient.current?.isGenerating()) {
+          pendingGenerations = [];
+          reset();
+        }
       }
     },
-    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, progress.progress.max, setGeneratedMedia],
+    [handleNodeProgress, handleProgress, insets.top, reset, debouncedSetProgress, setGeneratedMedia, saveAndSetMedia],
   );
 
   const actions = React.useMemo(
