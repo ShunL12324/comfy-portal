@@ -268,6 +268,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       clearTimeout(progressCompleteTimeoutRef.current);
       progressCompleteTimeoutRef.current = null;
     }
+    // Cancel any pending debounced progress updates to prevent them
+    // from overwriting the reset state after it's applied.
+    debouncedSetProgress.cancel();
     setStatus((prev) => ({
       ...prev,
       status: 'idle',
@@ -280,7 +283,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       nodeProgress: { completed: 0, total: 0 },
       downloadProgress: 0,
     });
-  }, []);
+  }, [debouncedSetProgress]);
 
   const registerNodeHooks = useCallback((nodeId: string, hooks: NodeLifecycleHooks) => {
     nodeHooksRef.current[nodeId] = hooks;
@@ -457,6 +460,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
               }
               // Only reset to idle if no more generations are tracked
               if (isLastGeneration) {
+                // Cancel pending debounced updates before resetting to prevent
+                // stale progress (e.g. downloadProgress: 100) from overwriting the reset.
+                debouncedSetProgress.cancel();
                 setStatus((prev) => ({
                   ...prev,
                   status: 'idle',
