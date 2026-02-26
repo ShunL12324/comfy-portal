@@ -1,122 +1,131 @@
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Icon } from '@/components/ui/icon';
-import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { loadHistoryMedia } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 import { File } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { History } from 'lucide-react-native';
-import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Download, History, Share, Trash2 } from 'lucide-react-native';
+import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetFlatList, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { DeleteAlert } from './history-drawer/delete-alert';
-import { BottomPanel, SelectButton } from './history-drawer/edit-controls';
-import { HistoryItem, getItemLayout } from './history-drawer/history-item';
+import { HistoryItem } from './history-drawer/history-item';
 
 interface HistoryGallerySheetProps {
   serverId: string;
   workflowId?: string;
   onSelectMedia?: (url: string) => void;
-  onMediaDeleted?: () => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+export interface HistoryGallerySheetRef {
+  present: () => void;
+  dismiss: () => void;
+}
 
-export const HistoryGallerySheet = forwardRef<BottomSheetModal, HistoryGallerySheetProps>(
-  ({ serverId, workflowId, onSelectMedia, onMediaDeleted }, ref) => {
+const NUM_COLUMNS = 3;
+const GRID_GAP = 4;
+const HORIZONTAL_PADDING = 16;
+
+export const HistoryGallerySheet = forwardRef<HistoryGallerySheetRef, HistoryGallerySheetProps>(
+  ({ serverId, workflowId, onSelectMedia }, ref) => {
     const insets = useSafeAreaInsets();
+    const sheetRef = useRef<BottomSheetModal>(null);
+    const needsLoadRef = useRef(false);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
-    const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [page, setPage] = useState(1);
+    const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
     const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<string | 'selection' | null>(null);
-    const [isPresented, setIsPresented] = useState(false);
 
-    const paginatedMedia = useMemo(() => mediaItems.slice(0, page * ITEMS_PER_PAGE), [mediaItems, page]);
+    // Stable callbacks that HistoryItem can reference via url prop
+    const onItemPressRef = useRef<(url: string) => void>(() => {});
+    const onItemLongPressRef = useRef<(url: string) => void>(() => {});
 
-    // Load media when sheet is presented
-    useEffect(() => {
-      if (isPresented && workflowId) {
-        loadHistoryMedia(serverId, workflowId).then(setMediaItems);
+    // Keep refs in sync without causing re-renders
+    onItemPressRef.current = (url: string) => {
+      if (isSelectionMode) {
+        setSelectedMedia((prev) => {
+          const next = new Set(prev);
+          if (next.has(url)) next.delete(url);
+          else next.add(url);
+          if (next.size === 0) setIsSelectionMode(false);
+          return next;
+        });
+      } else {
+        onSelectMedia?.(url);
       }
-    }, [isPresented, serverId, workflowId]);
+    };
+
+    onItemLongPressRef.current = (url: string) => {
+      setIsSelectionMode(true);
+      setSelectedMedia(new Set([url]));
+    };
+
+    // Expose present/dismiss
+    useImperativeHandle(ref, () => ({
+      present: () => {
+        needsLoadRef.current = true;
+        sheetRef.current?.present();
+      },
+      dismiss: () => {
+        sheetRef.current?.dismiss();
+      },
+    }), []);
 
     const handleSheetChange = useCallback((index: number) => {
-      if (index === -1) {
-        setIsPresented(false);
-        setIsSelectionMode(false);
-        setSelectedMedia([]);
-        setPage(1);
-        setIsLoading(false);
-      } else if (!isPresented) {
-        setIsPresented(true);
+      if (index === 0 && needsLoadRef.current) {
+        // Sheet animation settled — now safe to load data
+        needsLoadRef.current = false;
+        if (workflowId) {
+          loadHistoryMedia(serverId, workflowId).then(setMediaItems);
+        }
       }
-    }, [isPresented]);
+      if (index === -1) {
+        // Sheet closed — reset all state
+        setIsSelectionMode(false);
+        setSelectedMedia(new Set());
+        setMediaItems([]);
+      }
+    }, [serverId, workflowId]);
 
-    const handleToggleSelectionMode = useCallback(() => {
-      setIsSelectionMode((prev) => !prev);
-      setSelectedMedia([]);
+    const exitSelectionMode = useCallback(() => {
+      setIsSelectionMode(false);
+      setSelectedMedia(new Set());
     }, []);
-
-    const handleToggleSelect = useCallback((url: string) => {
-      setSelectedMedia((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]));
-    }, []);
-
-    const handleSelectAll = useCallback(() => {
-      setSelectedMedia((prev) => (prev.length === paginatedMedia.length ? [] : paginatedMedia.map((img) => img.url)));
-    }, [paginatedMedia]);
 
     const confirmDelete = useCallback(async () => {
-      if (!workflowId || !deleteTarget) return;
+      if (!workflowId || selectedMedia.size === 0) return;
       try {
-        const targets = deleteTarget === 'selection' ? selectedMedia : [deleteTarget];
-        for (const url of targets) {
+        for (const url of selectedMedia) {
           try { new File(url).delete(); } catch { /* ignore */ }
           try { new File(`${url}.json`).delete(); } catch { /* ignore */ }
         }
         const updatedMedia = await loadHistoryMedia(serverId, workflowId);
         setMediaItems(updatedMedia);
-        if (deleteTarget === 'selection') {
-          setSelectedMedia([]);
-          setIsSelectionMode(false);
-        }
-        onMediaDeleted?.();
+        setSelectedMedia(new Set());
+        setIsSelectionMode(false);
         setIsDeleteAlertOpen(false);
-        setDeleteTarget(null);
-      } catch (error) {
+      } catch {
         showToast.error('Delete Failed', 'Failed to delete media', insets.top + 8);
       }
-    }, [deleteTarget, selectedMedia, serverId, workflowId, onMediaDeleted, insets.top]);
+    }, [selectedMedia, serverId, workflowId, insets.top]);
 
-    const handleDelete = useCallback(() => {
-      if (selectedMedia.length > 0) {
-        setDeleteTarget('selection');
-        setIsDeleteAlertOpen(true);
-      }
-    }, [selectedMedia]);
-
-    const handleShareSelected = useCallback(async () => {
-      if (selectedMedia.length === 0) return;
+    const handleShare = useCallback(async () => {
+      if (selectedMedia.size === 0) return;
       try {
         const isAvailable = await Sharing.isAvailableAsync();
         if (!isAvailable) {
-          showToast.error('Sharing not available', 'Sharing is not supported on this device', insets.top + 8);
+          showToast.error('Not available', 'Sharing is not supported on this device', insets.top + 8);
           return;
         }
-        if (selectedMedia.length > 1) {
-          showToast.info('Sharing first item', 'Sharing multiple items is not supported', insets.top + 8);
-        }
-        await Sharing.shareAsync(selectedMedia[0]);
+        await Sharing.shareAsync(selectedMedia.values().next().value!);
       } catch { /* ignore */ }
     }, [insets.top, selectedMedia]);
 
-    const handleSaveSelected = useCallback(async () => {
-      if (selectedMedia.length === 0) return;
+    const handleSave = useCallback(async () => {
+      if (selectedMedia.size === 0) return;
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         showToast.error('Permission required', 'Please allow access to save media', insets.top + 8);
@@ -124,110 +133,114 @@ export const HistoryGallerySheet = forwardRef<BottomSheetModal, HistoryGallerySh
       }
       let savedCount = 0;
       try {
-        await Promise.all(selectedMedia.map(async (url) => {
+        for (const url of selectedMedia) {
           await MediaLibrary.saveToLibraryAsync(url);
           savedCount++;
-        }));
-        showToast.success('Saved', `Saved ${savedCount} items to gallery`, insets.top + 8);
+        }
+        showToast.success('Saved', `Saved ${savedCount} item${savedCount > 1 ? 's' : ''} to Photos`, insets.top + 8);
         setIsSelectionMode(false);
-        setSelectedMedia([]);
+        setSelectedMedia(new Set());
       } catch {
         showToast.error('Save Failed', 'Failed to save some media', insets.top + 8);
       }
     }, [insets.top, selectedMedia]);
 
-    const handleDeleteItem = useCallback((url: string) => {
-      setDeleteTarget(url);
-      setIsDeleteAlertOpen(true);
-    }, []);
-
     const renderItem = useCallback(
       ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
-        <HistoryItem
-          url={item.url}
-          index={index}
-          isSelectionMode={isSelectionMode}
-          isSelected={selectedMedia.includes(item.url)}
-          onPress={() => (isSelectionMode ? handleToggleSelect(item.url) : onSelectMedia?.(item.url))}
-          onDelete={() => handleDeleteItem(item.url)}
-        />
+        <View style={{ flex: 1, padding: GRID_GAP / 2 }}>
+          <HistoryItem
+            url={item.url}
+            index={index}
+            isSelectionMode={isSelectionMode}
+            isSelected={selectedMedia.has(item.url)}
+            onPress={onItemPressRef.current}
+            onLongPress={onItemLongPressRef.current}
+          />
+        </View>
       ),
-      [isSelectionMode, selectedMedia, onSelectMedia, handleToggleSelect, handleDeleteItem],
+      [isSelectionMode, selectedMedia],
     );
 
-    const handleLoadMore = useCallback(() => {
-      if (paginatedMedia.length >= mediaItems.length || isLoading) return;
-      setIsLoading(true);
-      setTimeout(() => {
-        setPage((prev) => prev + 1);
-        setIsLoading(false);
-      }, 500);
-    }, [paginatedMedia.length, mediaItems.length, isLoading]);
-
-    const renderFooter = useMemo(() => {
-      if (!isLoading) return null;
-      return (
-        <View className="py-4">
-          <Spinner size="small" />
-        </View>
-      );
-    }, [isLoading]);
-
     const snapPoints = useMemo(() => ['90%'], []);
+    const hasSelection = selectedMedia.size > 0;
 
     return (
       <>
         <ThemedBottomSheetModal
-          ref={ref}
+          ref={sheetRef}
           index={0}
           snapPoints={snapPoints}
           topInset={insets.top}
           enablePanDownToClose
           onChange={handleSheetChange}
-          animateOnMount
           enableDynamicSizing={false}
+          animationConfigs={{ duration: 250 }}
         >
           {/* Header */}
-          <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <BottomSheetView style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 4 }}>
             <View className="flex-row items-center py-2">
               <View className="flex-1 flex-row items-center gap-2">
                 <Icon as={History} size="sm" className="text-typography-800" />
-                <Text className="text-base font-medium text-typography-800">History</Text>
+                <Text className="text-base font-medium text-typography-800">
+                  {isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
+                </Text>
               </View>
-              <SelectButton isSelectionMode={isSelectionMode} onPress={handleToggleSelectionMode} />
+
+              {isSelectionMode ? (
+                <View className="flex-row items-center gap-1">
+                  <Pressable
+                    onPress={handleShare}
+                    disabled={!hasSelection}
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    style={{ opacity: hasSelection ? 1 : 0.3 }}
+                  >
+                    <Icon as={Share} size="sm" className="text-primary-500" />
+                  </Pressable>
+                  <Pressable
+                    onPress={handleSave}
+                    disabled={!hasSelection}
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    style={{ opacity: hasSelection ? 1 : 0.3 }}
+                  >
+                    <Icon as={Download} size="sm" className="text-primary-500" />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setIsDeleteAlertOpen(true)}
+                    disabled={!hasSelection}
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    style={{ opacity: hasSelection ? 1 : 0.3 }}
+                  >
+                    <Icon as={Trash2} size="sm" className="text-error-500" />
+                  </Pressable>
+                  <Pressable
+                    onPress={exitSelectionMode}
+                    className="ml-1 h-8 items-center justify-center rounded-lg px-3 bg-primary-500 active:bg-primary-600"
+                  >
+                    <Text className="text-xs font-semibold text-white">Done</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => setIsSelectionMode(true)}
+                  className="h-8 items-center justify-center rounded-lg px-3 active:bg-background-100"
+                >
+                  <Text className="text-sm font-medium text-primary-500">Select</Text>
+                </Pressable>
+              )}
             </View>
           </BottomSheetView>
 
-          {/* List */}
+          {/* Grid */}
           <BottomSheetFlatList
-            data={paginatedMedia}
+            data={mediaItems}
             renderItem={renderItem}
-            keyExtractor={(item: { url: string }) => item.url}
-            getItemLayout={getItemLayout}
+            keyExtractor={keyExtractor}
+            numColumns={NUM_COLUMNS}
             removeClippedSubviews
-            maxToRenderPerBatch={5}
+            contentContainerStyle={listContentStyle}
+            initialNumToRender={9}
+            maxToRenderPerBatch={6}
             windowSize={5}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={renderFooter}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              paddingBottom: 80,
-            }}
-            initialNumToRender={6}
-            updateCellsBatchingPeriod={100}
-          />
-
-          {/* Bottom panel */}
-          <BottomPanel
-            isSelectionMode={isSelectionMode}
-            selectedMedia={selectedMedia}
-            mediaItems={mediaItems}
-            onSelectAll={handleSelectAll}
-            onDelete={handleDelete}
-            onShare={handleShareSelected}
-            onSave={handleSaveSelected}
           />
         </ThemedBottomSheetModal>
 
@@ -235,10 +248,10 @@ export const HistoryGallerySheet = forwardRef<BottomSheetModal, HistoryGallerySh
           isOpen={isDeleteAlertOpen}
           onClose={() => setIsDeleteAlertOpen(false)}
           onConfirm={confirmDelete}
-          title={deleteTarget === 'selection' ? 'Delete Selected Media' : 'Delete Media'}
+          title={selectedMedia.size > 1 ? 'Delete Selected Media' : 'Delete Media'}
           description={
-            deleteTarget === 'selection'
-              ? `Are you sure you want to delete ${selectedMedia.length} items? This action cannot be undone.`
+            selectedMedia.size > 1
+              ? `Are you sure you want to delete ${selectedMedia.size} items? This action cannot be undone.`
               : 'Are you sure you want to delete this item? This action cannot be undone.'
           }
         />
@@ -246,5 +259,12 @@ export const HistoryGallerySheet = forwardRef<BottomSheetModal, HistoryGallerySh
     );
   },
 );
+
+// Stable references outside component to avoid re-creation
+const keyExtractor = (item: { url: string }) => item.url;
+const listContentStyle = {
+  paddingHorizontal: HORIZONTAL_PADDING - GRID_GAP / 2,
+  paddingBottom: 40,
+};
 
 HistoryGallerySheet.displayName = 'HistoryGallerySheet';

@@ -1,138 +1,102 @@
-import { OverlayButton } from '@/components/self-ui/overlay-button';
 import { Box } from '@/components/ui/box';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { showToast } from '@/utils/toast';
 import { Image } from 'expo-image';
-import * as MediaLibrary from 'expo-media-library';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Check, Download, PlayCircle, Share as ShareIcon, Trash2 } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import React from 'react';
-import { Share, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check, PlayCircle } from 'lucide-react-native';
+import React, { useCallback } from 'react';
+import { View } from 'react-native';
 
 interface HistoryItemProps {
   url: string;
   index: number;
   isSelectionMode: boolean;
   isSelected: boolean;
-  onPress: () => void;
-  onDelete?: () => void;
+  onPress: (url: string) => void;
+  onLongPress: (url: string) => void;
 }
 
+function SelectionIndicator({ isSelected }: { isSelected: boolean }) {
+  return (
+    <View
+      className={`absolute right-1.5 bottom-1.5 h-5 w-5 rounded-full items-center justify-center ${
+        isSelected ? 'bg-success-400' : 'bg-black/30 border border-white/60'
+      }`}
+    >
+      {isSelected && <Icon as={Check} size="2xs" className="text-white" />}
+    </View>
+  );
+}
+
+/** Lightweight image-only thumbnail — no video player overhead. */
+function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
+  const handlePress = useCallback(() => onPress(url), [onPress, url]);
+  const handleLongPress = useCallback(() => onLongPress(url), [onLongPress, url]);
+
+  return (
+    <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
+      <Box className="aspect-square overflow-hidden rounded-lg bg-background-100">
+        <Image
+          source={url}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          recyclingKey={url}
+        />
+      </Box>
+      {isSelected && (
+        <View className="absolute inset-0 rounded-lg border-2 border-success-400" />
+      )}
+      {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
+    </Pressable>
+  );
+}
+
+/** Video thumbnail with native player — only mounted for actual video files. */
+function VideoItem({ url, index, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
+  const player = useVideoPlayer(url, p => {
+    p.loop = false;
+    p.pause();
+    p.muted = true;
+  });
+
+  const handlePress = useCallback(() => onPress(url), [onPress, url]);
+  const handleLongPress = useCallback(() => onLongPress(url), [onLongPress, url]);
+
+  return (
+    <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
+      <Box className="aspect-square overflow-hidden rounded-lg bg-background-100">
+        <VideoView
+          player={player}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          nativeControls={false}
+        />
+        <View className="absolute inset-0 items-center justify-center bg-black/20">
+          <Icon as={PlayCircle} className="text-white opacity-90 h-8 w-8" />
+        </View>
+      </Box>
+      {isSelected && (
+        <View className="absolute inset-0 rounded-lg border-2 border-success-400" />
+      )}
+      {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
+    </Pressable>
+  );
+}
+
+const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'webm']);
+
 export const HistoryItem = React.memo(
-  function HistoryItem({ url, index, isSelectionMode, isSelected, onPress, onDelete }: HistoryItemProps) {
-    const insets = useSafeAreaInsets();
-    const isVideo = React.useMemo(() => {
-      const ext = url.split('.').pop()?.toLowerCase();
-      return ['mp4', 'mov', 'm4v', 'webm'].includes(ext || '');
-    }, [url]);
-
-    const player = useVideoPlayer(isVideo ? url : null, player => {
-      player.loop = false;
-      player.pause();
-      player.muted = true;
-    });
-
-    const handleShare = async () => {
-      try {
-        await Share.share({
-          url,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    };
-
-    const handleSave = async () => {
-      try {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          showToast.error('Permission needed', 'Please grant permission to save media.', insets.top + 8);
-          return;
-        }
-        await MediaLibrary.saveToLibraryAsync(url);
-        showToast.success('Saved', 'Media saved to gallery.', insets.top + 8);
-      } catch (error) {
-        console.error('Error saving:', error);
-        showToast.error('Error', 'Failed to save media.', insets.top + 8);
-      }
-    };
-
-    const handleDelete = () => {
-      onDelete?.();
-    };
-
-    return (
-      <Pressable onPress={onPress} className="relative mb-4">
-        <Box className="aspect-square overflow-hidden rounded-md border-outline-50 justify-center items-center bg-background-100">
-          {isVideo ? (
-            <>
-              <VideoView
-                player={player}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-                nativeControls={false}
-              />
-              <View className="absolute inset-0 items-center justify-center bg-black/20">
-                <Icon as={PlayCircle} className="text-white opacity-90 h-12 w-12" />
-              </View>
-            </>
-          ) : (
-            <Image
-              source={url}
-              alt={`Generated media ${index + 1}`}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              recyclingKey={url}
-              placeholder={null}
-              transition={200}
-              priority={index < 4 ? 'high' : 'normal'}
-            />
-          )}
-        </Box>
-        {isSelectionMode ? (
-          <MotiView
-            from={{
-              opacity: 0,
-              scale: 0.8,
-            }}
-            animate={{
-              opacity: isSelected ? 1 : 0,
-              scale: isSelected ? 1 : 0.8,
-            }}
-            transition={{
-              type: 'spring',
-              damping: 20,
-              stiffness: 300,
-            }}
-            className="absolute right-2 bottom-2 rounded-full bg-accent-500 p-1.5 shadow-sm"
-          >
-            <Icon as={Check} size="sm" className="text-white" />
-          </MotiView>
-        ) : (
-          <View className="absolute right-2 top-2 flex-row gap-2">
-            <OverlayButton icon={ShareIcon} onPress={handleShare} />
-            <OverlayButton icon={Download} onPress={handleSave} />
-            {onDelete && <OverlayButton icon={Trash2} onPress={handleDelete} iconColor="#ef4444" />}
-          </View>
-        )}
-      </Pressable>
-    );
+  function HistoryItem(props: HistoryItemProps) {
+    const ext = props.url.split('.').pop()?.toLowerCase() ?? '';
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      return <VideoItem {...props} />;
+    }
+    return <ImageItem {...props} />;
   },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.url === nextProps.url &&
-      prevProps.isSelectionMode === nextProps.isSelectionMode &&
-      prevProps.isSelected === nextProps.isSelected
-    );
-  },
+  (prev, next) => (
+    prev.url === next.url &&
+    prev.isSelectionMode === next.isSelectionMode &&
+    prev.isSelected === next.isSelected
+  ),
 );
-
-export const getItemLayout = (_: any, index: number) => ({
-  length: 300, // Approximate height of each item
-  offset: 300 * index,
-  index,
-});

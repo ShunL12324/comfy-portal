@@ -16,7 +16,15 @@ export default function WorkflowsLayout() {
             backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
           },
         }}
-      />
+      >
+        <Stack.Screen
+          name="run/history"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+      </Stack>
     </SafeAreaView>
   );
 }

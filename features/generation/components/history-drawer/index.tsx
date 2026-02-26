@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeleteAlert } from './delete-alert';
 import { BottomPanel, SelectButton } from './edit-controls';
-import { HistoryItem, getItemLayout } from './history-item';
+import { HistoryItem } from './history-item';
 
 interface HistoryDrawerProps {
   isOpen: boolean;
@@ -189,6 +189,14 @@ export function HistoryDrawer({
     setIsDeleteAlertOpen(true);
   }, []);
 
+  const handleItemPress = useCallback((url: string) => {
+    if (isSelectionMode) {
+      handleToggleSelect(url);
+    } else {
+      onSelectMedia?.(url);
+    }
+  }, [isSelectionMode, handleToggleSelect, onSelectMedia]);
+
   const renderItem = useCallback(
     ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
       <HistoryItem
@@ -196,11 +204,11 @@ export function HistoryDrawer({
         index={index}
         isSelectionMode={isSelectionMode}
         isSelected={selectedMedia.includes(item.url)}
-        onPress={() => (isSelectionMode ? handleToggleSelect(item.url) : onSelectMedia?.(item.url))}
-        onDelete={() => handleDeleteItem(item.url)}
+        onPress={handleItemPress}
+        onLongPress={handleDeleteItem}
       />
     ),
-    [isSelectionMode, selectedMedia, onSelectMedia, handleToggleSelect, handleDeleteItem],
+    [isSelectionMode, selectedMedia, handleItemPress, handleDeleteItem],
   );
 
   const handleLoadMore = useCallback(() => {
@@ -229,7 +237,7 @@ export function HistoryDrawer({
       data: paginatedMedia,
       renderItem,
       keyExtractor: (item: { url: string }) => item.url,
-      getItemLayout,
+      getItemLayout: undefined,
       removeClippedSubviews: true,
       maxToRenderPerBatch: 5,
       windowSize: 5,

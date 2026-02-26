@@ -13,7 +13,6 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 
 import { AppBar } from '@/components/layout/app-bar';
 import { SheetTabToggle } from '@/components/self-ui/sheet-tab-toggle';
-import { HistoryGallerySheet } from '@/features/generation/components/history-gallery-sheet';
 import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 import { GenerateActionButton } from '@/features/generation/components/generate-action-button';
 
@@ -26,7 +25,7 @@ import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
 import { useResolvedTheme } from '@/store/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import BottomSheet, { BottomSheetModal } from '@gorhom/bottom-sheet';
+import BottomSheet from '@gorhom/bottom-sheet';
 
 import { Button } from '@/components/ui/button';
 
@@ -151,13 +150,12 @@ function RunWorkflowScreenContent() {
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
   const aiChatTabRef = useRef<AIChatTabRef>(null);
-  const historySheetRef = useRef<BottomSheetModal>(null);
   const sheetSnapIndexRef = useRef(1);
 
   // Tab state — simple index, no longer driven by react-native-tab-view
   const [tabIndex, setTabIndex] = useState(0);
 
-  const { generate, setGeneratedMedia } = useGenerationActions();
+  const { generate } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
   const { layout, isLandscape, width: screenWidth } = useDeviceLayout();
@@ -171,10 +169,12 @@ function RunWorkflowScreenContent() {
     generate(workflowRecord.data, workflowRecord.id, server.id);
   }, [server, workflowRecord, generate]);
 
-  const handleSelectHistoryMedia = useCallback((url: string) => {
-    setGeneratedMedia([url]);
-    historySheetRef.current?.dismiss();
-  }, [setGeneratedMedia]);
+  const openHistoryGallery = useCallback(() => {
+    router.push({
+      pathname: '/workflow/[serverId]/run/history',
+      params: { serverId: serverId as string, workflowId: workflowId as string },
+    });
+  }, [router, serverId, workflowId]);
 
   const handleTabChange = useCallback((newIndex: number) => {
     setTabIndex(newIndex);
@@ -244,7 +244,7 @@ function RunWorkflowScreenContent() {
         }
         rightElement={
           <HStack className="items-center" space="xs">
-            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={() => historySheetRef.current?.present()}>
+            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={openHistoryGallery}>
               <Icon as={Images} size="md" className="text-primary-500" />
             </Button>
           </HStack>
@@ -369,12 +369,6 @@ function RunWorkflowScreenContent() {
         </>
       )}
 
-      <HistoryGallerySheet
-        ref={historySheetRef}
-        serverId={serverId as string}
-        workflowId={workflowRecord?.id}
-        onSelectMedia={handleSelectHistoryMedia}
-      />
     </View>
   );
 }
