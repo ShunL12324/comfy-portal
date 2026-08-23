@@ -1,3 +1,4 @@
+import { isVideoUrl } from '@/features/generation/utils/media';
 import { Zoomable, type ZoomableRef } from '@likashefqet/react-native-image-zoom';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -7,18 +8,23 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
-
 interface ZoomableMediaProps {
   mediaUrl: string;
   onClose: () => void;
   onLongPress: () => void;
+  /**
+   * Whether this is the page the user is looking at. Swipeable previews keep
+   * neighbours mounted so the next one is ready, and without this every mounted
+   * video would play at once — several soundtracks over one picture.
+   */
+  isActive?: boolean;
 }
 
 export const ZoomableMedia = memo(function ZoomableMedia({
   mediaUrl,
   onClose,
   onLongPress,
+  isActive = true,
 }: ZoomableMediaProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -32,36 +38,37 @@ export const ZoomableMedia = memo(function ZoomableMedia({
     return () => clearTimeout(timer);
   }, []);
 
-  const isVideo = React.useMemo(() => {
-    const ext = mediaUrl.split('.').pop()?.toLowerCase();
-    return VIDEO_EXTENSIONS.includes(ext || '');
-  }, [mediaUrl]);
+  const isVideo = React.useMemo(() => isVideoUrl(mediaUrl), [mediaUrl]);
 
   const player = useVideoPlayer(isVideo ? mediaUrl : null, player => {
     if (isVideo) {
       player.loop = true;
-      player.play();
     }
   });
 
-  // Video: Keep existing VideoView with gesture detection for close/long-press
-  if (isVideo) {
-    const singleTap = Gesture.Tap()
-      .numberOfTaps(1)
-      .onEnd(() => {
-        runOnJS(onClose)();
-      });
+  // Playback follows activeness rather than mount, so this also covers swiping
+  // away from a video and back.
+  useEffect(() => {
+    if (!isVideo) return;
+    if (isActive) player.play();
+    else player.pause();
+  }, [isVideo, isActive, player]);
 
+  // Video: the native controls own single taps. We used to layer a
+  // tap-to-close gesture over them, but the recognizer sits on an ancestor of
+  // the control overlay and fires alongside it — so the tap meant for the play
+  // button both resumed playback and dismissed the preview, which reads as
+  // "play exits the preview". Closing is the close button's job; only
+  // long-press (which the native controls don't use) stays on the surface.
+  if (isVideo) {
     const longPress = Gesture.LongPress()
       .onEnd(() => {
         runOnJS(onLongPress)();
       });
 
-    const gestures = Gesture.Exclusive(longPress, singleTap);
-
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <GestureDetector gesture={gestures}>
+        <GestureDetector gesture={longPress}>
           <View
             style={{
               flex: 1,
@@ -82,6 +89,10 @@ export const ZoomableMedia = memo(function ZoomableMedia({
               }}
               contentFit="contain"
               nativeControls={true}
+              // Frees the top-right corner for the preview's own close button,
+              // and drops a dead end on the way: a second fullscreen player
+              // stacked on an already-fullscreen preview.
+              fullscreenOptions={{ enable: false }}
             />
           </View>
         </GestureDetector>

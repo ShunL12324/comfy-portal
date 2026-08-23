@@ -14,16 +14,10 @@ import { ProgressOverlay } from './progress-overlay';
 import { ZoomableMedia } from './zoomable-media';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
+import { isVideoUrl } from '@/features/generation/utils/media';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { PlayCircle } from 'lucide-react-native';
-
-const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
-
-const isVideoUrl = (url: string): boolean => {
-  const ext = url.split('.').pop()?.toLowerCase() || '';
-  return VIDEO_EXTENSIONS.includes(ext);
-};
 
 interface ParallaxMediaProps {
   workflowId?: string;
@@ -204,8 +198,11 @@ export const MediaPreview = memo(function ParallaxMedia({
                   >
                     {generatedMedia.map((mediaUrl, index) => (
                       <View key={`modal-${mediaUrl}-${index}`} className="flex-1">
+                        {/* PagerView mounts every page, so without this every
+                            video in the batch plays at once. */}
                         <ZoomableMedia
                           mediaUrl={mediaUrl}
+                          isActive={index === activeIndex}
                           onClose={handleZoomableMediaClose}
                           onLongPress={handleZoomableMediaLongPress}
                         />

@@ -2,8 +2,6 @@ import { AppBar } from '@/components/layout/app-bar';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
-import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
-import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
 import { MediaActions } from '@/features/generation/components/media-preview/media-actions';
@@ -14,8 +12,18 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
 import { Download, Share, Trash2, X } from 'lucide-react-native';
+import { AnimatePresence, MotiView } from 'moti';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, TouchableOpacity, View } from 'react-native';
+import {
+  BackHandler,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeleteAlert } from '@/features/generation/components/history-drawer/delete-alert';
 import { HistoryItem } from '@/features/generation/components/history-drawer/history-item';
@@ -32,15 +40,40 @@ const listContentStyle = {
 export default function HistoryGalleryPage() {
   const { serverId, workflowId } = useLocalSearchParams<{ serverId: string; workflowId: string }>();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
 
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
   const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  // Preview state
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Preview state. The preview pages through the whole gallery, so what it
+  // shows is an index into `mediaItems` rather than a single URL.
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [showMediaActions, setShowMediaActions] = useState(false);
+  // Read once when the pager mounts. Kept out of state because FlatList only
+  // honours `initialScrollIndex` on mount, and feeding it a value that moves
+  // while the user swipes invites it to jump back.
+  const initialPreviewIndexRef = useRef(0);
+  const previewUrl = mediaItems[previewIndex]?.url;
+
+  // The preview is an in-tree overlay rather than a Modal, so Android's back
+  // gesture isn't intercepted for us — without this it would pop the whole
+  // gallery instead of closing the image.
+  const closePreview = useCallback(() => {
+    setIsPreviewOpen(false);
+    setShowMediaActions(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      closePreview();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isPreviewOpen, closePreview]);
 
   // Stable callback refs to avoid re-renders
   const onItemPressRef = useRef<(url: string) => void>(() => {});
@@ -56,8 +89,13 @@ export default function HistoryGalleryPage() {
         return next;
       });
     } else {
-      // Open fullscreen preview
-      setPreviewUrl(url);
+      const index = Math.max(
+        mediaItems.findIndex((item) => item.url === url),
+        0,
+      );
+      initialPreviewIndexRef.current = index;
+      setPreviewIndex(index);
+      setIsPreviewOpen(true);
     }
   };
 
@@ -127,6 +165,27 @@ export default function HistoryGalleryPage() {
       showToast.error('Save Failed', 'Failed to save some media', insets.top + 8);
     }
   }, [insets.top, selectedMedia]);
+
+  const handlePreviewScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setPreviewIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
+    },
+    [screenWidth],
+  );
+
+  const renderPreviewPage = useCallback(
+    ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
+      <View style={{ width: screenWidth }}>
+        <ZoomableMedia
+          mediaUrl={item.url}
+          isActive={index === previewIndex}
+          onClose={closePreview}
+          onLongPress={() => setShowMediaActions(true)}
+        />
+      </View>
+    ),
+    [screenWidth, previewIndex, closePreview],
+  );
 
   const renderItem = useCallback(
     ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
@@ -225,64 +284,113 @@ export default function HistoryGalleryPage() {
         windowSize={5}
       />
 
-      {/* Fullscreen Preview */}
-      <Modal
-        isOpen={!!previewUrl}
-        onClose={() => setPreviewUrl(null)}
-        useRNModal={true}
-        avoidKeyboard={false}
-        closeOnOverlayClick
-        size="full"
-        className="m-0 p-0"
-      >
-        <ModalBackdrop />
-        <ModalContent
-          className="m-0 h-full rounded-none border-0 bg-black p-0"
-          style={{ shadowColor: 'transparent', elevation: 0 }}
-        >
-          <ModalBody
-            className="h-full flex-1 p-0"
-            contentContainerStyle={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            {previewUrl && (
-              <ZoomableMedia
-                mediaUrl={previewUrl}
-                onClose={() => setPreviewUrl(null)}
-                onLongPress={() => setShowMediaActions(true)}
-              />
-            )}
+      {/* Fullscreen preview.
+          A plain overlay rather than a Modal. This screen is already presented
+          as a native modal, and nesting an RN Modal inside it puts VideoView in
+          a separate native view hierarchy where the video layer never renders —
+          videos played with sound over a black screen. The screen fills the
+          modal already, so an absolutely positioned sibling covers everything
+          without leaving the view tree.
 
-            <TouchableOpacity
-              activeOpacity={0.5}
-              onPress={() => setPreviewUrl(null)}
-              style={{
-                position: 'absolute',
-                top: insets.top + 12,
-                right: 12,
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                borderRadius: 8,
-                padding: 8,
-                zIndex: 30,
-              }}
+          AnimatePresence keeps the overlay mounted through its exit animation,
+          which a bare `isPreviewOpen && ...` cannot do — the children hold
+          their last props while it plays.
+
+          Backdrop and content animate separately on purpose. Fading the whole
+          thing at once cross-dissolves the fullscreen media into the grid,
+          which holds a thumbnail of that very same media — two copies of one
+          image at two sizes, i.e. a ghost. So the content leaves first against
+          opaque black, and only then does the black pull back. */}
+      <AnimatePresence>
+        {isPreviewOpen && (
+          <MotiView
+            key="preview"
+            from={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'timing', duration: 140 }}
+            exitTransition={{ type: 'timing', duration: 110, delay: 120 }}
+            style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: 'black' }]}
+          >
+            <MotiView
+              from={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ type: 'timing', duration: 200 }}
+              exitTransition={{ type: 'timing', duration: 120 }}
+              style={{ flex: 1 }}
             >
-              <Icon as={X} size="sm" className="text-white" />
-            </TouchableOpacity>
-          </ModalBody>
-          <MediaActions
-            isOpen={showMediaActions}
-            onClose={() => setShowMediaActions(false)}
-            mediaUrl={previewUrl ?? undefined}
-            workflowId={workflowId}
-            serverId={serverId}
-          />
-        </ModalContent>
-      </Modal>
+              {/* A paging FlatList rather than a PagerView (which the run
+                  screen uses): a pager mounts every child, and a gallery can
+                  hold hundreds of items — this only keeps a few pages alive.
+                  Each page is exactly one screen wide, so getItemLayout is
+                  arithmetic and initialScrollIndex lands on the tapped item
+                  without a visible scroll. */}
+              <FlatList
+                data={mediaItems}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={keyExtractor}
+                initialScrollIndex={initialPreviewIndexRef.current}
+                getItemLayout={(_, index) => ({
+                  length: screenWidth,
+                  offset: screenWidth * index,
+                  index,
+                })}
+                onMomentumScrollEnd={handlePreviewScrollEnd}
+                initialNumToRender={1}
+                maxToRenderPerBatch={2}
+                // Three pages is already a small enough window; the extra
+                // removeClippedSubviews has a history of blanking pages on
+                // horizontal iOS lists, so it isn't worth the trade here.
+                windowSize={3}
+                renderItem={renderPreviewPage}
+              />
+
+              {mediaItems.length > 1 && (
+                <View
+                  pointerEvents="none"
+                  style={{ position: 'absolute', top: insets.top + 12, left: 12, zIndex: 30 }}
+                  className="min-w-[52px] items-center rounded-full bg-black/40 px-2.5 py-1.5"
+                >
+                  <Text className="text-xs font-medium text-white">
+                    {previewIndex + 1}/{mediaItems.length}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                activeOpacity={0.5}
+                onPress={closePreview}
+                style={{
+                  position: 'absolute',
+                  top: insets.top + 12,
+                  right: 12,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  borderRadius: 8,
+                  padding: 8,
+                  zIndex: 30,
+                }}
+              >
+                <Icon as={X} size="sm" className="text-white" />
+              </TouchableOpacity>
+            </MotiView>
+
+            {/* Inside the overlay so it shares the stacking context: the panel
+                positions itself absolutely with no z-index of its own, so as a
+                sibling it would sit under the overlay on Android. Outside the
+                animated content so dismissing it doesn't ride the scale. */}
+            <MediaActions
+              isOpen={showMediaActions}
+              onClose={() => setShowMediaActions(false)}
+              mediaUrl={previewUrl}
+              workflowId={workflowId}
+              serverId={serverId}
+            />
+          </MotiView>
+        )}
+      </AnimatePresence>
 
       <DeleteAlert
         isOpen={isDeleteAlertOpen}
