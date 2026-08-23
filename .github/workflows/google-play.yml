@@ -166,6 +166,10 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # The Sentry Gradle plugin uploads source maps on every release build,
+          # not just the one fastlane drives, and fails the build without a
+          # token. Missing it here is what broke the 1.1.0 APK.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           cd android && ./gradlew assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ../build/ComfyPortal.apk
