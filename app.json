@@ -2,7 +2,7 @@
   "expo": {
     "name": "Comfy Portal",
     "slug": "comfy-portal",
-    "version": "1.0.7",
+    "version": "1.1.0",
     "owner": "sillyl12324",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
