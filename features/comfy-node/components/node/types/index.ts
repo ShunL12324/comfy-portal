@@ -38,6 +38,9 @@ import VAEEncodeForInpaint from './base/VAEEncodeForInpaint';
 import VAELoader from './base/VAELoader';
 import WanImageToVideo from './base/WanImageToVideo';
 import ImageResizeKJv2 from './kj-nodes/ImageResizeKJv2';
+import MiniMaxH3Easy from './minimax-h3-easy/MiniMaxH3Easy';
+import MiniMaxH3EasyLoader from './minimax-h3-easy/MiniMaxH3EasyLoader';
+import MiniMaxH3EasyMediaBridge from './minimax-h3-easy/MiniMaxH3EasyMediaBridge';
 import VHS_VideoCombine from './video-helper-suite/VHS_VideoCombine';
 import ImmutableNode from '../common/immutable-node';
 interface NodeContentProps {
@@ -87,6 +90,16 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'ImageResizeKJv2': ImageResizeKJv2,
   'TextEncodeQwenImageEditPlus': TextEncodeQwenImageEditPlus,
   'GetImageSize': ImmutableNode,
+
+  // ComfyUI-MiniMaxH3-Easy. The remaining four nodes only take links, so they
+  // render as plain immutable nodes.
+  'MiniMaxH3Easy': MiniMaxH3Easy,
+  'MiniMaxH3EasyLoader': MiniMaxH3EasyLoader,
+  'MiniMaxH3EasyMediaBridge': MiniMaxH3EasyMediaBridge,
+  'MiniMaxH3EasyModelAdapter': ImmutableNode,
+  'MiniMaxH3EasyOutput': ImmutableNode,
+  'MiniMaxH3EasyAspectRatio': ImmutableNode,
+  'MiniMaxH3EasySecondPassConditioning': ImmutableNode,
   // add more node types here
 };
 
