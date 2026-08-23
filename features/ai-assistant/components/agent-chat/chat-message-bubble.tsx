@@ -1,23 +1,29 @@
 import { Icon } from '@/components/ui/icon';
+import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { Colors } from '@/constants/Colors';
-import { AgentChatMessage, NodeChange } from '@/features/ai-assistant/types';
 import { useResolvedTheme } from '@/store/theme';
-import { ArrowRight, Bot, Check, User } from 'lucide-react-native';
+import {
+  getToolName,
+  isToolUIPart,
+  type DynamicToolUIPart,
+  type ToolUIPart,
+  type UIMessage,
+} from 'ai';
+import { AlertCircle, Bot, Check, User, Wrench } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface ChatMessageBubbleProps {
-  message: AgentChatMessage;
+  message: UIMessage;
   renderFooter?: React.ReactNode;
 }
 
 export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
-  const hasChanges = message.changes && message.changes.length > 0;
   const theme = useResolvedTheme();
 
   // StyleSheet.create required by react-native-markdown-display API — cannot use NativeWind here
@@ -200,35 +206,39 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
       )}
 
       <View className={`max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
-        {/* Message bubble */}
-        {isUser ? (
-          <View className="rounded-2xl rounded-br-md bg-typography-900 px-3.5 py-2.5">
-            <Text className="text-sm leading-5 text-typography-0">
-              {message.content}
-            </Text>
-          </View>
-        ) : (
-          <View className="rounded-2xl rounded-bl-md bg-background-100 px-3.5 py-2.5">
-            <Markdown style={mdStyles} mergeStyle={false}>
-              {message.content}
-            </Markdown>
-          </View>
-        )}
+        {/*
+          A message is an ordered list of parts — text interleaved with tool
+          activity — so they're rendered in sequence rather than as a single
+          body plus a summary card.
+        */}
+        {message.parts.map((part, index) => {
+          if (part.type === 'text') {
+            if (!part.text) return null;
+            return isUser ? (
+              <View
+                key={index}
+                className="rounded-2xl rounded-br-md bg-typography-900 px-3.5 py-2.5"
+              >
+                <Text className="text-sm leading-5 text-typography-0">{part.text}</Text>
+              </View>
+            ) : (
+              <View
+                key={index}
+                className="w-full rounded-2xl rounded-bl-md bg-background-100 px-3.5 py-2.5"
+              >
+                <Markdown style={mdStyles} mergeStyle={false}>
+                  {part.text}
+                </Markdown>
+              </View>
+            );
+          }
 
-        {/* Changes card — informational, changes are auto-applied by tools */}
-        {hasChanges && (
-          <View className="mt-2 w-full rounded-xl border border-outline-50 bg-background-50 p-3">
-            <View className="mb-2 flex-row items-center gap-1.5">
-              <Icon as={Check} size="2xs" className="text-success-600" />
-              <Text className="text-xs font-semibold uppercase tracking-wide text-typography-500">
-                Applied Changes
-              </Text>
-            </View>
-            {message.changes!.map((change, index) => (
-              <ChangeItem key={`${change.nodeId}-${change.inputKey}-${index}`} change={change} />
-            ))}
-          </View>
-        )}
+          if (isToolUIPart(part)) {
+            return <ToolPartCard key={index} part={part} />;
+          }
+
+          return null;
+        })}
 
         {/* Optional footer (e.g. config error action) */}
         {renderFooter}
@@ -244,33 +254,64 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
   );
 }
 
-function ChangeItem({ change }: { change: NodeChange }) {
-  const formatValue = (val: any): string => {
-    if (val === undefined || val === null) return '—';
-    if (typeof val === 'string') {
-      return val.length > 40 ? `${val.substring(0, 40)}...` : val;
-    }
-    return String(val);
-  };
+/** Human-readable labels for the agent's tools. */
+const TOOL_LABELS: Record<string, string> = {
+  read_workflow: 'Reading workflow',
+  update_node_input: 'Updating parameter',
+  batch_update_nodes: 'Updating parameters',
+  run_workflow: 'Generating',
+  undo: 'Undoing',
+};
+
+/**
+ * One tool invocation, rendered per lifecycle state.
+ *
+ * Replaces the old "Applied Changes" summary, which was built by re-parsing
+ * tool arguments after the fact and could never show a before value.
+ */
+function ToolPartCard({ part }: { part: ToolUIPart | DynamicToolUIPart }) {
+  // Our agent only registers static tools, but the type guard also admits
+  // dynamic ones, which carry their name on a different field.
+  const name = part.type === 'dynamic-tool' ? part.toolName : getToolName(part);
+  const label = TOOL_LABELS[name] ?? name;
+
+  const pending = part.state === 'input-streaming' || part.state === 'input-available';
+  const failed = part.state === 'output-error';
 
   return (
-    <View className="mb-1.5 rounded-lg bg-background-0 px-2.5 py-2">
-      <Text className="text-xs text-typography-500" numberOfLines={1}>
-        {change.nodeTitle ? `${change.nodeTitle} · ` : ''}{change.inputKey}
-      </Text>
-      <View className="mt-1 flex-row items-center gap-1.5">
-        {change.oldValue !== undefined && (
-          <>
-            <Text className="flex-1 text-xs text-typography-400" numberOfLines={1}>
-              {formatValue(change.oldValue)}
-            </Text>
-            <Icon as={ArrowRight} size="2xs" className="text-typography-300" />
-          </>
+    <View
+      className={`mt-2 w-full rounded-xl border px-3 py-2.5 ${
+        failed ? 'border-error-200 bg-error-50' : 'border-outline-50 bg-background-50'
+      }`}
+    >
+      <View className="flex-row items-center gap-1.5">
+        {pending ? (
+          <RotatingSpinner size="sm" />
+        ) : (
+          <Icon
+            as={failed ? AlertCircle : Check}
+            size="2xs"
+            className={failed ? 'text-error-600' : 'text-success-600'}
+          />
         )}
-        <Text className="flex-1 text-xs font-medium text-typography-900" numberOfLines={1}>
-          {formatValue(change.newValue)}
+        <Text
+          className={`text-xs font-semibold uppercase tracking-wide ${
+            failed ? 'text-error-700' : 'text-typography-500'
+          }`}
+        >
+          {label}
         </Text>
       </View>
+
+      {part.state === 'output-error' && (
+        <Text className="mt-1.5 text-xs text-error-700">{part.errorText}</Text>
+      )}
+
+      {part.state === 'output-available' && typeof part.output === 'string' && (
+        <Text className="mt-1.5 text-xs text-typography-600" numberOfLines={6}>
+          {part.output}
+        </Text>
+      )}
     </View>
   );
 }

@@ -3,7 +3,7 @@ import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { AIProvider } from '../types';
+import { AIProvider, requiresEndpoint } from '../types';
 
 interface AIAssistantState {
   provider: AIProvider | null;
@@ -57,12 +57,25 @@ export const useAIAssistantStore = create<AIAssistantState>()(
       // Getters
       isConfigured: () => {
         const provider = get().provider;
-        return !!(provider?.endpointUrl && provider?.apiKey && provider?.modelName);
+        if (!provider?.apiKey || !provider?.modelName) return false;
+        // First-party providers supply their own base URL.
+        return !requiresEndpoint(provider.type) || !!provider.endpointUrl;
       },
     }),
     {
       name: 'ai-assistant-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      // v1 introduced `type`. Everything saved before then was reached through
+      // an OpenAI-compatible endpoint, so that's what those configs are.
+      version: 1,
+      migrate: (persisted: any) => {
+        const provider = persisted?.provider;
+        if (provider && !provider.type) {
+          provider.type = 'openai-compatible';
+          provider.name = provider.name || 'OpenAI-compatible';
+        }
+        return persisted;
+      },
     }
   )
 );

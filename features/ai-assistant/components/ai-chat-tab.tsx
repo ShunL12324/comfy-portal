@@ -3,18 +3,17 @@ import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { AgentChatMessage, ChatMessage, NodeChange } from '@/features/ai-assistant/types';
+import { createLanguageModel } from '@/features/ai-assistant/model';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { useChatSessionStore } from '@/features/ai-assistant/stores/chat-session-store';
-import { Agent } from '@/features/ai-assistant/agent';
-import { ToolRegistry } from '@/features/ai-assistant/tools/registry';
 import {
   createWorkflowTools,
-  serializeWorkflowForPrompt,
+  serializeWorkflowIndex,
 } from '@/features/ai-assistant/tools/workflow-tools';
 import { WorkflowHistory } from '@/features/ai-assistant/tools/workflow-history';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { AIService } from '@/services/ai-service';
+import { useChat } from '@ai-sdk/react';
+import { APICallError, DirectChatTransport, ToolLoopAgent, isStepCount, type UIMessage } from 'ai';
 import { AlertTriangle, Bot, Settings } from 'lucide-react-native';
 import React, {
   forwardRef,
@@ -23,7 +22,6 @@ import React, {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -35,29 +33,42 @@ const BASE_SYSTEM_PROMPT = `You are an AI assistant integrated into a ComfyUI wo
 You help users adjust their image generation workflow parameters through natural conversation.
 
 ## Available Tools
-- **update_node_input**: Update a single node parameter.
+- **read_workflow**: Inspect nodes. Call with a node_id to get its full input values and its \`rev\`.
+- **update_node_input**: Update a single node parameter. Requires that node's \`rev\`.
 - **batch_update_nodes**: Update multiple parameters at once (preferred for multiple changes).
 - **run_workflow**: Trigger image generation (equivalent to pressing the Generate button).
 - **undo**: Revert the last change(s). Can be called multiple times.
 
+## Editing Rules
+- You MUST call read_workflow on a node before editing it — edits require the \`rev\` it returns.
+- A successful edit returns a new \`rev\`; use it for further edits to that same node.
+- If an edit is rejected because the rev is stale, the error includes the node's current state.
+  Re-apply your change on top of that state — never re-send the old value.
+- When modifying text (e.g. a prompt), preserve the existing content unless the user asked
+  otherwise. Send the complete new value, not a fragment.
+
 ## Guidelines
-- The current workflow state is provided below. Use node IDs and input keys exactly as shown.
-- Each parameter has a type annotation (int, float, string, boolean, toggle). Provide values matching the type.
+- The node index below lists every node and its editable input names and types.
+- Provide values matching each parameter's type (int, float, string, boolean, toggle).
 - For prompt text (CLIPTextEncode nodes), write high-quality Stable Diffusion / Flux prompts.
 - For numeric parameters (steps, cfg, denoise, etc.), use your knowledge of best practices.
 - Use batch_update_nodes when changing multiple parameters to keep undo atomic.
 - Be concise. After making changes, briefly summarize what you did.
 - If the user's request is ambiguous, ask for clarification.
-- Respond in the same language the user uses.
+- Respond in the same language the user uses.`;
 
-## Current Workflow State
-\`\`\`
-{WORKFLOW_CONTEXT}
-\`\`\``;
+/** Stable fallback so the selector doesn't allocate on every render. */
+const EMPTY_MESSAGES: UIMessage[] = [];
 
-// Stable empty arrays to avoid creating new references on every render
-const EMPTY_MESSAGES: AgentChatMessage[] = [];
-const EMPTY_HISTORY: ChatMessage[] = [];
+/**
+ * Give up on a turn that stops producing anything.
+ *
+ * `DirectChatTransport` forwards only `messages` and `abortSignal` to the
+ * agent, so the SDK's per-call `timeout` isn't reachable through this path.
+ * An idle watchdog is a better fit anyway: it tolerates a legitimately long
+ * answer and only fires when nothing has arrived for a while.
+ */
+const IDLE_TIMEOUT_MS = 90_000;
 
 export interface AIChatTabRef {
   clearChat: () => void;
@@ -70,44 +81,32 @@ interface AIChatTabProps {
   onRunWorkflow: () => void;
 }
 
-/** Returns true if the error looks like an AI provider configuration issue */
+/**
+ * True when the failure is about credentials or the model id — i.e. something
+ * the user fixes in settings, as opposed to a transient network or server
+ * problem. Uses the SDK's typed errors; the old string matching classified
+ * rate limits and 5xx as "misconfigured".
+ */
 function isConfigError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const msg = error.message.toLowerCase();
-  return (
-    msg.includes('api request failed') ||
-    msg.includes('network request failed') ||
-    msg.includes('invalid api') ||
-    msg.includes('401') ||
-    msg.includes('403') ||
-    msg.includes('invalid_api_key') ||
-    msg.includes('model_not_found') ||
-    msg.includes('connection') ||
-    msg.includes('fetch')
-  );
+  if (APICallError.isInstance(error)) {
+    const status = error.statusCode;
+    return status === 401 || status === 403 || status === 404;
+  }
+  return false;
 }
 
 export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
   ({ workflowId, serverId, onRunWorkflow }, ref) => {
-    // Persisted chat state — split selectors with stable empty array fallbacks
-    const messages = useChatSessionStore(
+    const persistedMessages = useChatSessionStore(
       useCallback(
-        (state): AgentChatMessage[] =>
+        (state): UIMessage[] =>
           state.sessions[`${serverId}:${workflowId}`]?.messages ?? EMPTY_MESSAGES,
         [serverId, workflowId],
       ),
     );
-    const chatHistory = useChatSessionStore(
-      useCallback(
-        (state): ChatMessage[] =>
-          state.sessions[`${serverId}:${workflowId}`]?.chatHistory ?? EMPTY_HISTORY,
-        [serverId, workflowId],
-      ),
-    );
-    const addMessage = useChatSessionStore((state) => state.addMessage);
+    const persistMessages = useChatSessionStore((state) => state.setMessages);
     const clearSession = useChatSessionStore((state) => state.clearSession);
 
-    const [isLoading, setIsLoading] = useState(false);
     const { provider, isConfigured } = useAIAssistantStore();
     const configured = isConfigured();
     const scrollViewRef = useRef<ScrollView>(null);
@@ -115,142 +114,109 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     const restoreWorkflowData = useWorkflowStore((state) => state.restoreWorkflowData);
     const router = useRouter();
 
-    // Persistent history instance (survives re-renders, cleared on chat clear)
+    // Undo stack lives across renders; cleared with the chat.
     const historyRef = useRef(new WorkflowHistory());
 
-    // Build the agent with tools
+    // `onRunWorkflow` changes identity on every workflow edit, so it's read
+    // through a ref — otherwise the agent (and the whole chat) would be rebuilt
+    // on every keystroke in any node input.
+    const runWorkflowRef = useRef(onRunWorkflow);
+    runWorkflowRef.current = onRunWorkflow;
+
     const agent = useMemo(() => {
       if (!provider) return null;
 
-      const aiService = new AIService({
-        endpointUrl: provider.endpointUrl,
-        apiKey: provider.apiKey,
-        modelName: provider.modelName,
-      });
-
-      const registry = new ToolRegistry();
-      const workflowTools = createWorkflowTools({
-        getWorkflowData: () => {
-          const wf = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
-          return wf?.data || {};
-        },
-        updateNodeInput: (nodeId, inputKey, value) => {
-          updateNodeInput(workflowId, nodeId, inputKey, value);
-        },
-        restoreWorkflowData: (data) => {
-          restoreWorkflowData(workflowId, data);
-        },
-        runWorkflow: () => {
-          onRunWorkflow();
-        },
+      const tools = createWorkflowTools({
+        getWorkflowData: () =>
+          useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data || {},
+        updateNodeInput: (nodeId, inputKey, value) =>
+          updateNodeInput(workflowId, nodeId, inputKey, value),
+        restoreWorkflowData: (data) => restoreWorkflowData(workflowId, data),
+        runWorkflow: () => runWorkflowRef.current(),
         history: historyRef.current,
       });
-      workflowTools.forEach((tool) => registry.register(tool));
 
-      // System prompt builder — called fresh each agent.run() to include latest workflow state
-      const buildSystemPrompt = () => {
-        const wf = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
-        const workflowContext = wf?.data
-          ? serializeWorkflowForPrompt(wf.data)
-          : '(empty workflow)';
-        return BASE_SYSTEM_PROMPT.replace('{WORKFLOW_CONTEXT}', workflowContext);
-      };
+      return new ToolLoopAgent({
+        model: createLanguageModel(provider),
+        instructions: BASE_SYSTEM_PROMPT,
+        tools,
+        temperature: provider.temperature ?? 0.7,
+        stopWhen: isStepCount(12),
+        // `instructions` can only be a string, so the live node index is
+        // injected per call — a snapshot captured at construction would go
+        // stale as soon as the user or the agent changed anything.
+        prepareCall: ({ options, ...settings }) => {
+          const data =
+            useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data;
+          const index = data ? serializeWorkflowIndex(data) : '(empty workflow)';
+          const custom = useAIAssistantStore.getState().customPrompt?.trim();
+          return {
+            ...settings,
+            instructions: [
+              BASE_SYSTEM_PROMPT,
+              `\n## Workflow Nodes\n${index}`,
+              custom ? `\n## User Instructions\n${custom}` : '',
+            ]
+              .filter(Boolean)
+              .join('\n'),
+          };
+        },
+      });
+    }, [provider, workflowId, updateNodeInput, restoreWorkflowData]);
 
-      return new Agent(aiService, registry, buildSystemPrompt);
-    }, [provider, workflowId, updateNodeInput, restoreWorkflowData, onRunWorkflow]);
+    const transport = useMemo(
+      () => (agent ? new DirectChatTransport({ agent }) : undefined),
+      [agent],
+    );
+
+    const { messages, status, error, sendMessage, stop, setMessages } = useChat({
+      id: `${serverId}:${workflowId}`,
+      transport,
+      // The store persists plain JSON and is deliberately agnostic of the
+      // agent's tool types, so it's re-typed at this boundary.
+      messages: persistedMessages as never,
+      onFinish: ({ messages: finalMessages }) => {
+        persistMessages(serverId, workflowId, finalMessages as UIMessage[]);
+      },
+    });
+
+    const isBusy = status === 'submitted' || status === 'streaming';
+
+    // Watchdog: abort a turn that has gone quiet. Resets on every new chunk,
+    // so a long but healthy response is never cut off.
+    useEffect(() => {
+      if (!isBusy) return;
+      const timer = setTimeout(stop, IDLE_TIMEOUT_MS);
+      return () => clearTimeout(timer);
+    }, [isBusy, messages, stop]);
 
     const handleClearChat = useCallback(() => {
       clearSession(serverId, workflowId);
+      setMessages([]);
       historyRef.current.clear();
-    }, [clearSession, serverId, workflowId]);
+    }, [clearSession, serverId, workflowId, setMessages]);
 
     useImperativeHandle(ref, () => ({
       clearChat: handleClearChat,
       hasMessages: () => messages.length > 0,
     }));
 
-    // Auto-scroll to bottom when messages change
+    // Auto-scroll as content streams in
     useEffect(() => {
       if (messages.length > 0) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           scrollViewRef.current?.scrollToEnd?.({ animated: true });
         }, 100);
+        return () => clearTimeout(timer);
       }
-    }, [messages, isLoading]);
+    }, [messages, status]);
 
     const handleSend = useCallback(
-      async (text: string) => {
-        if (!agent) return;
-
-        const userMessage: AgentChatMessage = {
-          id: Date.now().toString(),
-          role: 'user',
-          content: text,
-          timestamp: Date.now(),
-        };
-        addMessage(serverId, workflowId, userMessage);
-        setIsLoading(true);
-
-        try {
-          const result = await agent.run(
-            chatHistory,
-            text,
-            provider?.temperature ?? 0.7,
-          );
-
-          // Build NodeChange objects from executed tool calls
-          const changes: NodeChange[] = [];
-          for (const call of result.executedToolCalls) {
-            if (call.name === 'update_node_input') {
-              changes.push({
-                nodeId: call.args.node_id,
-                nodeTitle: '',
-                inputKey: call.args.input_key,
-                oldValue: undefined,
-                newValue: call.args.value,
-              });
-            } else if (call.name === 'batch_update_nodes' && Array.isArray(call.args.updates)) {
-              for (const update of call.args.updates) {
-                changes.push({
-                  nodeId: update.node_id,
-                  nodeTitle: '',
-                  inputKey: update.input_key,
-                  oldValue: undefined,
-                  newValue: update.value,
-                });
-              }
-            }
-          }
-
-          const assistantMessage: AgentChatMessage = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: result.content,
-            changes: changes.length > 0 ? changes : undefined,
-            changesApplied: changes.length > 0 ? true : undefined,
-            timestamp: Date.now(),
-          };
-          addMessage(serverId, workflowId, assistantMessage, [
-            { role: 'user', content: text },
-            { role: 'assistant', content: result.content },
-          ]);
-        } catch (error) {
-          const configError = isConfigError(error);
-          const errorMessage: AgentChatMessage = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: configError
-              ? `Request failed — your AI provider may be misconfigured.\n\n${error instanceof Error ? error.message : 'Unknown error'}`
-              : `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
-            isConfigError: configError || undefined,
-            timestamp: Date.now(),
-          };
-          addMessage(serverId, workflowId, errorMessage);
-        } finally {
-          setIsLoading(false);
-        }
+      (text: string) => {
+        if (!transport || isBusy) return;
+        void sendMessage({ text });
       },
-      [agent, chatHistory, provider?.temperature, addMessage, serverId, workflowId],
+      [transport, isBusy, sendMessage],
     );
 
     if (!configured) {
@@ -271,22 +237,20 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
           {messages.length === 0 ? (
             <EmptyStateView />
           ) : (
-            messages.map((msg) => (
-              <ChatMessageBubble
-                key={msg.id}
-                message={msg}
-                renderFooter={
-                  msg.isConfigError ? (
-                    <ConfigErrorAction onPress={() => router.push('/settings/ai-assistant')} />
-                  ) : undefined
-                }
-              />
-            ))
+            messages.map((message) => <ChatMessageBubble key={message.id} message={message} />)
           )}
-          {isLoading && <TypingIndicator />}
+          {status === 'submitted' && <TypingIndicator />}
+          {error && (
+            <ErrorNotice
+              error={error}
+              onOpenSettings={
+                isConfigError(error) ? () => router.push('/settings/ai-assistant') : undefined
+              }
+            />
+          )}
         </AdaptiveScrollView>
 
-        <ChatInput onSend={handleSend} disabled={isLoading} />
+        <ChatInput onSend={handleSend} isBusy={isBusy} onStop={stop} />
       </View>
     );
   },
@@ -338,15 +302,26 @@ function NotConfiguredView() {
   );
 }
 
-function ConfigErrorAction({ onPress }: { onPress: () => void }) {
+function ErrorNotice({
+  error,
+  onOpenSettings,
+}: {
+  error: Error;
+  onOpenSettings?: () => void;
+}) {
   return (
-    <Pressable
-      onPress={onPress}
-      className="mt-2 flex-row items-center gap-1.5 rounded-lg bg-warning-100 px-3 py-2 active:opacity-80"
-    >
-      <Icon as={Settings} size="xs" className="text-warning-700" />
-      <Text className="text-xs font-semibold text-warning-700">Check AI Configuration</Text>
-    </Pressable>
+    <View className="mb-3 rounded-2xl bg-error-50 px-4 py-3">
+      <Text className="text-sm text-error-700">{error.message}</Text>
+      {onOpenSettings && (
+        <Pressable
+          onPress={onOpenSettings}
+          className="mt-2 flex-row items-center gap-1.5 self-start rounded-lg bg-warning-100 px-3 py-2 active:opacity-80"
+        >
+          <Icon as={Settings} size="xs" className="text-warning-700" />
+          <Text className="text-xs font-semibold text-warning-700">Check AI Configuration</Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 

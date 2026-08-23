@@ -1,7 +1,11 @@
+import React from 'react';
+
 export interface SelectorOption {
   value: string;
   label: string;
   description?: string;
+  /** Optional leading visual, e.g. a provider logo. */
+  icon?: React.ReactNode;
   image?: string;
   serverName?: string;
 }

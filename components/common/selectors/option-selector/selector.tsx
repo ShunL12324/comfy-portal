@@ -1,3 +1,4 @@
+import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
@@ -36,7 +37,10 @@ export function OptionSelector<T extends string>({
         className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
         onPress={handlePress}
       >
-        <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>
+        <HStack space="sm" className="flex-1 items-center">
+          {selectedOption?.icon}
+          <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>
+        </HStack>
         <Icon as={ChevronDown} size="sm" className="text-typography-950" />
       </Pressable>
 

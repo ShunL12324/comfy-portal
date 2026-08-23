@@ -2,25 +2,32 @@ import { Icon } from '@/components/ui/icon';
 import { AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
 import { Colors } from '@/constants/Colors';
 import { useResolvedTheme } from '@/store/theme';
-import { Send } from 'lucide-react-native';
+import { Send, Square } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
-  disabled?: boolean;
+  /** A turn is in flight: the send button becomes a stop button. */
+  isBusy?: boolean;
+  onStop?: () => void;
   placeholder?: string;
 }
 
-export function ChatInput({ onSend, disabled = false, placeholder = 'Ask AI to adjust parameters...' }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  isBusy = false,
+  onStop,
+  placeholder = 'Ask AI to adjust parameters...',
+}: ChatInputProps) {
   const [text, setText] = useState('');
   const theme = useResolvedTheme();
   const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 8);
 
-  const canSend = text.trim().length > 0 && !disabled;
+  const canSend = text.trim().length > 0 && !isBusy;
 
   const handleSend = useCallback(() => {
     if (!canSend) return;
@@ -51,22 +58,31 @@ export function ChatInput({ onSend, disabled = false, placeholder = 'Ask AI to a
           onSubmitEditing={handleSend}
           multiline
           maxLength={2000}
-          editable={!disabled}
+          editable={!isBusy}
           blurOnSubmit={false}
         />
-        <Pressable
-          onPress={handleSend}
-          disabled={!canSend}
-          className={`w-[34px] h-[34px] rounded-full items-center justify-center mb-px ${
-            canSend ? 'bg-typography-900' : 'bg-background-200'
-          }`}
-        >
-          <Icon
-            as={Send}
-            size="xs"
-            className={canSend ? 'text-typography-0' : 'text-typography-400'}
-          />
-        </Pressable>
+        {isBusy && onStop ? (
+          <Pressable
+            onPress={onStop}
+            className="w-[34px] h-[34px] rounded-full items-center justify-center mb-px bg-typography-900"
+          >
+            <Icon as={Square} size="xs" className="text-typography-0" />
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleSend}
+            disabled={!canSend}
+            className={`w-[34px] h-[34px] rounded-full items-center justify-center mb-px ${
+              canSend ? 'bg-typography-900' : 'bg-background-200'
+            }`}
+          >
+            <Icon
+              as={Send}
+              size="xs"
+              className={canSend ? 'text-typography-0' : 'text-typography-400'}
+            />
+          </Pressable>
+        )}
       </View>
     </View>
   );

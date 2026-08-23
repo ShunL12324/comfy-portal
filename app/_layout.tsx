@@ -1,4 +1,5 @@
 import '@/shims/crypto-random-uuid';
+import '@/shims/ai-sdk-streams';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Colors } from '@/constants/Colors';
 import '@/global.css';

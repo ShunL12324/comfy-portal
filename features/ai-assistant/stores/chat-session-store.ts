@@ -1,12 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { UIMessage } from 'ai';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { AgentChatMessage, ChatMessage } from '../types';
-
 export interface ChatSessionData {
-  messages: AgentChatMessage[];
-  chatHistory: ChatMessage[];
+  /**
+   * AI SDK UI messages, the single source of truth for a transcript.
+   *
+   * Previously this was split into a UI list and a parallel LLM history list,
+   * which drifted apart whenever a turn errored (the user message landed in one
+   * but not the other).
+   */
+  messages: UIMessage[];
   lastUpdated: number;
 }
 
@@ -18,13 +23,8 @@ const buildKey = (serverId: string, workflowId: string): SessionKey =>
 interface ChatSessionState {
   sessions: Record<SessionKey, ChatSessionData>;
 
-  /** Append a UI message and optionally the corresponding LLM history entries */
-  addMessage: (
-    serverId: string,
-    workflowId: string,
-    message: AgentChatMessage,
-    historyItems?: ChatMessage[],
-  ) => void;
+  /** Replace a session's transcript (called as the agent streams). */
+  setMessages: (serverId: string, workflowId: string, messages: UIMessage[]) => void;
 
   /** Remove a single session */
   clearSession: (serverId: string, workflowId: string) => void;
@@ -38,27 +38,14 @@ export const useChatSessionStore = create<ChatSessionState>()(
     (set) => ({
       sessions: {},
 
-      addMessage: (serverId, workflowId, message, historyItems) => {
+      setMessages: (serverId, workflowId, messages) => {
         const key = buildKey(serverId, workflowId);
-        set((state) => {
-          const current = state.sessions[key] || {
-            messages: [],
-            chatHistory: [],
-            lastUpdated: Date.now(),
-          };
-          return {
-            sessions: {
-              ...state.sessions,
-              [key]: {
-                messages: [...current.messages, message],
-                chatHistory: historyItems
-                  ? [...current.chatHistory, ...historyItems]
-                  : current.chatHistory,
-                lastUpdated: Date.now(),
-              },
-            },
-          };
-        });
+        set((state) => ({
+          sessions: {
+            ...state.sessions,
+            [key]: { messages, lastUpdated: Date.now() },
+          },
+        }));
       },
 
       clearSession: (serverId, workflowId) => {
@@ -85,6 +72,10 @@ export const useChatSessionStore = create<ChatSessionState>()(
     {
       name: 'chat-sessions-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      // v1 switched transcripts to UIMessage. The old shape can't be converted
+      // faithfully (tool activity was never persisted), so drop it.
+      version: 1,
+      migrate: () => ({ sessions: {} }) as Partial<ChatSessionState>,
     },
   ),
 );

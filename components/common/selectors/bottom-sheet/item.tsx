@@ -21,6 +21,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
         className={`mx-4 mb-2 overflow-hidden rounded-xl ${isSelected ? 'border-0 bg-background-200' : 'bg-background-50'}`}
       >
         <HStack space="sm" className="items-center justify-between p-3">
+          {item.icon}
           <VStack space="xs" className="flex-1">
             <Text
               className={`text-base ${isSelected ? 'font-medium text-typography-950' : 'text-typography-500'}`}
