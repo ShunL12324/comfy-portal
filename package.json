@@ -11,7 +11,9 @@
     "pod": "cd ios && pod install && cd ..",
     "lint": "expo lint",
     "test": "jest --watchAll",
-    "reset-project": "node ./scripts/reset-project.js"
+    "reset-project": "node ./scripts/reset-project.js",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "jest": {
     "preset": "jest-expo"
