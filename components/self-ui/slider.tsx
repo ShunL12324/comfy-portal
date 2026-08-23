@@ -111,9 +111,12 @@ export function NumberSlider({
       if (onChange) {
         onChange(newValue);
       }
+      if (onChangeEnd) {
+        onChangeEnd(newValue);
+      }
       Haptics.selectionAsync();
     },
-    [localValue, minValue, maxValue, precision, onChange],
+    [localValue, minValue, maxValue, precision, onChange, onChangeEnd],
   );
 
   const handleChange = useCallback(
