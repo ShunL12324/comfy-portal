@@ -1,11 +1,10 @@
 import { Box } from '@/components/ui/box';
 import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Check, PlayCircle } from 'lucide-react-native';
 import React, { useCallback } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 interface HistoryItemProps {
   url: string;
@@ -20,22 +19,21 @@ function SelectionIndicator({ isSelected }: { isSelected: boolean }) {
   return (
     <View
       className={`absolute right-1.5 bottom-1.5 h-5 w-5 rounded-full items-center justify-center ${
-        isSelected ? 'bg-success-400' : 'bg-black/30 border border-white/60'
+        isSelected ? 'bg-typography-950' : 'bg-black/20 border border-white/40'
       }`}
     >
-      {isSelected && <Icon as={Check} size="2xs" className="text-white" />}
+      {isSelected && <Icon as={Check} size="2xs" className="text-typography-0" />}
     </View>
   );
 }
 
-/** Lightweight image-only thumbnail — no video player overhead. */
-function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
+function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
   const handlePress = useCallback(() => onPress(url), [onPress, url]);
   const handleLongPress = useCallback(() => onLongPress(url), [onLongPress, url]);
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden rounded-lg bg-background-100">
+      <Box className="aspect-square overflow-hidden bg-background-100">
         <Image
           source={url}
           style={{ width: '100%', height: '100%' }}
@@ -45,15 +43,14 @@ function ImageItem({ url, index, isSelectionMode, isSelected, onPress, onLongPre
         />
       </Box>
       {isSelected && (
-        <View className="absolute inset-0 rounded-lg border-2 border-success-400" />
+        <View className="absolute inset-0 border-[3px] border-typography-950" />
       )}
       {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
     </Pressable>
   );
 }
 
-/** Video thumbnail with native player — only mounted for actual video files. */
-function VideoItem({ url, index, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
+function VideoItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
   const player = useVideoPlayer(url, p => {
     p.loop = false;
     p.pause();
@@ -65,7 +62,7 @@ function VideoItem({ url, index, isSelectionMode, isSelected, onPress, onLongPre
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden rounded-lg bg-background-100">
+      <Box className="aspect-square overflow-hidden bg-background-100">
         <VideoView
           player={player}
           style={{ width: '100%', height: '100%' }}
@@ -77,7 +74,7 @@ function VideoItem({ url, index, isSelectionMode, isSelected, onPress, onLongPre
         </View>
       </Box>
       {isSelected && (
-        <View className="absolute inset-0 rounded-lg border-2 border-success-400" />
+        <View className="absolute inset-0 border-[3px] border-typography-950" />
       )}
       {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
     </Pressable>
