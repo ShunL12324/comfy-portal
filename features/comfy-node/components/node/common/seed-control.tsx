@@ -11,9 +11,14 @@ import { useEffect, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import SubItem from './sub-item';
 
-/** ComfyUI seeds are unsigned 32-bit integers. */
-const MAX_SEED = 0xffffffff;
+/**
+ * ComfyUI accepts seeds up to 2^64-1, which JS numbers can't represent
+ * exactly, so cap at the largest integer we can round-trip losslessly. Going
+ * lower would silently truncate seeds from workflows authored elsewhere.
+ */
+const MAX_SEED = Number.MAX_SAFE_INTEGER;
 
+/** 32 bits of entropy is ample for picking a seed; only the cap above matters. */
 export const generateRandomSeed = () => {
   const buffer = new Uint32Array(1);
   Crypto.getRandomValues(buffer);
