@@ -12,6 +12,7 @@ import { showToast } from '@/utils/toast';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
 import { Camera, Folder, Image as ImageIcon, Share, X } from 'lucide-react-native';
@@ -123,17 +124,29 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
     };
   });
 
+  const normalizeAsset = async (asset: UploadAssetCandidate): Promise<UploadAssetCandidate> => {
+    // Always re-encode through ImageManipulator: iOS PHPickerViewController can return
+    // HEIC bytes with image/jpeg mimeType and .jpeg extension, so mimeType/filename
+    // detection is unreliable.
+    const context = ImageManipulator.manipulate(asset.uri);
+    const imageRef = await context.renderAsync();
+    const result = await imageRef.saveAsync({ format: SaveFormat.JPEG, compress: 0.92 });
+    const baseName = (asset.fileName ?? 'image').replace(/\.\w+$/, '');
+    return { uri: result.uri, fileName: `${baseName}.jpg`, mimeType: 'image/jpeg' };
+  };
+
   const uploadPickedAsset = async (asset: UploadAssetCandidate) => {
     setIsUploading(true);
     setUploadProgress(0);
     progressWidth.value = 0;
 
     try {
+      const normalized = await normalizeAsset(asset);
       const { promise, cancel } = uploadImage(
-        asset.uri,
-        asset.fileName ?? 'image.jpg',
+        normalized.uri,
+        normalized.fileName ?? 'image.jpg',
         serverId,
-        asset.mimeType ?? undefined,
+        normalized.mimeType ?? undefined,
         (progress) => {
           setUploadProgress(progress);
         }
