@@ -1,10 +1,30 @@
 import { Model, Server } from '@/features/server/types';
-import { checkMultipleServers, checkServerStatus } from '@/features/server/utils/server-sync';
+import {
+  SyncModelsOptions,
+  checkMultipleServers,
+  checkServerStatus,
+  syncServerModels,
+} from '@/features/server/utils/server-sync';
 import { cleanupServerData } from '@/services/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+
+/**
+ * How long a model catalogue is considered fresh. Short, because the thing that
+ * invalidates it is the user downloading a model onto their own server and then
+ * immediately opening a workflow that uses it.
+ */
+export const MODEL_CACHE_MAX_AGE = 5 * 60 * 1000;
+
+/**
+ * In-flight model syncs, keyed by server + scope. Several pickers mount at once
+ * on a workflow page and would otherwise each kick off their own scan.
+ * Module-level rather than store state: it's coordination, not data, and it
+ * must never be persisted.
+ */
+const inFlightModelSyncs = new Map<string, Promise<void>>();
 
 interface ServersState {
   servers: Server[];
@@ -22,15 +42,12 @@ interface ServersState {
       Omit<Server, 'id' | 'status' | 'latency' | 'models' | 'lastModelSync'>
     >,
   ) => void;
-  updateServerStatus: (
-    id: string,
-    status: Server['status'],
-    latency?: number,
-    models?: Model[],
-    CPEEnable?: boolean,
-  ) => void;
   refreshServers: () => Promise<void>;
   refreshServer: (id: string) => Promise<void>;
+  /** Rescan a server's models now. Concurrent calls with the same scope share one scan. */
+  syncModels: (id: string, options?: SyncModelsOptions) => Promise<void>;
+  /** Rescan only if the cached catalogue is older than `maxAge`. */
+  ensureModelsFresh: (id: string, maxAge?: number) => Promise<void>;
 }
 
 export const useServersStore = create<ServersState>()(
@@ -69,24 +86,6 @@ export const useServersStore = create<ServersState>()(
           ),
         })),
 
-      updateServerStatus: (id, status, latency, models, CPEEnable) =>
-        set((state) => ({
-          servers: state.servers.map((s) =>
-            s.id === id
-              ? {
-                ...s,
-                status,
-                latency,
-                CPEEnable,
-                ...(models && {
-                  models,
-                  lastModelSync: Date.now(),
-                }),
-                ...(status === 'offline' && { CPEEnable: undefined }),
-              }
-              : s,
-          ),
-        })),
 
       refreshServers: async () => {
         set({ loading: true });
@@ -109,16 +108,20 @@ export const useServersStore = create<ServersState>()(
                   status: result.status,
                   latency: result.latency,
                   CPEEnable: result.CPEEnable,
-                  ...(result.models && {
-                    models: result.models,
-                    lastModelSync: Date.now(),
-                  }),
                   ...(result.status === 'offline' && { CPEEnable: undefined }),
                 };
               }
               return server;
             }),
           }));
+
+          // An explicit refresh is the user asking us to re-check everything,
+          // preview images included.
+          await Promise.all(
+            results
+              .filter((result) => result.status === 'online')
+              .map((result) => get().syncModels(result.id, { refreshPreviews: true })),
+          );
         } catch (error) {
           // Silently handle error
         } finally {
@@ -146,18 +149,53 @@ export const useServersStore = create<ServersState>()(
                     status: result.status,
                     latency: result.latency,
                     CPEEnable: result.CPEEnable,
-                    ...(result.models && {
-                      models: result.models,
-                      lastModelSync: Date.now(),
-                    }),
                     ...(result.status === 'offline' && { CPEEnable: undefined }),
                   }
                 : s,
             ),
           }));
+
+          if (result.status === 'online') {
+            await get().syncModels(id, { refreshPreviews: true });
+          }
         } catch (error) {
           // Silently handle error
         }
+      },
+
+      syncModels: async (id, options = {}) => {
+        const scope = (options.folders ?? []).slice().sort().join(',');
+        const key = `${id}|${scope}|${options.refreshPreviews ? 'previews' : ''}`;
+        const existing = inFlightModelSyncs.get(key);
+        if (existing) return existing;
+
+        const run = (async () => {
+          const server = get().servers.find((s) => s.id === id);
+          if (!server) return;
+
+          const models = await syncServerModels(server, options);
+          // `null` means the server never answered. Keeping the stale catalogue
+          // beats blanking every model picker over one dropped request.
+          if (!models) return;
+
+          set((state) => ({
+            servers: state.servers.map((s) =>
+              s.id === id ? { ...s, models, lastModelSync: Date.now() } : s,
+            ),
+          }));
+        })().finally(() => {
+          inFlightModelSyncs.delete(key);
+        });
+
+        inFlightModelSyncs.set(key, run);
+        return run;
+      },
+
+      ensureModelsFresh: async (id, maxAge = MODEL_CACHE_MAX_AGE) => {
+        const server = get().servers.find((s) => s.id === id);
+        if (!server) return;
+        if (server.lastModelSync && Date.now() - server.lastModelSync < maxAge) return;
+        await get().syncModels(id);
       },
     }),
     {

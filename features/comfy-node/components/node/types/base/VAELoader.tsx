@@ -19,6 +19,8 @@ export default function VAELoader({ node, serverId, workflowId }: VAELoaderProps
           updateNodeInput(workflowId, node.id, 'vae_name', model);
         }}
         type="vae"
+        classType={node.class_type}
+        inputName="vae_name"
         serverId={serverId}
       />
     </BaseNode>

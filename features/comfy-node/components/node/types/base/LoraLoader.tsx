@@ -19,6 +19,8 @@ export default function LoraLoader({ node, serverId, workflowId }: LoraLoaderPro
         onChange={(value) => updateNodeInput(workflowId, node.id, 'lora_name', value)}
         serverId={serverId}
         type="loras"
+        classType={node.class_type}
+        inputName="lora_name"
         onLoraClipStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_clip', value)}
         onLoraModelStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_model', value)}
         initialClipStrength={node.inputs.strength_clip}

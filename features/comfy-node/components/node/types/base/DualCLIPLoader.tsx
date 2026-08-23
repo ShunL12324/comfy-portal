@@ -20,6 +20,8 @@ export default function DualCLIPLoader({ node, serverId, workflowId }: DualCLIPL
             updateNodeInput(workflowId, node.id, 'clip_name1', model);
           }}
           type="text_encoders"
+          classType={node.class_type}
+          inputName="clip_name1"
           serverId={serverId}
         />
         <ModelSelector
@@ -28,6 +30,8 @@ export default function DualCLIPLoader({ node, serverId, workflowId }: DualCLIPL
             updateNodeInput(workflowId, node.id, 'clip_name2', model);
           }}
           type="text_encoders"
+          classType={node.class_type}
+          inputName="clip_name2"
           serverId={serverId}
         />
       </VStack>

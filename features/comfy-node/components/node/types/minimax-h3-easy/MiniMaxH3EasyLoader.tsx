@@ -25,7 +25,9 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
         <ModelSelector
           value={node.inputs.fl2va_model}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'fl2va_model', model)}
-          type={['diffusion_models', 'unet']}
+          type="diffusion_models"
+          classType={node.class_type}
+          inputName="fl2va_model"
           serverId={serverId}
         />
       </SubItem>
@@ -34,7 +36,9 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
         <ModelSelector
           value={node.inputs.ref2va_model}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'ref2va_model', model)}
-          type={['diffusion_models', 'unet']}
+          type="diffusion_models"
+          classType={node.class_type}
+          inputName="ref2va_model"
           serverId={serverId}
         />
       </SubItem>
@@ -43,7 +47,9 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
         <ModelSelector
           value={node.inputs.text_encoder}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'text_encoder', model)}
-          type={['text_encoders', 'clip']}
+          type="text_encoders"
+          classType={node.class_type}
+          inputName="text_encoder"
           serverId={serverId}
         />
       </SubItem>
@@ -53,6 +59,8 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
           value={node.inputs.video_vae}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'video_vae', model)}
           type="vae"
+          classType={node.class_type}
+          inputName="video_vae"
           serverId={serverId}
         />
       </SubItem>
@@ -62,6 +70,8 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
           value={node.inputs.audio_vae}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'audio_vae', model)}
           type="vae"
+          classType={node.class_type}
+          inputName="audio_vae"
           serverId={serverId}
         />
       </SubItem>

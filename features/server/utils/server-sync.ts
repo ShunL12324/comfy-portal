@@ -63,20 +63,51 @@ async function savePreviewImage(
   }
 }
 
+/** Model folders surfaced in the pickers. */
+export const TARGET_MODEL_FOLDERS = [
+  'checkpoints',
+  'loras',
+  'vae',
+  'diffusion_models',
+  'text_encoders',
+  'upscale_models',
+  'controlnet',
+  'clip_vision',
+  'clip',
+];
+
+interface FolderScanOptions {
+  isWindowsServer?: boolean;
+  /** This folder's entries from the last successful sync. */
+  known?: Model[];
+  /** Re-check preview images instead of reusing `known`. */
+  refreshPreviews?: boolean;
+}
+
 /**
- * Scans models from a specific folder in a ComfyUI server
+ * Scans one model folder.
+ *
+ * Returns `null` when the listing itself fails, so callers can tell "the server
+ * didn't answer" apart from "this folder is empty" — writing the latter over a
+ * good cache is how an entire catalogue could vanish after one flaky request.
+ *
+ * Preview images are fetched once per model and then reused from `known`. A
+ * server with no previews at all is the common case, and it used to cost one
+ * 404 round trip per model on every single sync.
  */
 export async function scanServerModelsByFolder(
   server: Server,
   folderName: string,
-  isWindowsServer?: boolean,
-): Promise<Model[]> {
+  options: FolderScanOptions = {},
+): Promise<Model[] | null> {
+  const { isWindowsServer, known = [], refreshPreviews = false } = options;
   const models: Model[] = [];
+  const previous = new Map(known.map((model) => [model.name, model]));
 
   try {
     const modelsUrl = await buildServerUrl(server.useSSL, server.host, server.port, `/experiment/models/${folderName}`);
     const modelsResponse = await fetchWithAuth(modelsUrl, server.token);
-    if (!modelsResponse.ok) return [];
+    if (!modelsResponse.ok) return null;
 
     const folderModels = (await modelsResponse.json()) as ModelResponse[];
 
@@ -92,6 +123,12 @@ export async function scanServerModelsByFolder(
         model.name.includes('/') || // Unix-style path
         (isWindowsServer && model.name.includes('\\')) // Windows-style path
       )) {
+        continue;
+      }
+
+      const cached = previous.get(model.name);
+      if (cached && !refreshPreviews) {
+        models.push(cached);
         continue;
       }
 
@@ -123,95 +160,108 @@ export async function scanServerModelsByFolder(
     return models;
   } catch (error) {
     console.error(`Failed to scan folder ${folderName}:`, error);
-    return [];
+    return null;
   }
 }
 
+export interface SyncModelsOptions {
+  /** Limit the sync to these folders. Defaults to all of TARGET_MODEL_FOLDERS. */
+  folders?: string[];
+  /** Re-check preview images for models we already know about. */
+  refreshPreviews?: boolean;
+}
+
 /**
- * Scans and retrieves specific model types from a ComfyUI server
+ * Rebuilds a server's model catalogue.
+ *
+ * Returns `null` when the folder listing can't be reached — the caller must then
+ * leave the cache untouched. Previously this returned an empty array on failure,
+ * and because `[]` is truthy the store happily wrote it over a perfectly good
+ * catalogue, so one dropped request emptied every model picker in the app.
+ *
+ * Folders that fail individually keep their cached entries too: only folders
+ * that scanned cleanly are replaced. Folders outside `options.folders` are
+ * carried over untouched, which is what makes a per-picker refresh safe.
  */
-export async function scanServerModels(
+export async function syncServerModels(
   server: Server,
-): Promise<{ models: Model[]; isCPEEnabled: boolean }> {
-  const targetFolders = ['checkpoints', 'loras', 'vae', 'diffusion_models', 'text_encoders', 'upscale_models', 'controlnet', 'clip_vision', 'clip'];
-  let models: Model[] = [];
-  let isCPEEnabled = false;
+  options: SyncModelsOptions = {},
+): Promise<Model[] | null> {
+  const wanted = options.folders ?? TARGET_MODEL_FOLDERS;
+  const cached = server.models ?? [];
 
   try {
-    // --- Attempt to fetch /system_stats (optional, might fail) ---
     let isWindowsServer = false;
     try {
       const statsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/system_stats');
       const statsResponse = await fetchWithAuth(statsUrl, server.token);
       if (statsResponse.ok) {
-        const systemStats = await statsResponse.json() as SystemStats;
-        console.log(systemStats);
+        const systemStats = (await statsResponse.json()) as SystemStats;
         isWindowsServer = systemStats.system?.os === 'nt';
       }
     } catch (error) {
       void error;
-      // Removed system stats error log
     }
-    // --- End /system_stats attempt ---
 
-    // --- Attempt to fetch /extensions and check for comfy-portal-endpoint ---
-    try {
-      const extensionsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/extensions');
-      const extensionsResponse = await fetchWithAuth(extensionsUrl, server.token);
-      if (extensionsResponse.ok) {
-        const extensionsData = await extensionsResponse.json();
-        if (
-          Array.isArray(extensionsData) &&
-          extensionsData.some((ext: unknown) => typeof ext === 'string' && ext.includes('comfy-portal-endpoint'))
-        ) {
-          isCPEEnabled = true;
-        }
-      }
-    } catch (error) {
-      void error;
-      // Removed extensions error log
-    }
-    // --- End /extensions attempt ---
-
-    // --- Continue with existing logic using /experiment/models ---
     const foldersUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/experiment/models');
     const foldersResponse = await fetchWithAuth(foldersUrl, server.token);
-    if (!foldersResponse.ok) throw new Error('Failed to get model folders');
+    if (!foldersResponse.ok) return null;
 
-    const folders = await foldersResponse.json();
+    const folders = (await foldersResponse.json()) as { name: string }[];
+    const targets = folders.filter((folder) => wanted.includes(folder.name));
 
-    await Promise.all(folders.map(async (folder: { name: string }) => {
-      if (!targetFolders.includes(folder.name)) return;
+    const results = await Promise.all(
+      targets.map(async (folder) => ({
+        folder: folder.name,
+        models: await scanServerModelsByFolder(server, folder.name, {
+          isWindowsServer,
+          known: cached.filter((model) => model.type === folder.name),
+          refreshPreviews: options.refreshPreviews,
+        }),
+      })),
+    );
 
-      const folderModels = await scanServerModelsByFolder(server, folder.name, isWindowsServer);
-      models = [...models, ...folderModels];
-    }));
+    const replaced = new Set(results.filter((result) => result.models).map((result) => result.folder));
 
-    return { models, isCPEEnabled };
+    return [
+      ...cached.filter((model) => !replaced.has(model.type)),
+      ...results.flatMap((result) => result.models ?? []),
+    ];
   } catch (error) {
-    console.error('Failed to scan server models:', error);
-    return { models: [], isCPEEnabled: false };
+    console.error('Failed to sync server models:', error);
+    return null;
+  }
+}
+
+/** Whether the Comfy Portal Endpoint extension is installed on a server. */
+async function detectCPE(server: Server): Promise<boolean> {
+  try {
+    const extensionsUrl = await buildServerUrl(server.useSSL, server.host, server.port, '/extensions');
+    const extensionsResponse = await fetchWithAuth(extensionsUrl, server.token);
+    if (!extensionsResponse.ok) return false;
+    const extensionsData = await extensionsResponse.json();
+    return (
+      Array.isArray(extensionsData) &&
+      extensionsData.some((ext: unknown) => typeof ext === 'string' && ext.includes('comfy-portal-endpoint'))
+    );
+  } catch (error) {
+    void error;
+    return false;
   }
 }
 
 /**
- * Checks the status and capabilities of a single ComfyUI server
- * @param server - The server configuration object
- * @returns Promise containing server status information
- * @property {Server['status']} status - Current server status ('online' or 'offline')
- * @property {number} [latency] - Server response time in milliseconds (only if online)
- * @property {Model[]} [models] - Array of available models (only if online)
- * @property {boolean} [CPEEnable] - Indicates if Comfy Portal Endpoint is enabled
- * @remarks
- * This function performs three main operations:
- * 1. Checks server availability using /system_stats endpoint
- * 2. Measures network latency
- * 3. Scans available models if server is online
- * The request will timeout after 5000ms if no response is received
+ * Liveness probe for a single ComfyUI server: reachable, how fast, and whether
+ * the Comfy Portal Endpoint extension is installed. Times out after 5000ms.
+ *
+ * Deliberately does *not* scan models. It used to, which meant every status
+ * check — including the one behind pull-to-refresh — dragged a full catalogue
+ * scan along with it. Model syncing is now its own operation with its own
+ * freshness policy; see `syncServerModels`.
  */
 export async function checkServerStatus(
   server: Server,
-): Promise<{ status: Server['status']; latency?: number; models?: Model[]; CPEEnable?: boolean }> {
+): Promise<{ status: Server['status']; latency?: number; CPEEnable?: boolean }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -226,9 +276,7 @@ export async function checkServerStatus(
       return { status: 'offline' };
     }
 
-    const { models, isCPEEnabled } = await scanServerModels(server);
-
-    return { status: 'online', latency, models, CPEEnable: isCPEEnabled };
+    return { status: 'online', latency, CPEEnable: await detectCPE(server) };
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {

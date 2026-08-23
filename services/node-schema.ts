@@ -146,8 +146,28 @@ export async function getNodeSchema(
   }
 }
 
+// Bumped on every invalidation so mounted consumers can refetch. Without this a
+// clear only takes effect on the next mount, and the picker's refresh button —
+// pressed precisely because the option list looks wrong — would do nothing
+// visible.
+let cacheVersion = 0;
+const versionListeners = new Set<() => void>();
+
+export function subscribeNodeSchemaCache(listener: () => void) {
+  versionListeners.add(listener);
+  return () => {
+    versionListeners.delete(listener);
+  };
+}
+
+export function getNodeSchemaCacheVersion() {
+  return cacheVersion;
+}
+
 /** Forget cached definitions, e.g. after the user restarts a server. */
 export function clearNodeSchemaCache(serverId?: string) {
   if (serverId) cache.delete(serverId);
   else cache.clear();
+  cacheVersion += 1;
+  versionListeners.forEach((listener) => listener());
 }

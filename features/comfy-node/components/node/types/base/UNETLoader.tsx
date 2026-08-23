@@ -20,6 +20,8 @@ export default function UNETLoader({ node, serverId, workflowId }: UNETLoaderPro
           updateNodeInput(workflowId, node.id, 'unet_name', model);
         }}
         type="diffusion_models"
+        classType={node.class_type}
+        inputName="unet_name"
         serverId={serverId}
       />
       <SubItem title="Weight Dtype">

@@ -41,7 +41,9 @@ export default function CLIPLoader({ node, serverId, workflowId }: CLIPLoaderPro
         onChange={(model) => {
           updateNodeInput(workflowId, node.id, 'clip_name', model);
         }}
-        type={['clip', 'text_encoders']}
+        type="text_encoders"
+        classType={node.class_type}
+        inputName="clip_name"
         serverId={serverId}
       />
       <SubItem title="Type">

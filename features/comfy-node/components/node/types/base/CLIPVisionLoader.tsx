@@ -19,6 +19,8 @@ export default function CLIPVisionLoader({ node, serverId, workflowId }: CLIPVis
           updateNodeInput(workflowId, node.id, 'clip_name', model);
         }}
         type="clip_vision"
+        classType={node.class_type}
+        inputName="clip_name"
         serverId={serverId}
       />
     </BaseNode>

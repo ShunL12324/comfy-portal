@@ -20,6 +20,8 @@ export default function CheckpointLoaderSimple({ node, serverId, workflowId }: C
           updateNodeInput(workflowId, node.id, 'ckpt_name', value);
         }}
         type="checkpoints"
+        classType={node.class_type}
+        inputName="ckpt_name"
         serverId={serverId}
       />
     </BaseNode>

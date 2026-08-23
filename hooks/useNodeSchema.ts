@@ -1,5 +1,10 @@
-import { NodeSchema, getNodeSchema } from '@/services/node-schema';
-import { useEffect, useState } from 'react';
+import {
+  NodeSchema,
+  getNodeSchema,
+  getNodeSchemaCacheVersion,
+  subscribeNodeSchemaCache,
+} from '@/services/node-schema';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 /**
  * Load a node's definition from its server.
@@ -10,6 +15,12 @@ import { useEffect, useState } from 'react';
  */
 export function useNodeSchema(serverId: string | undefined, classType: string | undefined) {
   const [schema, setSchema] = useState<NodeSchema | null>(null);
+  // Refetch when the cache is invalidated, not just when the node changes.
+  const cacheVersion = useSyncExternalStore(
+    subscribeNodeSchemaCache,
+    getNodeSchemaCacheVersion,
+    getNodeSchemaCacheVersion,
+  );
 
   useEffect(() => {
     if (!serverId || !classType) return;
@@ -26,7 +37,7 @@ export function useNodeSchema(serverId: string | undefined, classType: string | 
     return () => {
       cancelled = true;
     };
-  }, [serverId, classType]);
+  }, [serverId, classType, cacheVersion]);
 
   return schema;
 }

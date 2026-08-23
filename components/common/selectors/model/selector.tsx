@@ -6,7 +6,7 @@ import { Pressable } from '@/components/ui/pressable';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { scanServerModelsByFolder } from '@/features/server/utils/server-sync';
+import { clearNodeSchemaCache } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
 import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from 'lucide-react-native';
@@ -14,7 +14,7 @@ import React, { useCallback, useRef } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { SelectorOption } from '../types';
-import { createModelOptions } from './constants';
+import { useModelOptions } from './use-model-options';
 
 interface ModelSelectorProps {
   value: string;
@@ -22,7 +22,15 @@ interface ModelSelectorProps {
   onRefresh?: () => Promise<void>;
   onDelete?: () => void;
   isRefreshing?: boolean;
+  /**
+   * Model folders behind this input. Drives preview images and the refresh
+   * button; the option list itself comes from the server whenever it can.
+   */
   type?: string | string[];
+  /** Node class this picker belongs to, e.g. `CheckpointLoaderSimple`. */
+  classType?: string;
+  /** Input this picker edits, e.g. `ckpt_name`. */
+  inputName?: string;
   serverId: string;
   onLoraClipStrengthChange?: (value: number) => void;
   onLoraModelStrengthChange?: (value: number) => void;
@@ -81,6 +89,8 @@ export function ModelSelector({
   isRefreshing: customIsRefreshing,
   onDelete,
   type = 'checkpoints',
+  classType,
+  inputName,
   serverId,
   onLoraClipStrengthChange,
   onLoraModelStrengthChange,
@@ -92,40 +102,23 @@ export function ModelSelector({
   const [localModelStrength, setLocalModelStrength] = React.useState(initialModelStrength);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
-  const updateServerStatus = useServersStore((state) => state.updateServerStatus);
+  const syncModels = useServersStore((state) => state.syncModels);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const folders = Array.isArray(type) ? type : [type];
 
-  // Default refresh function that uses scanServerModelsByFolder
+  // Rescan just this picker's folders. The merge (and the "don't clobber a good
+  // catalogue on failure" rule) lives in the store, so this only has to say
+  // which folders it cares about.
+  //
+  // Also drop this node's cached definition, since the reason to press refresh
+  // is usually that a model was just downloaded and the option list is what's
+  // stale — the previews are the secondary concern.
   const defaultOnRefresh = async () => {
     if (!server) return;
     setIsRefreshing(true);
     try {
-      const types = Array.isArray(type) ? type : [type];
-      const allModels = [];
-
-      for (const t of types) {
-        const models = await scanServerModelsByFolder(server, t);
-        allModels.push(...models);
-      }
-
-      if (allModels.length > 0) {
-        const existingModels = server.models || [];
-        // Create a Map to store unique models, using name+type as key
-        const modelMap = new Map();
-
-        // Add existing models of different types
-        existingModels
-          .filter((model) => !types.includes(model.type))
-          .forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
-
-        // Add new models, will automatically override any duplicates
-        allModels.forEach((model) => modelMap.set(`${model.type}_${model.name}`, model));
-
-        const updatedModels = Array.from(modelMap.values());
-        updateServerStatus(serverId, server.status, server.latency, updatedModels);
-      }
-    } catch (error) {
-      console.error('Failed to refresh models:', error);
+      clearNodeSchemaCache(serverId);
+      await syncModels(serverId, { folders, refreshPreviews: true });
     } finally {
       setIsRefreshing(false);
     }
@@ -150,7 +143,32 @@ export function ModelSelector({
     bottomSheetRef.current?.dismiss();
   }, []);
 
-  const options = createModelOptions(serverId, type);
+  const { options, fromServer } = useModelOptions({ serverId, classType, inputName, folders });
+
+  // Always show the configured value, even when it isn't in the list. It is what
+  // gets sent on generate either way, and the old fallback to "Select model"
+  // claimed nothing was chosen — inviting the user to "fix" a workflow that was
+  // never broken.
+  //
+  // What being absent *means* depends on where the list came from. From the
+  // server's node definition it's exhaustive, so the model really isn't
+  // installed and generate will be rejected. From the local folder cache it
+  // only means we haven't rescanned since it appeared.
+  //
+  // 'None' is excluded because ComfyUI uses it as the literal enum for an unset
+  // optional model — there "Select model" is the honest label.
+  const optionsWithCurrent =
+    !value || value === 'None' || options.some((option) => option.value === value)
+      ? options
+      : [
+        {
+          value,
+          label: value.replace(/\.[^/.]+$/, ''),
+          description: fromServer ? 'Not installed on server' : 'From workflow · not in synced list',
+          serverName: server?.name,
+        },
+        ...options,
+      ];
 
   const renderTrigger = useCallback(
     (option: SelectorOption | undefined) => (
@@ -165,7 +183,9 @@ export function ModelSelector({
                 <Text className="text-sm font-medium text-typography-950" numberOfLines={1} ellipsizeMode="tail">
                   {option?.label || 'Select model'}
                 </Text>
-                <Text className="text-xs text-typography-400">{option?.serverName || 'Choose a model'}</Text>
+                <Text className="text-xs text-typography-400">
+                  {option?.description || option?.serverName || 'Choose a model'}
+                </Text>
               </VStack>
             </HStack>
             <Icon as={ChevronDown} size="sm" className="text-typography-400" />
@@ -234,7 +254,7 @@ export function ModelSelector({
             >
               {item.label}
             </Text>
-            <Text className="text-xs text-background-400">{item.serverName}</Text>
+            <Text className="text-xs text-background-400">{item.description || item.serverName}</Text>
           </VStack>
         </Box>
       </Pressable>
@@ -249,7 +269,7 @@ export function ModelSelector({
       onClose={handleClose}
       onSelect={onChange}
       title={`Select ${type}`}
-      options={options}
+      options={optionsWithCurrent}
       value={value}
       searchPlaceholder={`Search ${type}...`}
       showRefreshButton={!!onRefresh}

@@ -145,7 +145,18 @@ function RunWorkflowScreenContent() {
   const router = useRouter();
   const theme = useResolvedTheme();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  const ensureModelsFresh = useServersStore((state) => state.ensureModelsFresh);
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
+
+  // This page is where the model catalogue is actually consumed, and it's the
+  // moment right after the user downloads something onto their server. Until
+  // now the only thing that ever refreshed models was pull-to-refresh on the
+  // Servers tab, so a freshly downloaded model showed up as "not selected" in
+  // every picker that referenced it.
+  useEffect(() => {
+    if (!serverId) return;
+    void ensureModelsFresh(serverId);
+  }, [serverId, ensureModelsFresh]);
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
