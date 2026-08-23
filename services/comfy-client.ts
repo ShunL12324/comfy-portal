@@ -1,5 +1,6 @@
 import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
+import { getInstallId } from '@/store/install-id';
 
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
@@ -41,23 +42,12 @@ interface ProgressCallback {
   onNodeComplete?: (nodeId: string, total: number, completed: number) => void;
 
   /**
-   * Called when generation completes successfully
-   * @param mediaUrls - Array of URLs for the generated media
-   */
-  onComplete?: (mediaUrls: string[]) => void;
-
-  /**
    * Called when downloading generated media
    * @param filename - Name of the file being downloaded
    * @param progress - Download progress percentage (0-100)
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
 
-  /**
-   * Called right after the prompt is queued, before tracking begins.
-   * @param promptId - The server-assigned prompt ID
-   */
-  onQueued?: (promptId: string) => void;
 }
 
 /**
@@ -69,6 +59,20 @@ export class GenerationAbortedError extends Error {
   constructor(reason: string) {
     super(reason);
     this.name = 'GenerationAbortedError';
+  }
+}
+
+/**
+ * The server explicitly refused the prompt (validation failure, bad payload).
+ *
+ * Distinct from a transport error: a rejected prompt is definitively not
+ * running, whereas a failed `fetch` may well have been delivered — so only
+ * this one is safe to treat as "nothing was queued".
+ */
+export class PromptRejectedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'PromptRejectedError';
   }
 }
 
@@ -130,7 +134,10 @@ export class ComfyClient {
     this.host = options.host;
     this.port = options.port;
     this.useSSL = options.useSSL;
-    this.clientId = `comfy-portal-${options.host}-${options.port}`;
+    // Must be unique per device: the server evicts the previous socket when a
+    // new one connects with the same clientId, so a host/port-derived id would
+    // make two devices on the same server kick each other offline.
+    this.clientId = `comfy-portal-${getInstallId()}`;
     this.token = options.token;
   }
 
@@ -209,8 +216,8 @@ export class ComfyClient {
         this.scheduleReconnect();
       };
 
-      this.ws.onerror = (error) => {
-        reject(error);
+      this.ws.onerror = () => {
+        reject(new Error(`Cannot connect to server at ${wsUrl.split('/ws')[0]}`));
       };
 
       this.ws.addEventListener('message', this.handleMessage);
@@ -249,6 +256,10 @@ export class ComfyClient {
    */
   async connect(): Promise<void> {
     if (this.isConnected()) return;
+
+    // A previous disconnect() parks the instance permanently; clear that so a
+    // client can be reused after the app returns from the background.
+    this.disposed = false;
 
     try {
       const isLocal = await isLocalOrLanIP(this.host);
@@ -305,36 +316,6 @@ export class ComfyClient {
     return this.trackedPrompts.size > 0;
   }
 
-  /**
-   * After a reconnect, check if any tracked prompts already completed on the server.
-   */
-  async recoverIfCompleted(): Promise<void> {
-    if (this.trackedPrompts.size === 0) return;
-
-    try {
-      const queue = await this.getQueue();
-      for (const [promptId, tracked] of this.trackedPrompts) {
-        const isRunning = queue.queue_running.some((item) => item[1] === promptId);
-        const isPending = queue.queue_pending.some((item) => item[1] === promptId);
-
-        if (!isRunning && !isPending) {
-          try {
-            const history = await this.getHistory(promptId);
-            if (history[promptId]) {
-              this.resolveTracked(promptId, { success: true });
-              continue;
-            }
-          } catch {
-            // History fetch failed
-          }
-          this.resolveTracked(promptId, { success: false, error: 'Generation lost after reconnect' });
-        }
-      }
-    } catch {
-      // Queue check failed — leave tracking as-is, timeout will catch it
-    }
-  }
-
   private resolveTracked(promptId: string, result: GenerationResult) {
     const tracked = this.trackedPrompts.get(promptId);
     if (!tracked) return;
@@ -369,9 +350,12 @@ export class ComfyClient {
       const now = Date.now();
       for (const [promptId, tracked] of this.trackedPrompts) {
         if (now - tracked.lastActivity > this.TIMEOUT_MS) {
+          // aborted: this is our silence, not a server verdict. The prompt may
+          // well still be running, so the job must stay recoverable.
           this.resolveTracked(promptId, {
             success: false,
             error: 'Generation timed out (no response for 10 minutes)',
+            aborted: true,
           });
         }
       }
@@ -471,6 +455,9 @@ export class ComfyClient {
               tracked.callbacks.onNodeStart?.(message.data.node);
             }
           } else if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
+            // Authoritative completion signal: the server emits this after it
+            // has written the history entry, so results are guaranteed
+            // fetchable. (execution_success fires before that write.)
             this.resolveTracked(msgPromptId, { success: true });
           }
           break;
@@ -489,7 +476,24 @@ export class ComfyClient {
           break;
         }
 
+        case 'execution_success': {
+          // Fallback completion signal, in case executing(node:null) never
+          // arrives. It is emitted BEFORE the server writes history, so the
+          // results fetch that follows must tolerate a not-yet-present entry
+          // (see fetchAndDownloadResults' retry).
+          if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
+            this.resolveTracked(msgPromptId, { success: true });
+          }
+          break;
+        }
+
         case 'execution_error': {
+          // ExecutionBlocker is NOT terminal: the server reports a blocked
+          // branch (common with switch/conditional custom nodes) and keeps
+          // going. Treating it as failure would abandon a run that still
+          // produces images.
+          if (message.data?.exception_type === 'ExecutionBlocked') break;
+
           if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
             const errorMsg = message.data?.exception_message
               || message.data?.error
@@ -497,6 +501,13 @@ export class ComfyClient {
             const nodeType = message.data?.node_type;
             const detail = nodeType ? `[${nodeType}] ${errorMsg}` : errorMsg;
             this.resolveTracked(msgPromptId, { success: false, error: detail.trim() });
+          }
+          break;
+        }
+
+        case 'execution_interrupted': {
+          if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
+            this.resolveTracked(msgPromptId, { success: false, error: 'Generation interrupted', aborted: true });
           }
           break;
         }
@@ -518,13 +529,19 @@ export class ComfyClient {
    * @throws Error if WebSocket is not connected
    * @private
    */
-  private trackProgress(
+  trackProgress(
     promptId: string,
     workflow: Workflow,
     callbacks: ProgressCallback,
   ): Promise<GenerationResult> {
     if (!this.ws) {
-      return Promise.reject(new Error('WebSocket not connected'));
+      // Client-side condition, not a server verdict — report it as an abort so
+      // the caller keeps the job recoverable over HTTP.
+      return Promise.resolve({
+        success: false,
+        error: 'WebSocket not connected',
+        aborted: true,
+      });
     }
 
     return new Promise((resolve) => {
@@ -544,13 +561,17 @@ export class ComfyClient {
 
   /**
    * Queues a workflow for execution on the ComfyUI server.
-   * 
+   *
    * @param workflow - The workflow to execute
-   * @returns Promise that resolves to the prompt ID
+   * @param promptId - Optional client-chosen prompt ID. Must be a canonical
+   *   lowercase hyphenated UUID or the server rejects it. Supplying one lets
+   *   the caller record the job durably *before* the request goes out, so a
+   *   lost response doesn't orphan the generation. Older servers may ignore
+   *   it, so always trust the returned ID.
+   * @returns Promise that resolves to the server-assigned prompt ID
    * @throws Error if queueing fails or server returns an error
-   * @private
    */
-  private async queuePrompt(workflow: Workflow): Promise<string> {
+  async queuePrompt(workflow: Workflow, promptId?: string): Promise<string> {
     let path = '/prompt';
     if (this.token) {
       path += `?token=${this.token}`;
@@ -559,12 +580,16 @@ export class ComfyClient {
     const response = await fetchWithAuth(url, this.token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: workflow, client_id: this.clientId }),
+      body: JSON.stringify({
+        prompt: workflow,
+        client_id: this.clientId,
+        ...(promptId ? { prompt_id: promptId } : {}),
+      }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to queue prompt: ${errorText}`);
+      throw new PromptRejectedError(`Failed to queue prompt: ${errorText}`);
     }
 
     const data = await response.json();
@@ -573,13 +598,14 @@ export class ComfyClient {
 
   /**
    * Retrieves the execution history for a specific prompt.
-   * 
+   *
+   * Returns `{}` (not a 404) when the prompt is unknown or hasn't finished.
+   *
    * @param promptId - The ID of the prompt
    * @returns Promise that resolves to the history data
    * @throws Error if history retrieval fails
-   * @private
    */
-  private async getHistory(promptId: string): Promise<any> {
+  async getHistory(promptId: string): Promise<any> {
     let path = `/history/${promptId}`;
     if (this.token) {
       path += `?token=${this.token}`;
@@ -620,16 +646,13 @@ export class ComfyClient {
       return url;
     }
 
-    const response = await fetchWithAuth(url, this.token);
-
-    if (!response.ok) {
-      console.warn(`Failed to download media ${filename}:`, response.statusText);
-      return url;
-    }
+    // Use a unique filename to avoid download resume conflicts
+    const ext = filename.split('.').pop() || 'png';
+    const uniqueFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     const downloadResumable = FileSystem.createDownloadResumable(
       url,
-      FileSystem.documentDirectory + filename,
+      FileSystem.documentDirectory + uniqueFilename,
       {},
       (downloadProgress) => {
         if (callbacks?.onDownloadProgress) {
@@ -639,63 +662,42 @@ export class ComfyClient {
       }
     );
 
-    const { uri } = await downloadResumable.downloadAsync() || {};
-    return uri || url;
-  }
-
-  /**
-   * Recover a previously queued generation after navigating away and back.
-   * Sets up WS tracking FIRST (to avoid missing messages), then checks
-   * queue status. If the prompt already completed, resolves immediately.
-   *
-   * @param promptId - The prompt ID to recover
-   * @param callbacks - Callbacks for progress updates and completion
-   * @returns Promise that resolves to an array of media URLs, or empty if lost
-   */
-  async recoverGeneration(
-    promptId: string,
-    callbacks: ProgressCallback,
-  ): Promise<string[]> {
-    // Set up tracking BEFORE checking queue to avoid missing WS messages.
-    const trackPromise = this.trackProgress(promptId, {}, callbacks);
-
-    // Now check if the prompt already completed
-    try {
-      const queue = await this.getQueue();
-      const isRunning = queue.queue_running.some((item) => item[1] === promptId);
-      const isPending = queue.queue_pending.some((item) => item[1] === promptId);
-
-      if (!isRunning && !isPending) {
-        // Already done — resolve tracking immediately so we can fetch results
-        this.resolveTracked(promptId, { success: true });
-      }
-    } catch {
-      this.resolveTracked(promptId, { success: false, error: 'Failed to check queue status' });
+    const result = await downloadResumable.downloadAsync();
+    if (!result?.uri) {
+      throw new Error(`Failed to download ${filename}`);
     }
-
-    const result = await trackPromise;
-    if (!result.success) {
-      if (result.aborted) {
-        throw new GenerationAbortedError(result.error);
-      }
-      throw new Error(result.error);
+    // downloadAsync resolves for non-2xx too, writing the error body to the
+    // file. Without this check a 401 would be saved as a corrupt image.
+    if (result.status >= 400) {
+      throw new Error(`Failed to download ${filename} (HTTP ${result.status})`);
     }
-
-    return this.fetchAndDownloadResults(promptId, callbacks);
+    return result.uri;
   }
 
   /**
    * Fetches history for a prompt and downloads all generated media.
-   * Shared by generate() and recoverGeneration().
-   * @private
+   *
+   * The history entry is retried briefly because `execution_success` is
+   * emitted before the server commits the entry — without this, a fast
+   * workflow resolves and then reads back an empty history.
    */
-  private async fetchAndDownloadResults(
+  async fetchAndDownloadResults(
     promptId: string,
     callbacks: ProgressCallback,
-  ): Promise<string[]> {
-    const history = await this.getHistory(promptId);
-    const outputs = history[promptId]?.outputs;
-    if (!outputs) return [];
+  ): Promise<{ found: boolean; mediaUrls: string[] }> {
+    let entry: any;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const history = await this.getHistory(promptId);
+      entry = history?.[promptId];
+      if (entry) break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    // No entry means the server hasn't committed the run yet (or never will).
+    // Callers must keep the job pending rather than treat this as "no output".
+    if (!entry) return { found: false, mediaUrls: [] };
+
+    const outputs = entry.outputs;
+    if (!outputs) return { found: true, mediaUrls: [] };
 
     const mediaUrls: string[] = [];
     const allMedia: { filename: string; subfolder: string; type: string }[] = [];
@@ -721,31 +723,25 @@ export class ComfyClient {
       mediaUrls.push(mediaUrl);
     }
 
-    callbacks.onComplete?.(mediaUrls);
-    return mediaUrls;
+    return { found: true, mediaUrls };
   }
 
   /**
-   * Generates media using the provided workflow.
-   * Handles the complete generation process including:
-   * - Queueing the workflow
-   * - Tracking execution progress
-   * - Retrieving generated media
-   * 
-   * The generation process is monitored through callbacks that provide:
-   * - Overall progress updates
-   * - Node execution status
-   * - Final media URLs
-   * - Error notifications
-   * 
-   * @param workflow - The workflow to execute
-   * @param callbacks - Callbacks for tracking generation progress
-   * @returns Promise that resolves to an array of media URLs
-   * @throws Error if generation fails at any stage
+   * Waits for an already-queued prompt to finish executing.
+   *
+   * Downloading the results is deliberately NOT part of this call: that step
+   * has to be shared with the recovery path, which reaches a finished prompt
+   * over HTTP without ever having tracked it. See `finalizeJob` in
+   * `features/generation/services/job-recovery.ts`.
+   *
+   * @throws GenerationAbortedError if cancelled/interrupted/disconnected
+   * @throws Error if the prompt failed on the server
    */
-  async generate(workflow: Workflow, callbacks: ProgressCallback): Promise<string[]> {
-    const promptId = await this.queuePrompt(workflow);
-    callbacks.onQueued?.(promptId);
+  async awaitCompletion(
+    promptId: string,
+    workflow: Workflow,
+    callbacks: ProgressCallback,
+  ): Promise<void> {
     const result = await this.trackProgress(promptId, workflow, callbacks);
     if (!result.success) {
       if (result.aborted) {
@@ -753,7 +749,5 @@ export class ComfyClient {
       }
       throw new Error(result.error);
     }
-
-    return this.fetchAndDownloadResults(promptId, callbacks);
   }
-} 
+}

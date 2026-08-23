@@ -6,6 +6,7 @@ import { useResolvedTheme, useThemeStore } from '@/store/theme';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { disconnectAllClients, reconcileAll } from '@/features/generation/services/job-recovery';
 import { toastConfig, showToast } from '@/utils/toast';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -15,6 +16,7 @@ import { useIncomingShare } from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import {
@@ -78,6 +80,24 @@ function RootLayoutNav() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Generations outlive the run screen, and the server buffers nothing for a
+  // disconnected client. Coming back to the foreground is the moment to ask
+  // what finished while we were away and pull those results down.
+  useEffect(() => {
+    void reconcileAll();
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        void reconcileAll();
+      } else if (nextAppState === 'background') {
+        // The OS tears these sockets down anyway; reconnect on the way back in.
+        disconnectAllClients();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   // Handle incoming shared images
   useEffect(() => {

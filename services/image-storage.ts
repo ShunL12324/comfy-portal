@@ -8,6 +8,11 @@ interface SaveMediaOptions {
   mediaUrl: string;
   workflow: Workflow;
   delete?: boolean;
+  /**
+   * Prompt that produced this media. Recorded so recovery can tell whether a
+   * job's outputs are already on disk and avoid saving them twice.
+   */
+  promptId?: string;
 }
 
 function getGeneratedDir(serverId: string, workflowId: string) {
@@ -28,6 +33,7 @@ export async function saveGeneratedMedia({
   mediaUrl,
   workflow,
   delete: shouldDelete,
+  promptId,
 }: SaveMediaOptions) {
   try {
     const generatedDir = getGeneratedDir(serverId, workflowId);
@@ -67,6 +73,7 @@ export async function saveGeneratedMedia({
       timestamp,
       workflow,
       originalUrl: mediaUrl,
+      ...(promptId ? { promptId } : {}),
     };
 
     metadataFile.write(JSON.stringify(metadata, null, 2), { encoding: 'utf8' });

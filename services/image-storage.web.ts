@@ -6,7 +6,6 @@
  */
 
 import { Workflow } from '@/features/workflow/types';
-import { generateUUID } from '@/utils/uuid';
 
 interface SaveMediaOptions {
   serverId: string;
@@ -14,6 +13,8 @@ interface SaveMediaOptions {
   mediaUrl: string;
   workflow: Workflow;
   delete?: boolean;
+  /** Prompt that produced this media; see the native implementation. */
+  promptId?: string;
 }
 
 // In-memory storage for generated media on web
@@ -29,6 +30,7 @@ export async function saveGeneratedMedia({
   mediaUrl,
   workflow,
   delete: shouldDelete,
+  promptId,
 }: SaveMediaOptions) {
   try {
     const key = getStoreKey(serverId, workflowId);
@@ -39,13 +41,13 @@ export async function saveGeneratedMedia({
       return;
     }
 
-    const uuid = generateUUID();
     const timestamp = new Date().toISOString();
 
     const metadata = {
       timestamp,
       workflow,
       originalUrl: mediaUrl,
+      ...(promptId ? { promptId } : {}),
     };
 
     const items = memoryStore.get(key) || [];
