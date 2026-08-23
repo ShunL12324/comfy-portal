@@ -24,5 +24,7 @@ export interface SearchableBottomSheetProps {
   isRefreshing?: boolean;
   renderTrigger?: (selectedOption: SelectorOption | undefined) => React.ReactNode;
   renderItem?: (item: SelectorOption, isSelected: boolean) => React.ReactNode;
+  /** Shown in place of the list when there is nothing to show. */
+  emptyComponent?: React.ReactNode;
   numColumns?: number;
 }

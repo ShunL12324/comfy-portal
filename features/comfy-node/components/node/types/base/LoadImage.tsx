@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
+import { clearNodeSchemaCache } from '@/services/node-schema';
 import { showToast } from '@/utils/toast';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
@@ -15,12 +16,13 @@ import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
-import { Camera, Folder, Image as ImageIcon, Share, X } from 'lucide-react-native';
+import { Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BaseNode from '../../common/base-node';
+import { ServerImagePicker } from '../../common/server-image-picker';
 import SubItem from '../../common/sub-item';
 
 interface LoadImageNodeProps {
@@ -36,7 +38,7 @@ interface UploadAssetCandidate {
   mimeType?: string | null;
 }
 
-type PendingSourcePickerAction = 'library' | 'files' | 'camera' | null;
+type PendingSourcePickerAction = 'library' | 'files' | 'camera' | 'server' | null;
 
 export default function LoadImage({ node, serverId, workflowId, sharedImageUri }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
@@ -55,6 +57,8 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const cancelUploadRef = useRef<(() => Promise<void>) | null>(null);
   const sourcePickerModalRef = useRef<BottomSheetModal>(null);
   const pendingSourcePickerActionRef = useRef<PendingSourcePickerAction>(null);
+  const serverPickerModalRef = useRef<BottomSheetModal>(null);
+  const [isServerPickerVisible, setIsServerPickerVisible] = useState(false);
 
   // Animated value for progress
   const progressWidth = useSharedValue(0);
@@ -158,6 +162,10 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       await new Promise((resolve) => setTimeout(resolve, 500));
       setImage(response.previewUrl);
       updateNodeInput(workflowId, node.id, 'image', response.name);
+      // The server's image list is baked into the node definition, so the file
+      // we just uploaded won't appear in the server picker until that is
+      // refetched.
+      clearNodeSchemaCache(serverId);
     } catch (error) {
       if (error instanceof Error && error.message.includes('canceled')) {
         // Upload canceled, do nothing
@@ -306,8 +314,28 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
 
     if (action === 'camera') {
       void handlePickFromCamera();
+      return;
+    }
+
+    if (action === 'server') {
+      setIsServerPickerVisible(true);
+      serverPickerModalRef.current?.present();
     }
   };
+
+  const handleCloseServerPicker = useCallback(() => {
+    setIsServerPickerVisible(false);
+    serverPickerModalRef.current?.dismiss();
+  }, []);
+
+  const handleSelectServerImage = useCallback(
+    (filename: string) => {
+      // No upload, no local preview to set: the effect above rebuilds the
+      // preview URL from the node's own input value.
+      updateNodeInput(workflowId, node.id, 'image', filename);
+    },
+    [updateNodeInput, workflowId, node.id],
+  );
 
   const handleToggleQuickAction = useCallback(() => {
     if (hasQuickAction) {
@@ -420,14 +448,33 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         <ThemedBottomSheetModal
           ref={sourcePickerModalRef}
           index={0}
-          snapPoints={['34%']}
+          snapPoints={['46%']}
           topInset={safeAreaInsets.top}
           enablePanDownToClose
           onDismiss={handleSourcePickerDismiss}
         >
           <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: safeAreaInsets.bottom + 16 }}>
             <VStack space="sm">
-              <Text className="mb-1 text-sm font-semibold text-typography-900">Upload Image</Text>
+              <Text className="mb-1 text-sm font-semibold text-typography-900">Set Image</Text>
+
+              <Pressable
+                onPress={() => {
+                  handleSelectSourcePickerAction('server');
+                }}
+                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
+              >
+                <Icon as={HardDrive} className="h-4 w-4 text-typography-700" />
+                <VStack className="flex-1">
+                  <Text className="text-sm text-typography-900">Already on Server</Text>
+                  <Text className="text-xs text-typography-400">
+                    Pick from the server&apos;s input folder — no upload
+                  </Text>
+                </VStack>
+              </Pressable>
+
+              <Text className="mb-1 mt-2 text-xs font-medium uppercase text-typography-400">
+                Upload
+              </Text>
 
               <Pressable
                 onPress={() => {
@@ -461,6 +508,17 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
             </VStack>
           </BottomSheetView>
         </ThemedBottomSheetModal>
+
+        <ServerImagePicker
+          ref={serverPickerModalRef}
+          serverId={serverId}
+          classType={node.class_type}
+          inputName="image"
+          value={typeof node.inputs.image === 'string' ? node.inputs.image : ''}
+          isVisible={isServerPickerVisible}
+          onClose={handleCloseServerPicker}
+          onSelect={handleSelectServerImage}
+        />
       </SubItem>
     </BaseNode>
   );

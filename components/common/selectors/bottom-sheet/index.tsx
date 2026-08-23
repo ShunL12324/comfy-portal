@@ -31,6 +31,7 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
       isRefreshing = false,
       renderTrigger,
       renderItem,
+      emptyComponent,
       numColumns = 1,
     },
     ref,
@@ -132,6 +133,7 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
                 : defaultRenderItem
             }
             numColumns={numColumns}
+            ListEmptyComponent={emptyComponent as React.ReactElement | undefined}
             columnWrapperStyle={numColumns > 1 ? { gap: 8, paddingHorizontal: 16 } : undefined}
             contentContainerStyle={{
               flexGrow: 1,
