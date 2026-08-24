@@ -30,6 +30,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Full history and tags: the changelog step looks up the previous
+          # release tag, and the default shallow clone has neither, so it
+          # silently fell back to "the last 20 commits" — of which there was
+          # exactly one, the version bump.
+          fetch-depth: 0
 
       - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
