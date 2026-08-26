@@ -10,7 +10,12 @@
     "prebuild": "expo prebuild --clean --no-install",
     "pod": "cd ios && pod install && cd ..",
     "lint": "expo lint",
-    "test": "jest --watchAll",
+    "typecheck": "tsc --noEmit -p .",
+    "lint:src": "eslint app features hooks services store utils shims components/self-ui components/common components/layout",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "reset-project": "node ./scripts/reset-project.js",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs"
@@ -112,6 +117,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@gluestack-ui/nativewind-utils": "^1.0.28",
+    "@playwright/test": "^1.62.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.14",
     "@types/react-test-renderer": "^19.1.0",
