@@ -42,7 +42,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {title && (
+      {title ? (
         <Text style={[
           styles.title,
           { color: titleTextColor },
@@ -50,7 +50,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         ]}>
           {title}
         </Text>
-      )}
+      ) : null}
 
       <View style={[
         styles.inputContainer,
@@ -70,7 +70,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
           {...restProps}
         />
 
-        {isPasswordInput && (
+        {isPasswordInput ? (
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
@@ -82,10 +82,10 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
               <Eye size={18} color={iconColor} />
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
-      {error && (
+      {error ? (
         <Text style={[
           styles.error,
           { color: errorTextColor },
@@ -93,7 +93,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         ]}>
           {error}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 };

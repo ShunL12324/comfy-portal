@@ -44,7 +44,7 @@ export const FormInput: React.FC<FormInputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {title && (
+      {title ? (
         <Text style={[
           styles.title, 
           { color: titleTextColor },
@@ -52,7 +52,7 @@ export const FormInput: React.FC<FormInputProps> = ({
         ]}>
           {title}
         </Text>
-      )}
+      ) : null}
       
       <View style={[
         styles.inputContainer, 
@@ -75,7 +75,7 @@ export const FormInput: React.FC<FormInputProps> = ({
           {...restProps}
         />
 
-        {isPasswordInput && (
+        {isPasswordInput ? (
           <TouchableOpacity 
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
@@ -87,10 +87,10 @@ export const FormInput: React.FC<FormInputProps> = ({
               <Eye size={18} color={iconColor} />
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
       
-      {error && (
+      {error ? (
         <Text style={[
           styles.error,
           { color: errorTextColor },
@@ -98,7 +98,7 @@ export const FormInput: React.FC<FormInputProps> = ({
         ]}>
           {error}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 };

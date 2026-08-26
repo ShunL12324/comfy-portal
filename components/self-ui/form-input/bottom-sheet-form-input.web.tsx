@@ -45,7 +45,11 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {title && (
+      {/* Ternaries rather than `&&`: these props default to '', and `'' && x`
+          evaluates to '', which React renders as a text node. A text node
+          under a View is an error on react-native-web, so an untouched form
+          logged one per field. */}
+      {title ? (
         <Text style={[
           styles.title,
           { color: titleTextColor },
@@ -53,7 +57,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         ]}>
           {title}
         </Text>
-      )}{/* no whitespace between View children */}
+      ) : null}
       <View style={[
         styles.inputContainer,
         { backgroundColor: inputBackgroundColor },
@@ -70,7 +74,8 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
           placeholderTextColor={placeholderTextColor}
           secureTextEntry={isPasswordInput && !showPassword}
           {...restProps}
-        />{isPasswordInput && (
+        />
+        {isPasswordInput ? (
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
@@ -82,8 +87,9 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
               <Eye size={18} color={iconColor} />
             )}
           </TouchableOpacity>
-        )}
-      </View>{error && (
+        ) : null}
+      </View>
+      {error ? (
         <Text style={[
           styles.error,
           { color: errorTextColor },
@@ -91,7 +97,7 @@ export const BottomSheetFormInput: React.FC<BottomSheetFormInputProps> = ({
         ]}>
           {error}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 };

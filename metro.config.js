@@ -36,17 +36,6 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       };
     }
 
-    // ── 3. @gorhom/bottom-sheet web shim ──────────────────────
-    // BottomSheetTextInput and other internals crash on web.
-    // Redirect to our lightweight shim that re-exports only the
-    // components we actually use. Skip if the import originates
-    // from the shim itself to avoid circular resolution.
-    if (moduleName === '@gorhom/bottom-sheet' && !context.originModulePath?.includes('shims/')) {
-      return {
-        filePath: path.resolve(__dirname, 'shims/gorhom-bottom-sheet.web.ts'),
-        type: 'sourceFile',
-      };
-    }
   }
   return context.resolveRequest(context, moduleName, platform);
 };
