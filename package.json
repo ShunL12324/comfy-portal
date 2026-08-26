@@ -43,6 +43,7 @@
     "@ai-sdk/react": "^4.0.80",
     "@ai-sdk/togetherai": "^3.0.36",
     "@ai-sdk/xai": "^4.0.43",
+    "@expo/dom-webview": "^55.0.6",
     "@expo/html-elements": "^0.12.5",
     "@expo/vector-icons": "^15.0.3",
     "@gluestack-ui/core": "5.0.15",
