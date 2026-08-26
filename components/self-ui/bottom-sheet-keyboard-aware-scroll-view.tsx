@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import React, { memo } from 'react';
 import {
   KeyboardAwareScrollView,
   KeyboardAwareScrollViewProps,
@@ -13,6 +13,12 @@ import Reanimated from 'react-native-reanimated';
 
 const AnimatedScrollView =
   Reanimated.createAnimatedComponent<KeyboardAwareScrollViewProps>(
+    // createAnimatedComponent's generic overload is declared for class
+    // components; KeyboardAwareScrollView is a forwardRef. Reanimated wraps
+    // either at runtime, so this is a declaration mismatch only. Left as
+    // ts-expect-error rather than a cast so that it starts failing — and gets
+    // deleted — if the upstream types are ever fixed.
+    // @ts-expect-error see above
     KeyboardAwareScrollView,
   );
 const BottomSheetScrollViewComponent = createBottomSheetScrollableComponent<

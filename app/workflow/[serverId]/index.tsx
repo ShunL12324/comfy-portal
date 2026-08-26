@@ -63,7 +63,7 @@ const TOGGLE_THUMB_WIDTH = (TOGGLE_CONTAINER_WIDTH - TOGGLE_HORIZONTAL_PADDING *
 const TOGGLE_THUMB_HEIGHT = TOGGLE_CONTAINER_HEIGHT - TOGGLE_HORIZONTAL_PADDING * 2;
 const TOGGLE_ANIMATION_STEP = TOGGLE_THUMB_WIDTH;
 
-const WorkflowEmptyState = memo(({ icon, title, description, children, align = 'center' }: WorkflowEmptyStateProps) => {
+const WorkflowEmptyState = memo(function WorkflowEmptyState({ icon, title, description, children, align = 'center' }: WorkflowEmptyStateProps) {
   const wrapperClassName = align === 'top' ? 'w-full items-center pt-8' : 'flex-1 items-center justify-center';
 
   return (
@@ -93,7 +93,7 @@ const WorkflowEmptyState = memo(({ icon, title, description, children, align = '
   );
 });
 
-const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => {
+const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: WorkflowTabToggleProps) {
   const togglePosition = useSharedValue(index === 0 ? 0 : 1);
 
   useEffect(() => {
@@ -138,7 +138,7 @@ const WorkflowTabToggle = memo(({ index, onChange }: WorkflowTabToggleProps) => 
   );
 });
 
-const LocalWorkflowsTab = memo(({ serverId, openImportModal }: LocalWorkflowsTabProps) => {
+const LocalWorkflowsTab = memo(function LocalWorkflowsTab({ serverId, openImportModal }: LocalWorkflowsTabProps) {
   const workflows = useWorkflowStore((state) => state.workflow);
   const { layout } = useDeviceLayout();
   const numColumns = layout === 'expanded' ? 4 : layout === 'regular' ? 3 : 2;

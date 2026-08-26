@@ -2,7 +2,7 @@ import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
-import { ImageIcon, X } from 'lucide-react-native';
+import { ImageIcon, X , PlayCircle } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -17,7 +17,6 @@ import { useGenerationProgress, useGenerationStatus } from '@/features/generatio
 import { isVideoUrl } from '@/features/generation/utils/media';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { PlayCircle } from 'lucide-react-native';
 
 interface ParallaxMediaProps {
   workflowId?: string;

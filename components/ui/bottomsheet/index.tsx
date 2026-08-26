@@ -43,7 +43,10 @@ const bottomSheetItemStyle = tva({
 
 const BottomSheetContext = createContext<{
   visible: boolean;
-  bottomSheetRef: React.RefObject<GorhomBottomSheet>;
+  // React 19 types RefObject<T> as { current: T }, so a ref that starts null
+  // has to say so. The default value below and the useRef in the provider are
+  // both null-initialised.
+  bottomSheetRef: React.RefObject<GorhomBottomSheet | null>;
   handleClose: () => void;
   handleOpen: () => void;
 }>({

@@ -118,10 +118,11 @@ const getThemedStyles = (isDark: boolean): ThemedStyles =>
   });
 
 /**
- * Configuration for different toast types with their respective UI components
+ * Toast bodies. Declared as named components rather than inline in the config
+ * object: they call useResolvedTheme, and a lowercase key made the hooks lint
+ * read them as plain functions calling a hook illegally.
  */
-const toastConfig = {
-  success: ({ text1, text2 }: CustomToastProps) => {
+const SuccessToast = ({ text1, text2 }: CustomToastProps) => {
     const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
@@ -142,9 +143,9 @@ const toastConfig = {
         </View>
       </View>
     );
-  },
+};
 
-  error: ({ text1, text2 }: CustomToastProps) => {
+const ErrorToast = ({ text1, text2 }: CustomToastProps) => {
     const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
@@ -165,9 +166,9 @@ const toastConfig = {
         </View>
       </View>
     );
-  },
+};
 
-  info: ({ text1, text2 }: CustomToastProps) => {
+const InfoToast = ({ text1, text2 }: CustomToastProps) => {
     const theme = useResolvedTheme();
     const styles = getThemedStyles(theme === 'dark');
 
@@ -184,7 +185,12 @@ const toastConfig = {
         </View>
       </View>
     );
-  },
+};
+
+const toastConfig = {
+  success: SuccessToast,
+  error: ErrorToast,
+  info: InfoToast,
 };
 
 /**

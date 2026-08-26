@@ -13,7 +13,7 @@ interface SelectButtonProps {
   onPress: () => void;
 }
 
-export const SelectButton = React.memo(({ isSelectionMode, onPress }: SelectButtonProps) => (
+export const SelectButton = React.memo(function SelectButton({ isSelectionMode, onPress }: SelectButtonProps) { return (
   <Button
     variant="outline"
     size="sm"
@@ -55,12 +55,12 @@ export const SelectButton = React.memo(({ isSelectionMode, onPress }: SelectButt
       </HStack>
     </MotiView>
   </Button>
-));
+); });
 
 interface BottomPanelProps {
   isSelectionMode: boolean;
   selectedMedia: string[];
-  mediaItems: Array<{ url: string; timestamp: number }>;
+  mediaItems: { url: string; timestamp: number }[];
   onSelectAll: () => void;
   onDelete: () => void;
   onShare: () => void;
@@ -68,7 +68,7 @@ interface BottomPanelProps {
 }
 
 export const BottomPanel = React.memo(
-  ({ isSelectionMode, selectedMedia, mediaItems, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) => (
+  function BottomPanel({ isSelectionMode, selectedMedia, mediaItems, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) { return (
     <BottomActionPanel isOpen={isSelectionMode}>
       <VStack space="sm">
         <Text className="text-sm text-background-400">{selectedMedia.length} selected</Text>
@@ -121,5 +121,5 @@ export const BottomPanel = React.memo(
         </Button>
       </VStack>
     </BottomActionPanel>
-  ),
+  ); },
 );

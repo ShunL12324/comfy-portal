@@ -30,10 +30,13 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
   const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === id));
+  // Above the early return: this used to sit below it, so deleting a workflow
+  // — the record goes from found to undefined between renders — changed the
+  // hook count and blew up with "Rendered more hooks than during the previous
+  // render".
+  const router = useRouter();
 
   if (!workflowRecord) return null;
-
-  const router = useRouter();
 
   const handleDelete = () => {
     removeWorkflow(id);

@@ -1,7 +1,7 @@
 import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Text } from '@/components/ui/text';
-import { ImageIcon, X } from 'lucide-react-native';
+import { ImageIcon, X , PlayCircle } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,7 +22,6 @@ import { ZoomableMedia } from './zoomable-media';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 
-import { PlayCircle } from 'lucide-react-native';
 
 const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
 

@@ -8,7 +8,7 @@ interface OverlayButtonProps extends TouchableOpacityProps {
   iconColor?: string;
 }
 
-export const OverlayButton = React.memo(({ icon, iconColor = 'white', style, ...props }: OverlayButtonProps) => {
+export const OverlayButton = React.memo(function OverlayButton({ icon, iconColor = 'white', style, ...props }: OverlayButtonProps) {
   return (
     <TouchableOpacity
       activeOpacity={0.5}

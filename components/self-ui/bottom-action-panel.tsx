@@ -9,7 +9,7 @@ interface BottomActionPanelProps {
   pb?: number;
 }
 
-export const BottomActionPanel = React.memo(({ isOpen, children, pb }: BottomActionPanelProps) => {
+export const BottomActionPanel = React.memo(function BottomActionPanel({ isOpen, children, pb }: BottomActionPanelProps) {
   const insets = useSafeAreaInsets();
   const paddingBottom = pb ?? insets.bottom;
 

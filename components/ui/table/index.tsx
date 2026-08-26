@@ -18,7 +18,7 @@ import {
   tableDataStyle,
   tableCaptionStyle,
 } from './styles';
-import { Text, View } from 'react-native';
+import { Text, TextProps, View, ViewProps } from 'react-native';
 
 const TableHeaderContext = createContext<{
   isHeaderRow: boolean;
@@ -110,6 +110,9 @@ const TableFooter = React.forwardRef<
   );
 });
 
+// These two render either a View or a Text depending on a prop, so the
+// forwarded ref is typed as the union. TypeScript can't narrow a ref by
+// branch, so each branch asserts the half it actually renders.
 const TableHead = React.forwardRef<
   React.ComponentRef<typeof View | typeof Text>,
   ITableHeadProps
@@ -117,17 +120,17 @@ const TableHead = React.forwardRef<
   if (useRNView) {
     return (
       <View
-        ref={ref}
+        ref={ref as React.Ref<View>}
         className={tableHeadStyle({ class: className })}
-        {...props}
+        {...(props as ViewProps)}
       />
     );
   } else {
     return (
       <Text
-        ref={ref}
+        ref={ref as React.Ref<Text>}
         className={tableHeadStyle({ class: className })}
-        {...props}
+        {...(props as TextProps)}
       />
     );
   }
@@ -160,17 +163,17 @@ const TableData = React.forwardRef<
   if (useRNView) {
     return (
       <View
-        ref={ref}
+        ref={ref as React.Ref<View>}
         className={tableDataStyle({ class: className })}
-        {...props}
+        {...(props as ViewProps)}
       />
     );
   } else {
     return (
       <Text
-        ref={ref}
+        ref={ref as React.Ref<Text>}
         className={tableDataStyle({ class: className })}
-        {...props}
+        {...(props as TextProps)}
       />
     );
   }

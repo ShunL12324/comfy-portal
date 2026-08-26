@@ -18,7 +18,7 @@ interface SaveMediaOptions {
 }
 
 // In-memory storage for generated media on web
-const memoryStore = new Map<string, Array<{ path: string; metadata: any }>>();
+const memoryStore = new Map<string, { path: string; metadata: any }[]>();
 
 function getStoreKey(serverId: string, workflowId: string) {
   return `${serverId}:${workflowId}`;

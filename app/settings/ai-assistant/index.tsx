@@ -404,7 +404,7 @@ export default function AIAssistantScreen() {
             </HStack>
 
             <Text className="text-xs text-typography-500">
-              Custom instructions injected into the AI system prompt. Use this to guide the AI's style, language, or focus.
+              Custom instructions injected into the AI system prompt. Use this to guide the AI&apos;s style, language, or focus.
             </Text>
 
             <StyledTextarea
