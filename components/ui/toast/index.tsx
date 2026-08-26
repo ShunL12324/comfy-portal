@@ -6,7 +6,6 @@ import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import {
   Motion,
-  AnimatePresence,
   MotionComponentProps,
 } from '@legendapp/motion';
 import {
@@ -20,7 +19,9 @@ type IMotionViewProps = React.ComponentProps<typeof View> &
 
 const MotionView = Motion.View as React.ComponentType<IMotionViewProps>;
 
-const useToast = createToastHook(MotionView, AnimatePresence);
+// v5 dropped the second AnimatePresence argument — it wraps the list in its
+// own OverlayAnimatePresence internally now.
+const useToast = createToastHook(MotionView);
 const SCOPE = 'TOAST';
 
 cssInterop(MotionView, { className: 'style' });

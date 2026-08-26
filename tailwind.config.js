@@ -1,4 +1,8 @@
 /** @type {import('tailwindcss').Config} */
+// The standalone package rather than @gluestack-ui/utils/nativewind-utils,
+// which exports the same plugin but ships ESM only — Node can't require() it
+// from a config file. This is the sole remaining reason that package is a
+// dependency; every other call site uses the utils build.
 const gluestackPlugin = require('@gluestack-ui/nativewind-utils/tailwind-plugin');
 
 module.exports = {
