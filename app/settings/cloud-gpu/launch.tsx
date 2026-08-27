@@ -10,15 +10,17 @@ import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { useTemplateStore } from '@/features/cloud/stores/template-store';
-import { provisionInstance, type ProvisionProgress } from '@/features/cloud/services/provision';
+import { createLaunch } from '@/features/cloud/services/provision';
+import { LaunchProgress } from '@/features/cloud/components/launch-progress';
+import { useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
 import { estimateDiskGb } from '@/features/cloud/types';
 import { formatUsd } from '@/features/cloud/utils/cost';
 import { searchOffers, type VastOffer } from '@/services/vast';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, ChevronRight, Download, LayoutTemplate, MapPin, Zap } from 'lucide-react-native';
+import { AlertTriangle, ChevronRight, Download, LayoutTemplate, MapPin } from 'lucide-react-native';
 import React, { useState } from 'react';
 
-type Step = 'template' | 'offer' | 'confirm' | 'provisioning' | 'done';
+type Step = 'template' | 'offer' | 'confirm' | 'provisioning';
 
 export default function LaunchWizard() {
   const router = useRouter();
@@ -30,7 +32,14 @@ export default function LaunchWizard() {
   const [offers, setOffers] = useState<VastOffer[] | null>(null);
   const [offer, setOffer] = useState<VastOffer | null>(null);
   const [searchError, setSearchError] = useState('');
-  const [progress, setProgress] = useState<ProvisionProgress | null>(null);
+  const [instanceId, setInstanceId] = useState<number | null>(null);
+  const [launchError, setLaunchError] = useState('');
+
+  // Read from the store, not from local state: the launch keeps progressing
+  // while this screen is unmounted, and comes back where it actually is.
+  const launch = useProvisioningStore((s) =>
+    instanceId === null ? undefined : s.launches.find((l) => l.instanceId === instanceId),
+  );
 
   const template = templates.find((t) => t.id === templateId);
 
@@ -55,25 +64,23 @@ export default function LaunchWizard() {
     }
   };
 
-  const launch = async () => {
+  const startLaunch = async () => {
     if (!template || !offer) return;
     setStep('provisioning');
+    setLaunchError('');
     try {
-      const result = await provisionInstance({
-        template,
-        offerId: offer.id,
-        pricePerHour: offer.pricePerHour,
-        credentials,
-        onProgress: setProgress,
-      });
-      setProgress(result);
-      if (result.phase === 'ready') setStep('done');
+      // Billing starts inside here. Everything after is driven by the poller
+      // mounted at the root, so leaving this screen costs nothing.
+      setInstanceId(
+        await createLaunch({
+          template,
+          offerId: offer.id,
+          pricePerHour: offer.pricePerHour,
+          credentials,
+        }),
+      );
     } catch (error) {
-      setProgress({
-        phase: 'failed',
-        detail: '',
-        error: error instanceof Error ? error.message : 'Launch failed',
-      });
+      setLaunchError(error instanceof Error ? error.message : 'Launch failed');
     }
   };
 
@@ -195,36 +202,44 @@ export default function LaunchWizard() {
                 <Button variant="outline" onPress={() => setStep('offer')} className="rounded-lg flex-1">
                   <ButtonText className="text-typography-500">Back</ButtonText>
                 </Button>
-                <Button onPress={launch} className="rounded-lg bg-primary-500 flex-1">
+                <Button onPress={startLaunch} className="rounded-lg bg-primary-500 flex-1">
                   <ButtonText>Rent & install</ButtonText>
                 </Button>
               </HStack>
             </VStack>
           )}
 
-          {(step === 'provisioning' || step === 'done') && progress && (
-            <VStack space="md" className="py-6">
-              <PhaseList progress={progress} />
-
-              {progress.error ? (
-                <VStack space="sm">
-                  <Text className="text-sm text-error-500">{progress.error}</Text>
-                  <Button
-                    variant="outline"
-                    onPress={() => router.push('/settings/cloud-gpu/instances')}
-                    className="rounded-lg"
-                  >
-                    <ButtonText className="text-xs">Open Instances</ButtonText>
-                  </Button>
-                </VStack>
-              ) : progress.phase === 'ready' ? (
-                <Button onPress={() => router.dismissAll()} className="rounded-lg bg-primary-500">
-                  <ButtonText>Done</ButtonText>
-                </Button>
+          {step === 'provisioning' && (
+            <VStack space="md" className="py-2">
+              {launchError ? (
+                <Text className="text-sm text-error-500">{launchError}</Text>
+              ) : !launch ? (
+                <View className="py-12 items-center">
+                  <Spinner size="small" />
+                </View>
               ) : (
-                <Text className="text-xs text-typography-400">
-                  Safe to leave this screen — the instance keeps installing. Check Instances for progress.
-                </Text>
+                <>
+                  <LaunchProgress launch={launch} />
+
+                  {launch.stage === 'ready' ? (
+                    <Button onPress={() => router.dismissAll()} className="rounded-lg bg-primary-500">
+                      <ButtonText>Done</ButtonText>
+                    </Button>
+                  ) : (
+                    <VStack space="sm">
+                      <Text className="text-xs text-typography-400">
+                        Safe to leave — the install keeps running and this screen picks it back up.
+                      </Text>
+                      <Button
+                        variant="outline"
+                        onPress={() => router.push('/settings/cloud-gpu/instances')}
+                        className="rounded-lg"
+                      >
+                        <ButtonText className="text-xs">Manage instances</ButtonText>
+                      </Button>
+                    </VStack>
+                  )}
+                </>
               )}
             </VStack>
           )}
@@ -240,48 +255,5 @@ function Row({ label, value }: { label: string; value: string }) {
       <Text className="text-xs text-typography-400">{label}</Text>
       <Text className="text-sm text-typography-900">{value}</Text>
     </HStack>
-  );
-}
-
-const PHASES: { key: ProvisionProgress['phase']; label: string }[] = [
-  { key: 'creating', label: 'Renting the machine' },
-  { key: 'waiting-for-host', label: 'Waiting for the host' },
-  { key: 'installing', label: 'Installing ComfyUI and models' },
-  { key: 'pushing-workflows', label: 'Installing workflows' },
-  { key: 'ready', label: 'Ready' },
-];
-
-function PhaseList({ progress }: { progress: ProvisionProgress }) {
-  const currentIndex = PHASES.findIndex((p) => p.key === progress.phase);
-
-  return (
-    <VStack space="sm">
-      {PHASES.map((phase, index) => {
-        const done = currentIndex > index || progress.phase === 'ready';
-        const active = currentIndex === index && progress.phase !== 'ready';
-        return (
-          <HStack key={phase.key} space="sm" className="items-center">
-            {active ? (
-              <Spinner size="small" />
-            ) : (
-              <Icon as={Zap} size="xs" className={done ? 'text-success-500' : 'text-typography-300'} />
-            )}
-            <Text
-              className={`text-sm ${active ? 'text-typography-900' : done ? 'text-typography-500' : 'text-typography-300'}`}
-            >
-              {phase.label}
-            </Text>
-          </HStack>
-        );
-      })}
-
-      {progress.detail && progress.phase !== 'ready' ? (
-        // vast tails the container log here, which is the only real visibility
-        // into a step that can run for half an hour.
-        <Text className="mt-2 text-xs text-typography-400" numberOfLines={3}>
-          {progress.detail}
-        </Text>
-      ) : null}
-    </VStack>
   );
 }

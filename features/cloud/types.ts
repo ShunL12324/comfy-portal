@@ -37,6 +37,13 @@ export interface GpuTemplate {
   disk: number;
   /** vast's short GPU name, e.g. "RTX 4090". Seeds the offer search. */
   gpuQuery: string;
+  /**
+   * Ollama models to pull, for workflows whose custom nodes call a local LLM.
+   *
+   * Non-empty selects the Ollama image variant. Those nodes reach Ollama inside
+   * the container, so nothing is published for it.
+   */
+  ollamaModels?: string[];
   createdAt: string;
   updatedAt: string;
 }

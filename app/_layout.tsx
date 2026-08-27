@@ -16,6 +16,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useIncomingShare } from '@/hooks/use-incoming-share';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useLaunchPoller } from '@/features/cloud/hooks/use-launch-poller';
 import React, { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -74,6 +75,11 @@ function RootLayoutNav() {
   const colorScheme = useResolvedTheme();
   const router = useRouter();
   const { resolvedSharedPayloads, clearSharedPayloads, isResolving } = useIncomingShare();
+
+  // Not the launch screen's job: a cloud install runs for tens of minutes and
+  // bills throughout, so it has to keep progressing with nobody watching — and
+  // on a cold start this is what reattaches to one left running.
+  useLaunchPoller();
 
   useEffect(() => {
     if (loaded) {

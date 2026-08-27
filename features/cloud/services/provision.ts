@@ -1,13 +1,11 @@
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowToServer } from '@/services/comfy-api';
-import {
-  createInstance,
-  getInstance,
-  isTerminalStatus,
-  ONSTART_LIMIT,
-  type VastInstance,
-} from '@/services/vast';
+import { getStatus, isReachable, SUPERVISOR_PORT } from '@/services/cloud-supervisor';
+import { createInstance, getInstance, isTerminalStatus, ONSTART_LIMIT } from '@/services/vast';
+import { generateUUID } from '@/utils/uuid';
+
+import { useProvisioningStore, type LaunchRecord } from '../stores/provisioning-store';
 import type { CloudCredentials } from '../stores/credentials-store';
 import type { GpuTemplate } from '../types';
 
@@ -15,238 +13,242 @@ import type { GpuTemplate } from '../types';
  * Takes a template from "rent this offer" to "a server in the list you can
  * generate on".
  *
- * Everything runs from the device: the app talks to vast's API and then to the
- * instance itself. There is no backend in the middle, which is also why the
- * install script can't be pushed over SSH — React Native has no SSH client.
- * Instead vast's `onstart` runs a short stub that fetches the real script.
- */
-
-/**
- * Where the instance pulls the install script from.
+ * Everything runs from the device: the app talks to vast's API, then to the
+ * instance's supervisor. There is no backend in the middle.
  *
- * Pinned to a commit rather than a branch: a shipped build then always fetches
- * the exact script it was tested against, and editing the script later can't
- * reach into apps already in the wild. When you change bootstrap.sh, push it
- * and move this SHA — the commit only has to be pushed, not merged.
+ * A launch is modelled as a job rather than a function call. It outlives the
+ * screen that started it — installs run to forty minutes, and the machine bills
+ * whether or not anyone is watching — so its state lives in the provisioning
+ * store and any screen can attach to it.
  */
-const BOOTSTRAP_URL =
-  'https://raw.githubusercontent.com/ShunL12324/comfy-portal/e7000294650f98869bb5dbe775f56512004ce70f/scripts/cloud-bootstrap/v1/bootstrap.sh';
 
 export const COMFY_PORT = 8188;
 
-export type ProvisionPhase =
-  | 'creating'
-  | 'waiting-for-host'
-  | 'installing'
-  | 'pushing-workflows'
-  | 'ready'
-  | 'failed';
+/**
+ * The image the instance boots into.
+ *
+ * ComfyUI, torch and the supervisor are baked in, so a launch installs only what
+ * varies: the template's models and extensions. Pinned, so a shipped app gets
+ * the stack it was tested against — see cloud-supervisor/.
+ */
+const IMAGE_BASE = 'ghcr.io/shunl12324/comfy-portal-runtime:v1';
+const IMAGE_OLLAMA = 'ghcr.io/shunl12324/comfy-portal-runtime:v1-ollama';
 
-export interface ProvisionProgress {
-  phase: ProvisionPhase;
-  /** Human-readable detail; for 'installing' this is vast's own log tail. */
-  detail: string;
-  instanceId?: number;
-  serverId?: string;
-  error?: string;
+export function imageFor(template: GpuTemplate): string {
+  return template.ollamaModels?.length ? IMAGE_OLLAMA : IMAGE_BASE;
 }
 
 /**
- * The `onstart` payload.
+ * btoa only accepts Latin-1, and a model filename can be anything Civitai
+ * allowed — percent-encode to bytes first so a Chinese model name doesn't throw
+ * at launch time.
+ */
+function utf8ToBase64(input: string): string {
+  const bytes = encodeURIComponent(input).replace(/%([0-9A-F]{2})/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+  return btoa(bytes);
+}
+
+/**
+ * What to install, as one base64 variable.
  *
- * vast allows 4048 characters, which the install script alone exceeds, so this
- * only fetches and runs it. The model and extension lists ride along as
- * environment variables — small text, and they change per launch, unlike the
- * script.
+ * vast takes container env as a single docker-flag string split on whitespace,
+ * so a multi-line value silently loses everything after its first line — the
+ * previous newline-separated model list would have delivered exactly one model.
+ * The same value also has to survive /etc/environment, which is line-oriented.
+ */
+export function buildManifest(template: GpuTemplate): string {
+  return utf8ToBase64(
+    JSON.stringify({
+      version: 1,
+      models: template.models.map((model) => ({
+        url: model.url,
+        folder: model.type,
+        filename: model.filename,
+        sizeBytes: model.sizeBytes,
+      })),
+      extensions: template.extensions,
+      ollamaModels: template.ollamaModels ?? [],
+    }),
+  );
+}
+
+/**
+ * vast injects its own entrypoint under ssh_direct, so the supervisor is started
+ * here rather than relied on as the image's ENTRYPOINT.
  */
 export function buildOnstart(): string {
   return [
-    'set -e',
-    'export DEBIAN_FRONTEND=noninteractive',
-    'command -v curl >/dev/null || (apt-get update -qq && apt-get install -y -qq curl)',
     'mkdir -p /workspace',
-    // Without the fallback a failed fetch just ends onstart under `set -e`,
-    // leaving a machine that bills happily with no ComfyUI and no explanation.
-    `curl -fsSL ${BOOTSTRAP_URL} -o /tmp/bootstrap.sh || { echo "bootstrap fetch failed (${BOOTSTRAP_URL})" > /workspace/onstart.log; exit 1; }`,
-    'chmod +x /tmp/bootstrap.sh',
-    'nohup bash /tmp/bootstrap.sh > /workspace/onstart.log 2>&1 &',
+    'nohup /opt/comfyui/venv/bin/python /opt/cp/supervisor.py >> /workspace/supervisor-boot.log 2>&1 &',
   ].join('\n');
 }
 
-/** `<folder>|<url>[|<filename>]` per line, the format bootstrap.sh reads. */
-export function buildModelsEnv(template: GpuTemplate): string {
-  return template.models
-    .map((m) => [m.type, m.url, m.filename].filter(Boolean).join('|'))
-    .join('\n');
-}
-
-export function buildEnv(template: GpuTemplate, credentials: CloudCredentials) {
+export function buildEnv(template: GpuTemplate, credentials: CloudCredentials, token: string) {
   return {
-    MODELS: buildModelsEnv(template),
-    EXTENSIONS: template.extensions.join('\n'),
+    CP_TOKEN: token,
+    CP_MANIFEST: buildManifest(template),
     HF_TOKEN: credentials.huggingFaceToken,
     CIVITAI_API_KEY: credentials.civitaiApiKey,
     COMFY_PORT: String(COMFY_PORT),
+    CP_PORT: String(SUPERVISOR_PORT),
   };
 }
 
-/** Where the app reaches ComfyUI, once vast has published the port. */
-function publicEndpoint(instance: VastInstance): { host: string; port: number } | null {
-  const port = instance.ports[String(COMFY_PORT)];
-  if (!instance.publicIp || !port) return null;
-  return { host: instance.publicIp, port };
-}
-
-async function comfyResponds(host: string, port: number): Promise<boolean> {
-  try {
-    const response = await fetch(`http://${host}:${port}/system_stats`, {
-      headers: { Accept: 'application/json' },
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-export interface ProvisionOptions {
+export interface CreateLaunchOptions {
   template: GpuTemplate;
   offerId: number;
   pricePerHour: number;
   credentials: CloudCredentials;
-  onProgress: (progress: ProvisionProgress) => void;
-  /** Give up waiting after this long. Default 40 minutes — big model sets on a
-   *  slow host genuinely take that. */
-  timeoutMs?: number;
-  signal?: AbortSignal;
 }
 
-export async function provisionInstance(options: ProvisionOptions): Promise<ProvisionProgress> {
-  const { template, offerId, pricePerHour, credentials, onProgress } = options;
-  const timeoutMs = options.timeoutMs ?? 40 * 60 * 1000;
-  const apiKey = credentials.vastApiKey;
+/** Rents the machine and records the job. **This starts billing.** */
+export async function createLaunch(options: CreateLaunchOptions): Promise<number> {
+  const { template, offerId, pricePerHour, credentials } = options;
 
+  // Random per launch: it is the only thing standing between a public port and
+  // anyone who portscans it.
+  const token = generateUUID();
   const onstart = buildOnstart();
   if (onstart.length > ONSTART_LIMIT) {
-    // Can't happen with the stub above, but if someone inlines the script again
-    // this is where they find out.
     throw new Error(`Startup script too long (${onstart.length}/${ONSTART_LIMIT}).`);
   }
 
-  onProgress({ phase: 'creating', detail: 'Renting the machine…' });
-
-  // Billing starts here.
-  const instanceId = await createInstance(apiKey, {
+  const instanceId = await createInstance(credentials.vastApiKey, {
     offerId,
     diskGb: template.disk,
     label: `comfy-portal:${template.name}`.slice(0, 60),
+    image: imageFor(template),
     onstart,
-    env: buildEnv(template, credentials),
-    ports: [COMFY_PORT],
+    env: buildEnv(template, credentials, token),
+    // Ports cannot be added later, and Ollama is deliberately absent: its nodes
+    // reach it inside the container, and a public 11434 is free compute.
+    ports: [COMFY_PORT, SUPERVISOR_PORT],
   });
 
-  onProgress({ phase: 'waiting-for-host', detail: 'Waiting for the host…', instanceId });
+  useProvisioningStore.getState().start({
+    instanceId,
+    templateId: template.id,
+    templateName: template.name,
+    token,
+    pricePerHour,
+    startedAt: Math.floor(Date.now() / 1000),
+    stage: 'placing',
+  });
 
-  const deadline = Date.now() + timeoutMs;
-  let endpoint: { host: string; port: number } | null = null;
-  // A host that misses a check-in reports 'unknown' and then carries on, so one
-  // sighting proves nothing. Three in a row (~30s) means it really is gone.
-  let unknownStreak = 0;
+  return instanceId;
+}
 
-  while (Date.now() < deadline) {
-    if (options.signal?.aborted) throw new Error('Cancelled');
+function registerServer(record: LaunchRecord, host: string, comfyPort: number): string {
+  if (record.serverId) return record.serverId;
 
-    const instance = await getInstance(apiKey, instanceId);
-
-    if (isTerminalStatus(instance.status)) {
-      // These never recover — waiting longer just bills for nothing. The caller
-      // is expected to destroy and retry elsewhere.
-      return {
-        phase: 'failed',
-        detail: '',
-        instanceId,
-        error: `The host stopped the instance (${instance.status}). Destroy it and try another offer.`,
-      };
-    }
-
-    unknownStreak = instance.status === 'unknown' ? unknownStreak + 1 : 0;
-    if (unknownStreak >= 3) {
-      return {
-        phase: 'failed',
-        detail: '',
-        instanceId,
-        error: 'The host stopped reporting in. Destroy the instance and try another offer.',
-      };
-    }
-
-    endpoint = publicEndpoint(instance);
-    if (endpoint && (await comfyResponds(endpoint.host, endpoint.port))) break;
-
-    onProgress({
-      phase: endpoint ? 'installing' : 'waiting-for-host',
-      // vast tails the container log here, so this is the closest thing to real
-      // progress: apt, torch, and each model as it lands.
-      detail: instance.statusMessage || 'Installing ComfyUI and downloading models…',
-      instanceId,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
-    endpoint = null;
-  }
-
-  if (!endpoint) {
-    return {
-      phase: 'failed',
-      detail: '',
-      instanceId,
-      error:
-        'Timed out waiting for ComfyUI. The instance is still running and still billing — destroy it from Instances if it never comes up.',
-    };
-  }
-
-  // The instance answers; register it before pushing anything, so a failure
-  // from here on still leaves the user with a usable, visible server.
-  const serverId = useServersStore.getState().addServer({
-    name: template.name,
-    host: endpoint.host,
-    port: endpoint.port,
+  return useServersStore.getState().addServer({
+    name: record.templateName,
+    host,
+    port: comfyPort,
     useSSL: 'Never',
     cloud: {
       provider: 'vast',
-      instanceId,
-      pricePerHour,
-      startedAt: Math.floor(Date.now() / 1000),
-      templateId: template.id,
+      instanceId: record.instanceId,
+      pricePerHour: record.pricePerHour,
+      // The rental's clock, not this moment's — the cost shown on the card has
+      // to include the install the user already paid for.
+      startedAt: record.startedAt,
+      templateId: record.templateId,
     },
   });
+}
 
-  if (template.workflows.length > 0) {
-    onProgress({ phase: 'pushing-workflows', detail: 'Installing workflows…', instanceId, serverId });
-
-    for (const workflow of template.workflows) {
-      // Local record first: even if the push fails, the workflow is usable in
-      // the app and can be re-synced later.
-      useWorkflowStore.getState().addWorkflow({
-        name: workflow.name,
-        serverId,
-        data: workflow.data,
-        addMethod: 'preset',
-        lastUsed: new Date(),
-      });
-      try {
-        await saveWorkflowToServer(serverId, workflow.name, workflow.data);
-      } catch {
-        // Non-fatal: the endpoint extension may still be starting. The workflow
-        // exists locally and generate() sends it inline anyway.
-      }
+async function pushWorkflows(serverId: string, template: GpuTemplate) {
+  for (const workflow of template.workflows) {
+    // Local record first: even if the push fails the workflow is usable in the
+    // app, and generate() sends it inline anyway.
+    useWorkflowStore.getState().addWorkflow({
+      name: workflow.name,
+      serverId,
+      data: workflow.data,
+      addMethod: 'preset',
+      lastUsed: new Date(),
+    });
+    try {
+      await saveWorkflowToServer(serverId, workflow.name, workflow.data);
+    } catch {
+      // Non-fatal: the endpoint node may still be importing.
     }
   }
+}
 
-  const done: ProvisionProgress = {
-    phase: 'ready',
-    detail: 'Ready',
-    instanceId,
-    serverId,
-  };
-  onProgress(done);
-  return done;
+/**
+ * One tick of a launch.
+ *
+ * Written as a single idempotent step rather than a loop so the caller decides
+ * the cadence, and so a cold start can resume simply by ticking again.
+ */
+export async function advanceLaunch(
+  instanceId: number,
+  credentials: CloudCredentials,
+  template?: GpuTemplate,
+): Promise<void> {
+  const store = useProvisioningStore.getState();
+  const record = store.get(instanceId);
+  if (!record || record.stage === 'ready' || record.stage === 'failed') return;
+
+  const instance = await getInstance(credentials.vastApiKey, instanceId);
+
+  if (isTerminalStatus(instance.status)) {
+    store.update(instanceId, {
+      stage: 'failed',
+      error: `The host stopped the instance (${instance.status}). Destroy it and try another offer.`,
+    });
+    return;
+  }
+
+  const comfyPort = instance.ports[String(COMFY_PORT)];
+  const supervisorPort = instance.ports[String(SUPERVISOR_PORT)];
+
+  // Nothing on the instance exists yet — no supervisor to ask, so vast's own
+  // words are the only honest thing to show.
+  if (!instance.publicIp || !supervisorPort) {
+    store.update(instanceId, {
+      stage: 'placing',
+      vastStatus: instance.statusMessage || `vast: ${instance.status}`,
+    });
+    return;
+  }
+
+  const target = { host: instance.publicIp, port: supervisorPort, token: record.token };
+  store.update(instanceId, {
+    host: instance.publicIp,
+    supervisorPort,
+    comfyPort,
+    vastStatus: instance.statusMessage,
+  });
+
+  if (!(await isReachable(target.host, target.port))) {
+    // The port is mapped but the container is still coming up — usually the
+    // image pull, which is the bulk of the wait now that nothing installs.
+    store.update(instanceId, { stage: 'booting' });
+    return;
+  }
+
+  const snapshot = await getStatus(target);
+  store.update(instanceId, { stage: 'installing', snapshot });
+
+  if (snapshot.phase === 'failed') {
+    store.update(instanceId, {
+      stage: 'failed',
+      error: snapshot.error?.message ?? 'The instance reported a failure.',
+    });
+    return;
+  }
+
+  if (snapshot.phase !== 'ready' || !comfyPort) return;
+
+  const serverId = registerServer(record, target.host, comfyPort);
+  store.update(instanceId, { serverId, stage: 'ready', snapshot });
+
+  if (template?.workflows.length) {
+    await pushWorkflows(serverId, template);
+  }
 }
