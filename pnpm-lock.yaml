@@ -179,6 +179,9 @@ importers:
       expo-router:
         specifier: 55.0.18
         version: 55.0.18(716397c53db7b192e3dcdb6d36f3b68e)
+      expo-secure-store:
+        specifier: ~55.0.18
+        version: 55.0.18(expo@55.0.30)
       expo-sharing:
         specifier: ~55.0.24
         version: 55.0.24(expo@55.0.30)(react-native@0.83.10(@babel/core@7.29.0)(@types/react@19.2.18)(react@19.2.0))(react@19.2.0)
@@ -4271,6 +4274,11 @@ packages:
         optional: true
       react-server-dom-webpack:
         optional: true
+
+  expo-secure-store@55.0.18:
+    resolution: {integrity: sha512-shKZYQf7/KA45Z3oEIXUkXdrfRNFxsc+fJC182bbpuKqS4nLPZslsJUqruQ937Zkkbev126N/QJv+zmd6FpZjA==}
+    peerDependencies:
+      expo: '*'
 
   expo-server@55.0.12:
     resolution: {integrity: sha512-yuNHbxobUKCXWn9Z/H+lgYk6heXEFub6q1h8Yo9kCLxgL2afluWZ/YylbtxgHgmFwDVUmi6milQYfL+wwQMlzw==}
@@ -12057,6 +12065,10 @@ snapshots:
       - '@types/react-dom'
       - expo-font
       - supports-color
+
+  expo-secure-store@55.0.18(expo@55.0.30):
+    dependencies:
+      expo: 55.0.30(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.4)(expo-router@55.0.18)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.0(react-native@0.83.10(@babel/core@7.29.0)(@types/react@19.2.18)(react@19.2.0))(react@19.2.0))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.10(@babel/core@7.29.0)(@types/react@19.2.18)(react@19.2.0))(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.0)(@types/react@19.2.18)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
   expo-server@55.0.12: {}
 

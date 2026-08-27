@@ -8,7 +8,7 @@ import { View } from '@/components/ui/view';
 import { useThemeStore } from '@/store/theme';
 import * as Linking from 'expo-linking';
 import { Link } from 'expo-router';
-import { BookOpen, ChevronRight, FileText, GithubIcon, Info, Palette, Shield, Sparkles, Star } from 'lucide-react-native';
+import { BookOpen, ChevronRight, Cloud, FileText, GithubIcon, Info, Palette, Shield, Sparkles, Star } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useState } from 'react';
 
@@ -44,6 +44,19 @@ export default function SettingScreen() {
                 <View className="flex-row items-center">
                   <Icon as={Sparkles} size="lg" className="mr-3 text-primary-500" />
                   <Text className="text-base font-medium text-typography-900">AI Assistant</Text>
+                </View>
+                <Icon as={ChevronRight} size="sm" className="text-typography-400" />
+              </View>
+            </Pressable>
+          </Link>
+
+          {/* Cloud GPU Section */}
+          <Link href="/settings/cloud-gpu" asChild>
+            <Pressable className="py-4">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Icon as={Cloud} size="lg" className="mr-3 text-primary-500" />
+                  <Text className="text-base font-medium text-typography-900">Cloud GPU</Text>
                 </View>
                 <Icon as={ChevronRight} size="sm" className="text-typography-400" />
               </View>

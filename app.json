@@ -105,7 +105,8 @@
           "project": "comfy-portal",
           "organization": "lotusfino-inc"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
