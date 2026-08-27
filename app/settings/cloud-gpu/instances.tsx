@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { DeleteAlert } from '@/features/generation/components/history-drawer/delete-alert';
+import { CLOUD_GPU_SUPPORTED, CLOUD_GPU_UNSUPPORTED_REASON } from '@/features/cloud/utils/availability';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { accruedCost, formatUptime, formatUsd } from '@/features/cloud/utils/cost';
 import { destroyInstance, listInstances, type VastInstance } from '@/services/vast';
@@ -28,7 +29,7 @@ export default function CloudInstances() {
   const [, setTick] = useState(0);
 
   const load = useCallback(async () => {
-    if (!vastApiKey) {
+    if (!CLOUD_GPU_SUPPORTED || !vastApiKey) {
       setInstances([]);
       return;
     }
@@ -92,7 +93,9 @@ export default function CloudInstances() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <VStack className="px-5 pb-8 pt-4" space="sm">
-          {!hydrated || instances === null ? (
+          {!CLOUD_GPU_SUPPORTED ? (
+            <EmptyState icon={CloudOff} text={CLOUD_GPU_UNSUPPORTED_REASON} />
+          ) : !hydrated || instances === null ? (
             <View className="items-center py-12">
               <Spinner size="small" />
             </View>

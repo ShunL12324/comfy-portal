@@ -9,12 +9,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
+import { CLOUD_GPU_SUPPORTED, CLOUD_GPU_UNSUPPORTED_REASON } from '@/features/cloud/utils/availability';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { isSecureStorageAvailable } from '@/services/secure-store';
 import { verifyApiKey } from '@/services/vast';
 import { showToast } from '@/utils/toast';
 import { Link } from 'expo-router';
-import { CheckCircle2, ChevronRight, Server, ShieldAlert, XCircle } from 'lucide-react-native';
+import { CheckCircle2, ChevronRight, CloudOff, Server, ShieldAlert, XCircle } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -71,6 +72,20 @@ export default function CloudGpuSettings() {
       setTestDetail(error instanceof Error ? error.message : 'Connection failed');
     }
   };
+
+  if (!CLOUD_GPU_SUPPORTED) {
+    return (
+      <View className="flex-1 bg-background-0">
+        <AppBar title="Cloud GPU" showBack />
+        <VStack space="md" className="items-center px-8 py-16">
+          <Icon as={CloudOff} className="h-8 w-8 text-typography-300" />
+          <Text className="text-center text-sm text-typography-400">
+            {CLOUD_GPU_UNSUPPORTED_REASON}
+          </Text>
+        </VStack>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background-0">
