@@ -40,6 +40,13 @@ export interface VastInstance {
   status: VastInstanceStatus;
   /** Free-form progress text from vast; it tails the container log. */
   statusMessage: string;
+  /**
+   * What vast intends the instance to be, as opposed to what the host reports.
+   * They diverge exactly when vast has given up on it — a broken host, a failed
+   * image pull — and that divergence is the earliest reliable failure signal.
+   */
+  intendedStatus: string | null;
+  curState: string | null;
   gpuName: string;
   pricePerHour: number;
   publicIp: string | null;
@@ -212,6 +219,8 @@ function toInstance(i: any): VastInstance {
     label: i.label ?? null,
     status: normalizeStatus(i.actual_status),
     statusMessage: (i.status_msg ?? '').trim(),
+    intendedStatus: i.intended_status ?? null,
+    curState: i.cur_state ?? null,
     gpuName: i.gpu_name ?? '',
     pricePerHour: i.dph_total ?? 0,
     publicIp: i.public_ipaddr ?? null,
@@ -243,6 +252,19 @@ export async function destroyInstance(apiKey: string, instanceId: number): Promi
  */
 export function isTerminalStatus(status: VastInstanceStatus): boolean {
   return status === 'exited' || status === 'offline';
+}
+
+/**
+ * Whether vast has abandoned an instance that was supposed to be starting.
+ *
+ * `actual_status` alone misses this. A host whose GPU devices don't resolve
+ * leaves the container 'created' forever while vast quietly flips
+ * intended_status to 'stopped' — seen in the wild as "failed to inject CDI
+ * devices". Waiting on actual_status there costs the full provisioning timeout
+ * and reports the wrong reason.
+ */
+export function hasVastGivenUp(instance: VastInstance): boolean {
+  return instance.intendedStatus === 'stopped' || instance.curState === 'stopped';
 }
 
 export interface CreateInstanceOptions {

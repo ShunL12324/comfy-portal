@@ -2,7 +2,13 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowToServer } from '@/services/comfy-api';
 import { getStatus, isReachable, SUPERVISOR_PORT } from '@/services/cloud-supervisor';
-import { createInstance, getInstance, isTerminalStatus, ONSTART_LIMIT } from '@/services/vast';
+import {
+  createInstance,
+  getInstance,
+  hasVastGivenUp,
+  isTerminalStatus,
+  ONSTART_LIMIT,
+} from '@/services/vast';
 import { generateUUID } from '@/utils/uuid';
 
 import { useProvisioningStore, type LaunchRecord } from '../stores/provisioning-store';
@@ -31,8 +37,8 @@ export const COMFY_PORT = 8188;
  * varies: the template's models and extensions. Pinned, so a shipped app gets
  * the stack it was tested against — see cloud-supervisor/.
  */
-const IMAGE_BASE = 'ghcr.io/shunl12324/comfy-portal-runtime:v1';
-const IMAGE_OLLAMA = 'ghcr.io/shunl12324/comfy-portal-runtime:v1-ollama';
+const IMAGE_BASE = 'ghcr.io/shunl12324/comfy-portal-runtime:sha-bebbb7b';
+const IMAGE_OLLAMA = 'ghcr.io/shunl12324/comfy-portal-runtime:sha-bebbb7b-ollama';
 
 export function imageFor(template: GpuTemplate): string {
   return template.ollamaModels?.length ? IMAGE_OLLAMA : IMAGE_BASE;
@@ -196,10 +202,16 @@ export async function advanceLaunch(
 
   const instance = await getInstance(credentials.vastApiKey, instanceId);
 
-  if (isTerminalStatus(instance.status)) {
+  if (isTerminalStatus(instance.status) || hasVastGivenUp(instance)) {
+    // vast's own message carries the actual cause — a host whose GPUs don't
+    // resolve, a pull that failed — and without it every one of these reads as
+    // a generic timeout.
+    const reason = instance.statusMessage.split('\n')[0].slice(0, 200);
     store.update(instanceId, {
       stage: 'failed',
-      error: `The host stopped the instance (${instance.status}). Destroy it and try another offer.`,
+      error: reason
+        ? `The host couldn't start it: ${reason}. Destroy it and try another offer.`
+        : `The host stopped the instance (${instance.status}). Destroy it and try another offer.`,
     });
     return;
   }
