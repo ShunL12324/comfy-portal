@@ -58,6 +58,38 @@ jobs:
           # An unauthenticated request must not reach status; the port is public
           # on a real instance.
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18189/v1/status)" = 401
+
+          # The supervisor and the app are written in different languages and
+          # live in different directories; nothing but this stops a renamed
+          # field from silently becoming undefined on the phone.
+          echo "$STATUS" > /tmp/snapshot.json
+          python3 - <<'CONTRACT'
+          import json, re, sys
+          snapshot = json.load(open('/tmp/snapshot.json'))
+          ts = open('services/cloud-supervisor.ts').read()
+
+          def required(name, until):
+              # `field?:` is optional by design — errorCode only exists on a
+              # failure — so only non-optional fields must always be present.
+              block = ts[ts.index(f'export interface {name}'):ts.index(until)]
+              return set(re.findall(r'^\s{2}(\w+):', block, re.M))
+
+          problems = []
+          missing = required('SupervisorSnapshot', 'export class SupervisorError') - set(snapshot)
+          if missing:
+              problems.append(f'snapshot fields declared but not sent: {sorted(missing)}')
+
+          sent = set().union(*[set(m) for m in snapshot['models']])
+          missing = required('SupervisorModel', 'export interface SupervisorSnapshot') - sent
+          if missing:
+              problems.append(f'model fields declared but not sent: {sorted(missing)}')
+
+          if problems:
+              print('\n'.join(problems))
+              sys.exit(1)
+          print('client contract holds')
+          CONTRACT
+
           docker rm -f cp-test
 
   image:
