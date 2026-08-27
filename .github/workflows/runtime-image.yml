@@ -1,0 +1,138 @@
+name: Runtime image
+
+# Builds the image a rented GPU boots into. Publishing here is unrelated to
+# releasing the app — that is driven by `release-*` tags in testflight.yml.
+on:
+  push:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/runtime-image.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ${{ github.repository_owner }}/comfy-portal-runtime
+
+jobs:
+  # Fast gate. Exercises the supervisor against a stub ComfyUI and fixtures
+  # served over loopback — no CUDA, no network, no GPU — so a logic regression
+  # is caught in under a minute rather than by a rental.
+  supervisor-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build test rig
+        run: docker build -f docker/supervisor/test/Dockerfile -t cp-supervisor-test docker/supervisor
+
+      - name: Smoke test
+        run: |
+          MANIFEST=$(python3 -c "
+          import base64, json
+          print(base64.b64encode(json.dumps({
+            'version': 1,
+            'models': [
+              {'url': 'http://127.0.0.1:8000/tiny-model.safetensors', 'folder': 'checkpoints', 'filename': 't.safetensors'},
+              {'url': 'http://127.0.0.1:8000/second-model.safetensors', 'folder': 'loras', 'filename': 's.safetensors'},
+            ],
+            'extensions': [], 'ollamaModels': [],
+          }).encode()).decode())")
+
+          docker run -d --name cp-test -p 18189:8189 \
+            -e CP_TOKEN=ci-token-abcdefgh -e CP_MANIFEST="$MANIFEST" cp-supervisor-test
+
+          for _ in $(seq 1 30); do
+            sleep 2
+            STATUS=$(curl -s -H "Authorization: Bearer ci-token-abcdefgh" http://localhost:18189/v1/status || true)
+            echo "$STATUS" | grep -q '"phase": "ready"' && break
+            echo "$STATUS" | grep -q '"phase": "failed"' && { echo "$STATUS"; exit 1; }
+          done
+
+          echo "$STATUS" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          assert d['phase'] == 'ready', d
+          assert d['totals']['completed'] == d['totals']['bytes'] > 0, d['totals']
+          print('ready:', d['totals'])"
+
+          # An unauthenticated request must not reach status; the port is public
+          # on a real instance.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18189/v1/status)" = 401
+          docker rm -f cp-test
+
+  image:
+    needs: supervisor-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # torch plus a CUDA devel base does not fit in a standard runner's ~14 GB.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: tags
+        run: |
+          SHA=sha-$(git rev-parse --short HEAD)
+          BASE="${REGISTRY}/${IMAGE}"
+          # Only main gets the stable tag an app build is allowed to point at.
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "base=${BASE}:${SHA},${BASE}:v1" >> "$GITHUB_OUTPUT"
+            echo "ollama=${BASE}:${SHA}-ollama,${BASE}:v1-ollama" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${BASE}:${SHA}" >> "$GITHUB_OUTPUT"
+            echo "ollama=${BASE}:${SHA}-ollama" >> "$GITHUB_OUTPUT"
+          fi
+          echo "primary=${BASE}:${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push base
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          file: docker/Dockerfile
+          # vast's GPU hosts are x86 only; an arm64 variant would never be pulled.
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.base }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Ollama variant
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          file: docker/Dockerfile.ollama
+          platforms: linux/amd64
+          push: true
+          build-args: BASE=${{ steps.tags.outputs.primary }}
+          tags: ${{ steps.tags.outputs.ollama }}
+          cache-from: type=gha
+
+      - name: Summary
+        run: |
+          {
+            echo "### Runtime image"
+            echo ''
+            echo 'Point `IMAGE_*` in features/cloud/services/provision.ts at:'
+            echo ''
+            echo '```'
+            echo "${{ steps.tags.outputs.primary }}"
+            echo "${{ steps.tags.outputs.primary }}-ollama"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

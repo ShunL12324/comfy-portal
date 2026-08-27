@@ -327,62 +327,130 @@ def resolve_civitai(url):
     return url
 
 
-def queue_downloads(models):
-    """Hand every model to aria2 and remember the gid so progress can be read."""
-    gids = {}
-    for model in models:
-        url = model["url"]
-        folder = model.get("folder") or model.get("type") or "checkpoints"
-        filename = model.get("filename") or os.path.basename(urllib.parse.urlparse(url).path)
-        destination = os.path.join(WORKSPACE, "models", folder)
-        os.makedirs(destination, exist_ok=True)
+# Original spec per model key, so a failed download can be retried later
+# without the app having to re-send the manifest.
+MODEL_SPECS = {}
+PENDING = {}
+_dl_lock = threading.Lock()
 
-        key = "%s/%s" % (folder, filename)
-        existing = os.path.join(destination, filename)
-        if os.path.exists(existing) and os.path.getsize(existing) > 0:
-            size = os.path.getsize(existing)
-            with STATE.lock:
-                STATE.models[key] = {
-                    "name": filename,
-                    "folder": folder,
-                    "total": size,
-                    "completed": size,
-                    "speed": 0,
-                    "state": "done",
-                }
-            log("skip %s (already on disk)" % filename)
-            continue
 
-        options = {"dir": destination, "out": filename}
-        if "civitai.com" in url:
-            try:
-                url = resolve_civitai(url)
-            except Exception as exc:
-                log("civitai resolve failed for %s: %s" % (filename, exc))
-            # No header at all on the signed URL — see resolve_civitai.
-        elif HF_TOKEN:
-            options["header"] = ["Authorization: Bearer " + HF_TOKEN]
+def model_key(model):
+    url = model["url"]
+    folder = model.get("folder") or model.get("type") or "checkpoints"
+    filename = model.get("filename") or os.path.basename(urllib.parse.urlparse(url).path)
+    return "%s/%s" % (folder, filename), folder, filename
 
-        gid = aria2_call("aria2.addUri", [[url], options])
-        gids[gid] = key
+
+def add_download(model):
+    """
+    Hand one model to aria2 and record its gid.
+
+    Returns None when the file is already on disk, which is the normal case
+    after a restart: /workspace survives, so a launch interrupted at 40 of 47
+    GiB resumes rather than starting over.
+    """
+    key, folder, filename = model_key(model)
+    url = model["url"]
+    destination = os.path.join(WORKSPACE, "models", folder)
+    os.makedirs(destination, exist_ok=True)
+    MODEL_SPECS[key] = model
+
+    existing = os.path.join(destination, filename)
+    if os.path.exists(existing) and os.path.getsize(existing) > 0:
+        size = os.path.getsize(existing)
         with STATE.lock:
             STATE.models[key] = {
-                "name": filename,
-                "folder": folder,
-                "total": model.get("sizeBytes") or 0,
-                "completed": 0,
-                "speed": 0,
-                "state": "waiting",
+                "name": filename, "folder": folder, "total": size,
+                "completed": size, "speed": 0, "state": "done", "error": None,
             }
-    return gids
+        log("skip %s (already on disk)" % filename)
+        return None
+
+    options = {"dir": destination, "out": filename}
+    if "civitai.com" in url:
+        try:
+            url = resolve_civitai(url)
+        except Exception as exc:
+            log("civitai resolve failed for %s: %s" % (filename, exc))
+        # No header at all on the signed URL — see resolve_civitai.
+    elif HF_TOKEN:
+        options["header"] = ["Authorization: Bearer " + HF_TOKEN]
+
+    gid = aria2_call("aria2.addUri", [[url], options])
+    with _dl_lock:
+        PENDING[gid] = key
+    with STATE.lock:
+        STATE.models[key] = {
+            "name": filename, "folder": folder,
+            "total": model.get("sizeBytes") or 0,
+            "completed": 0, "speed": 0, "state": "waiting", "error": None,
+        }
+    return gid
 
 
-def poll_downloads(gids):
-    """Mirror aria2's view into the snapshot until every file settles."""
-    pending = dict(gids)
-    while pending:
+def queue_downloads(models):
+    for model in models:
+        try:
+            add_download(model)
+        except Exception as exc:
+            key = model_key(model)[0]
+            with STATE.lock:
+                STATE.models[key] = {
+                    "name": key.split("/")[-1], "folder": key.split("/")[0],
+                    "total": 0, "completed": 0, "speed": 0,
+                    "state": "error", "error": redact(str(exc)),
+                }
+            log("queue failed %s: %s" % (key, exc))
+
+
+def retry_models(keys=None):
+    """
+    Re-queue failed downloads.
+
+    A single bad LoRA should never cost someone the whole instance, so a failure
+    marks that one model and the rest carry on. This is how the app turns that
+    into a retry button rather than a relaunch.
+    """
+    with STATE.lock:
+        targets = [
+            key for key, entry in STATE.models.items()
+            if entry.get("state") == "error" and (keys is None or key in keys)
+        ]
+    for key in targets:
+        spec = MODEL_SPECS.get(key)
+        if not spec:
+            continue
+        log("retrying %s" % key)
+        try:
+            add_download(spec)
+        except Exception as exc:
+            log("retry failed to queue %s: %s" % (key, exc))
+    return targets
+
+
+def classify_download_error(message):
+    if "401" in message or "403" in message or "authorization" in message.lower():
+        return "model_auth_failed", "Check the API key for that host."
+    if "404" in message or "not found" in message.lower():
+        return "model_not_found", "The URL no longer resolves to a file."
+    if "no space" in message.lower():
+        return "disk_full", "Relaunch with a larger disk."
+    return "model_failed", "Retry, or check the URL."
+
+
+def download_poller():
+    """
+    Mirror aria2's view into the snapshot, for the life of the process.
+
+    Runs continuously rather than until the queue empties, so a retry issued
+    long after the initial pass is tracked exactly like the first attempt.
+    """
+    while True:
         moved = False
-        for gid, key in list(pending.items()):
+        with _dl_lock:
+            current = dict(PENDING)
+
+        for gid, key in current.items():
             try:
                 status = aria2_call("aria2.tellStatus", [gid])
             except Aria2Error as exc:
@@ -391,40 +459,54 @@ def poll_downloads(gids):
 
             completed = int(status.get("completedLength") or 0)
             total = int(status.get("totalLength") or 0)
+            state = status.get("status", "active")
+
             with STATE.lock:
                 entry = STATE.models.get(key, {})
                 if completed > (entry.get("completed") or 0):
                     moved = True
-                entry.update(
-                    {
-                        "completed": completed,
-                        "total": total or entry.get("total") or 0,
-                        "speed": int(status.get("downloadSpeed") or 0),
-                        "state": status.get("status", "active"),
-                    }
-                )
+                entry.update({
+                    "completed": completed,
+                    "total": total or entry.get("total") or 0,
+                    "speed": int(status.get("downloadSpeed") or 0),
+                    "state": "done" if state == "complete" else state,
+                })
+                if state == "error":
+                    message = status.get("errorMessage", "download failed")
+                    code, hint = classify_download_error(message)
+                    entry["state"] = "error"
+                    entry["error"] = redact(message)
+                    entry["errorCode"] = code
+                    entry["hint"] = hint
                 STATE.models[key] = entry
 
-            if status.get("status") == "complete":
-                pending.pop(gid, None)
-                log("downloaded %s" % key)
-            elif status.get("status") == "error":
-                pending.pop(gid, None)
-                message = status.get("errorMessage", "download failed")
-                code = "model_auth_failed" if "401" in message or "403" in message else "model_failed"
-                STATE.fail(code, "%s: %s" % (key, message), hint="Check the model URL and the matching API key.")
-                return False
+            if state in ("complete", "error"):
+                with _dl_lock:
+                    PENDING.pop(gid, None)
+                log("%s %s" % ("downloaded" if state == "complete" else "FAILED", key))
 
         now = int(time.time())
         with STATE.lock:
+            downloading = bool(current)
             if moved:
                 STATE.last_progress_at = now
                 STATE.stalled = False
-            elif now - STATE.last_progress_at > STALL_SECONDS:
+            elif downloading and now - STATE.last_progress_at > STALL_SECONDS:
                 STATE.stalled = True
-        STATE.persist()
+        if current:
+            STATE.persist()
         time.sleep(2)
-    return True
+
+
+def wait_for_downloads():
+    """Block until nothing is in flight. Failures don't block — they're reported."""
+    while True:
+        with _dl_lock:
+            if not PENDING:
+                break
+        time.sleep(2)
+    with STATE.lock:
+        return [k for k, v in STATE.models.items() if v.get("state") == "error"]
 
 
 # ---------------------------------------------------------------- processes --
@@ -535,6 +617,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._authorised():
             return self._send(401, json.dumps({"error": "unauthorised"}))
+        if self.path == "/v1/models/retry":
+            length = int(self.headers.get("Content-Length") or 0)
+            keys = None
+            if length:
+                try:
+                    keys = json.loads(self.rfile.read(length)).get("keys")
+                except Exception:
+                    keys = None
+            retried = retry_models(keys)
+            return self._send(200, json.dumps({"retried": retried}))
+
         if self.path == "/v1/comfyui/restart":
             service = PROCESSES.get("comfyui")
             if service and service["process"].poll() is None:
@@ -676,7 +769,8 @@ def run():
     # Extensions and Ollama proceed while models download: on a fresh instance
     # the models are the clock, and everything else is free if it overlaps.
     STATE.set_phase("downloading")
-    gids = queue_downloads(models)
+    threading.Thread(target=download_poller, daemon=True).start()
+    queue_downloads(models)
 
     def side_work():
         STATE.step("extensions", "running")
@@ -689,8 +783,11 @@ def run():
     side = threading.Thread(target=side_work, daemon=True)
     side.start()
 
-    if gids and not poll_downloads(gids):
-        return
+    failed = wait_for_downloads()
+    if failed:
+        # Not fatal on purpose: a server with 19 of 20 models is worth far more
+        # than no server, and the app offers a retry per model.
+        log("%d model(s) failed: %s" % (len(failed), ", ".join(failed)))
     side.join(timeout=1800)
 
     STATE.set_phase("starting")
@@ -709,16 +806,28 @@ def run():
         "cwd": COMFY_DIR,
     }
 
-    for _ in range(300):
+    STATE.step("comfyui-start", "running", "waiting for /system_stats")
+    for attempt in range(300):
         try:
             with urllib.request.urlopen(
                 "http://127.0.0.1:%d/system_stats" % COMFY_PORT, timeout=5
             ) as response:
                 if response.status == 200:
+                    STATE.step("comfyui-start", "done")
+                    with STATE.lock:
+                        STATE.services["comfyui"]["state"] = "running"
+                        STATE.services["comfyui"]["answeredAt"] = int(time.time())
                     break
         except Exception:
+            if attempt % 15 == 0:
+                # Custom nodes import at startup and some are slow; saying so
+                # beats a silent ten-minute wait.
+                with STATE.lock:
+                    STATE.services["comfyui"]["state"] = "starting"
+                STATE.persist()
             time.sleep(2)
     else:
+        STATE.step("comfyui-start", "failed")
         STATE.fail("comfy_start_timeout", "ComfyUI did not answer after 10 minutes.",
                    hint="Check the comfyui log stream.")
         return

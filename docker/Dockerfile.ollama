@@ -1,0 +1,18 @@
+# Comfy Portal runtime image, Ollama variant.
+#
+# Some workflows use custom nodes that call a local LLM — prompt rewriting and
+# the like. Those nodes reach Ollama on 127.0.0.1:11434 inside the container,
+# so the port is deliberately NOT published: an open Ollama endpoint on a public
+# IP is free compute for anyone who finds it.
+#
+# Models are not baked in. Which ones a launch needs is a property of the
+# template, and a couple of 8B models would add more to the image than the whole
+# rest of the stack.
+
+ARG BASE=ghcr.io/shunl12324/comfy-portal-runtime:dev
+FROM ${BASE}
+
+RUN curl -fsSL https://ollama.com/install.sh | sh && \
+    ollama --version
+
+ENTRYPOINT ["python", "/opt/cp/supervisor.py"]
