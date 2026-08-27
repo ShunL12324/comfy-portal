@@ -23,7 +23,6 @@ export function SchedulerSelector({ value, onChange }: SchedulerSelectorProps) {
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
-    bottomSheetRef.current?.dismiss();
   }, []);
 
   const selectedOption = SCHEDULER_OPTIONS.find((option) => option.value === value);

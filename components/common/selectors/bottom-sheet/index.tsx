@@ -96,6 +96,11 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
           snapPoints={['85%']}
           index={isVisible ? 0 : -1}
           enablePanDownToClose
+          // `onClose` must only flip the caller's visibility state. It's wired
+          // to onDismiss, so if it also called dismiss() it would re-enter the
+          // modal's own dismissal and desync its mount state — after which
+          // present() is silently ignored and the trigger looks dead. Closing
+          // is driven by `index` above.
           onDismiss={onClose}
           handleComponent={renderHandle}
           keyboardBehavior="interactive"

@@ -99,11 +99,21 @@ export const EditServerModal = forwardRef<
   };
 
   // Close modal and reset form
-  const handleClose = useCallback(() => {
+  /**
+   * Cleanup only — no dismiss call. This runs *because* the sheet has already
+   * gone, so asking it to go again re-enters the modal's dismissal path and
+   * leaves its mount state out of sync, after which present() is silently
+   * ignored and the trigger looks dead.
+   */
+  const handleDismissed = useCallback(() => {
     isPresentedRef.current = false;
     setNameError('');
     setHostError('');
     setPortError('');
+  }, []);
+
+  /** For the buttons: ask the sheet to close. onDismiss does the cleanup. */
+  const handleClose = useCallback(() => {
     bottomSheetModalRef.current?.dismiss();
   }, []);
 
@@ -137,7 +147,7 @@ export const EditServerModal = forwardRef<
       ref={bottomSheetModalRef}
       index={0}
       snapPoints={['70%']}
-      onDismiss={handleClose}
+      onDismiss={handleDismissed}
       enablePanDownToClose={true}
       topInset={insets.top}
       keyboardBehavior="interactive"

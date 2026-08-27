@@ -140,7 +140,6 @@ export function ModelSelector({
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
-    bottomSheetRef.current?.dismiss();
   }, []);
 
   const { options, fromServer } = useModelOptions({ serverId, classType, inputName, folders });

@@ -130,7 +130,13 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
       handleClose();
     };
 
-    const handleClose = useCallback(() => {
+    /**
+     * Cleanup only — no dismiss call. This runs *because* the sheet has
+     * already gone, so asking it to go again re-enters the modal's dismissal
+     * path and leaves its internal mount state out of sync, after which
+     * present() is silently ignored and the button appears dead.
+     */
+    const handleDismissed = useCallback(() => {
       isPresentedRef.current = false;
       setName('');
       setHost('');
@@ -140,6 +146,10 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
       setHostError('');
       setPortError('');
       setToken('');
+    }, []);
+
+    /** For the buttons: ask the sheet to close. onDismiss does the cleanup. */
+    const handleClose = useCallback(() => {
       bottomSheetModalRef.current?.dismiss();
     }, []);
 
@@ -148,7 +158,7 @@ export const AddServerModal = forwardRef<AddServerModalRef, AddServerModalProps>
         ref={bottomSheetModalRef}
         index={0}
         snapPoints={['70%']}
-        onDismiss={handleClose}
+        onDismiss={handleDismissed}
         topInset={insets.top}
         enablePanDownToClose={true}
         keyboardBehavior="interactive"

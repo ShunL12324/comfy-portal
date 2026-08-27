@@ -26,7 +26,6 @@ export function OptionSelector<T extends string>({
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
-    bottomSheetRef.current?.dismiss();
   }, []);
 
   const selectedOption = options.find((option) => option.value === value);

@@ -23,7 +23,6 @@ export function SamplerSelector({ value, onChange }: SamplerSelectorProps) {
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
-    bottomSheetRef.current?.dismiss();
   }, []);
 
   const selectedOption = SAMPLER_OPTIONS.find((option) => option.value === value);
