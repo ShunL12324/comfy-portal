@@ -11,7 +11,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ${{ github.repository_owner }}/comfy-portal-runtime
+  # Lowercased in the Tags step: GHCR rejects uppercase names and this owner
+  # has capitals.
+  IMAGE_NAME: comfy-portal-runtime
 
 jobs:
   # Fast gate. Exercises the supervisor against a stub ComfyUI and fixtures
@@ -122,7 +124,8 @@ jobs:
         id: tags
         run: |
           SHA=sha-$(git rev-parse --short HEAD)
-          BASE="${REGISTRY}/${IMAGE}"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          BASE="${REGISTRY}/${OWNER}/${IMAGE_NAME}"
           # Only main gets the stable tag an app build is allowed to point at.
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "base=${BASE}:${SHA},${BASE}:v1" >> "$GITHUB_OUTPUT"
@@ -132,6 +135,7 @@ jobs:
             echo "ollama=${BASE}:${SHA}-ollama" >> "$GITHUB_OUTPUT"
           fi
           echo "primary=${BASE}:${SHA}" >> "$GITHUB_OUTPUT"
+          echo "cacheref=${BASE}:buildcache" >> "$GITHUB_OUTPUT"
 
       - name: Build and push base
         uses: docker/build-push-action@v6
@@ -142,8 +146,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.tags.outputs.base }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ steps.tags.outputs.cacheref }}
+          cache-to: type=registry,ref=${{ steps.tags.outputs.cacheref }},mode=max
 
       - name: Build and push Ollama variant
         uses: docker/build-push-action@v6
@@ -154,7 +158,7 @@ jobs:
           push: true
           build-args: BASE=${{ steps.tags.outputs.primary }}
           tags: ${{ steps.tags.outputs.ollama }}
-          cache-from: type=gha
+          cache-from: type=registry,ref=${{ steps.tags.outputs.cacheref }}
 
       - name: Summary
         run: |

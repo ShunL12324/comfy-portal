@@ -48,9 +48,9 @@ RUN pip install --upgrade pip && \
     pip install torch torchvision torchaudio --index-url ${TORCH_INDEX}
 
 RUN git clone --depth 1 --branch ${COMFYUI_REF} \
-        https://github.com/Comfy-Org/ComfyUI /opt/comfyui/src && \
-    cp -a /opt/comfyui/src/. /opt/comfyui/ && \
-    rm -rf /opt/comfyui/src && \
+        https://github.com/Comfy-Org/ComfyUI /tmp/comfyui && \
+    cp -a /tmp/comfyui/. /opt/comfyui/ && \
+    rm -rf /tmp/comfyui /opt/comfyui/.git && \
     pip install -r /opt/comfyui/requirements.txt
 
 # ComfyUI-Manager, and the endpoint node the app's /cpe/* calls depend on —
