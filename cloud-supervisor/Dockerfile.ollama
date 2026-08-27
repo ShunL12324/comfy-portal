@@ -12,7 +12,11 @@
 ARG BASE=ghcr.io/shunl12324/comfy-portal-runtime:dev
 FROM ${BASE}
 
-RUN curl -fsSL https://ollama.com/install.sh | sh && \
+# zstd is what Ollama's installer now unpacks with, and it isn't in the base.
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends zstd && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://ollama.com/install.sh | sh && \
     ollama --version
 
 ENTRYPOINT ["python", "/opt/cp/supervisor.py"]
