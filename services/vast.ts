@@ -1,5 +1,3 @@
-import { fetch } from 'expo/fetch';
-
 /**
  * vast.ai REST client.
  *
@@ -67,20 +65,32 @@ function parseVastJson(text: string): any {
 }
 
 async function request(apiKey: string, path: string, init?: { method?: string; body?: unknown }) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    Accept: 'application/json',
+  };
+  // Only when there is something to describe. A Content-Type on a bodyless GET
+  // is meaningless and some intermediaries object to it.
+  if (init?.body) headers['Content-Type'] = 'application/json';
+
+  // The global fetch rather than expo/fetch: the streaming implementation is
+  // there for AI SDK responses, and against vast's HTTP/2 + Cloudflare front it
+  // fails on iOS with NSURLErrorNetworkConnectionLost. Nothing here streams.
   const response = await fetch(`${API}${path}`, {
     method: init?.method ?? 'GET',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: init?.body ? JSON.stringify(init.body) : undefined,
-  } as any);
+  });
 
   const text = await response.text();
   if (!response.ok) {
+    // vast answers unauthenticated requests with 404 rather than 401 — it
+    // doesn't distinguish "no such endpoint" from "not allowed to see it" — so
+    // a bad key looks like a wrong URL unless we say otherwise.
+    const rejected = response.status === 401 || response.status === 403 || response.status === 404;
     throw new VastError(
-      response.status === 401
-        ? 'vast.ai rejected the API key'
+      rejected
+        ? 'vast.ai rejected the request — check the API key'
         : `vast.ai request failed (${response.status}): ${text.slice(0, 200)}`,
       response.status,
     );
