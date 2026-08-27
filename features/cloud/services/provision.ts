@@ -21,10 +21,16 @@ import type { GpuTemplate } from '../types';
  * Instead vast's `onstart` runs a short stub that fetches the real script.
  */
 
-/** Where the instance pulls the install script from. Versioned so an old
- *  instance is never affected by a later change. */
+/**
+ * Where the instance pulls the install script from.
+ *
+ * Pinned to a commit rather than a branch: a shipped build then always fetches
+ * the exact script it was tested against, and editing the script later can't
+ * reach into apps already in the wild. When you change bootstrap.sh, push it
+ * and move this SHA — the commit only has to be pushed, not merged.
+ */
 const BOOTSTRAP_URL =
-  'https://raw.githubusercontent.com/ShunL12324/comfy-portal/main/scripts/cloud-bootstrap/v1/bootstrap.sh';
+  'https://raw.githubusercontent.com/ShunL12324/comfy-portal/e7000294650f98869bb5dbe775f56512004ce70f/scripts/cloud-bootstrap/v1/bootstrap.sh';
 
 export const COMFY_PORT = 8188;
 
@@ -58,7 +64,10 @@ export function buildOnstart(): string {
     'set -e',
     'export DEBIAN_FRONTEND=noninteractive',
     'command -v curl >/dev/null || (apt-get update -qq && apt-get install -y -qq curl)',
-    `curl -fsSL ${BOOTSTRAP_URL} -o /tmp/bootstrap.sh`,
+    'mkdir -p /workspace',
+    // Without the fallback a failed fetch just ends onstart under `set -e`,
+    // leaving a machine that bills happily with no ComfyUI and no explanation.
+    `curl -fsSL ${BOOTSTRAP_URL} -o /tmp/bootstrap.sh || { echo "bootstrap fetch failed (${BOOTSTRAP_URL})" > /workspace/onstart.log; exit 1; }`,
     'chmod +x /tmp/bootstrap.sh',
     'nohup bash /tmp/bootstrap.sh > /workspace/onstart.log 2>&1 &',
   ].join('\n');
