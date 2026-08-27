@@ -22,7 +22,7 @@ export default function TemplatesScreen() {
   const pendingName = templates.find((t) => t.id === pendingDelete)?.name ?? '';
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="bg-background-0 flex-1">
       <AppBar title="Templates" showBack />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="sm">
@@ -38,11 +38,10 @@ export default function TemplatesScreen() {
           </Button>
 
           {templates.length === 0 ? (
-            <VStack space="md" className="items-center px-6 py-12">
+            <VStack space="md" className="px-6 py-12 items-center">
               <Icon as={LayoutTemplate} className="h-8 w-8 text-typography-300" />
-              <Text className="text-center text-sm text-typography-400">
-                A template lists the models, extensions and workflows to install on a fresh
-                instance.
+              <Text className="text-sm text-typography-400 text-center">
+                A template lists the models, extensions and workflows to install on a fresh instance.
               </Text>
             </VStack>
           ) : (
@@ -60,8 +59,8 @@ export default function TemplatesScreen() {
                     <Text className="text-xs text-typography-400">
                       {template.models.length} model{template.models.length === 1 ? '' : 's'} ·{' '}
                       {template.extensions.length} extension
-                      {template.extensions.length === 1 ? '' : 's'} · {template.workflows.length}{' '}
-                      workflow{template.workflows.length === 1 ? '' : 's'}
+                      {template.extensions.length === 1 ? '' : 's'} · {template.workflows.length} workflow
+                      {template.workflows.length === 1 ? '' : 's'}
                     </Text>
                     <Text className="text-xs text-typography-400">
                       {template.gpuQuery || 'Any GPU'} · {estimateDiskGb(template.models)} GB disk

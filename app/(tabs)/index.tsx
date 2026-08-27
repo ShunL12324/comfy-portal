@@ -10,12 +10,14 @@ import { VStack } from '@/components/ui/vstack';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { Link } from 'expo-router';
-import { ArrowRight, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
+import { CLOUD_GPU_SUPPORTED } from '@/features/cloud/utils/availability';
+import { Link, useRouter } from 'expo-router';
+import { ArrowRight, Cloud, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useRef, useState } from 'react';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const addServerModalRef = useRef<AddServerModalRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { servers, refreshServer } = useServersStore();
@@ -45,6 +47,17 @@ export default function HomeScreen() {
                 <Text className="text-sm font-medium text-typography-900">Add Server</Text>
               </HStack>
             </Button>
+            {CLOUD_GPU_SUPPORTED && (
+              <Button
+                variant="solid"
+                action="secondary"
+                size="md"
+                className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+                onPress={() => router.push('/settings/cloud-gpu/launch')}
+              >
+                <Icon as={Cloud} size="md" className="text-primary-500" />
+              </Button>
+            )}
             <Button
               variant="solid"
               action="secondary"

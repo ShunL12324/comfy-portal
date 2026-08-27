@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { FormInput } from '@/components/self-ui/form-input';
 import { StyledTextarea } from '@/components/self-ui/styled-textarea';
 import { Button, ButtonText } from '@/components/ui/button';
@@ -125,186 +126,167 @@ export default function TemplateEditor() {
   const alreadyAdded = (workflowName: string) => workflows.some((w) => w.name === workflowName);
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="bg-background-0 flex-1">
       <AppBar title={isNew ? 'New Template' : 'Edit Template'} showBack />
-      <ScrollView className="flex-1">
-        <VStack className="px-5 pb-8 pt-4" space="md">
-          <FormInput
-            title="Name"
-            defaultValue={name}
-            onChangeText={setName}
-            placeholder="e.g. Qwen image edit"
-          />
-          <FormInput
-            title="GPU"
-            defaultValue={gpuQuery}
-            onChangeText={setGpuQuery}
-            placeholder="RTX 4090"
-          />
-          <Text className="-mt-2 text-xs text-typography-400">
-            vast&apos;s short name for the card, used to search offers.
-          </Text>
+      {/* These inputs go through AdaptiveTextInput, and BottomSheetContext
+          defaults to true — so on a plain screen they'd render the BottomSheet
+          variant and reach for a sheet that isn't there. */}
+      <BottomSheetProvider isInSheet={false}>
+        <ScrollView className="flex-1">
+          <VStack className="px-5 pb-8 pt-4" space="md">
+            <FormInput title="Name" defaultValue={name} onChangeText={setName} placeholder="e.g. Qwen image edit" />
+            <FormInput title="GPU" defaultValue={gpuQuery} onChangeText={setGpuQuery} placeholder="RTX 4090" />
+            <Text className="-mt-2 text-xs text-typography-400">
+              vast&apos;s short name for the card, used to search offers.
+            </Text>
 
-          {/* ---- Models ---- */}
-          <SectionHeader
-            title="Models"
-            subtitle={
-              models.length
-                ? `${models.length} file${models.length === 1 ? '' : 's'}${knownSize ? ` · ${formatBytes(knownSize)}` : ''} · ${diskGb} GB disk`
-                : 'Paste a HuggingFace or Civitai link'
-            }
-          />
-          <VStack space="xs">
-            <FormInput
-              title=""
-              defaultValue={modelInput}
-              onChangeText={setModelInput}
-              placeholder="https://civitai.com/models/... or huggingface.co/..."
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={modelError}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={addModel}
-              isDisabled={resolving || !modelInput.trim()}
-              style={{ width: 108 }}
-              className="rounded-lg"
-            >
-              {resolving ? <Spinner size="small" /> : <ButtonText className="text-xs">Add</ButtonText>}
-            </Button>
-          </VStack>
-          {models.map((model, index) => (
-            <ModelRow
-              key={`${model.url}-${index}`}
-              model={model}
-              onChangeType={(type) =>
-                setModels((prev) => prev.map((m, i) => (i === index ? { ...m, type } : m)))
+            {/* ---- Models ---- */}
+            <SectionHeader
+              title="Models"
+              subtitle={
+                models.length
+                  ? `${models.length} file${models.length === 1 ? '' : 's'}${knownSize ? ` · ${formatBytes(knownSize)}` : ''} · ${diskGb} GB disk`
+                  : 'Paste a HuggingFace or Civitai link'
               }
-              onRemove={() => setModels((prev) => prev.filter((_, i) => i !== index))}
             />
-          ))}
-
-          {/* ---- Extensions ---- */}
-          <SectionHeader title="Extensions" subtitle="Custom node repositories to clone" />
-          <VStack space="xs">
-            <FormInput
-              title=""
-              defaultValue={extensionInput}
-              onChangeText={setExtensionInput}
-              placeholder="https://github.com/user/ComfyUI-Something"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={addExtension}
-              isDisabled={!extensionInput.trim()}
-              style={{ width: 108 }}
-              className="rounded-lg"
-            >
-              <ButtonText className="text-xs">Add</ButtonText>
-            </Button>
-          </VStack>
-          {extensions.map((url, index) => (
-            <HStack
-              key={`${url}-${index}`}
-              className="items-center justify-between rounded-xl bg-background-50 p-3"
-            >
-              <Text className="flex-1 text-xs text-typography-700" numberOfLines={1}>
-                {url.replace('https://github.com/', '')}
-              </Text>
-              <Pressable
-                onPress={() => setExtensions((prev) => prev.filter((_, i) => i !== index))}
-                className="p-1"
-              >
-                <Icon as={Trash2} size="xs" className="text-error-400" />
-              </Pressable>
-            </HStack>
-          ))}
-
-          {/* ---- Workflows ---- */}
-          <SectionHeader
-            title="Workflows"
-            subtitle="Copied into the template, so it stays complete on its own"
-          />
-          {workflows.map((workflow, index) => (
-            <HStack
-              key={`${workflow.name}-${index}`}
-              className="items-center justify-between rounded-xl bg-background-50 p-3"
-            >
-              <Text className="flex-1 text-sm text-typography-900" numberOfLines={1}>
-                {workflow.name}
-              </Text>
-              <Pressable
-                onPress={() => setWorkflows((prev) => prev.filter((_, i) => i !== index))}
-                className="p-1"
-              >
-                <Icon as={Trash2} size="xs" className="text-error-400" />
-              </Pressable>
-            </HStack>
-          ))}
-
-          {localWorkflows.length > 0 && (
             <VStack space="xs">
-              <Text className="text-xs text-typography-400">From this device</Text>
-              {localWorkflows.map((workflow) => {
-                const added = alreadyAdded(workflow.name);
-                return (
-                  <Pressable
-                    key={workflow.id}
-                    onPress={() => !added && addWorkflowFromLibrary(workflow.id)}
-                    className="flex-row items-center justify-between rounded-xl border-[0.5px] border-background-100 p-3 active:opacity-70"
-                  >
-                    <Text className="flex-1 text-sm text-typography-700" numberOfLines={1}>
-                      {workflow.name}
-                    </Text>
-                    <Icon
-                      as={added ? Check : Plus}
-                      size="xs"
-                      className={added ? 'text-success-500' : 'text-primary-500'}
-                    />
-                  </Pressable>
-                );
-              })}
+              <FormInput
+                title=""
+                defaultValue={modelInput}
+                onChangeText={setModelInput}
+                placeholder="https://civitai.com/models/... or huggingface.co/..."
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={modelError}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={addModel}
+                isDisabled={resolving || !modelInput.trim()}
+                style={{ width: 108 }}
+                className="rounded-lg"
+              >
+                {resolving ? <Spinner size="small" /> : <ButtonText className="text-xs">Add</ButtonText>}
+              </Button>
             </VStack>
-          )}
+            {models.map((model, index) => (
+              <ModelRow
+                key={`${model.url}-${index}`}
+                model={model}
+                onChangeType={(type) => setModels((prev) => prev.map((m, i) => (i === index ? { ...m, type } : m)))}
+                onRemove={() => setModels((prev) => prev.filter((_, i) => i !== index))}
+              />
+            ))}
 
-          <VStack space="xs">
-            <Text className="text-xs text-typography-400">Or paste workflow JSON</Text>
-            <StyledTextarea
-              value={workflowJson}
-              onChangeText={setWorkflowJson}
-              placeholder="{ ... }"
-              minHeight={70}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={addWorkflowFromJson}
-              isDisabled={!workflowJson.trim()}
-              style={{ width: 108 }}
-              className="rounded-lg"
-            >
-              <ButtonText className="text-xs">Add</ButtonText>
-            </Button>
-          </VStack>
-
-          <HStack space="sm" className="mt-4">
-            <Button variant="outline" onPress={() => router.back()} className="flex-1 rounded-lg">
-              <HStack space="xs" className="items-center">
-                <Icon as={X} size="xs" className="text-typography-500" />
-                <ButtonText className="text-typography-500">Cancel</ButtonText>
+            {/* ---- Extensions ---- */}
+            <SectionHeader title="Extensions" subtitle="Custom node repositories to clone" />
+            <VStack space="xs">
+              <FormInput
+                title=""
+                defaultValue={extensionInput}
+                onChangeText={setExtensionInput}
+                placeholder="https://github.com/user/ComfyUI-Something"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={addExtension}
+                isDisabled={!extensionInput.trim()}
+                style={{ width: 108 }}
+                className="rounded-lg"
+              >
+                <ButtonText className="text-xs">Add</ButtonText>
+              </Button>
+            </VStack>
+            {extensions.map((url, index) => (
+              <HStack key={`${url}-${index}`} className="rounded-xl bg-background-50 p-3 items-center justify-between">
+                <Text className="text-xs text-typography-700 flex-1" numberOfLines={1}>
+                  {url.replace('https://github.com/', '')}
+                </Text>
+                <Pressable onPress={() => setExtensions((prev) => prev.filter((_, i) => i !== index))} className="p-1">
+                  <Icon as={Trash2} size="xs" className="text-error-400" />
+                </Pressable>
               </HStack>
-            </Button>
-            <Button onPress={handleSave} className="flex-1 rounded-lg bg-primary-500">
-              <ButtonText>Save</ButtonText>
-            </Button>
-          </HStack>
-        </VStack>
-      </ScrollView>
+            ))}
+
+            {/* ---- Workflows ---- */}
+            <SectionHeader title="Workflows" subtitle="Copied into the template, so it stays complete on its own" />
+            {workflows.map((workflow, index) => (
+              <HStack
+                key={`${workflow.name}-${index}`}
+                className="rounded-xl bg-background-50 p-3 items-center justify-between"
+              >
+                <Text className="text-sm text-typography-900 flex-1" numberOfLines={1}>
+                  {workflow.name}
+                </Text>
+                <Pressable onPress={() => setWorkflows((prev) => prev.filter((_, i) => i !== index))} className="p-1">
+                  <Icon as={Trash2} size="xs" className="text-error-400" />
+                </Pressable>
+              </HStack>
+            ))}
+
+            {localWorkflows.length > 0 && (
+              <VStack space="xs">
+                <Text className="text-xs text-typography-400">From this device</Text>
+                {localWorkflows.map((workflow) => {
+                  const added = alreadyAdded(workflow.name);
+                  return (
+                    <Pressable
+                      key={workflow.id}
+                      onPress={() => !added && addWorkflowFromLibrary(workflow.id)}
+                      className="rounded-xl border-background-100 p-3 flex-row items-center justify-between border-[0.5px] active:opacity-70"
+                    >
+                      <Text className="text-sm text-typography-700 flex-1" numberOfLines={1}>
+                        {workflow.name}
+                      </Text>
+                      <Icon
+                        as={added ? Check : Plus}
+                        size="xs"
+                        className={added ? 'text-success-500' : 'text-primary-500'}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </VStack>
+            )}
+
+            <VStack space="xs">
+              <Text className="text-xs text-typography-400">Or paste workflow JSON</Text>
+              <StyledTextarea
+                value={workflowJson}
+                onChangeText={setWorkflowJson}
+                placeholder="{ ... }"
+                minHeight={70}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={addWorkflowFromJson}
+                isDisabled={!workflowJson.trim()}
+                style={{ width: 108 }}
+                className="rounded-lg"
+              >
+                <ButtonText className="text-xs">Add</ButtonText>
+              </Button>
+            </VStack>
+
+            <HStack space="sm" className="mt-4">
+              <Button variant="outline" onPress={() => router.back()} className="rounded-lg flex-1">
+                <HStack space="xs" className="items-center">
+                  <Icon as={X} size="xs" className="text-typography-500" />
+                  <ButtonText className="text-typography-500">Cancel</ButtonText>
+                </HStack>
+              </Button>
+              <Button onPress={handleSave} className="rounded-lg bg-primary-500 flex-1">
+                <ButtonText>Save</ButtonText>
+              </Button>
+            </HStack>
+          </VStack>
+        </ScrollView>
+      </BottomSheetProvider>
     </View>
   );
 }

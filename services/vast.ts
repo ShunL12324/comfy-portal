@@ -208,3 +208,64 @@ export async function destroyInstance(apiKey: string, instanceId: number): Promi
 export function isTerminalStatus(status: VastInstanceStatus): boolean {
   return status === 'exited' || status === 'offline' || status === 'unknown';
 }
+
+export interface CreateInstanceOptions {
+  offerId: number;
+  diskGb: number;
+  label: string;
+  /** Shell run by the instance on boot. vast caps this at 4048 characters. */
+  onstart: string;
+  /** Plain env vars; port publishing is added separately. */
+  env: Record<string, string>;
+  /** Container ports to publish, e.g. [8188]. */
+  ports: number[];
+  image?: string;
+}
+
+const DEFAULT_IMAGE = 'nvidia/cuda:13.3.0-cudnn-devel-ubuntu22.04';
+
+/** vast's hard cap on the onstart field. */
+export const ONSTART_LIMIT = 4048;
+
+/**
+ * Rents the machine. **This starts billing**, so it is only ever called behind
+ * an explicit confirmation.
+ */
+export async function createInstance(
+  apiKey: string,
+  options: CreateInstanceOptions,
+): Promise<number> {
+  if (options.onstart.length > ONSTART_LIMIT) {
+    throw new VastError(
+      `Startup script is ${options.onstart.length} characters; vast allows ${ONSTART_LIMIT}.`,
+    );
+  }
+
+  // vast takes env vars and port mappings as one docker-flag-style string
+  // rather than a structured field.
+  const envString = [
+    ...Object.entries(options.env)
+      .filter(([, value]) => value)
+      .map(([key, value]) => `-e ${key}=${value}`),
+    ...options.ports.map((p) => `-p ${p}:${p}`),
+  ].join(' ');
+
+  const data = await request(apiKey, `/asks/${options.offerId}/`, {
+    method: 'PUT',
+    body: {
+      image: options.image ?? DEFAULT_IMAGE,
+      disk: options.diskGb,
+      runtype: 'ssh_direct',
+      label: options.label,
+      env: envString,
+      onstart: options.onstart,
+    },
+  });
+
+  // Documented quirk: the new instance id comes back as `new_contract`.
+  const instanceId = data?.new_contract;
+  if (!instanceId) {
+    throw new VastError('vast accepted the request but returned no instance id');
+  }
+  return Number(instanceId);
+}

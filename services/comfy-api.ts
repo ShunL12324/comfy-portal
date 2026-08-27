@@ -244,3 +244,34 @@ export const getAndConvertWorkflow = async (serverId: string, filename: string):
     throw error;
   }
 };
+
+/**
+ * Writes a workflow into the server's `user/default/workflows/` via
+ * comfy-portal-endpoint, so it shows up in the ComfyUI web UI too.
+ *
+ * Used after provisioning a cloud instance: the template carries the workflow
+ * JSON, and this is what puts it on the machine. Requires the CPE extension —
+ * callers should treat failure as non-fatal, since the app can still run the
+ * workflow by sending it inline.
+ */
+export const saveWorkflowToServer = async (
+  serverId: string,
+  name: string,
+  workflow: unknown,
+): Promise<void> => {
+  const server = useServersStore.getState().servers.find((s) => s.id === serverId);
+  if (!server) throw new Error('Server not found');
+
+  const url = await buildServerUrl(server.useSSL, server.host, server.port, '/cpe/workflow/save');
+  const response = await fetchWithAuth(url, server.token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // `workflow` is a JSON *string* field, not a nested object — the endpoint
+    // writes it to disk verbatim.
+    body: JSON.stringify({ workflow: JSON.stringify(workflow), name }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save workflow (${response.status}): ${await response.text()}`);
+  }
+};

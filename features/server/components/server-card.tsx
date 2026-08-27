@@ -1,3 +1,4 @@
+import { accruedCost, formatUptime, formatUsd } from '@/features/cloud/utils/cost';
 import {
   AlertDialog,
   AlertDialogBackdrop,
@@ -13,6 +14,7 @@ import { Menu, MenuItem, MenuItemLabel } from '@/components/ui/menu';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
+import type { Server as ServerConfig } from '@/features/server/types';
 import { router } from 'expo-router';
 import { EllipsisVertical, Loader, Server, Settings2, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -33,6 +35,7 @@ interface ServerInfoProps {
   models?: any[];
   status: 'online' | 'offline' | 'refreshing';
   latency?: number;
+  cloud?: ServerConfig['cloud'];
 }
 
 interface ActionMenuProps {
@@ -41,7 +44,7 @@ interface ActionMenuProps {
 }
 
 // Sub-components
-const ServerInfo = ({ name, host, port, models, status, latency }: ServerInfoProps) => {
+const ServerInfo = ({ name, host, port, models, status, latency, cloud }: ServerInfoProps) => {
   const isRefreshing = status === 'refreshing';
   const isOnline = status === 'online';
 
@@ -75,6 +78,15 @@ const ServerInfo = ({ name, host, port, models, status, latency }: ServerInfoPro
           {isOnline && latency !== undefined ? ` • ${latency}ms` : ''}
           {!isOnline && !isRefreshing ? ' • Offline' : ''}
         </Text>
+        {/* Rented hardware bills whether or not it's being used, so the running
+            total sits on the card rather than behind a tap. */}
+        {cloud ? (
+          <Text className="text-xs text-warning-600" numberOfLines={1}>
+            {formatUptime(cloud.startedAt)} •{' '}
+            {formatUsd(accruedCost(cloud.startedAt, cloud.pricePerHour))} so far •{' '}
+            {formatUsd(cloud.pricePerHour)}/hr
+          </Text>
+        ) : null}
       </VStack>
     </HStack>
   );
@@ -150,7 +162,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
 
   if (!server) return null;
 
-  const { name, host, port, status, latency, models } = server;
+  const { name, host, port, status, latency, models, cloud } = server;
 
   const handleEdit = () => {
     editModalRef.current?.present();
@@ -173,7 +185,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
           className="overflow-hidden rounded-xl bg-background-50 p-3.5"
         >
           <HStack space="sm" className="items-center justify-between">
-            <ServerInfo name={name} host={host} port={port} models={models} status={status} latency={latency} />
+            <ServerInfo name={name} host={host} port={port} models={models} status={status} latency={latency} cloud={cloud} />
             <ActionMenu onEdit={handleEdit} onDelete={() => setIsDeleteAlertOpen(true)} />
           </HStack>
         </TouchableOpacity>

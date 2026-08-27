@@ -29,12 +29,13 @@ const inFlightModelSyncs = new Map<string, Promise<void>>();
 interface ServersState {
   servers: Server[];
   loading: boolean;
+  /** Returns the id of the newly created server. */
   addServer: (
     server: Omit<
       Server,
       'id' | 'status' | 'latency' | 'models' | 'lastModelSync'
     >,
-  ) => void;
+  ) => string;
   removeServer: (id: string) => void;
   updateServer: (
     id: string,
@@ -65,6 +66,9 @@ export const useServersStore = create<ServersState>()(
         set((state) => ({
           servers: [...state.servers, newServer],
         }));
+        // Returned so a caller that just provisioned a machine can attach
+        // workflows to it without searching the list for what it added.
+        return newServer.id;
       },
 
       removeServer: (id) =>

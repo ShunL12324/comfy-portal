@@ -65,11 +65,7 @@ export default function CloudInstances() {
       setPendingDestroy(null);
       await load();
     } catch (e) {
-      showToast.error(
-        'Failed',
-        e instanceof Error ? e.message : 'Could not destroy instance',
-        insets.top + 8,
-      );
+      showToast.error('Failed', e instanceof Error ? e.message : 'Could not destroy instance', insets.top + 8);
     }
   };
 
@@ -77,7 +73,7 @@ export default function CloudInstances() {
   const totalPerHour = running.reduce((sum, i) => sum + i.pricePerHour, 0);
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="bg-background-0 flex-1">
       <AppBar title="Instances" showBack />
 
       {running.length > 0 && (
@@ -96,25 +92,18 @@ export default function CloudInstances() {
           {!CLOUD_GPU_SUPPORTED ? (
             <EmptyState icon={CloudOff} text={CLOUD_GPU_UNSUPPORTED_REASON} />
           ) : !hydrated || instances === null ? (
-            <View className="items-center py-12">
+            <View className="py-12 items-center">
               <Spinner size="small" />
             </View>
           ) : !vastApiKey ? (
-            <EmptyState
-              icon={CloudOff}
-              text="Add a vast.ai API key in Cloud GPU settings to see your instances."
-            />
+            <EmptyState icon={CloudOff} text="Add a vast.ai API key in Cloud GPU settings to see your instances." />
           ) : error ? (
             <EmptyState icon={CloudOff} text={error} />
           ) : instances.length === 0 ? (
             <EmptyState icon={Server} text="No instances on this account." />
           ) : (
             instances.map((instance) => (
-              <InstanceCard
-                key={instance.id}
-                instance={instance}
-                onDestroy={() => setPendingDestroy(instance)}
-              />
+              <InstanceCard key={instance.id} instance={instance} onDestroy={() => setPendingDestroy(instance)} />
             ))
           )}
         </VStack>
@@ -137,20 +126,14 @@ export default function CloudInstances() {
 
 function EmptyState({ icon, text }: { icon: React.ElementType; text: string }) {
   return (
-    <VStack space="md" className="items-center px-6 py-12">
+    <VStack space="md" className="px-6 py-12 items-center">
       <Icon as={icon} className="h-8 w-8 text-typography-300" />
-      <Text className="text-center text-sm text-typography-400">{text}</Text>
+      <Text className="text-sm text-typography-400 text-center">{text}</Text>
     </VStack>
   );
 }
 
-function InstanceCard({
-  instance,
-  onDestroy,
-}: {
-  instance: VastInstance;
-  onDestroy: () => void;
-}) {
+function InstanceCard({ instance, onDestroy }: { instance: VastInstance; onDestroy: () => void }) {
   const isRunning = instance.status === 'running';
   const cost = instance.startedAt ? accruedCost(instance.startedAt, instance.pricePerHour) : 0;
 
@@ -159,9 +142,7 @@ function InstanceCard({
       <HStack className="items-start justify-between">
         <VStack className="flex-1" space="xs">
           <HStack space="xs" className="items-center">
-            <View
-              className={`h-2 w-2 rounded-full ${isRunning ? 'bg-success-500' : 'bg-background-300'}`}
-            />
+            <View className={`h-2 w-2 rounded-full ${isRunning ? 'bg-success-500' : 'bg-background-300'}`} />
             <Text className="text-base font-medium text-typography-900" numberOfLines={1}>
               {instance.gpuName || `Instance ${instance.id}`}
             </Text>
@@ -173,8 +154,7 @@ function InstanceCard({
           </Text>
           {isRunning && instance.startedAt && (
             <Text className="text-xs text-typography-500">
-              {formatUptime(instance.startedAt)} · {formatUsd(cost)} so far ·{' '}
-              {formatUsd(instance.pricePerHour)}/hr
+              {formatUptime(instance.startedAt)} · {formatUsd(cost)} so far · {formatUsd(instance.pricePerHour)}/hr
             </Text>
           )}
           {!isRunning && instance.statusMessage ? (
@@ -184,12 +164,7 @@ function InstanceCard({
           ) : null}
         </VStack>
 
-        <Button
-          variant="outline"
-          size="xs"
-          onPress={onDestroy}
-          className="ml-3 rounded-lg border-error-300"
-        >
+        <Button variant="outline" size="xs" onPress={onDestroy} className="ml-3 rounded-lg border-error-300">
           <ButtonText className="text-xs text-error-500">Destroy</ButtonText>
         </Button>
       </HStack>
