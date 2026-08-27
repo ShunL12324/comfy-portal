@@ -139,6 +139,9 @@ export async function provisionInstance(options: ProvisionOptions): Promise<Prov
 
   const deadline = Date.now() + timeoutMs;
   let endpoint: { host: string; port: number } | null = null;
+  // A host that misses a check-in reports 'unknown' and then carries on, so one
+  // sighting proves nothing. Three in a row (~30s) means it really is gone.
+  let unknownStreak = 0;
 
   while (Date.now() < deadline) {
     if (options.signal?.aborted) throw new Error('Cancelled');
@@ -146,13 +149,23 @@ export async function provisionInstance(options: ProvisionOptions): Promise<Prov
     const instance = await getInstance(apiKey, instanceId);
 
     if (isTerminalStatus(instance.status)) {
-      // Per vast's own docs these never recover — waiting longer just bills for
-      // nothing. The caller is expected to destroy and retry elsewhere.
+      // These never recover — waiting longer just bills for nothing. The caller
+      // is expected to destroy and retry elsewhere.
       return {
         phase: 'failed',
         detail: '',
         instanceId,
         error: `The host stopped the instance (${instance.status}). Destroy it and try another offer.`,
+      };
+    }
+
+    unknownStreak = instance.status === 'unknown' ? unknownStreak + 1 : 0;
+    if (unknownStreak >= 3) {
+      return {
+        phase: 'failed',
+        detail: '',
+        instanceId,
+        error: 'The host stopped reporting in. Destroy the instance and try another offer.',
       };
     }
 

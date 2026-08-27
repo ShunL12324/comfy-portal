@@ -24,7 +24,15 @@ export interface VastOffer {
   cudaMaxGood: number;
 }
 
-export type VastInstanceStatus = 'loading' | 'running' | 'stopped' | 'exited' | 'offline' | 'unknown';
+export type VastInstanceStatus =
+  /** vast hasn't placed the instance on a host yet — every launch starts here. */
+  | 'pending'
+  | 'loading'
+  | 'running'
+  | 'stopped'
+  | 'exited'
+  | 'offline'
+  | 'unknown';
 
 export interface VastInstance {
   id: number;
@@ -169,6 +177,30 @@ function toOffer(o: any): VastOffer {
   };
 }
 
+const KNOWN_STATUSES: VastInstanceStatus[] = [
+  'pending',
+  'loading',
+  'running',
+  'stopped',
+  'exited',
+  'offline',
+  'unknown',
+];
+
+/**
+ * `actual_status` is whatever the host last reported, and it is absent for the
+ * first stretch of every launch — the instance exists and is billing, but no
+ * host has claimed it yet. Reading that absence as a status is how a perfectly
+ * healthy launch gets mistaken for a dead one.
+ */
+function normalizeStatus(raw: unknown): VastInstanceStatus {
+  const value = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  if (!value) return 'pending';
+  return KNOWN_STATUSES.includes(value as VastInstanceStatus)
+    ? (value as VastInstanceStatus)
+    : 'unknown';
+}
+
 function toInstance(i: any): VastInstance {
   const ports: Record<string, number> = {};
   for (const [containerPort, mappings] of Object.entries<any>(i.ports ?? {})) {
@@ -178,7 +210,7 @@ function toInstance(i: any): VastInstance {
   return {
     id: i.id,
     label: i.label ?? null,
-    status: (i.actual_status ?? 'unknown') as VastInstanceStatus,
+    status: normalizeStatus(i.actual_status),
     statusMessage: (i.status_msg ?? '').trim(),
     gpuName: i.gpu_name ?? '',
     pricePerHour: i.dph_total ?? 0,
@@ -204,9 +236,13 @@ export async function destroyInstance(apiKey: string, instanceId: number): Promi
   await request(apiKey, `/instances/${instanceId}/`, { method: 'DELETE' });
 }
 
-/** Statuses from which an instance will never become reachable. */
+/**
+ * Statuses that mean the host reported the container dead. Deliberately not
+ * 'unknown': that is also what a host looks like when it simply misses a
+ * check-in, so it needs to persist before it counts — see provisionInstance.
+ */
 export function isTerminalStatus(status: VastInstanceStatus): boolean {
-  return status === 'exited' || status === 'offline' || status === 'unknown';
+  return status === 'exited' || status === 'offline';
 }
 
 export interface CreateInstanceOptions {
