@@ -117,6 +117,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-class-static-block": "7.28.6",
     "@gluestack-ui/nativewind-utils": "^1.0.28",
     "@playwright/test": "^1.62.1",
     "@types/jest": "^29.5.14",

@@ -13,6 +13,10 @@ module.exports = function (api) {
     ],
 
     plugins: [
+      // react-stately (pulled in by @gluestack-ui/utils) ships static class
+      // blocks in its .mjs build, which babel-preset-expo doesn't enable for
+      // the Hermes target. Without this the iOS bundle fails to build at all.
+      '@babel/plugin-transform-class-static-block',
       [
         'module-resolver',
         {
