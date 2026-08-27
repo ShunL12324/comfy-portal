@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
+import { GpuPicker } from '@/features/cloud/components/gpu-picker';
 import { ModelRow } from '@/features/cloud/components/model-row';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { useTemplateStore } from '@/features/cloud/stores/template-store';
@@ -135,10 +136,7 @@ export default function TemplateEditor() {
         <ScrollView className="flex-1">
           <VStack className="px-5 pb-8 pt-4" space="md">
             <FormInput title="Name" defaultValue={name} onChangeText={setName} placeholder="e.g. Qwen image edit" />
-            <FormInput title="GPU" defaultValue={gpuQuery} onChangeText={setGpuQuery} placeholder="RTX 4090" />
-            <Text className="-mt-2 text-xs text-typography-400">
-              vast&apos;s short name for the card, used to search offers.
-            </Text>
+          <GpuPicker value={gpuQuery} onChange={setGpuQuery} />
 
             {/* ---- Models ---- */}
             <SectionHeader

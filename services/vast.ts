@@ -269,3 +269,46 @@ export async function createInstance(
   }
   return Number(instanceId);
 }
+
+export interface GpuChoice {
+  name: string;
+  /** How many rentable offers exist right now. */
+  offerCount: number;
+  /** Cheapest current rate, $/hr. */
+  fromPrice: number;
+  /** Best VRAM seen across those offers, GB. */
+  maxVramGb: number;
+}
+
+/**
+ * The GPUs that can actually be rented at this moment.
+ *
+ * Queried rather than hardcoded: vast's names are its own short strings ("RTX
+ * PRO 6000 WS", not the marketing name), the catalogue shifts as cards come and
+ * go, and a typo in a hand-entered name just returns nothing with no
+ * explanation. Availability and price come along for free, which is most of
+ * what makes the choice.
+ */
+export async function listAvailableGpus(apiKey: string): Promise<GpuChoice[]> {
+  const data = await request(apiKey, '/bundles/', {
+    method: 'POST',
+    body: { rentable: { eq: true }, type: 'on-demand', limit: 1000 },
+  });
+
+  const byName = new Map<string, GpuChoice>();
+  for (const offer of data?.offers ?? []) {
+    const name = offer.gpu_name;
+    if (!name) continue;
+    const entry = byName.get(name) ?? { name, offerCount: 0, fromPrice: Infinity, maxVramGb: 0 };
+    entry.offerCount += 1;
+    entry.fromPrice = Math.min(entry.fromPrice, offer.dph_total ?? Infinity);
+    entry.maxVramGb = Math.max(entry.maxVramGb, Math.round((offer.gpu_ram ?? 0) / 1024));
+    byName.set(name, entry);
+  }
+
+  // Most available first: a card with three offers is a card whose price and
+  // location you don't get to choose.
+  return [...byName.values()]
+    .filter((g) => Number.isFinite(g.fromPrice))
+    .sort((a, b) => b.offerCount - a.offerCount);
+}

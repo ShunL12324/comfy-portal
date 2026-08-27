@@ -8,16 +8,64 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useTemplateStore } from '@/features/cloud/stores/template-store';
+import { exportTemplate, parseTemplateFile } from '@/features/cloud/utils/template-io';
+import { showToast } from '@/utils/toast';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { estimateDiskGb } from '@/features/cloud/types';
 import { DeleteAlert } from '@/features/generation/components/history-drawer/delete-alert';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Copy, LayoutTemplate, Plus, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Copy, LayoutTemplate, Plus, Share2, Trash2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
 
 export default function TemplatesScreen() {
   const router = useRouter();
-  const { templates, removeTemplate, duplicateTemplate } = useTemplateStore();
+  const insets = useSafeAreaInsets();
+  const { templates, removeTemplate, duplicateTemplate, addTemplate } = useTemplateStore();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+
+  // A file rather than a paste box: a template with an embedded workflow runs
+  // to tens of kilobytes, which is not something anyone is going to paste on a
+  // phone.
+  const handleImport = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'public.json', '*/*'],
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    try {
+      const text = new File(result.assets[0].uri).textSync();
+      addTemplate(parseTemplateFile(text));
+      showToast.success('Imported', 'Template added', insets.top + 8);
+    } catch (error) {
+      showToast.error(
+        'Import failed',
+        error instanceof Error ? error.message : 'Could not read that file',
+        insets.top + 8,
+      );
+    }
+  };
+
+  const handleExport = async (id: string) => {
+    const template = templates.find((t) => t.id === id);
+    if (!template) return;
+    try {
+      const safeName = template.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+      const file = new File(Paths.cache, `${safeName}.comfyportal-template.json`);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(exportTemplate(template));
+      await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
+    } catch (error) {
+      showToast.error(
+        'Export failed',
+        error instanceof Error ? error.message : 'Could not write the file',
+        insets.top + 8,
+      );
+    }
+  };
 
   const pendingName = templates.find((t) => t.id === pendingDelete)?.name ?? '';
 
@@ -26,16 +74,24 @@ export default function TemplatesScreen() {
       <AppBar title="Templates" showBack />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="sm">
-          <Button
-            variant="outline"
-            onPress={() => router.push('/settings/cloud-gpu/template/new')}
-            className="rounded-xl"
-          >
-            <HStack space="xs" className="items-center">
-              <Icon as={Plus} size="sm" className="text-primary-500" />
-              <ButtonText className="text-primary-500">New Template</ButtonText>
-            </HStack>
-          </Button>
+          <HStack space="sm">
+            <Button
+              variant="outline"
+              onPress={() => router.push('/settings/cloud-gpu/template/new')}
+              className="flex-1 rounded-xl"
+            >
+              <HStack space="xs" className="items-center">
+                <Icon as={Plus} size="sm" className="text-primary-500" />
+                <ButtonText className="text-primary-500">New</ButtonText>
+              </HStack>
+            </Button>
+            <Button variant="outline" onPress={handleImport} className="flex-1 rounded-xl">
+              <HStack space="xs" className="items-center">
+                <Icon as={Upload} size="sm" className="text-primary-500" />
+                <ButtonText className="text-primary-500">Import</ButtonText>
+              </HStack>
+            </Button>
+          </HStack>
 
           {templates.length === 0 ? (
             <VStack space="md" className="px-6 py-12 items-center">
@@ -68,6 +124,15 @@ export default function TemplatesScreen() {
                   </VStack>
 
                   <HStack space="xs" className="items-center">
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        void handleExport(template.id);
+                      }}
+                      className="p-2"
+                    >
+                      <Icon as={Share2} size="xs" className="text-typography-400" />
+                    </Pressable>
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
