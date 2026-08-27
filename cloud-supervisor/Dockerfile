@@ -66,7 +66,7 @@ RUN mkdir -p /opt/comfyui/custom_nodes && \
         [ -f "$req" ] && pip install -r "$req" || true; \
     done
 
-COPY supervisor/supervisor.py /opt/cp/supervisor.py
+COPY supervisor.py /opt/cp/supervisor.py
 
 # Fail the build rather than the rental if the stack is broken.
 RUN python -c "import torch, sys; print('torch', torch.__version__)" && \

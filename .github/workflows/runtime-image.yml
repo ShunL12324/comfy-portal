@@ -5,7 +5,7 @@ name: Runtime image
 on:
   push:
     paths:
-      - 'docker/**'
+      - 'cloud-supervisor/**'
       - '.github/workflows/runtime-image.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build test rig
-        run: docker build -f docker/supervisor/test/Dockerfile -t cp-supervisor-test docker/supervisor
+        run: docker build -f cloud-supervisor/test/Dockerfile -t cp-supervisor-test cloud-supervisor
 
       - name: Smoke test
         run: |
@@ -104,8 +104,8 @@ jobs:
       - name: Build and push base
         uses: docker/build-push-action@v6
         with:
-          context: docker
-          file: docker/Dockerfile
+          context: cloud-supervisor
+          file: cloud-supervisor/Dockerfile
           # vast's GPU hosts are x86 only; an arm64 variant would never be pulled.
           platforms: linux/amd64
           push: true
@@ -116,8 +116,8 @@ jobs:
       - name: Build and push Ollama variant
         uses: docker/build-push-action@v6
         with:
-          context: docker
-          file: docker/Dockerfile.ollama
+          context: cloud-supervisor
+          file: cloud-supervisor/Dockerfile.ollama
           platforms: linux/amd64
           push: true
           build-args: BASE=${{ steps.tags.outputs.primary }}
