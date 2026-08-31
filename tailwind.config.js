@@ -186,11 +186,71 @@ module.exports = {
           900: 'rgb(var(--color-accent-900)/<alpha-value>)',
           950: 'rgb(var(--color-accent-950)/<alpha-value>)',
         },
+
+        // ---------------------------------------------------------------
+        // Semantic aliases. Author against these, not the numbered scales
+        // above: `bg-surface-raised` says what a surface is for, where
+        // `bg-background-50` only says which step it landed on.
+        //
+        // These are aliases, not new colours — each points at the same CSS
+        // variable the numbered scale does, so light/dark still flips in
+        // one place (constants/Colors.ts) and nothing needs a `dark:`
+        // prefix. The numbered scales stay available as the escape hatch
+        // for the genuine one-offs that have no semantic role.
+        // ---------------------------------------------------------------
+
+        /** Depth comes from background steps, not shadow: screen → card → chip → dialog. */
+        surface: {
+          base: 'rgb(var(--color-background-0)/<alpha-value>)',
+          raised: 'rgb(var(--color-background-50)/<alpha-value>)',
+          sunken: 'rgb(var(--color-background-100)/<alpha-value>)',
+          muted: 'rgb(var(--color-background-200)/<alpha-value>)',
+        },
+
+        /** Text, by role rather than by darkness. */
+        content: {
+          primary: 'rgb(var(--color-typography-950)/<alpha-value>)',
+          heading: 'rgb(var(--color-typography-900)/<alpha-value>)',
+          body: 'rgb(var(--color-typography-700)/<alpha-value>)',
+          secondary: 'rgb(var(--color-typography-500)/<alpha-value>)',
+          tertiary: 'rgb(var(--color-typography-400)/<alpha-value>)',
+          inverse: 'rgb(var(--color-typography-0)/<alpha-value>)',
+        },
+
+        /** Borders are hairlines or nothing. `border-stroke` is the form-field default. */
+        stroke: {
+          DEFAULT: 'rgb(var(--color-outline-200)/<alpha-value>)',
+          hairline: 'rgb(var(--color-outline-0)/<alpha-value>)',
+          subtle: 'rgb(var(--color-outline-50)/<alpha-value>)',
+        },
+
+        /**
+         * The interactive colour. Neutral grey on purpose — this is a
+         * monochrome product, so solid buttons, switch on-states, slider
+         * fills and actionable icons all land here rather than on a hue.
+         */
+        action: {
+          DEFAULT: 'rgb(var(--color-primary-500)/<alpha-value>)',
+          pressed: 'rgb(var(--color-primary-600)/<alpha-value>)',
+        },
+
+        /** The only place colour is allowed to carry meaning. */
+        status: {
+          online: 'rgb(var(--color-success-500)/<alpha-value>)',
+          offline: 'rgb(var(--color-typography-400)/<alpha-value>)',
+          busy: 'rgb(var(--color-warning-500)/<alpha-value>)',
+          downloading: 'rgb(var(--color-info-500)/<alpha-value>)',
+          danger: 'rgb(var(--color-error-500)/<alpha-value>)',
+          'danger-pressed': 'rgb(var(--color-error-600)/<alpha-value>)',
+        },
       },
       fontFamily: {
         heading: undefined,
         body: undefined,
-        mono: undefined,
+        // SpaceMono ships in assets/fonts/ and is registered in app/_layout.tsx.
+        // Reserved for machine values — seeds, host:port, latency, file paths —
+        // so they read as data rather than prose.
+        mono: ['SpaceMono'],
         roboto: ['Roboto', 'sans-serif'],
       },
       fontWeight: {

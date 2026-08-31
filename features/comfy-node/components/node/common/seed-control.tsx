@@ -129,7 +129,7 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
               onChangeText={(text) => setDraft(text.replace(/[^0-9]/g, ''))}
               onBlur={commitDraft}
               keyboardType="numeric"
-              className="text-sm"
+              className="font-mono text-sm"
             />
           </Input>
           <TouchableOpacity onPress={() => applySeed(generateRandomSeed())} disabled={randomSeed}>

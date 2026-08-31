@@ -37,7 +37,7 @@ const styles = {
     disabled: 'opacity-50',
   },
   icon: 'text-typography-400',
-  input: 'text-center border-0 overflow-hidden items-center justify-center',
+  input: 'font-mono text-center border-0 overflow-hidden items-center justify-center',
   inputContainer: 'min-w-[80px] max-w-[160px] overflow-hidden items-center justify-center',
 } as const;
 

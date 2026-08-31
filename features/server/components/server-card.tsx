@@ -7,6 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
 } from '@/components/ui/alert-dialog';
+import { StatusDot } from '@/components/self-ui/status-pill';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -65,15 +66,15 @@ const ServerInfo = ({ name, host, port, models, status, latency, cloud }: Server
               <Icon as={Loader} size="sm" className="text-primary-500" />
             </MotiView>
           ) : (
-            <View
-              className={`h-2 w-2 rounded-full ${isOnline ? 'bg-success-500' : 'bg-typography-400'}`}
-            />
+            <StatusDot tone={isOnline ? 'ready' : 'offline'} />
           )}
           <Text className="flex-1 text-base font-semibold text-typography-950" numberOfLines={1}>
             {name}
           </Text>
         </HStack>
-        <Text className="text-xs text-typography-500" numberOfLines={1}>
+        {/* Connection data, not prose — mono so an address and a latency read
+            as values rather than as a sentence. */}
+        <Text className="font-mono text-xs text-content-secondary" numberOfLines={1}>
           {host}:{port} • {models?.length ?? 'No'} models
           {isOnline && latency !== undefined ? ` • ${latency}ms` : ''}
           {!isOnline && !isRefreshing ? ' • Offline' : ''}

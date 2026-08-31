@@ -104,7 +104,7 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
           paddingHorizontal: 4,
           paddingVertical: 1,
           fontSize: 12,
-          fontFamily: 'Menlo',
+          fontFamily: 'SpaceMono',
           color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
         },
         code_block: {
@@ -114,7 +114,7 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
           borderRadius: 6,
           padding: 8,
           fontSize: 12,
-          fontFamily: 'Menlo',
+          fontFamily: 'SpaceMono',
           color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
         },
         fence: {
@@ -124,7 +124,7 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
           borderRadius: 6,
           padding: 8,
           fontSize: 12,
-          fontFamily: 'Menlo',
+          fontFamily: 'SpaceMono',
           color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
         },
         bullet_list: {

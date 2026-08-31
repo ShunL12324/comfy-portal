@@ -1,4 +1,4 @@
-import { Box } from '@/components/ui/box';
+import { StatusPill, type StatusTone } from '@/components/self-ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 
@@ -41,11 +41,11 @@ export function ServerStatus({
   nodeProgress,
   name,
 }: ServerStatusProps) {
-  let color = 'success';
+  let tone: StatusTone = 'ready';
   let status = 'Ready';
 
   if (generating) {
-    color = 'warning';
+    tone = 'busy';
     const hasProgress = generationProgress && generationProgress.max > 0;
     const hasNodes = nodeProgress && nodeProgress.total > 0;
     const progressPct = hasProgress
@@ -65,23 +65,19 @@ export function ServerStatus({
       status = 'Generating';
     }
   } else if (downloading) {
-    color = 'info';
+    tone = 'downloading';
     status = `Downloading ${Math.round(downloadProgress)}%`;
   }
 
   return (
     <VStack space="sm" className="items-center">
-      <Text className="text-xs text-primary-300">{name}</Text>
-      <Box className={`rounded-full bg-${color}-100 dark:bg-${color}-900/30 p-0.2`}>
-        <Box className={`flex-row items-center rounded-full px-2 py-0.5`}>
-          <Box className={`mr-1 h-1.5 w-1.5 rounded-full bg-${color}-500`}>
-            {(generating || downloading) && (
-              <Box className={`absolute h-1.5 w-1.5 rounded-full bg-${color}-500`} />
-            )}
-          </Box>
-          <Text className={`text-2xs font-medium text-${color}-700 dark:text-${color}-300`}>{status}</Text>
-        </Box>
-      </Box>
+      {/* Was text-primary-300 — the primary scale is the interactive colour,
+          not a text ramp. This is a subordinate label, so it takes the
+          secondary text role. */}
+      <Text className="text-xs text-content-secondary">{name}</Text>
+      <StatusPill tone={tone} pulse={generating || downloading}>
+        {status}
+      </StatusPill>
     </VStack>
   );
 }

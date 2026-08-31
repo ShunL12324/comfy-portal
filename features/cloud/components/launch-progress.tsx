@@ -2,6 +2,7 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
+import { StatusDot } from '@/components/self-ui/status-pill';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
@@ -295,9 +296,7 @@ function ServiceStatus({ snapshot }: { snapshot: SupervisorSnapshot }) {
       {entries.map(([name, service]) => (
         <HStack key={name} className="items-center justify-between py-1">
           <HStack space="sm" className="items-center">
-            <View
-              className={`h-2 w-2 rounded-full ${service.state === 'running' ? 'bg-success-500' : 'bg-warning-500'}`}
-            />
+            <StatusDot tone={service.state === 'running' ? 'ready' : 'busy'} pulse={service.state !== 'running'} />
             <Text className="text-sm text-typography-700">
               {name === 'comfyui' ? 'ComfyUI' : name}
             </Text>

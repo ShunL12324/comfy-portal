@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { StatusDot } from '@/components/self-ui/status-pill';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -142,7 +143,7 @@ function InstanceCard({ instance, onDestroy }: { instance: VastInstance; onDestr
       <HStack className="items-start justify-between">
         <VStack className="flex-1" space="xs">
           <HStack space="xs" className="items-center">
-            <View className={`h-2 w-2 rounded-full ${isRunning ? 'bg-success-500' : 'bg-background-300'}`} />
+            <StatusDot tone={isRunning ? 'ready' : 'offline'} />
             <Text className="text-base font-medium text-typography-900" numberOfLines={1}>
               {instance.gpuName || `Instance ${instance.id}`}
             </Text>
