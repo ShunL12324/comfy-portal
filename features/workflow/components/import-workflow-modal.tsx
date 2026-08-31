@@ -204,7 +204,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
 
           <VStack space="sm">
             <HStack space="sm" className="items-center">
-              <Text className="text-sm font-medium text-primary-400">Import Workflow</Text>
+              <Text className="text-sm font-medium text-content-body">Import Workflow</Text>
               <Link href="https://shunl12324.github.io/comfy-portal/guide/workflow-json">
                 <LinkText className="text-xs">Where to get my workflow file?</LinkText>
               </Link>
@@ -214,17 +214,17 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
               className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-surface-base"
             >
               <VStack space="sm" className="items-center">
-                <FileJson size={24} className={workflowData ? 'text-action' : 'text-primary-300'} />
+                <FileJson size={24} className={workflowData ? 'text-action' : 'text-content-secondary'} />
                 <VStack space="xs" className="items-center">
                   {uploadedFileName ? (
                     <>
                       <Text className="text-sm font-medium text-action">{uploadedFileName}</Text>
-                      <Text className="text-xs text-primary-300">Click to change file</Text>
+                      <Text className="text-xs text-content-secondary">Click to change file</Text>
                     </>
                   ) : (
                     <>
-                      <Text className="text-sm font-medium text-primary-400">Click to select workflow file</Text>
-                      <Text className="text-xs text-primary-300">Supports JSON format</Text>
+                      <Text className="text-sm font-medium text-content-body">Click to select workflow file</Text>
+                      <Text className="text-xs text-content-secondary">Supports JSON format</Text>
                     </>
                   )}
                 </VStack>
@@ -244,7 +244,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
           </VStack>
 
           <VStack space="xs">
-            <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+            <Text className="text-sm font-medium text-content-body">Thumbnail (Optional)</Text>
             <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
               {thumbnail ? (
                 <Image
@@ -255,8 +255,8 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
                 />
               ) : (
                 <VStack className="h-40 items-center justify-center">
-                  <ImagePlus className="text-primary-300" />
-                  <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                  <ImagePlus className="text-content-secondary" />
+                  <Text className="mt-2 text-sm text-content-secondary">Add thumbnail</Text>
                 </VStack>
               )}
             </Pressable>
@@ -267,7 +267,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
       <KeyboardModal.Footer>
         <HStack space="sm">
           <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-surface-sunken">
-            <ButtonText className="text-primary-400">Cancel</ButtonText>
+            <ButtonText className="text-content-body">Cancel</ButtonText>
           </Button>
           <Button
             variant="solid"
@@ -276,7 +276,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
               }`}
             disabled={!name.trim() || !workflowData}
           >
-            <ButtonText className="text-background-0">Add</ButtonText>
+            <ButtonText className="text-content-inverse">Add</ButtonText>
           </Button>
         </HStack>
       </KeyboardModal.Footer>

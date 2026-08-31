@@ -261,8 +261,8 @@ export function HistoryDrawer({
         <DrawerHeader className="border-b-[0.5px] border-b-background-100 px-4">
           <View className="flex-row items-center py-3">
             <View className="flex-1 flex-row items-center gap-2">
-              <Icon as={History} size="sm" className="text-background-800" />
-              <Text className="text-base font-medium text-background-800">History</Text>
+              <Icon as={History} size="sm" className="text-content-body" />
+              <Text className="text-base font-medium text-content-body">History</Text>
             </View>
             <SelectButton isSelectionMode={isSelectionMode} onPress={handleToggleSelectionMode} />
           </View>

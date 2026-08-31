@@ -131,7 +131,7 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
                 <Icon as={Check} size="sm" className="text-content-primary" />
               </Box>
             )}
-            <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-background-100">
+            <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-stroke-subtle">
               <Image
                 source={{ uri: item.image }}
                 alt={item.label}
@@ -143,7 +143,7 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
             </Box>
             <VStack className="p-3">
               <Text
-                className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-primary-900'}`}
+                className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-content-primary'}`}
                 numberOfLines={1}
                 ellipsizeMode="middle"
               >
@@ -159,7 +159,7 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
     const emptyComponent =
       files === null ? (
         <VStack space="md" className="flex-1 items-center justify-center p-8">
-          <Spinner size="small" className="text-background-400" />
+          <Spinner size="small" className="text-content-tertiary" />
           <Text className="text-sm text-content-tertiary">Reading the server&apos;s images…</Text>
         </VStack>
       ) : (

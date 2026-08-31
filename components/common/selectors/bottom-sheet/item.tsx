@@ -31,7 +31,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
               {item.label}
             </Text>
             {item.description && (
-              <Text className="text-xs text-background-400" numberOfLines={2}>
+              <Text className="text-xs text-content-tertiary" numberOfLines={2}>
                 {item.description}
               </Text>
             )}

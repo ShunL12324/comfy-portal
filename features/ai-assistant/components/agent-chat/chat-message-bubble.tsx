@@ -201,7 +201,7 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
       {/* Avatar for assistant */}
       {!isUser && (
         <View className="mr-2 mt-1 h-7 w-7 items-center justify-center rounded-full bg-primary-100">
-          <Icon as={Bot} size="xs" className="text-primary-600" />
+          <Icon as={Bot} size="xs" className="text-content-body" />
         </View>
       )}
 

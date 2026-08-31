@@ -63,7 +63,7 @@ export default function GuideScreen() {
                 <VStack className="items-center pb-3">
                   <Text
                     className={`text-sm font-medium ${
-                      isActive ? 'text-primary-900' : 'text-content-secondary'
+                      isActive ? 'text-content-primary' : 'text-content-secondary'
                     }`}
                   >
                     {route.title}

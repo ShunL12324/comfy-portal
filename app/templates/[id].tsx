@@ -281,7 +281,7 @@ export default function TemplateEditor() {
                     <Pressable
                       key={workflow.id}
                       onPress={() => !added && addWorkflowFromLibrary(workflow.id)}
-                      className="rounded-xl border-background-100 p-3 flex-row items-center justify-between border-[0.5px] active:opacity-70"
+                      className="rounded-xl border-stroke-subtle p-3 flex-row items-center justify-between border-[0.5px] active:opacity-70"
                     >
                       <Text className="text-sm text-content-body flex-1" numberOfLines={1}>
                         {workflow.name}

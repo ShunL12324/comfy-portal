@@ -221,8 +221,8 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
                   />
                 ) : (
                   <VStack className="h-32 items-center justify-center">
-                    <ImagePlus className="text-primary-300" />
-                    <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                    <ImagePlus className="text-content-secondary" />
+                    <Text className="mt-2 text-sm text-content-secondary">Add thumbnail</Text>
                   </VStack>
                 )}
               </Pressable>
@@ -301,7 +301,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
             isDisabled={!selectedPreset || !name.trim()}
             className={`flex-1 rounded-md ${!selectedPreset || !name.trim() ? 'bg-primary-200' : 'bg-action'}`}
           >
-            <ButtonText className="text-background-0">Add</ButtonText>
+            <ButtonText className="text-content-inverse">Add</ButtonText>
           </Button>
         </HStack>
       </KeyboardModal.Footer>

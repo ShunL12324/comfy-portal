@@ -71,12 +71,12 @@ export const BottomPanel = React.memo(
   function BottomPanel({ isSelectionMode, selectedMedia, mediaItems, onSelectAll, onDelete, onShare, onSave }: BottomPanelProps) { return (
     <BottomActionPanel isOpen={isSelectionMode}>
       <VStack space="sm">
-        <Text className="text-sm text-background-400">{selectedMedia.length} selected</Text>
+        <Text className="text-sm text-content-tertiary">{selectedMedia.length} selected</Text>
         <Button
           variant="outline"
           size="lg"
           onPress={onSelectAll}
-          className="h-12 w-full justify-start border-background-100 px-4"
+          className="h-12 w-full justify-start border-stroke-subtle px-4"
         >
           <Icon
             as={selectedMedia.length === mediaItems.length ? MinusSquare : PlusSquare}
@@ -93,7 +93,7 @@ export const BottomPanel = React.memo(
             size="lg"
             onPress={onShare}
             isDisabled={selectedMedia.length === 0}
-            className="h-12 flex-1 justify-start border-background-100 px-4"
+            className="h-12 flex-1 justify-start border-stroke-subtle px-4"
           >
             <Icon as={Share} size="sm" className="mr-2 text-action" />
             <Text className="text-sm text-action">Share</Text>
@@ -103,7 +103,7 @@ export const BottomPanel = React.memo(
             size="lg"
             onPress={onSave}
             isDisabled={selectedMedia.length === 0}
-            className="h-12 flex-1 justify-start border-background-100 px-4"
+            className="h-12 flex-1 justify-start border-stroke-subtle px-4"
           >
             <Icon as={Download} size="sm" className="mr-2 text-action" />
             <Text className="text-sm text-action">Save</Text>
@@ -114,7 +114,7 @@ export const BottomPanel = React.memo(
           size="lg"
           onPress={onDelete}
           isDisabled={selectedMedia.length === 0}
-          className="h-12 w-full justify-start border-background-100 px-4"
+          className="h-12 w-full justify-start border-stroke-subtle px-4"
         >
           <Icon as={Trash2} size="sm" className="mr-2 text-status-danger" />
           <Text className="text-sm text-status-danger">Delete Selected</Text>

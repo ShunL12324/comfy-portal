@@ -71,9 +71,8 @@ export function ServerStatus({
 
   return (
     <VStack space="sm" className="items-center">
-      {/* Was text-primary-300 — the primary scale is the interactive colour,
-          not a text ramp. This is a subordinate label, so it takes the
-          secondary text role. */}
+      {/* The primary scale is the interactive colour, not a text ramp. This is
+          a subordinate label, so it takes the secondary text role. */}
       <Text className="text-xs text-content-secondary">{name}</Text>
       <StatusPill tone={tone} pulse={generating || downloading}>
         {status}

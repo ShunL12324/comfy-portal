@@ -102,7 +102,7 @@ export const MediaActions = memo(function MediaActions({
               variant="outline"
               size="lg"
               onPress={handleSaveToGallery}
-              className="h-12 w-full justify-start border-background-100 px-4"
+              className="h-12 w-full justify-start border-stroke-subtle px-4"
             >
               <Icon as={Save} size="sm" className="mr-2 text-action" />
               <Text className="text-sm text-action">Save Media</Text>
@@ -112,7 +112,7 @@ export const MediaActions = memo(function MediaActions({
                 variant="outline"
                 size="lg"
                 onPress={handleSetAsThumbnail}
-                className="h-12 w-full justify-start border-background-100 px-4"
+                className="h-12 w-full justify-start border-stroke-subtle px-4"
               >
                 <Icon as={ImageIcon} size="sm" className="mr-2 text-action" />
                 <Text className="text-sm text-action">Set as Workflow Thumbnail</Text>

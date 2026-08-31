@@ -262,7 +262,7 @@ function EmptyStateView() {
   return (
     <View className="flex-1 items-center justify-center py-12">
       <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-primary-50">
-        <Icon as={Bot} size="lg" className="text-primary-400" />
+        <Icon as={Bot} size="lg" className="text-content-body" />
       </View>
       <Text className="text-center text-sm font-medium text-content-body">
         How can I help?
@@ -329,7 +329,7 @@ function TypingIndicator() {
   return (
     <View className="mb-3 flex-row items-center gap-2">
       <View className="h-7 w-7 items-center justify-center rounded-full bg-primary-100">
-        <Icon as={Bot} size="xs" className="text-primary-600" />
+        <Icon as={Bot} size="xs" className="text-content-body" />
       </View>
       <View className="flex-row items-center gap-2 rounded-2xl rounded-bl-md bg-surface-sunken px-4 py-3">
         <RotatingSpinner size="sm" />

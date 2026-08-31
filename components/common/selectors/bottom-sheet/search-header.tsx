@@ -63,7 +63,7 @@ export function SearchHeader({
                 height: 40,
               }}
             >
-              <Icon as={Search} size="sm" className="mr-2 text-background-400" />
+              <Icon as={Search} size="sm" className="mr-2 text-content-tertiary" />
               <AdaptiveTextInput
                 placeholder={searchPlaceholder}
                 value={localValue}

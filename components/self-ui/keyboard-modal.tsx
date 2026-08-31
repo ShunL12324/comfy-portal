@@ -56,7 +56,7 @@ const KeyboardModalItem = ({ children, title, error, className }: KeyboardModalI
   return (
     <FormControl isInvalid={!!error} size="md" className={className}>
       <FormControlLabel>
-        <FormControlLabelText className="text-sm font-medium text-primary-400">{title}</FormControlLabelText>
+        <FormControlLabelText className="text-sm font-medium text-content-body">{title}</FormControlLabelText>
       </FormControlLabel>
       {children}
       {error && (

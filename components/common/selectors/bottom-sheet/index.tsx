@@ -121,9 +121,9 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
                   className="aspect-square rounded-lg border-0 bg-surface-muted p-0"
                 >
                   {isRefreshing ? (
-                    <Spinner size="small" className="text-background-400" />
+                    <Spinner size="small" className="text-content-tertiary" />
                   ) : (
-                    <Icon as={RefreshCw} size="sm" className="text-background-400" />
+                    <Icon as={RefreshCw} size="sm" className="text-content-tertiary" />
                   )}
                 </Button>
               )

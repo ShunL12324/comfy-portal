@@ -160,7 +160,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
             </KeyboardModal.Item>
 
             <VStack space="xs">
-              <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
+              <Text className="text-sm font-medium text-content-body">Thumbnail (Optional)</Text>
               <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
                 {thumbnail ? (
                   <Image
@@ -171,8 +171,8 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
                   />
                 ) : (
                   <VStack className="h-40 items-center justify-center">
-                    <ImagePlus className="text-primary-300" />
-                    <Text className="mt-2 text-sm text-primary-300">Add thumbnail</Text>
+                    <ImagePlus className="text-content-secondary" />
+                    <Text className="mt-2 text-sm text-content-secondary">Add thumbnail</Text>
                   </VStack>
                 )}
               </Pressable>
@@ -191,7 +191,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
               <ButtonText style={{ color: Colors[activeTheme].error[500] }}>Delete</ButtonText>
             </Button>
             <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-action">
-              <ButtonText className="text-background-0">Save Changes</ButtonText>
+              <ButtonText className="text-content-inverse">Save Changes</ButtonText>
             </Button>
           </HStack>
         </KeyboardModal.Footer>

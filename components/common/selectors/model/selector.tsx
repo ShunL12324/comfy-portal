@@ -167,7 +167,7 @@ export function ModelSelector({
         <Pressable onPress={handlePress}>
           <HStack space="sm" className="items-center justify-between p-3">
             <HStack space="sm" className="flex-1 items-center">
-              <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-background-100">
+              <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-stroke-subtle">
                 <ModelPreview image={currentOption?.image} label={currentOption?.label || ''} />
               </Box>
               <VStack space="xs" className="flex-1">
@@ -240,18 +240,18 @@ export function ModelSelector({
               <Icon as={Check} size="sm" className="text-content-primary" />
             </Box>
           )}
-          <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-background-100">
+          <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-stroke-subtle">
             <ModelPreview image={item.image} label={item.label} />
           </Box>
           <VStack space="xs" className="p-3">
             <Text
-              className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-primary-900'}`}
+              className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-content-primary'}`}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {item.label}
             </Text>
-            <Text className="text-xs text-background-400">{item.description || item.serverName}</Text>
+            <Text className="text-xs text-content-tertiary">{item.description || item.serverName}</Text>
           </VStack>
         </Box>
       </Pressable>

@@ -259,7 +259,7 @@ export default function HistoryGalleryPage() {
             className="ml-1 rounded-lg bg-surface-sunken"
             style={{ width: 60, borderWidth: 1, borderColor: 'transparent' }}
           >
-            <ButtonText className="text-xs font-medium text-primary-400">Select</ButtonText>
+            <ButtonText className="text-xs font-medium text-content-body">Select</ButtonText>
           </Button>
         )}
       </HStack>
