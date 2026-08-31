@@ -11,7 +11,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
  * Animation configuration
  */
 const TIMING_CONFIG = {
-  duration: 150,
+  duration: 160,
   easing: Easing.bezier(0.4, 0, 0.2, 1),
 };
 

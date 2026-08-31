@@ -29,9 +29,14 @@ export const FormInput: React.FC<FormInputProps> = ({
   const theme = useResolvedTheme();
   const isDarkMode = theme === 'dark';
   const [showPassword, setShowPassword] = useState(false);
+  // A well with no border until it has focus, at which point the border
+  // becomes ink. The focus ring is meant to be the sharpest thing on screen —
+  // that's where precision is being asked for.
+  const [isFocused, setIsFocused] = useState(false);
 
   // Theme-based color selection
-  const inputBackgroundColor = isDarkMode ? Colors.dark.background[50] : Colors.light.background[0];
+  const inputBackgroundColor = isDarkMode ? Colors.dark.background[50] : Colors.light.background[50];
+  const focusBorderColor = isDarkMode ? Colors.dark.typography[950] : Colors.light.typography[950];
   const inputTextColor = isDarkMode ? Colors.dark.typography[800] : Colors.light.typography[950];
   const placeholderTextColor = isDarkMode ? Colors.dark.typography[400] : Colors.light.typography[400];
   const borderColor = isDarkMode ? Colors.dark.outline[200] : Colors.light.outline[200];
@@ -55,9 +60,10 @@ export const FormInput: React.FC<FormInputProps> = ({
       ) : null}
       
       <View style={[
-        styles.inputContainer, 
-        { 
-          backgroundColor: inputBackgroundColor
+        styles.inputContainer,
+        {
+          backgroundColor: inputBackgroundColor,
+          borderColor: isFocused ? focusBorderColor : 'transparent',
         },
         inputContainerStyle
       ]}>
@@ -73,6 +79,14 @@ export const FormInput: React.FC<FormInputProps> = ({
           placeholderTextColor={placeholderTextColor}
           secureTextEntry={isPasswordInput && !showPassword}
           {...restProps}
+          onFocus={(e) => {
+            setIsFocused(true);
+            restProps.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            restProps.onBlur?.(e);
+          }}
         />
 
         {isPasswordInput ? (
@@ -113,7 +127,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inputContainer: {
-    borderWidth: 0,
+    borderWidth: 1,
     borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',

@@ -40,13 +40,19 @@ interface CustomSliderProps {
 // Optimize styles with animated components
 const styles = {
   container: 'flex-row items-center',
+  // Bare icon buttons rather than filled tiles. The sheet's slider is track
+  // plus readout and nothing else; these stay because dragging alone is a
+  // poor way to nudge a value by one on a touch screen, but they shouldn't
+  // read as two objects floating either side of the track.
   button: {
-    base: 'items-center justify-center rounded-lg bg-surface-muted',
-    disabled: 'opacity-50',
+    base: 'items-center justify-center rounded-md',
+    disabled: 'opacity-40',
   },
   icon: 'text-content-tertiary',
   sliderContainer: 'flex-1',
-  value: 'min-w-[48px] h-8 rounded-lg bg-surface-sunken items-center justify-center mr-4',
+  // Right-aligned, no chip: the readout is one of the screen's numbers, and
+  // fixed decimals keep the digits from jittering as the thumb moves.
+  value: 'min-w-[52px] items-end justify-center ml-4',
 } as const;
 
 const sliderStyles = StyleSheet.create({
@@ -142,12 +148,6 @@ export function NumberSlider({
   return (
     <View className="w-full">
       <View className={styles.container}>
-        <View className={styles.value}>
-          <Text size="sm" bold className="font-mono text-content-heading">
-            {formatValue(localValue)}
-          </Text>
-        </View>
-
         {showButtons && (
           <TouchableOpacity
             onPress={() => adjustValue(-step)}
@@ -170,9 +170,9 @@ export function NumberSlider({
             step={step}
             onValueChange={handleChange}
             onSlidingComplete={handleComplete}
-            minimumTrackTintColor={colors.primary[500]}
+            minimumTrackTintColor={colors.typography[950]}
             maximumTrackTintColor={colors.background[200]}
-            thumbTintColor={colors.primary[400]}
+            thumbTintColor={colors.typography[950]}
           />
         </View>
 
@@ -188,6 +188,12 @@ export function NumberSlider({
             </View>
           </TouchableOpacity>
         )}
+
+        <View className={styles.value}>
+          <Text size="sm" className="font-mono text-content-body">
+            {formatValue(localValue)}
+          </Text>
+        </View>
       </View>
     </View>
   );

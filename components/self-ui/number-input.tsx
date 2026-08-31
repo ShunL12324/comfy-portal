@@ -30,15 +30,18 @@ interface NumberInputProps {
   space?: number;
 }
 
+// One bordered group, not two floating tiles either side of a field: the
+// minus, the number and the plus are a single control, so they share one
+// outline and are divided by hairlines rather than by gaps.
 const styles = {
-  container: 'flex-row items-center',
+  container: 'flex-row items-center overflow-hidden rounded-lg border border-ink/15',
   button: {
-    base: 'items-center justify-center rounded-lg bg-surface-muted',
+    base: 'items-center justify-center',
     disabled: 'opacity-50',
   },
   icon: 'text-content-tertiary',
   input: 'font-mono text-center border-0 overflow-hidden items-center justify-center',
-  inputContainer: 'min-w-[80px] max-w-[160px] overflow-hidden items-center justify-center',
+  inputContainer: 'min-w-[64px] max-w-[160px] overflow-hidden items-center justify-center border-x border-ink/15',
 } as const;
 
 export function NumberInput({
@@ -144,7 +147,6 @@ export function NumberInput({
         onPress={() => adjustValue(-step)}
         disabled={Number(localValue) <= minValue}
         className={Number(localValue) <= minValue ? styles.button.disabled : undefined}
-        style={{ marginRight: space }}
       >
         <View className={styles.button.base} style={{ width: buttonSize, height: buttonSize }}>
           <Icon as={Minus} size="sm" className={styles.icon} />
@@ -178,7 +180,6 @@ export function NumberInput({
         onPress={() => adjustValue(step)}
         disabled={Number(localValue) >= maxValue}
         className={Number(localValue) >= maxValue ? styles.button.disabled : undefined}
-        style={{ marginLeft: space }}
       >
         <View className={styles.button.base} style={{ width: buttonSize, height: buttonSize }}>
           <Icon as={Plus} size="sm" className={styles.icon} />
