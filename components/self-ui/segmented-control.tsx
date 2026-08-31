@@ -76,16 +76,16 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, val
   });
 
   // Memoize container style
-  const containerStyle = useMemo(() => 'h-10 flex-row overflow-hidden rounded-[10px] bg-background-50', []);
+  const containerStyle = useMemo(() => 'h-10 flex-row overflow-hidden rounded-[10px] bg-surface-raised', []);
 
   // Memoize slider base style
-  const sliderBaseStyle = useMemo(() => 'absolute left-1 top-1 h-8 rounded-lg bg-background-200', []);
+  const sliderBaseStyle = useMemo(() => 'absolute left-1 top-1 h-8 rounded-lg bg-surface-muted', []);
 
   // Memoize pressable base style
   const pressableBaseStyle = useMemo(() => 'h-full flex-1 items-center justify-center px-1', []);
 
   const getTextStyle = useCallback((isSelected: boolean) => {
-    return `text-[11px] font-medium ${isSelected ? 'text-typography-900' : 'text-typography-500'}`;
+    return `text-xs font-medium ${isSelected ? 'text-content-heading' : 'text-content-secondary'}`;
   }, []);
 
   return (

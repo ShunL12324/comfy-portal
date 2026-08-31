@@ -44,7 +44,7 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
         rightComponent={
           <View className="flex-row items-center gap-2">
             <Pressable onPress={handleOpenEditor} className="p-1">
-              <Icon as={Maximize2} size="sm" className="text-typography-500" />
+              <Icon as={Maximize2} size="sm" className="text-content-secondary" />
             </Pressable>
           </View>
         }
@@ -56,7 +56,7 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
           isReadOnly={false}
           isInvalid={false}
           isDisabled={false}
-          className="w-full rounded-md border-0 bg-background-50"
+          className="w-full rounded-md border-0 bg-surface-raised"
         >
           <TextareaInput
             placeholder="Enter text here..."

@@ -22,7 +22,7 @@ function SelectionIndicator({ isSelected }: { isSelected: boolean }) {
         isSelected ? 'bg-typography-950' : 'bg-black/20 border border-white/40'
       }`}
     >
-      {isSelected && <Icon as={Check} size="2xs" className="text-typography-0" />}
+      {isSelected && <Icon as={Check} size="2xs" className="text-content-inverse" />}
     </View>
   );
 }
@@ -33,7 +33,7 @@ function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden bg-background-100">
+      <Box className="aspect-square overflow-hidden bg-surface-sunken">
         <Image
           source={url}
           style={{ width: '100%', height: '100%' }}
@@ -62,7 +62,7 @@ function VideoItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden bg-background-100">
+      <Box className="aspect-square overflow-hidden bg-surface-sunken">
         <VideoView
           player={player}
           style={{ width: '100%', height: '100%' }}

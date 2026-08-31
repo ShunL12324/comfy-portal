@@ -104,13 +104,13 @@ export const QueueBadge = memo(() => {
         onPress={handleOpen}
         className={`ml-1.5 h-8 w-8 items-center justify-center rounded-full active:opacity-80 ${
           queueRemaining > 0
-            ? 'bg-warning-500'
-            : 'bg-background-100 active:bg-background-200'
+            ? 'bg-status-busy'
+            : 'bg-surface-sunken active:bg-surface-muted'
         }`}
       >
         <Text
           className={`text-[10px] font-bold ${
-            queueRemaining > 0 ? 'text-white' : 'text-typography-500'
+            queueRemaining > 0 ? 'text-white' : 'text-content-secondary'
           }`}
         >
           {queueRemaining}
@@ -128,16 +128,16 @@ export const QueueBadge = memo(() => {
         <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 16 }}>
           {/* Header */}
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold text-typography-900">
+            <Text className="text-sm font-semibold text-content-heading">
               Queue
             </Text>
             {items.length > 0 && (
               <Pressable
                 onPress={handleClearAll}
-                className="flex-row items-center gap-1 rounded-lg px-2 py-1 active:bg-background-100"
+                className="flex-row items-center gap-1 rounded-lg px-2 py-1 active:bg-surface-sunken"
               >
-                <Icon as={Trash2} size="2xs" className="text-error-500" />
-                <Text className="text-xs font-medium text-error-500">
+                <Icon as={Trash2} size="2xs" className="text-status-danger" />
+                <Text className="text-xs font-medium text-status-danger">
                   Clear All
                 </Text>
               </Pressable>
@@ -151,7 +151,7 @@ export const QueueBadge = memo(() => {
             </View>
           ) : items.length === 0 ? (
             <View className="items-center py-6">
-              <Text className="text-sm text-typography-400">
+              <Text className="text-sm text-content-tertiary">
                 Queue is empty
               </Text>
             </View>
@@ -180,30 +180,30 @@ function QueueRow({
   onDelete: () => void;
 }) {
   return (
-    <View className="mb-1.5 flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3">
+    <View className="mb-1.5 flex-row items-center justify-between rounded-xl bg-surface-raised px-4 py-3">
       <View className="flex-1 flex-row items-center gap-3">
         {item.isRunning ? (
           <RotatingSpinner size="sm" />
         ) : (
-          <Icon as={Clock} size="xs" className="text-typography-400" />
+          <Icon as={Clock} size="xs" className="text-content-tertiary" />
         )}
         <View className="flex-1">
           <Text
-            className="text-sm font-medium text-typography-700"
+            className="text-sm font-medium text-content-body"
             numberOfLines={1}
           >
             {item.promptId.slice(0, 8)}...
           </Text>
-          <Text className="text-xs text-typography-400">
+          <Text className="text-xs text-content-tertiary">
             {item.isRunning ? 'Running' : 'Pending'}
           </Text>
         </View>
       </View>
       <Pressable
         onPress={onDelete}
-        className="ml-2 rounded-lg p-1.5 active:bg-background-200"
+        className="ml-2 rounded-lg p-1.5 active:bg-surface-muted"
       >
-        <Icon as={X} size="xs" className="text-typography-400" />
+        <Icon as={X} size="xs" className="text-content-tertiary" />
       </Pressable>
     </View>
   );

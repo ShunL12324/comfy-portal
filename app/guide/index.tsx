@@ -49,9 +49,9 @@ export default function GuideScreen() {
 
   const renderTabBar = (props: any) => {
     return (
-      <VStack className="bg-background-0">
+      <VStack className="bg-surface-base">
         <AppBar title="ComfyUI Server Setup" showBack />
-        <HStack className="border-b border-outline-200 px-5">
+        <HStack className="border-b border-stroke px-5">
           {props.navigationState.routes.map((route: any, i: number) => {
             const isActive = index === i;
             return (
@@ -63,7 +63,7 @@ export default function GuideScreen() {
                 <VStack className="items-center pb-3">
                   <Text
                     className={`text-sm font-medium ${
-                      isActive ? 'text-primary-900' : 'text-typography-500'
+                      isActive ? 'text-primary-900' : 'text-content-secondary'
                     }`}
                   >
                     {route.title}
@@ -81,7 +81,7 @@ export default function GuideScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-surface-base">
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

@@ -28,13 +28,13 @@ export default function BaseNode({ node, children, badges }: BaseNodeProps) {
         type: 'timing',
         duration: 200,
       }}
-      className="my-2 rounded-lg border bg-background-0 p-4"
+      className="my-2 rounded-lg border bg-surface-base p-4"
     >
       <View className="mb-2 flex-row items-center justify-between">
         <Text
           size="sm"
           bold={!!node._meta?.title || !!node.class_type}
-          className={`flex-1 truncate ${!node._meta?.title && !node.class_type ? 'text-error-500' : ''}`}
+          className={`flex-1 truncate ${!node._meta?.title && !node.class_type ? 'text-status-danger' : ''}`}
           numberOfLines={1}
           strikeThrough={!node._meta?.title && !node.class_type}
         >

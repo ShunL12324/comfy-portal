@@ -45,12 +45,14 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
 
   return (
     <>
+      {/* Cards press by fading only — nothing else in the app scales or lifts
+          on press, and this was the one card that did. */}
       <Pressable
-        className="active:scale-98 overflow-hidden rounded-xl bg-background-50 active:opacity-90 shadow-lg shadow-black/5 relative"
+        className="overflow-hidden rounded-xl bg-surface-raised active:opacity-80 shadow-lg shadow-black/5 relative"
         onPress={() => router.push(`/workflow/${workflowRecord?.serverId}/run/${workflowRecord?.id}`)}
       >
         {/* Top Image Section */}
-        <View className="h-48 w-full bg-background-100">
+        <View className="h-48 w-full bg-surface-sunken">
           {workflowRecord?.thumbnail ? (
             <Image
               source={{ uri: workflowRecord?.thumbnail }}
@@ -64,24 +66,24 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
               }}
             />
           ) : (
-            <View className="flex-1 items-center justify-center bg-background-200">
-              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-typography-400" />
+            <View className="flex-1 items-center justify-center bg-surface-muted">
+              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-content-tertiary" />
             </View>
           )}
         </View>
 
         {/* Bottom Info Section - Revised Structure */}
         <View className="p-4">
-          <Heading size="sm" className="text-typography-900" numberOfLines={1}>
+          <Heading size="sm" className="text-content-heading" numberOfLines={1}>
             {workflowRecord.name}
           </Heading>
 
           <VStack className="mt-2 space-y-1">
-            <Text className="text-xs text-typography-500">
+            <Text className="text-xs text-content-secondary">
               Last used: {workflowRecord.lastUsed ? formatDateToYYYYMMDD(workflowRecord.lastUsed) : 'Never'}
             </Text>
             {workflowRecord.addMethod === 'server-sync' && workflowRecord.metadata?.originalFilename && (
-              <Text className="text-xs text-typography-400" numberOfLines={1}>
+              <Text className="text-xs text-content-tertiary" numberOfLines={1}>
                 Path: {String(workflowRecord.metadata.originalFilename)}
               </Text>
             )}
@@ -104,14 +106,14 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
 
       <AlertDialog isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)}>
         <AlertDialogBackdrop />
-        <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
+        <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-surface-muted">
           <AlertDialogHeader className="px-0">
-            <Heading size="sm" className="text-typography-950">
+            <Heading size="sm" className="text-content-primary">
               Delete Workflow
             </Heading>
           </AlertDialogHeader>
           <AlertDialogBody className="px-0 py-4">
-            <Text className="text-sm text-typography-400">
+            <Text className="text-sm text-content-tertiary">
               Are you sure you want to delete this workflow? This action cannot be undone.
             </Text>
           </AlertDialogBody>
@@ -120,16 +122,16 @@ export const WorkflowCard = ({ id }: WorkflowCardProps) => {
               <Button
                 variant="outline"
                 onPress={() => setIsDeleteAlertOpen(false)}
-                className="flex-1 rounded-md bg-background-100"
+                className="flex-1 rounded-md bg-surface-sunken"
               >
-                <ButtonText className="text-sm text-typography-400">Cancel</ButtonText>
+                <ButtonText className="text-sm text-content-tertiary">Cancel</ButtonText>
               </Button>
               <Button
                 variant="solid"
                 onPress={handleDelete}
-                className="flex-1 rounded-md bg-error-500 active:bg-error-600"
+                className="flex-1 rounded-md bg-status-danger active:bg-status-danger-pressed"
               >
-                <ButtonText className="text-sm text-typography-900">Delete</ButtonText>
+                <ButtonText className="text-sm text-content-heading">Delete</ButtonText>
               </Button>
             </HStack>
           </AlertDialogFooter>

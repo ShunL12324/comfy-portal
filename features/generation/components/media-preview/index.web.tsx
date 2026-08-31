@@ -143,7 +143,7 @@ export const MediaPreview = memo(function ParallaxMedia({
                 <View
                   key={index}
                   className={`h-2 w-2 rounded-full ${
-                    index === activeIndex ? 'bg-primary-500' : 'bg-border-300'
+                    index === activeIndex ? 'bg-action' : 'bg-border-300'
                   }`}
                 />
               ))}
@@ -272,18 +272,18 @@ export const MediaPreview = memo(function ParallaxMedia({
           </Modal>
         </View>
       ) : (
-        <View className="h-full w-full items-center justify-center bg-background-0">
+        <View className="h-full w-full items-center justify-center bg-surface-base">
           <View className="items-center gap-4 px-6">
-            <View className="rounded-full bg-background-50 p-3">
+            <View className="rounded-full bg-surface-raised p-3">
               <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-typography-300" />
             </View>
             <View className="items-center gap-1">
               <Text className="text-base font-semibold text-typography-800">No Media Yet</Text>
-              <Text className="text-center text-sm text-typography-500">
+              <Text className="text-center text-sm text-content-secondary">
                 Generate an image to preview results here.
               </Text>
               {status === 'generating' && progress.max > 0 && (
-                <Text className="text-xs text-typography-400">
+                <Text className="text-xs text-content-tertiary">
                   Generating... {Math.round((progress.value / progress.max) * 100)}%
                 </Text>
               )}

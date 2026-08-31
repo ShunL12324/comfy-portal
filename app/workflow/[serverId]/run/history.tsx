@@ -211,39 +211,42 @@ export default function HistoryGalleryPage() {
         <Button
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
+          hitSlop={4}
           onPress={handleShare}
           disabled={!isSelectionMode || !hasSelection}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
-          <Icon as={Share} size="md" className="text-primary-500" />
+          <Icon as={Share} size="md" className="text-action" />
         </Button>
         <Button
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
+          hitSlop={4}
           onPress={handleSave}
           disabled={!isSelectionMode || !hasSelection}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
-          <Icon as={Download} size="md" className="text-primary-500" />
+          <Icon as={Download} size="md" className="text-action" />
         </Button>
         <Button
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
+          hitSlop={4}
           onPress={() => setIsDeleteAlertOpen(true)}
           disabled={!isSelectionMode || !hasSelection}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
-          <Icon as={Trash2} size="md" className="text-error-500" />
+          <Icon as={Trash2} size="md" className="text-status-danger" />
         </Button>
         {isSelectionMode ? (
           <Button
             variant="solid"
             size="xs"
             onPress={exitSelectionMode}
-            className="ml-1 rounded-lg bg-primary-500"
+            className="ml-1 rounded-lg bg-action"
             style={{ width: 60 }}
           >
             <ButtonText className="text-xs font-semibold">Done</ButtonText>
@@ -253,7 +256,7 @@ export default function HistoryGalleryPage() {
             variant="solid"
             size="xs"
             onPress={() => setIsSelectionMode(true)}
-            className="ml-1 rounded-lg bg-background-100"
+            className="ml-1 rounded-lg bg-surface-sunken"
             style={{ width: 60, borderWidth: 1, borderColor: 'transparent' }}
           >
             <ButtonText className="text-xs font-medium text-primary-400">Select</ButtonText>
@@ -264,7 +267,7 @@ export default function HistoryGalleryPage() {
   }, [isSelectionMode, hasSelection, handleShare, handleSave, exitSelectionMode]);
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-surface-base">
       <AppBar
         title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
         titleSize="sm"
@@ -308,8 +311,8 @@ export default function HistoryGalleryPage() {
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ type: 'timing', duration: 140 }}
-            exitTransition={{ type: 'timing', duration: 110, delay: 120 }}
+            transition={{ type: 'timing', duration: 150 }}
+            exitTransition={{ type: 'timing', duration: 150, delay: 120 }}
             style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: 'black' }]}
           >
             <MotiView
@@ -317,7 +320,7 @@ export default function HistoryGalleryPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ type: 'timing', duration: 200 }}
-              exitTransition={{ type: 'timing', duration: 120 }}
+              exitTransition={{ type: 'timing', duration: 150 }}
               style={{ flex: 1 }}
             >
               {/* A paging FlatList rather than a PagerView (which the run

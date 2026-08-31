@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -77,67 +78,61 @@ export default function ExploreScreen() {
 
   if (!CLOUD_GPU_SUPPORTED) {
     return (
-      <View className="bg-background-0 flex-1">
+      <View className="bg-surface-base flex-1">
         <AppBar title="Templates" titleSize="xl" />
-        <VStack space="md" className="px-8 py-16 items-center">
-          <Icon as={CloudOff} className="h-8 w-8 text-typography-300" />
-          <Text className="text-sm text-typography-400 text-center">{CLOUD_GPU_UNSUPPORTED_REASON}</Text>
-        </VStack>
+        <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
       </View>
     );
   }
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title="Templates" titleSize="xl" />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="sm">
-          <Text className="text-sm text-typography-500">
+          <Text className="text-sm text-content-secondary">
             What to install on a fresh cloud GPU — models, custom nodes and workflows, bundled together.
           </Text>
 
           <HStack space="sm" className="mt-1">
             <Button variant="outline" onPress={() => router.push('/templates/new')} className="flex-1 rounded-xl">
               <HStack space="xs" className="items-center">
-                <Icon as={Plus} size="sm" className="text-primary-500" />
-                <ButtonText className="text-primary-500">New</ButtonText>
+                <Icon as={Plus} size="sm" className="text-action" />
+                <ButtonText className="text-action">New</ButtonText>
               </HStack>
             </Button>
             <Button variant="outline" onPress={handleImport} className="flex-1 rounded-xl">
               <HStack space="xs" className="items-center">
-                <Icon as={Upload} size="sm" className="text-primary-500" />
-                <ButtonText className="text-primary-500">Import</ButtonText>
+                <Icon as={Upload} size="sm" className="text-action" />
+                <ButtonText className="text-action">Import</ButtonText>
               </HStack>
             </Button>
           </HStack>
 
           {templates.length === 0 ? (
-            <VStack space="md" className="px-6 py-12 items-center">
-              <Icon as={LayoutTemplate} className="h-8 w-8 text-typography-300" />
-              <Text className="text-sm text-typography-400 text-center">
-                A template lists the models, extensions and workflows to install on a fresh instance.
-              </Text>
-            </VStack>
+            <EmptyState icon={LayoutTemplate}>
+              A template lists the models, extensions and workflows to install on a fresh instance.
+            </EmptyState>
           ) : (
             templates.map((template) => (
               <Pressable
                 key={template.id}
                 onPress={() => router.push(`/templates/${template.id}`)}
-                className="rounded-xl bg-background-50 p-4 active:opacity-80"
+                className="rounded-xl bg-surface-raised p-4 active:opacity-80"
               >
                 <HStack className="items-start justify-between">
                   <VStack className="flex-1" space="xs">
-                    <Text className="text-base font-medium text-typography-900" numberOfLines={1}>
+                    <Text className="text-base font-medium text-content-heading" numberOfLines={1}>
                       {template.name}
                     </Text>
-                    <Text className="text-xs text-typography-400">
+                    <Text className="text-xs text-content-tertiary">
                       {template.models.length} model{template.models.length === 1 ? '' : 's'} ·{' '}
                       {template.extensions.length} extension
                       {template.extensions.length === 1 ? '' : 's'} · {template.workflows.length} workflow
                       {template.workflows.length === 1 ? '' : 's'}
                       {template.ollamaModels?.length ? ' · Ollama' : ''}
                     </Text>
-                    <Text className="text-xs text-typography-400">
+                    <Text className="text-xs text-content-tertiary">
                       {template.gpuQuery || 'Any GPU'} · {estimateDiskGb(template.models)} GB disk
                     </Text>
                   </VStack>
@@ -150,7 +145,7 @@ export default function ExploreScreen() {
                       }}
                       className="p-2"
                     >
-                      <Icon as={Share2} size="xs" className="text-typography-400" />
+                      <Icon as={Share2} size="xs" className="text-content-tertiary" />
                     </Pressable>
                     <Pressable
                       onPress={(e) => {
@@ -159,7 +154,7 @@ export default function ExploreScreen() {
                       }}
                       className="p-2"
                     >
-                      <Icon as={Copy} size="xs" className="text-typography-400" />
+                      <Icon as={Copy} size="xs" className="text-content-tertiary" />
                     </Pressable>
                     <Pressable
                       onPress={(e) => {
@@ -170,7 +165,7 @@ export default function ExploreScreen() {
                     >
                       <Icon as={Trash2} size="xs" className="text-error-400" />
                     </Pressable>
-                    <Icon as={ChevronRight} size="sm" className="text-typography-400" />
+                    <Icon as={ChevronRight} size="sm" className="text-content-tertiary" />
                   </HStack>
                 </HStack>
               </Pressable>

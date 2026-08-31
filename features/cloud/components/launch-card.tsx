@@ -44,32 +44,32 @@ export function LaunchCard({ launch, index = 0 }: { launch: LaunchRecord; index?
       <TouchableOpacity
         onPress={() => router.push(`/cloud/launch-status/${launch.instanceId}`)}
         activeOpacity={0.8}
-        className="overflow-hidden rounded-xl bg-background-50 p-3.5"
+        className="overflow-hidden rounded-xl bg-surface-raised p-3.5"
       >
         <HStack space="md" className="flex-1 items-center">
-          <View className="h-16 w-16 items-center justify-center rounded-lg bg-background-0 p-2">
+          <View className="h-16 w-16 items-center justify-center rounded-lg bg-surface-base p-2">
             {failed ? (
-              <Icon as={AlertTriangle} size="xl" className="text-error-500" />
+              <Icon as={AlertTriangle} size="xl" className="text-status-danger" />
             ) : (
               <RotatingSpinner size="sm" />
             )}
           </View>
           <VStack space="xs" className="flex-1">
             <HStack space="sm" className="items-center">
-              <Icon as={Cloud} size="xs" className="text-primary-500" />
-              <Text className="flex-1 text-base font-semibold text-typography-950" numberOfLines={1}>
+              <Icon as={Cloud} size="xs" className="text-action" />
+              <Text className="flex-1 text-base font-semibold text-content-primary" numberOfLines={1}>
                 {launch.templateName}
               </Text>
             </HStack>
-            <Text className="text-xs text-typography-500" numberOfLines={1}>
+            <Text className="text-xs text-content-secondary" numberOfLines={1}>
               {failed ? launch.error || 'Failed' : [STAGE_LABELS[launch.stage], modelSummary].filter(Boolean).join(' · ')}
             </Text>
             {!failed && snapshot?.totals.speed ? (
-              <Text className="text-xs text-typography-400" numberOfLines={1}>
+              <Text className="text-xs text-content-tertiary" numberOfLines={1}>
                 {formatBytes(snapshot.totals.speed)}/s
               </Text>
             ) : null}
-            <Text className={`text-xs ${failed ? 'text-error-500' : 'text-warning-600'}`} numberOfLines={1}>
+            <Text className={`text-xs ${failed ? 'text-status-danger' : 'text-warning-600'}`} numberOfLines={1}>
               {formatUptime(launch.startedAt)} · {formatUsd(accruedCost(launch.startedAt, launch.pricePerHour))} so far ·{' '}
               {formatUsd(launch.pricePerHour)}/hr
             </Text>

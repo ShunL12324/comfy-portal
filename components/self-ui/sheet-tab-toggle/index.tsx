@@ -40,11 +40,11 @@ export const SheetTabToggle = memo(({ index, onChange }: SheetTabToggleProps) =>
 
   return (
     <View
-      className="relative rounded-full bg-background-50 p-1"
+      className="relative rounded-full bg-surface-raised p-1"
       style={{ width: TOGGLE_CONTAINER_WIDTH, height: TOGGLE_CONTAINER_HEIGHT }}
     >
       <Animated.View
-        className="absolute left-1 top-1 rounded-full bg-primary-500"
+        className="absolute left-1 top-1 rounded-full bg-action"
         style={[{ width: TOGGLE_THUMB_WIDTH, height: TOGGLE_THUMB_HEIGHT }, thumbStyle]}
       />
       <HStack className="h-8">
@@ -54,7 +54,7 @@ export const SheetTabToggle = memo(({ index, onChange }: SheetTabToggleProps) =>
           className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
-          <Icon as={SlidersHorizontal} size="sm" className={index === 0 ? 'text-typography-0' : 'text-typography-500'} />
+          <Icon as={SlidersHorizontal} size="sm" className={index === 0 ? 'text-content-inverse' : 'text-content-secondary'} />
         </Pressable>
         <Pressable
           onPress={() => onChange(1)}
@@ -62,7 +62,7 @@ export const SheetTabToggle = memo(({ index, onChange }: SheetTabToggleProps) =>
           className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
-          <Icon as={Bot} size="sm" className={index === 1 ? 'text-typography-0' : 'text-typography-500'} />
+          <Icon as={Bot} size="sm" className={index === 1 ? 'text-content-inverse' : 'text-content-secondary'} />
         </Pressable>
       </HStack>
     </View>

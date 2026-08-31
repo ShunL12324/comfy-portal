@@ -56,13 +56,13 @@ const formatTagsToPrompt = (tags: Tag[]): string => {
 
 const getStrengthColor = (strength: number) => {
   if (strength <= 0.5) return 'text-success-400';
-  if (strength <= 0.8) return 'text-success-500';
+  if (strength <= 0.8) return 'text-status-online';
   if (strength <= 1.0) return 'text-success-600';
   if (strength <= 1.2) return 'text-warning-400';
-  if (strength <= 1.5) return 'text-warning-500';
+  if (strength <= 1.5) return 'text-status-busy';
   if (strength <= 1.8) return 'text-error-400';
-  if (strength <= 2.0) return 'text-error-500';
-  if (strength <= 2.3) return 'text-error-600';
+  if (strength <= 2.0) return 'text-status-danger';
+  if (strength <= 2.3) return 'text-status-danger-pressed';
   return 'text-error-700';
 };
 
@@ -77,11 +77,11 @@ function TagItem({ tag, strength, selected, onSelect }: TagItemProps) {
   return (
     <View
       className={`h-8 flex-row items-center gap-[0.5px] rounded-full border px-2 ${
-        selected ? 'border-primary-700 bg-background-200' : 'border-transparent bg-background-50'
+        selected ? 'border-primary-700 bg-surface-muted' : 'border-transparent bg-surface-raised'
       }`}
     >
       <Pressable onPress={onSelect} className="max-w-[90%] flex-row items-center">
-        <Text size="sm" className="text-ellipsis px-2 py-1 text-typography-900">
+        <Text size="sm" className="text-ellipsis px-2 py-1 text-content-heading">
           {tag}
         </Text>
         <Text size="sm" className={`${getStrengthColor(strength)} text-xs`} bold>
@@ -243,7 +243,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
       >
         <View className="mb-4 flex-row flex-wrap gap-2">
           {tags.length === 0 ? (
-            <Text className="text-sm text-typography-400">No tags yet. Add one below.</Text>
+            <Text className="text-sm text-content-tertiary">No tags yet. Add one below.</Text>
           ) : (
             tags.map((tag) => (
               <TagItem
@@ -314,7 +314,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
             disabled={selectedTagId === null}
             onPress={handleRemoveSelectedTag}
           >
-            <Icon as={Trash2} size="sm" className="text-error-500" />
+            <Icon as={Trash2} size="sm" className="text-status-danger" />
           </TouchableOpacity>
         </View>
       </MotiView>
@@ -324,7 +324,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
         className="flex-row items-center gap-2"
         layout={LinearTransition.springify().damping(10).stiffness(100).duration(100)}
       >
-        <Input className="flex-1 rounded-md border-0 bg-background-100">
+        <Input className="flex-1 rounded-md border-0 bg-surface-sunken">
           <InputField
             placeholder={selectedTagId ? 'Edit tag' : 'Add a tag'}
             value={newTag}

@@ -17,7 +17,7 @@ export default function WanImageToVideo({ node, workflowId }: WanImageToVideoPro
   return (
     <BaseNode node={node}>
       <SubItem title="Width">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Width"
             keyboardType="numeric"
@@ -27,7 +27,7 @@ export default function WanImageToVideo({ node, workflowId }: WanImageToVideoPro
         </Input>
       </SubItem>
       <SubItem title="Height">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Height"
             keyboardType="numeric"
@@ -37,7 +37,7 @@ export default function WanImageToVideo({ node, workflowId }: WanImageToVideoPro
         </Input>
       </SubItem>
       <SubItem title="Length">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Length"
             keyboardType="numeric"

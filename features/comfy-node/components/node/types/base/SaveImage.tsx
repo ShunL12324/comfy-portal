@@ -18,17 +18,17 @@ export default function SaveImage({ node, serverId, workflowId }: SaveImageProps
   return (
     <BaseNode node={node}>
       <SubItem title="Filename Prefix">
-        <Input className="w-full rounded-lg border-0 bg-background-50">
+        <Input className="w-full rounded-lg border-0 bg-surface-raised">
           <InputField
             placeholder="Enter filename prefix"
-            className="w-full border-0 bg-background-50 text-sm"
+            className="w-full border-0 bg-surface-raised text-sm"
             value={node.inputs?.filename_prefix || ''}
             onChangeText={(value) => updateNodeInput(workflowId, node.id, 'filename_prefix', value)}
           />
         </Input>
         <View className="mt-2 flex-row items-start gap-2">
-          <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
-          <Text size="sm" className="flex-1 text-xs text-typography-500">
+          <Icon as={Info} size="xs" className="mt-[1px] text-content-secondary" />
+          <Text size="sm" className="flex-1 text-xs text-content-secondary">
             This will only affect the filename of the image stored on the server.
           </Text>
         </View>

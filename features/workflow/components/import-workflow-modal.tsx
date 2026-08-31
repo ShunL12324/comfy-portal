@@ -183,13 +183,13 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
   return (
     <KeyboardModal isOpen={isOpen} onClose={handleClose}>
       <KeyboardModal.Header>
-        <Text className="text-lg font-semibold text-primary-500">Import Workflow</Text>
+        <Text className="text-lg font-semibold text-action">Import Workflow</Text>
       </KeyboardModal.Header>
 
       <KeyboardModal.Body scrollEnabled={false}>
         <VStack space="md">
           <KeyboardModal.Item title="Name" error={error}>
-            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-surface-base">
               <InputField
                 defaultValue={name}
                 onChangeText={(value) => {
@@ -197,7 +197,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
                   setError('');
                 }}
                 placeholder="Enter workflow name"
-                className="px-3 py-2 text-sm text-primary-500"
+                className="px-3 py-2 text-sm text-action"
               />
             </Input>
           </KeyboardModal.Item>
@@ -211,14 +211,14 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
             </HStack>
             <Pressable
               onPress={handleImportFromFile}
-              className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-background-0"
+              className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-surface-base"
             >
               <VStack space="sm" className="items-center">
-                <FileJson size={24} className={workflowData ? 'text-primary-500' : 'text-primary-300'} />
+                <FileJson size={24} className={workflowData ? 'text-action' : 'text-primary-300'} />
                 <VStack space="xs" className="items-center">
                   {uploadedFileName ? (
                     <>
-                      <Text className="text-sm font-medium text-primary-500">{uploadedFileName}</Text>
+                      <Text className="text-sm font-medium text-action">{uploadedFileName}</Text>
                       <Text className="text-xs text-primary-300">Click to change file</Text>
                     </>
                   ) : (
@@ -234,10 +234,10 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
             <Button
               variant="solid"
               onPress={handleImportFromClipboard}
-              className={`w-full rounded-md ${workflowData?.addMethod === 'clipboard' ? 'bg-success-500' : ''}`}
+              className={`w-full rounded-md ${workflowData?.addMethod === 'clipboard' ? 'bg-status-online' : ''}`}
             >
               <ButtonIcon as={workflowData?.addMethod === 'clipboard' ? CheckCircle : Clipboard} size="md" />
-              <ButtonText className="text-typography-0">
+              <ButtonText className="text-content-inverse">
                 {workflowData?.addMethod === 'clipboard' ? 'Imported from Clipboard' : 'Import from Clipboard'}
               </ButtonText>
             </Button>
@@ -245,7 +245,7 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
 
           <VStack space="xs">
             <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
-            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
               {thumbnail ? (
                 <Image
                   source={{ uri: thumbnail }}
@@ -266,13 +266,13 @@ export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowMo
 
       <KeyboardModal.Footer>
         <HStack space="sm">
-          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100">
+          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-surface-sunken">
             <ButtonText className="text-primary-400">Cancel</ButtonText>
           </Button>
           <Button
             variant="solid"
             onPress={handleAdd}
-            className={`flex-1 rounded-md ${!name.trim() || !workflowData ? 'bg-primary-300 opacity-50' : 'bg-primary-500'
+            className={`flex-1 rounded-md ${!name.trim() || !workflowData ? 'bg-primary-300 opacity-50' : 'bg-action'
               }`}
             disabled={!name.trim() || !workflowData}
           >

@@ -18,13 +18,13 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
   return (
     <Pressable onPress={() => onSelect(item.value)} className="active:opacity-80">
       <Box
-        className={`mx-4 mb-2 overflow-hidden rounded-xl ${isSelected ? 'border-0 bg-background-200' : 'bg-background-50'}`}
+        className={`mx-4 mb-2 overflow-hidden rounded-xl ${isSelected ? 'border-0 bg-surface-muted' : 'bg-surface-raised'}`}
       >
         <HStack space="sm" className="items-center justify-between p-3">
           {item.icon}
           <VStack space="xs" className="flex-1">
             <Text
-              className={`text-base ${isSelected ? 'font-medium text-typography-950' : 'text-typography-500'}`}
+              className={`text-base ${isSelected ? 'font-medium text-content-primary' : 'text-content-secondary'}`}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -36,7 +36,7 @@ export function Item({ item, isSelected, onSelect }: ItemProps) {
               </Text>
             )}
           </VStack>
-          {isSelected && <Icon as={Check} size="sm" className="text-typography-950" />}
+          {isSelected && <Icon as={Check} size="sm" className="text-content-primary" />}
         </HStack>
       </Box>
     </Pressable>

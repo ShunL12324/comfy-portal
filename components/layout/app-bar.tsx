@@ -58,22 +58,27 @@ export function AppBar({
   }, [centerElement, centerTitle, showBack, width]);
 
   return (
-    <View className={`w-full bg-background-0 ${showBottomBorder ? 'border-b border-outline-50' : ''} ${className}`}>
+    <View className={`w-full bg-surface-base ${showBottomBorder ? 'border-b border-stroke-subtle' : ''} ${className}`}>
       <VStack space="sm" className="px-5 pb-4 pt-3">
         <HStack className="relative items-center justify-between">
           <HStack className="items-center min-w-[50px]">
             {showBack && (
-              <Button variant="link" className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0" onPress={() => router.back()}>
-                <Icon as={ChevronLeft} size="xl" className="text-typography-950" />
+              <Button
+                variant="link"
+                className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0"
+                hitSlop={4}
+                onPress={() => router.back()}
+              >
+                <Icon as={ChevronLeft} size="xl" className="text-content-primary" />
               </Button>
             )}
             {!centerTitle && (
               <VStack className="shrink" style={{ maxWidth: leftTitleMaxWidth }}>
-                <Heading size={titleSize} className="text-typography-950" numberOfLines={1} ellipsizeMode="tail">
+                <Heading size={titleSize} className="text-content-primary" numberOfLines={1} ellipsizeMode="tail">
                   {title}
                 </Heading>
                 {subtitle && (
-                  <Text className="text-sm text-typography-500" numberOfLines={1} ellipsizeMode="tail">
+                  <Text className="text-sm text-content-secondary" numberOfLines={1} ellipsizeMode="tail">
                     {subtitle}
                   </Text>
                 )}
@@ -83,10 +88,10 @@ export function AppBar({
           {centerTitle && (
             <View className="absolute left-0 right-0 items-center pointer-events-none">
               <VStack className="items-center">
-                <Heading size={titleSize} className="text-typography-950">
+                <Heading size={titleSize} className="text-content-primary">
                   {title}
                 </Heading>
-                {subtitle && <Text className="text-sm text-typography-500">{subtitle}</Text>}
+                {subtitle && <Text className="text-sm text-content-secondary">{subtitle}</Text>}
               </VStack>
             </View>
           )}

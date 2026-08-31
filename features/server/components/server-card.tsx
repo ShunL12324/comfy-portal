@@ -51,8 +51,8 @@ const ServerInfo = ({ name, host, port, models, status, latency, cloud }: Server
 
   return (
     <HStack space="md" className="flex-1 items-center">
-      <View className="h-16 w-16 items-center justify-center rounded-lg bg-background-0 p-2">
-        <Icon as={Server} size="xl" className="text-primary-500" />
+      <View className="h-16 w-16 items-center justify-center rounded-lg bg-surface-base p-2">
+        <Icon as={Server} size="xl" className="text-action" />
       </View>
       <VStack space="xs" className="flex-1">
         <HStack space="sm" className="items-center">
@@ -63,12 +63,12 @@ const ServerInfo = ({ name, host, port, models, status, latency, cloud }: Server
               transition={{ loop: true, type: 'timing', duration: 1000 }}
               className="h-4 w-4 items-center justify-center"
             >
-              <Icon as={Loader} size="sm" className="text-primary-500" />
+              <Icon as={Loader} size="sm" className="text-action" />
             </MotiView>
           ) : (
             <StatusDot tone={isOnline ? 'ready' : 'offline'} />
           )}
-          <Text className="flex-1 text-base font-semibold text-typography-950" numberOfLines={1}>
+          <Text className="flex-1 text-base font-semibold text-content-primary" numberOfLines={1}>
             {name}
           </Text>
         </HStack>
@@ -96,11 +96,11 @@ const ServerInfo = ({ name, host, port, models, status, latency, cloud }: Server
 const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
   <Menu
     placement="bottom right"
-    className="rounded-xl border border-background-200 bg-background-100 p-1"
+    className="rounded-xl border border-background-200 bg-surface-sunken p-1"
     trigger={({ ...triggerProps }) => {
       return (
-        <TouchableOpacity {...triggerProps} className="h-9 w-9 items-center justify-center rounded-md">
-          <Icon as={EllipsisVertical} size="md" className="text-typography-500" />
+        <TouchableOpacity {...triggerProps} hitSlop={4} className="h-9 w-9 items-center justify-center rounded-md">
+          <Icon as={EllipsisVertical} size="md" className="text-content-secondary" />
         </TouchableOpacity>
       );
     }}
@@ -109,19 +109,19 @@ const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
       key="edit"
       textValue="Edit"
       onPress={onEdit}
-      className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+      className="rounded-lg p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
     >
-      <Icon as={Settings2} size="sm" className="mr-2 text-typography-700" />
+      <Icon as={Settings2} size="sm" className="mr-2 text-content-body" />
       <MenuItemLabel size="sm">Edit</MenuItemLabel>
     </MenuItem>
     <MenuItem
       key="delete"
       textValue="Delete"
       onPress={onDelete}
-      className="rounded-lg p-3 data-[focus=true]:bg-background-200 data-[active=true]:bg-background-200"
+      className="rounded-lg p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
     >
-      <Icon as={Trash2} size="sm" className="mr-2 text-error-600" />
-      <MenuItemLabel size="sm" className="text-error-600">
+      <Icon as={Trash2} size="sm" className="mr-2 text-status-danger-pressed" />
+      <MenuItemLabel size="sm" className="text-status-danger-pressed">
         Delete
       </MenuItemLabel>
     </MenuItem>
@@ -131,22 +131,22 @@ const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
 const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: () => void; onDelete: () => void }) => (
   <AlertDialog isOpen={isOpen} onClose={onClose}>
     <AlertDialogBackdrop onPress={onClose} />
-    <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-background-200">
+    <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-surface-muted">
       <AlertDialogHeader className="px-0">
-        <Text className="text-lg font-semibold text-typography-950">Delete Server</Text>
+        <Text className="text-lg font-semibold text-content-primary">Delete Server</Text>
       </AlertDialogHeader>
       <AlertDialogBody className="px-0 py-4">
-        <Text className="text-sm text-typography-400">
+        <Text className="text-sm text-content-tertiary">
           Are you sure you want to delete this server? This action cannot be undone.
         </Text>
       </AlertDialogBody>
       <AlertDialogFooter className="px-0">
         <HStack space="sm" className="py-0">
-          <Button variant="outline" onPress={onClose} className="flex-1 rounded-md bg-background-100">
-            <ButtonText className="text-sm text-typography-400">Cancel</ButtonText>
+          <Button variant="outline" onPress={onClose} className="flex-1 rounded-md bg-surface-sunken">
+            <ButtonText className="text-sm text-content-tertiary">Cancel</ButtonText>
           </Button>
-          <Button variant="solid" onPress={onDelete} className="flex-1 rounded-md bg-error-500 active:bg-error-600">
-            <ButtonText className="text-sm text-typography-900">Delete</ButtonText>
+          <Button variant="solid" onPress={onDelete} className="flex-1 rounded-md bg-status-danger active:bg-status-danger-pressed">
+            <ButtonText className="text-sm text-content-heading">Delete</ButtonText>
           </Button>
         </HStack>
       </AlertDialogFooter>
@@ -183,7 +183,7 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
         <TouchableOpacity
           onPress={() => router.push(`/workflow/${id}`)}
           activeOpacity={0.8}
-          className="overflow-hidden rounded-xl bg-background-50 p-3.5"
+          className="overflow-hidden rounded-xl bg-surface-raised p-3.5"
         >
           <HStack space="sm" className="items-center justify-between">
             <ServerInfo name={name} host={host} port={port} models={models} status={status} latency={latency} cloud={cloud} />

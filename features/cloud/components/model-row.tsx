@@ -22,13 +22,13 @@ export function ModelRow({
   onRemove: () => void;
 }) {
   return (
-    <View className="rounded-xl bg-background-50 p-3">
+    <View className="rounded-xl bg-surface-raised p-3">
       <HStack className="items-start justify-between">
         <VStack className="flex-1 pr-2" space="xs">
-          <Text className="text-sm font-medium text-typography-900" numberOfLines={1}>
+          <Text className="text-sm font-medium text-content-heading" numberOfLines={1}>
             {model.label || model.filename || model.url}
           </Text>
-          <Text className="text-xs text-typography-400" numberOfLines={1}>
+          <Text className="text-xs text-content-tertiary" numberOfLines={1}>
             {[model.filename, formatBytes(model.sizeBytes)].filter(Boolean).join(' · ') || model.url}
           </Text>
         </VStack>

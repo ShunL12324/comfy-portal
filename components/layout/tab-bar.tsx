@@ -30,7 +30,7 @@ const TabItem = ({ icon, label, isActive, onPress }: TabItemProps) => {
     <Pressable onPress={onPress} className="flex-1">
       <VStack space="xs" className="items-center pb-3 pt-4">
         {icon}
-        <Text size="xs" className={`mt-0.5 ${isActive ? 'text-typography-950' : 'text-typography-400'}`}>
+        <Text size="xs" className={`mt-0.5 ${isActive ? 'text-content-primary' : 'text-content-tertiary'}`}>
           {label}
         </Text>
       </VStack>
@@ -57,7 +57,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
   };
 
   return (
-    <VStack className={`border-t border-outline-0 bg-background-0`} style={{ paddingBottom: insets.bottom }}>
+    <VStack className={`border-t border-stroke-hairline bg-surface-base`} style={{ paddingBottom: insets.bottom }}>
       <HStack space="xs" className="relative">
         <MotiView
           className="absolute h-0.5 rounded-xl bg-typography-950"
@@ -75,7 +75,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
             <Icon
               as={Server}
               size="lg"
-              className={`${activeTab === 'server' ? 'text-typography-950' : 'text-typography-400'}`}
+              className={`${activeTab === 'server' ? 'text-content-primary' : 'text-content-tertiary'}`}
             />
           }
           label="Server"
@@ -87,7 +87,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
             <Icon
               as={LayoutTemplate}
               size="lg"
-              className={`${activeTab === 'explore' ? 'text-typography-950' : 'text-typography-400'}`}
+              className={`${activeTab === 'explore' ? 'text-content-primary' : 'text-content-tertiary'}`}
             />
           }
           label="Templates"
@@ -99,7 +99,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
             <Icon
               as={Settings2}
               size="lg"
-              className={`${activeTab === 'setting' ? 'text-typography-950' : 'text-typography-400'}`}
+              className={`${activeTab === 'setting' ? 'text-content-primary' : 'text-content-tertiary'}`}
             />
           }
           label="Setting"

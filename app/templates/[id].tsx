@@ -137,7 +137,7 @@ export default function TemplateEditor() {
   const alreadyAdded = (workflowName: string) => workflows.some((w) => w.name === workflowName);
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title={isNew ? 'New Template' : 'Edit Template'} showBack />
       {/* These inputs go through AdaptiveTextInput, and BottomSheetContext
           defaults to true — so on a plain screen they'd render the BottomSheet
@@ -210,8 +210,8 @@ export default function TemplateEditor() {
               </Button>
             </VStack>
             {extensions.map((url, index) => (
-              <HStack key={`${url}-${index}`} className="rounded-xl bg-background-50 p-3 items-center justify-between">
-                <Text className="text-xs text-typography-700 flex-1" numberOfLines={1}>
+              <HStack key={`${url}-${index}`} className="rounded-xl bg-surface-raised p-3 items-center justify-between">
+                <Text className="text-xs text-content-body flex-1" numberOfLines={1}>
                   {url.replace('https://github.com/', '')}
                 </Text>
                 <Pressable onPress={() => setExtensions((prev) => prev.filter((_, i) => i !== index))} className="p-1">
@@ -246,8 +246,8 @@ export default function TemplateEditor() {
               </Button>
             </VStack>
             {ollamaModels.map((tag, index) => (
-              <HStack key={`${tag}-${index}`} className="rounded-xl bg-background-50 p-3 items-center justify-between">
-                <Text className="text-xs text-typography-700 flex-1" numberOfLines={1}>
+              <HStack key={`${tag}-${index}`} className="rounded-xl bg-surface-raised p-3 items-center justify-between">
+                <Text className="text-xs text-content-body flex-1" numberOfLines={1}>
                   {tag}
                 </Text>
                 <Pressable onPress={() => setOllamaModels((prev) => prev.filter((_, i) => i !== index))} className="p-1">
@@ -261,9 +261,9 @@ export default function TemplateEditor() {
             {workflows.map((workflow, index) => (
               <HStack
                 key={`${workflow.name}-${index}`}
-                className="rounded-xl bg-background-50 p-3 items-center justify-between"
+                className="rounded-xl bg-surface-raised p-3 items-center justify-between"
               >
-                <Text className="text-sm text-typography-900 flex-1" numberOfLines={1}>
+                <Text className="text-sm text-content-heading flex-1" numberOfLines={1}>
                   {workflow.name}
                 </Text>
                 <Pressable onPress={() => setWorkflows((prev) => prev.filter((_, i) => i !== index))} className="p-1">
@@ -274,7 +274,7 @@ export default function TemplateEditor() {
 
             {localWorkflows.length > 0 && (
               <VStack space="xs">
-                <Text className="text-xs text-typography-400">From this device</Text>
+                <Text className="text-xs text-content-tertiary">From this device</Text>
                 {localWorkflows.map((workflow) => {
                   const added = alreadyAdded(workflow.name);
                   return (
@@ -283,13 +283,13 @@ export default function TemplateEditor() {
                       onPress={() => !added && addWorkflowFromLibrary(workflow.id)}
                       className="rounded-xl border-background-100 p-3 flex-row items-center justify-between border-[0.5px] active:opacity-70"
                     >
-                      <Text className="text-sm text-typography-700 flex-1" numberOfLines={1}>
+                      <Text className="text-sm text-content-body flex-1" numberOfLines={1}>
                         {workflow.name}
                       </Text>
                       <Icon
                         as={added ? Check : Plus}
                         size="xs"
-                        className={added ? 'text-success-500' : 'text-primary-500'}
+                        className={added ? 'text-status-online' : 'text-action'}
                       />
                     </Pressable>
                   );
@@ -298,7 +298,7 @@ export default function TemplateEditor() {
             )}
 
             <VStack space="xs">
-              <Text className="text-xs text-typography-400">Or paste workflow JSON</Text>
+              <Text className="text-xs text-content-tertiary">Or paste workflow JSON</Text>
               <StyledTextarea
                 value={workflowJson}
                 onChangeText={setWorkflowJson}
@@ -320,11 +320,11 @@ export default function TemplateEditor() {
             <HStack space="sm" className="mt-4">
               <Button variant="outline" onPress={() => router.back()} className="rounded-lg flex-1">
                 <HStack space="xs" className="items-center">
-                  <Icon as={X} size="xs" className="text-typography-500" />
-                  <ButtonText className="text-typography-500">Cancel</ButtonText>
+                  <Icon as={X} size="xs" className="text-content-secondary" />
+                  <ButtonText className="text-content-secondary">Cancel</ButtonText>
                 </HStack>
               </Button>
-              <Button onPress={handleSave} className="rounded-lg bg-primary-500 flex-1">
+              <Button onPress={handleSave} className="rounded-lg bg-action flex-1">
                 <ButtonText>Save</ButtonText>
               </Button>
             </HStack>
@@ -339,7 +339,7 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
   return (
     <VStack space="xs" className="mt-2">
       <Text className="text-sm font-medium text-typography-600">{title}</Text>
-      <Text className="text-xs text-typography-400">{subtitle}</Text>
+      <Text className="text-xs text-content-tertiary">{subtitle}</Text>
     </VStack>
   );
 }

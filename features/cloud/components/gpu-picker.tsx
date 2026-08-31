@@ -78,7 +78,7 @@ export function GpuPicker({
           {loading ? (
             <Spinner size="small" />
           ) : (
-            <Icon as={RefreshCw} size="xs" className="text-typography-400" />
+            <Icon as={RefreshCw} size="xs" className="text-content-tertiary" />
           )}
         </Pressable>
       </HStack>
@@ -92,13 +92,13 @@ export function GpuPicker({
         />
       </View>
       {error ? (
-        <Text className="text-xs text-error-500">{error}</Text>
+        <Text className="text-xs text-status-danger">{error}</Text>
       ) : !vastApiKey ? (
-        <Text className="text-xs text-typography-400">
+        <Text className="text-xs text-content-tertiary">
           Add a vast.ai API key to see what&apos;s available.
         </Text>
       ) : (
-        <Text className="text-xs text-typography-400">
+        <Text className="text-xs text-content-tertiary">
           Sorted by how many are rentable now — a card with a handful of offers means little
           choice of price or location.
           {fetchedAt ? ` Updated ${new Date(fetchedAt).toLocaleTimeString()}.` : ''}

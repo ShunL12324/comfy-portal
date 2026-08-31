@@ -127,7 +127,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
                 isReadOnly={false}
                 isInvalid={false}
                 isDisabled={false}
-                className="w-full rounded-md border-0 bg-background-50"
+                className="w-full rounded-md border-0 bg-surface-raised"
               >
                 <TextareaInput
                   placeholder={key}
@@ -137,7 +137,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
                 />
               </Textarea>
             ) : (
-              <Input className="rounded-lg border-0 bg-background-50">
+              <Input className="rounded-lg border-0 bg-surface-raised">
                 <InputField
                   placeholder={key}
                   value={value == null ? '' : String(value)}
@@ -173,7 +173,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       }
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-background-50">
+          <Input className="rounded-lg border-0 bg-surface-raised">
             <InputField
               placeholder={key}
               value={value}
@@ -188,7 +188,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     if (typeof value === 'number') {
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-background-50">
+          <Input className="rounded-lg border-0 bg-surface-raised">
             <InputField
               placeholder={key}
               value={value.toString()}
@@ -214,7 +214,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
 
     return (
       <SubItem key={key} title={key}>
-        <Text className="text-typography-500">{JSON.stringify(value)}</Text>
+        <Text className="text-content-secondary">{JSON.stringify(value)}</Text>
       </SubItem>
     );
   };
@@ -230,7 +230,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
           </Badge>
           <TouchableOpacity
             onPress={handleRequestSupport}
-            className="ml-1 flex-row items-center justify-center rounded-sm bg-background-50 px-2 py-1 active:bg-background-100"
+            className="ml-1 flex-row items-center justify-center rounded-sm bg-surface-raised px-2 py-1 active:bg-surface-sunken"
           >
             <Icon as={GitPullRequest} size="sm" className="mr-1 text-blue-500" />
             <Text className="text-xs text-blue-500">Request Support</Text>
@@ -245,7 +245,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
             return spec ? renderFromSpec(key, value, spec) : renderFromValue(key, value);
           })
         ) : (
-          <Text size="sm" className="text-typography-500">
+          <Text size="sm" className="text-content-secondary">
             This node has no adjustable parameters.
           </Text>
         )}

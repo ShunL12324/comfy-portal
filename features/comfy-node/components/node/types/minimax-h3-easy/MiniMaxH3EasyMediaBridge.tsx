@@ -42,7 +42,7 @@ export default function MiniMaxH3EasyMediaBridge({ node, workflowId }: MiniMaxH3
         </SubItem>
       ))}
       <SubItem title="Media sources">
-        <Text size="sm" className="text-typography-500">
+        <Text size="sm" className="text-content-secondary">
           Connect each source to its numbered input on the desktop editor. Only the counts are
           editable here.
         </Text>

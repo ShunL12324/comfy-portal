@@ -52,7 +52,7 @@ export function LaunchProgress({ launch }: { launch: LaunchRecord }) {
 
       {launch.error ? (
         <HStack space="sm" className="rounded-xl bg-error-50 p-4 items-start">
-          <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-error-500" />
+          <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-status-danger" />
           <Text className="text-sm text-error-700 flex-1">{launch.error}</Text>
         </HStack>
       ) : null}
@@ -69,11 +69,11 @@ export function LaunchProgress({ launch }: { launch: LaunchRecord }) {
                 <Icon
                   as={done ? Check : X}
                   size="xs"
-                  className={done ? 'text-success-500' : 'text-typography-300'}
+                  className={done ? 'text-status-online' : 'text-typography-300'}
                 />
               )}
               <Text
-                className={`text-sm ${active ? 'text-typography-900' : done ? 'text-typography-500' : 'text-typography-300'}`}
+                className={`text-sm ${active ? 'text-content-heading' : done ? 'text-content-secondary' : 'text-typography-300'}`}
               >
                 {stage.label}
               </Text>
@@ -85,7 +85,7 @@ export function LaunchProgress({ launch }: { launch: LaunchRecord }) {
       {/* Before the supervisor answers there is genuinely nothing to report, so
           vast's own words stand in rather than a fabricated bar. */}
       {!snapshot && launch.vastStatus ? (
-        <Text className="text-xs text-typography-400" numberOfLines={2}>
+        <Text className="text-xs text-content-tertiary" numberOfLines={2}>
           {launch.vastStatus}
         </Text>
       ) : null}
@@ -101,15 +101,15 @@ function CostBanner({ launch }: { launch: LaunchRecord }) {
   // Rented hardware bills from the moment it is placed, including every minute
   // of the install, so this is never behind a tap.
   return (
-    <HStack className="rounded-xl bg-background-50 p-4 items-center justify-between">
+    <HStack className="rounded-xl bg-surface-raised p-4 items-center justify-between">
       <VStack space="xs">
-        <Text className="text-xs text-typography-400">Running for</Text>
-        <Text className="text-base font-medium text-typography-900">
+        <Text className="text-xs text-content-tertiary">Running for</Text>
+        <Text className="text-base font-medium text-content-heading">
           {formatUptime(launch.startedAt)}
         </Text>
       </VStack>
       <VStack space="xs" className="items-end">
-        <Text className="text-xs text-typography-400">
+        <Text className="text-xs text-content-tertiary">
           {formatUsd(launch.pricePerHour)}/hr
         </Text>
         <Text className="text-base font-medium text-warning-600">
@@ -126,7 +126,7 @@ function SetupSteps({ snapshot }: { snapshot: SupervisorSnapshot }) {
 
   return (
     <VStack space="xs">
-      <Text className="text-xs font-medium text-typography-500">Setup</Text>
+      <Text className="text-xs font-medium text-content-secondary">Setup</Text>
       {steps.map((step) => (
         <HStack key={step.id} className="items-center justify-between py-1">
           <HStack space="sm" className="items-center flex-1">
@@ -136,13 +136,13 @@ function SetupSteps({ snapshot }: { snapshot: SupervisorSnapshot }) {
               <Icon
                 as={step.state === 'done' ? Check : AlertTriangle}
                 size="xs"
-                className={step.state === 'done' ? 'text-success-500' : 'text-error-500'}
+                className={step.state === 'done' ? 'text-status-online' : 'text-status-danger'}
               />
             )}
-            <Text className="text-sm text-typography-700">{STEP_LABELS[step.id]}</Text>
+            <Text className="text-sm text-content-body">{STEP_LABELS[step.id]}</Text>
           </HStack>
           {step.ms != null ? (
-            <Text className="text-xs text-typography-400">{formatDuration(step.ms)}</Text>
+            <Text className="text-xs text-content-tertiary">{formatDuration(step.ms)}</Text>
           ) : null}
         </HStack>
       ))}
@@ -182,11 +182,11 @@ function ModelList({
   return (
     <VStack space="xs">
       <HStack className="items-center justify-between">
-        <Text className="text-xs font-medium text-typography-500">
+        <Text className="text-xs font-medium text-content-secondary">
           Models ({snapshot.models.filter((m) => m.state === 'done').length}/
           {snapshot.models.length})
         </Text>
-        <Text className="text-xs text-typography-400">
+        <Text className="text-xs text-content-tertiary">
           {formatBytes(totals.completed)} / {formatBytes(totals.bytes)}
           {totals.speed > 0 ? ` · ${formatBytes(totals.speed)}/s` : ''}
           {totals.etaSeconds ? ` · ${formatDuration(totals.etaSeconds * 1000)} left` : ''}
@@ -237,9 +237,9 @@ function ModelRow({
   const failed = model.state === 'error';
 
   return (
-    <VStack space="xs" className="rounded-xl bg-background-50 p-3">
+    <VStack space="xs" className="rounded-xl bg-surface-raised p-3">
       <HStack className="items-center justify-between">
-        <Text className="text-sm text-typography-900 flex-1" numberOfLines={1}>
+        <Text className="text-sm text-content-heading flex-1" numberOfLines={1}>
           {model.name}
         </Text>
         {failed ? (
@@ -247,13 +247,13 @@ function ModelRow({
             {retrying ? (
               <RotatingSpinner size="sm" />
             ) : (
-              <Icon as={RotateCw} size="xs" className="text-primary-500" />
+              <Icon as={RotateCw} size="xs" className="text-action" />
             )}
           </Pressable>
         ) : model.state === 'done' ? (
-          <Icon as={Check} size="xs" className="text-success-500" />
+          <Icon as={Check} size="xs" className="text-status-online" />
         ) : (
-          <Text className="text-xs text-typography-400">
+          <Text className="text-xs text-content-tertiary">
             {model.speed > 0 ? `${formatBytes(model.speed)}/s` : model.state}
           </Text>
         )}
@@ -263,22 +263,22 @@ function ModelRow({
         <>
           {/* A plain view rather than the Progress component: this is redrawn
               every couple of seconds for every model in the list. */}
-          <View className="h-1 rounded-full bg-background-200 overflow-hidden">
+          <View className="h-1 rounded-full bg-surface-muted overflow-hidden">
             <View
-              className={`h-1 rounded-full ${model.state === 'done' ? 'bg-success-500' : 'bg-primary-500'}`}
+              className={`h-1 rounded-full ${model.state === 'done' ? 'bg-status-online' : 'bg-action'}`}
               style={{ width: `${Math.round(ratio * 100)}%` }}
             />
           </View>
-          <Text className="text-xs text-typography-400">
+          <Text className="text-xs text-content-tertiary">
             {model.folder} · {formatBytes(model.completed)}
             {model.total ? ` / ${formatBytes(model.total)}` : ''}
           </Text>
         </>
       ) : (
         <VStack space="xs">
-          <Text className="text-xs text-error-600">{model.error}</Text>
+          <Text className="text-xs text-status-danger-pressed">{model.error}</Text>
           {model.hint ? (
-            <Text className="text-xs text-typography-400">{model.hint}</Text>
+            <Text className="text-xs text-content-tertiary">{model.hint}</Text>
           ) : null}
         </VStack>
       )}
@@ -292,16 +292,16 @@ function ServiceStatus({ snapshot }: { snapshot: SupervisorSnapshot }) {
 
   return (
     <VStack space="xs">
-      <Text className="text-xs font-medium text-typography-500">Services</Text>
+      <Text className="text-xs font-medium text-content-secondary">Services</Text>
       {entries.map(([name, service]) => (
         <HStack key={name} className="items-center justify-between py-1">
           <HStack space="sm" className="items-center">
             <StatusDot tone={service.state === 'running' ? 'ready' : 'busy'} pulse={service.state !== 'running'} />
-            <Text className="text-sm text-typography-700">
+            <Text className="text-sm text-content-body">
               {name === 'comfyui' ? 'ComfyUI' : name}
             </Text>
           </HStack>
-          <Text className="text-xs text-typography-400">
+          <Text className="text-xs text-content-tertiary">
             {service.state}
             {/* A restart count is the difference between "it crashed once at
                 boot" and "it is crash-looping", which look identical otherwise. */}

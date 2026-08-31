@@ -33,10 +33,10 @@ interface NumberInputProps {
 const styles = {
   container: 'flex-row items-center',
   button: {
-    base: 'items-center justify-center rounded-lg bg-background-200',
+    base: 'items-center justify-center rounded-lg bg-surface-muted',
     disabled: 'opacity-50',
   },
-  icon: 'text-typography-400',
+  icon: 'text-content-tertiary',
   input: 'font-mono text-center border-0 overflow-hidden items-center justify-center',
   inputContainer: 'min-w-[80px] max-w-[160px] overflow-hidden items-center justify-center',
 } as const;

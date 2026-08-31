@@ -51,7 +51,7 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
         />
       </SubItem>
       <SubItem title="Loop Count">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Loop Count"
             keyboardType="numeric"
@@ -61,7 +61,7 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
         </Input>
       </SubItem>
       <SubItem title="Filename Prefix">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Filename Prefix"
             value={node.inputs.filename_prefix}

@@ -106,12 +106,12 @@ export const PromptEditorModal = forwardRef<PromptEditorModalRef, PromptEditorMo
           <HStack className="items-center px-4 pb-3">
             <View className="flex-1 items-start">
               <Pressable onPress={handleClose} className="p-1">
-                <Icon as={X} size="md" className="text-typography-500" />
+                <Icon as={X} size="md" className="text-content-secondary" />
               </Pressable>
             </View>
 
             <View className="flex-1 items-center">
-              <Text className="text-base font-semibold text-typography-900" numberOfLines={1}>
+              <Text className="text-base font-semibold text-content-heading" numberOfLines={1}>
                 {title}
               </Text>
             </View>

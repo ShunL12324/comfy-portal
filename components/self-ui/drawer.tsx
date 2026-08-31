@@ -139,7 +139,7 @@ export const Drawer = ({
                   ...getPositionStyles(),
                 },
               ]}
-              className="bg-background-0 shadow-2xl"
+              className="bg-surface-base shadow-2xl"
             >
               {children}
             </MotiView>

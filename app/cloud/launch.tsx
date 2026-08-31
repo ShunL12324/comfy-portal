@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
@@ -79,38 +80,39 @@ export default function LaunchWizard() {
   };
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title="Launch Cloud GPU" showBack />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="md">
           {step === 'template' && (
             <>
-              <Text className="text-sm text-typography-500">Pick what to install on the new machine.</Text>
+              <Text className="text-sm text-content-secondary">Pick what to install on the new machine.</Text>
               {templates.length === 0 ? (
-                <VStack space="md" className="px-6 py-12 items-center">
-                  <Icon as={LayoutTemplate} className="h-8 w-8 text-typography-300" />
-                  <Text className="text-sm text-typography-400 text-center">
-                    No templates yet. Create one from the Explore tab first.
-                  </Text>
-                  <Button variant="outline" onPress={() => router.push('/explore')} className="rounded-lg mt-2">
-                    <ButtonText className="text-primary-500">Go to Explore</ButtonText>
-                  </Button>
-                </VStack>
+                <EmptyState
+                  icon={LayoutTemplate}
+                  action={
+                    <Button variant="outline" onPress={() => router.push('/explore')} className="rounded-lg">
+                      <ButtonText className="text-action">Go to Explore</ButtonText>
+                    </Button>
+                  }
+                >
+                  No templates yet. Create one from the Explore tab first.
+                </EmptyState>
               ) : (
                 templates.map((t) => (
                   <Pressable
                     key={t.id}
                     onPress={() => pickTemplate(t.id)}
-                    className="rounded-xl bg-background-50 p-4 active:opacity-80"
+                    className="rounded-xl bg-surface-raised p-4 active:opacity-80"
                   >
                     <HStack className="items-center justify-between">
                       <VStack className="flex-1" space="xs">
-                        <Text className="text-base font-medium text-typography-900">{t.name}</Text>
-                        <Text className="text-xs text-typography-400">
+                        <Text className="text-base font-medium text-content-heading">{t.name}</Text>
+                        <Text className="text-xs text-content-tertiary">
                           {t.models.length} models · {t.gpuQuery} · {estimateDiskGb(t.models)} GB
                         </Text>
                       </VStack>
-                      <Icon as={ChevronRight} size="sm" className="text-typography-400" />
+                      <Icon as={ChevronRight} size="sm" className="text-content-tertiary" />
                     </HStack>
                   </Pressable>
                 ))
@@ -120,7 +122,7 @@ export default function LaunchWizard() {
 
           {step === 'offer' && (
             <>
-              <Text className="text-sm text-typography-500">
+              <Text className="text-sm text-content-secondary">
                 Sorted by download speed — a fresh instance re-downloads every model, so bandwidth usually matters more
                 than the hourly rate.
               </Text>
@@ -129,9 +131,9 @@ export default function LaunchWizard() {
                   <RotatingSpinner size="sm" />
                 </View>
               ) : searchError ? (
-                <Text className="py-8 text-sm text-error-500 text-center">{searchError}</Text>
+                <Text className="py-8 text-sm text-status-danger text-center">{searchError}</Text>
               ) : offers.length === 0 ? (
-                <Text className="py-8 text-sm text-typography-400 text-center">
+                <Text className="py-8 text-sm text-content-tertiary text-center">
                   No offers matched &quot;{template?.gpuQuery}&quot;. Try a different GPU name in the template.
                 </Text>
               ) : (
@@ -142,27 +144,27 @@ export default function LaunchWizard() {
                       setOffer(o);
                       setStep('confirm');
                     }}
-                    className="rounded-xl bg-background-50 p-4 active:opacity-80"
+                    className="rounded-xl bg-surface-raised p-4 active:opacity-80"
                   >
                     <HStack className="items-start justify-between">
                       <VStack className="flex-1" space="xs">
-                        <Text className="text-base font-medium text-typography-900">
+                        <Text className="text-base font-medium text-content-heading">
                           {o.numGpus > 1 ? `${o.numGpus}× ` : ''}
                           {o.gpuName}
                           {o.gpuRamGb ? ` · ${o.gpuRamGb} GB` : ''}
                         </Text>
                         <HStack space="md">
                           <HStack space="xs" className="items-center">
-                            <Icon as={Download} size="xs" className="text-typography-400" />
-                            <Text className="text-xs text-typography-400">{Math.round(o.inetDown)} Mbps</Text>
+                            <Icon as={Download} size="xs" className="text-content-tertiary" />
+                            <Text className="text-xs text-content-tertiary">{Math.round(o.inetDown)} Mbps</Text>
                           </HStack>
                           <HStack space="xs" className="items-center">
-                            <Icon as={MapPin} size="xs" className="text-typography-400" />
-                            <Text className="text-xs text-typography-400">{o.geolocation || '—'}</Text>
+                            <Icon as={MapPin} size="xs" className="text-content-tertiary" />
+                            <Text className="text-xs text-content-tertiary">{o.geolocation || '—'}</Text>
                           </HStack>
                         </HStack>
                       </VStack>
-                      <Text className="text-base font-semibold text-typography-900">
+                      <Text className="text-base font-semibold text-content-heading">
                         {formatUsd(o.pricePerHour)}/hr
                       </Text>
                     </HStack>
@@ -175,15 +177,15 @@ export default function LaunchWizard() {
           {step === 'confirm' && offer && template && (
             <VStack space="md">
               {/* Its own step on purpose: the next tap starts billing. */}
-              <HStack space="sm" className="rounded-xl bg-background-50 p-4 items-start">
-                <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-warning-500" />
-                <Text className="text-sm text-typography-700 flex-1">
+              <HStack space="sm" className="rounded-xl bg-surface-raised p-4 items-start">
+                <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-status-busy" />
+                <Text className="text-sm text-content-body flex-1">
                   Renting starts now and bills by the second until you destroy the instance — including the time spent
                   downloading models.
                 </Text>
               </HStack>
 
-              <VStack space="xs" className="rounded-xl bg-background-50 p-4">
+              <VStack space="xs" className="rounded-xl bg-surface-raised p-4">
                 <Row label="Template" value={template.name} />
                 <Row label="GPU" value={`${offer.numGpus > 1 ? `${offer.numGpus}× ` : ''}${offer.gpuName}`} />
                 <Row label="Location" value={offer.geolocation || '—'} />
@@ -195,7 +197,7 @@ export default function LaunchWizard() {
                 />
               </VStack>
 
-              {launchError ? <Text className="text-sm text-error-500">{launchError}</Text> : null}
+              {launchError ? <Text className="text-sm text-status-danger">{launchError}</Text> : null}
 
               <HStack space="sm">
                 <Button
@@ -204,9 +206,9 @@ export default function LaunchWizard() {
                   isDisabled={launching}
                   className="rounded-lg flex-1"
                 >
-                  <ButtonText className="text-typography-500">Back</ButtonText>
+                  <ButtonText className="text-content-secondary">Back</ButtonText>
                 </Button>
-                <Button onPress={startLaunch} isDisabled={launching} className="rounded-lg bg-primary-500 flex-1">
+                <Button onPress={startLaunch} isDisabled={launching} className="rounded-lg bg-action flex-1">
                   {launching ? <RotatingSpinner size="sm" /> : <ButtonText>Rent & install</ButtonText>}
                 </Button>
               </HStack>
@@ -221,8 +223,8 @@ export default function LaunchWizard() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <HStack className="py-1 items-center justify-between">
-      <Text className="text-xs text-typography-400">{label}</Text>
-      <Text className="text-sm text-typography-900">{value}</Text>
+      <Text className="text-xs text-content-tertiary">{label}</Text>
+      <Text className="text-sm text-content-heading">{value}</Text>
     </HStack>
   );
 }

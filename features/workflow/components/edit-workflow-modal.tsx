@@ -136,7 +136,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
       <KeyboardModal isOpen={isOpen} onClose={handleClose}>
         <KeyboardModal.Header>
           <HStack className="w-full items-center justify-between">
-            <Text className="text-lg font-semibold text-primary-500">Edit Workflow</Text>
+            <Text className="text-lg font-semibold text-action">Edit Workflow</Text>
             <Pressable onPress={handleClose} className="p-1 active:opacity-60">
               <X size={20} color={Colors[activeTheme].primary[500]} />
             </Pressable>
@@ -146,7 +146,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
         <KeyboardModal.Body scrollEnabled={false}>
           <VStack space="md">
             <KeyboardModal.Item title="Name" error={error}>
-              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-surface-base">
                 <InputField
                   onChangeText={(value) => {
                     setName(value);
@@ -154,14 +154,14 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
                   }}
                   defaultValue={name}
                   placeholder="Enter workflow name"
-                  className="px-3 py-2 text-sm text-primary-500"
+                  className="px-3 py-2 text-sm text-action"
                 />
               </Input>
             </KeyboardModal.Item>
 
             <VStack space="xs">
               <Text className="text-sm font-medium text-primary-400">Thumbnail (Optional)</Text>
-              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
                 {thumbnail ? (
                   <Image
                     source={{ uri: thumbnail }}
@@ -190,7 +190,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
             >
               <ButtonText style={{ color: Colors[activeTheme].error[500] }}>Delete</ButtonText>
             </Button>
-            <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-primary-500">
+            <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-action">
               <ButtonText className="text-background-0">Save Changes</ButtonText>
             </Button>
           </HStack>
@@ -204,7 +204,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
         title="Delete Workflow"
         description="Are you sure you want to delete this workflow? This action cannot be undone."
         confirmText="Delete"
-        confirmButtonColor="bg-error-500"
+        confirmButtonColor="bg-status-danger"
       />
     </>
   );

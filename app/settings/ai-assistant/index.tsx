@@ -189,7 +189,7 @@ export default function AIAssistantScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-surface-base">
       <AppBar title="AI Assistant" showBack />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="sm">
@@ -263,9 +263,9 @@ export default function AIAssistantScreen() {
                     {isRefreshingCatalog ? (
                       <ActivityIndicator size="small" />
                     ) : (
-                      <Icon as={RefreshCw} size="xs" className="text-primary-500" />
+                      <Icon as={RefreshCw} size="xs" className="text-action" />
                     )}
-                    <Text className="text-sm text-primary-500">Refresh</Text>
+                    <Text className="text-sm text-action">Refresh</Text>
                   </HStack>
                 </Pressable>
               )}
@@ -318,13 +318,13 @@ export default function AIAssistantScreen() {
             )}
 
             {catalogModels.length > 0 && (
-              <Text className="mt-1 text-xs text-typography-400">
+              <Text className="mt-1 text-xs text-content-tertiary">
                 {catalogModels.length} tool-capable models as of {getCatalogDate()}.
               </Text>
             )}
           </View>
 
-          <View className="rounded-xl bg-background-50 p-3">
+          <View className="rounded-xl bg-surface-raised p-3">
             {/* NumberSlider renders the value itself; a second copy in the
                 header just showed 0.7 twice. */}
             <Text className="mb-2 text-sm font-medium text-typography-600">Temperature</Text>
@@ -338,19 +338,19 @@ export default function AIAssistantScreen() {
             />
           </View>
 
-          <View className="rounded-xl bg-background-50 p-3">
+          <View className="rounded-xl bg-surface-raised p-3">
             <HStack className="mb-2 items-center justify-between">
               <Text className="text-sm font-medium text-typography-600">Custom Prompt</Text>
               <Pressable onPress={handleOpenPromptSheet}>
                 <HStack className="items-center" space="xs">
-                  <Icon as={Pencil} size="xs" className="text-primary-500" />
-                  <Text className="text-sm text-primary-500">Edit</Text>
+                  <Icon as={Pencil} size="xs" className="text-action" />
+                  <Text className="text-sm text-action">Edit</Text>
                 </HStack>
               </Pressable>
             </HStack>
             <Pressable onPress={handleOpenPromptSheet}>
               <Text
-                className="text-sm text-typography-500"
+                className="text-sm text-content-secondary"
                 numberOfLines={3}
               >
                 {customPrompt || 'Tap to add custom instructions that will be injected into the system prompt...'}
@@ -368,9 +368,9 @@ export default function AIAssistantScreen() {
               {isTesting ? (
                 <ActivityIndicator size="small" />
               ) : testResult === 'success' ? (
-                <ButtonIcon as={CircleCheck} className="text-success-500" />
+                <ButtonIcon as={CircleCheck} className="text-status-online" />
               ) : testResult === 'error' ? (
-                <ButtonIcon as={CircleX} className="text-error-500" />
+                <ButtonIcon as={CircleX} className="text-status-danger" />
               ) : null}
               <ButtonText>Test</ButtonText>
             </Button>
@@ -395,15 +395,15 @@ export default function AIAssistantScreen() {
           <VStack className="px-5 pb-8" space="md">
             <HStack className="items-center justify-between">
               <Pressable onPress={() => promptSheetRef.current?.dismiss()}>
-                <Icon as={X} size="md" className="text-typography-500" />
+                <Icon as={X} size="md" className="text-content-secondary" />
               </Pressable>
-              <Text className="text-base font-semibold text-typography-900">Custom Prompt</Text>
+              <Text className="text-base font-semibold text-content-heading">Custom Prompt</Text>
               <Pressable onPress={handleSavePrompt}>
-                <Text className="text-sm font-medium text-primary-500">Save</Text>
+                <Text className="text-sm font-medium text-action">Save</Text>
               </Pressable>
             </HStack>
 
-            <Text className="text-xs text-typography-500">
+            <Text className="text-xs text-content-secondary">
               Custom instructions injected into the AI system prompt. Use this to guide the AI&apos;s style, language, or focus.
             </Text>
 

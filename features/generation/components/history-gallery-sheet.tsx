@@ -287,30 +287,30 @@ export const HistoryGallerySheet = forwardRef<HistoryGallerySheetRef, HistoryGal
                   <Pressable
                     onPress={handleShare}
                     disabled={!hasSelection}
-                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-surface-sunken"
                     style={{ opacity: hasSelection ? 1 : 0.3 }}
                   >
-                    <Icon as={Share} size="sm" className="text-primary-500" />
+                    <Icon as={Share} size="sm" className="text-action" />
                   </Pressable>
                   <Pressable
                     onPress={handleSave}
                     disabled={!hasSelection}
-                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-surface-sunken"
                     style={{ opacity: hasSelection ? 1 : 0.3 }}
                   >
-                    <Icon as={Download} size="sm" className="text-primary-500" />
+                    <Icon as={Download} size="sm" className="text-action" />
                   </Pressable>
                   <Pressable
                     onPress={() => setIsDeleteAlertOpen(true)}
                     disabled={!hasSelection}
-                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-background-100"
+                    className="h-8 w-8 items-center justify-center rounded-lg active:bg-surface-sunken"
                     style={{ opacity: hasSelection ? 1 : 0.3 }}
                   >
-                    <Icon as={Trash2} size="sm" className="text-error-500" />
+                    <Icon as={Trash2} size="sm" className="text-status-danger" />
                   </Pressable>
                   <Pressable
                     onPress={exitSelectionMode}
-                    className="ml-1 h-8 items-center justify-center rounded-lg px-3 bg-primary-500 active:bg-primary-600"
+                    className="ml-1 h-8 items-center justify-center rounded-lg px-3 bg-action active:bg-action-pressed"
                   >
                     <Text className="text-xs font-semibold text-white">Done</Text>
                   </Pressable>
@@ -318,9 +318,9 @@ export const HistoryGallerySheet = forwardRef<HistoryGallerySheetRef, HistoryGal
               ) : (
                 <Pressable
                   onPress={() => setIsSelectionMode(true)}
-                  className="h-8 items-center justify-center rounded-lg px-3 active:bg-background-100"
+                  className="h-8 items-center justify-center rounded-lg px-3 active:bg-surface-sunken"
                 >
-                  <Text className="text-sm font-medium text-primary-500">Select</Text>
+                  <Text className="text-sm font-medium text-action">Select</Text>
                 </Pressable>
               )}
             </View>

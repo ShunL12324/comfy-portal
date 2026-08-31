@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { FlatList } from '@/components/ui/flat-list';
@@ -18,7 +19,7 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as apiListWorkflows, ServerWorkflowFile } from '@/services/comfy-api';
 import { showToast } from '@/utils/toast';
 import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud, type LucideIcon } from 'lucide-react-native';
+import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -42,14 +43,6 @@ interface LocalWorkflowsTabProps {
   openImportModal: () => void;
 }
 
-interface WorkflowEmptyStateProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  children?: React.ReactNode;
-  align?: 'center' | 'top';
-}
-
 interface WorkflowTabToggleProps {
   index: number;
   onChange: (index: number) => void;
@@ -62,36 +55,6 @@ const TOGGLE_ITEM_COUNT = 2;
 const TOGGLE_THUMB_WIDTH = (TOGGLE_CONTAINER_WIDTH - TOGGLE_HORIZONTAL_PADDING * 2) / TOGGLE_ITEM_COUNT;
 const TOGGLE_THUMB_HEIGHT = TOGGLE_CONTAINER_HEIGHT - TOGGLE_HORIZONTAL_PADDING * 2;
 const TOGGLE_ANIMATION_STEP = TOGGLE_THUMB_WIDTH;
-
-const WorkflowEmptyState = memo(function WorkflowEmptyState({ icon, title, description, children, align = 'center' }: WorkflowEmptyStateProps) {
-  const wrapperClassName = align === 'top' ? 'w-full items-center pt-8' : 'flex-1 items-center justify-center';
-
-  return (
-    <View className="w-full px-5">
-      <View className={wrapperClassName}>
-        <MotiView
-          from={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'timing', duration: 220 }}
-          className="w-full max-w-[360px] items-center"
-        >
-          <VStack space="md" className="items-center">
-            <View className="rounded-full bg-background-50 p-3">
-              <Icon as={icon} size="xl" className="h-10 w-10 text-typography-300" />
-            </View>
-
-            <VStack space="xs" className="items-center">
-              <Text className="text-center text-base font-semibold text-typography-800">{title}</Text>
-              <Text className="text-center text-sm text-typography-500">{description}</Text>
-            </VStack>
-
-            {children}
-          </VStack>
-        </MotiView>
-      </View>
-    </View>
-  );
-});
 
 const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: WorkflowTabToggleProps) {
   const togglePosition = useSharedValue(index === 0 ? 0 : 1);
@@ -109,11 +72,11 @@ const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: W
 
   return (
     <View
-      className="relative rounded-full bg-background-50 p-1"
+      className="relative rounded-full bg-surface-raised p-1"
       style={{ width: TOGGLE_CONTAINER_WIDTH, height: TOGGLE_CONTAINER_HEIGHT }}
     >
       <Animated.View
-        className="absolute left-1 top-1 rounded-full bg-primary-500"
+        className="absolute left-1 top-1 rounded-full bg-action"
         style={[{ width: TOGGLE_THUMB_WIDTH, height: TOGGLE_THUMB_HEIGHT }, thumbStyle]}
       />
       <HStack className="h-8">
@@ -123,7 +86,7 @@ const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: W
           className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
-          <Icon as={Folder} size="sm" className={index === 0 ? 'text-typography-0' : 'text-typography-500'} />
+          <Icon as={Folder} size="sm" className={index === 0 ? 'text-content-inverse' : 'text-content-secondary'} />
         </Pressable>
         <Pressable
           onPress={() => onChange(1)}
@@ -131,7 +94,7 @@ const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: W
           className="h-8 items-center justify-center rounded-full"
           style={{ width: TOGGLE_THUMB_WIDTH }}
         >
-          <Icon as={ServerIcon} size="sm" className={index === 1 ? 'text-typography-0' : 'text-typography-500'} />
+          <Icon as={ServerIcon} size="sm" className={index === 1 ? 'text-content-inverse' : 'text-content-secondary'} />
         </Pressable>
       </HStack>
     </View>
@@ -148,21 +111,18 @@ const LocalWorkflowsTab = memo(function LocalWorkflowsTab({ serverId, openImport
   );
 
   const renderEmptyList = () => (
-    <WorkflowEmptyState
-      icon={FileSearch}
-      title="No Local Workflows"
-      description="Import a workflow JSON file to get started."
-      align="top"
-    />
+    <EmptyState icon={FileSearch} title="No Local Workflows" align="top">
+      Import a workflow JSON file to get started.
+    </EmptyState>
   );
 
   return (
     <View className="flex-1">
-      <View className="bg-background-0 px-4 pb-2 pt-1">
-        <HStack className="items-center justify-between rounded-lg bg-background-50 px-4 py-3">
+      <View className="bg-surface-base px-4 pb-2 pt-1">
+        <HStack className="items-center justify-between rounded-lg bg-surface-raised px-4 py-3">
           <VStack space="xs">
-            <Text className="text-sm font-semibold text-typography-900">Local Workflows</Text>
-            <Text className="text-xs text-typography-500">{filteredWorkflows.length} items</Text>
+            <Text className="text-sm font-semibold text-content-heading">Local Workflows</Text>
+            <Text className="text-xs text-content-secondary">{filteredWorkflows.length} items</Text>
           </VStack>
           <Button size="sm" variant="link" onPress={openImportModal}>
             <ButtonIcon as={UploadCloud} />
@@ -220,7 +180,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
       syncIconRotation.value = 0;
       syncIconRotation.value = withRepeat(
         withTiming(360, {
-          duration: 800,
+          duration: 1000,
           easing: Easing.linear,
         }),
         -1,
@@ -230,7 +190,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
     }
 
     cancelAnimation(syncIconRotation);
-    syncIconRotation.value = withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) });
+    syncIconRotation.value = withTiming(0, { duration: 150, easing: Easing.out(Easing.cubic) });
   }, [refreshing, syncIconRotation]);
 
   const syncIconAnimatedStyle = useAnimatedStyle(() => ({
@@ -431,15 +391,15 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   }, [refreshing]);
 
   const renderActionRow = () => (
-    <View className="bg-background-0 px-4 pb-2 pt-1">
+    <View className="bg-surface-base px-4 pb-2 pt-1">
       <Animated.View
-        className="rounded-lg bg-background-50 px-4 py-3"
+        className="rounded-lg bg-surface-raised px-4 py-3"
         layout={LinearTransition.duration(180)}
       >
         <HStack className="items-center justify-between">
           <VStack space="xs">
-            <Text className="text-sm font-semibold text-typography-900">Server Workflows</Text>
-            <Text className="text-xs text-typography-500">Synced {workflowsToDisplay.length} items</Text>
+            <Text className="text-sm font-semibold text-content-heading">Server Workflows</Text>
+            <Text className="text-xs text-content-secondary">Synced {workflowsToDisplay.length} items</Text>
           </VStack>
           <HStack space="sm">
             <Button
@@ -472,7 +432,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
             entering={FadeIn.duration(140)}
             exiting={FadeOut.duration(120)}
           >
-            <Text className="text-xs text-typography-500">{syncProgressText}</Text>
+            <Text className="text-xs text-content-secondary">{syncProgressText}</Text>
           </Animated.View>
         )}
       </Animated.View>
@@ -486,23 +446,24 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
           className="flex-1"
           contentContainerClassName="items-center px-5 pb-6"
         >
-          <WorkflowEmptyState
+          <EmptyState
             icon={ServerCrash}
             title="No Synced Server Workflows"
-            description="Tap Sync above to refresh."
             align="top"
-          >
-            <VStack space="xs" className="w-full rounded-lg bg-background-50 px-4 py-3">
-              <Text className="text-center text-xs text-typography-500">
-                Make sure <Text className="font-medium text-typography-700">comfy-portal-endpoint</Text> is installed on the server side.
-              </Text>
-              <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="self-center">
-                <Text className="text-xs text-primary-500 underline">
-                  Installation guide
+            action={
+              <VStack space="xs" className="w-full rounded-lg bg-surface-raised px-4 py-3">
+                <Text className="text-center text-xs text-content-secondary">
+                  Make sure <Text className="font-medium text-content-body">comfy-portal-endpoint</Text> is installed on
+                  the server side.
                 </Text>
-              </ExpoLink>
-            </VStack>
-          </WorkflowEmptyState>
+                <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="self-center">
+                  <Text className="text-xs text-action underline">Installation guide</Text>
+                </ExpoLink>
+              </VStack>
+            }
+          >
+            Tap Sync above to refresh.
+          </EmptyState>
         </ScrollView>
       );
     }
@@ -535,7 +496,7 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
   };
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-surface-base">
       {renderActionRow()}
       {renderMainContent()}
     </View>
@@ -597,29 +558,31 @@ const WorkflowsScreen = () => {
 
   if (!server) {
     return (
-      <View className="flex-1 bg-background-0">
-        <WorkflowEmptyState
+      <View className="flex-1 bg-surface-base">
+        <EmptyState
           icon={ServerCrash}
           title="Server Not Found"
-          description="This server no longer exists in your server list."
-        />
+          >
+            This server no longer exists in your server list.
+        </EmptyState>
       </View>
     );
   }
   if (!serverId) {
     return (
-      <View className="flex-1 bg-background-0">
-        <WorkflowEmptyState
+      <View className="flex-1 bg-surface-base">
+        <EmptyState
           icon={ServerCrash}
           title="Server ID Missing"
-          description="The current route does not include a valid server ID."
-        />
+          >
+            The current route does not include a valid server ID.
+        </EmptyState>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 bg-background-0`}>
+    <View className={`flex-1 bg-surface-base`}>
       <AppBar
         title={server?.name || 'Workflows'}
         showBack
@@ -655,7 +618,7 @@ const WorkflowsScreen = () => {
         title="Clear Synced Workflows"
         description={`This will remove ${serverWorkflowsCount} synced workflow${serverWorkflowsCount === 1 ? '' : 's'} from ${server.name}. This action cannot be undone.`}
         confirmText="Clear"
-        confirmButtonColor="bg-error-500"
+        confirmButtonColor="bg-status-danger"
       />
     </View>
   );

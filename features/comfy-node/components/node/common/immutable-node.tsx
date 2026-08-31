@@ -11,7 +11,7 @@ interface ImmutableNodeProps {
 export default function ImmutableNode({ node, serverId, workflowId }: ImmutableNodeProps) {
   return (
     <BaseNode node={node}>
-      <Text size="sm" className="text-typography-500">
+      <Text size="sm" className="text-content-secondary">
         This node does not include any adjustable parameters.
       </Text>
     </BaseNode>

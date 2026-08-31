@@ -11,7 +11,7 @@ export default function NotFoundScreen() {
         <Text className="text-xl font-bold">This screen doesn&apos;t exist.</Text>
         <Link href="/" asChild>
           <Pressable className="mt-4 py-4">
-            <Text className="font-medium text-primary-500">
+            <Text className="font-medium text-action">
               Go to home screen!
             </Text>
           </Pressable>

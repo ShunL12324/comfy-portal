@@ -1,7 +1,7 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
@@ -56,17 +56,12 @@ export default function LaunchStatus() {
   };
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title={launch?.templateName ?? 'Instance'} showBack />
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="md">
           {!launch ? (
-            <VStack space="md" className="px-6 py-12 items-center">
-              <Icon as={CloudOff} className="h-8 w-8 text-typography-300" />
-              <Text className="text-sm text-typography-400 text-center">
-                No longer tracked — it may already have been destroyed.
-              </Text>
-            </VStack>
+            <EmptyState icon={CloudOff}>No longer tracked — it may already have been destroyed.</EmptyState>
           ) : (
             <>
               <LaunchProgress launch={launch} />
@@ -76,7 +71,7 @@ export default function LaunchStatus() {
                   {launch.serverId ? (
                     <Button
                       onPress={() => router.replace(`/workflow/${launch.serverId}`)}
-                      className="rounded-lg bg-primary-500"
+                      className="rounded-lg bg-action"
                     >
                       <ButtonText>Open Server</ButtonText>
                     </Button>
@@ -86,11 +81,11 @@ export default function LaunchStatus() {
                     </View>
                   )}
                   <Button variant="outline" onPress={() => router.replace('/')} className="rounded-lg">
-                    <ButtonText className="text-typography-500">Back to Servers</ButtonText>
+                    <ButtonText className="text-content-secondary">Back to Servers</ButtonText>
                   </Button>
                 </VStack>
               ) : (
-                <Text className="text-xs text-typography-400">
+                <Text className="text-xs text-content-tertiary">
                   Safe to leave — the install keeps running and this instance stays on the Servers tab until it&apos;s ready.
                 </Text>
               )}
@@ -102,7 +97,7 @@ export default function LaunchStatus() {
                   isDisabled={destroying}
                   className="rounded-lg flex-1 border-error-300"
                 >
-                  <ButtonText className="text-error-500">{destroying ? 'Destroying…' : 'Destroy'}</ButtonText>
+                  <ButtonText className="text-status-danger">{destroying ? 'Destroying…' : 'Destroy'}</ButtonText>
                 </Button>
               </HStack>
             </>

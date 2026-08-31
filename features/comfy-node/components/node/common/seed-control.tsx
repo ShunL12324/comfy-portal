@@ -121,7 +121,7 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
             isDisabled={randomSeed}
             isInvalid={false}
             isReadOnly={false}
-            className="h-10 flex-1 rounded-lg border-0 bg-background-50"
+            className="h-10 flex-1 rounded-lg border-0 bg-surface-raised"
           >
             <InputField
               placeholder="Custom Seed"
@@ -134,15 +134,15 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
           </Input>
           <TouchableOpacity onPress={() => applySeed(generateRandomSeed())} disabled={randomSeed}>
             <View
-              className={`h-10 w-10 items-center justify-center rounded-lg bg-background-50 ${randomSeed ? 'opacity-50' : ''}`}
+              className={`h-10 w-10 items-center justify-center rounded-lg bg-surface-raised ${randomSeed ? 'opacity-50' : ''}`}
             >
-              <Icon as={Dice2} size="sm" className="text-typography-500" />
+              <Icon as={Dice2} size="sm" className="text-content-secondary" />
             </View>
           </TouchableOpacity>
         </View>
         <View className="flex-row items-start gap-2">
-          <Icon as={Info} size="xs" className="mt-[1px] text-typography-500" />
-          <Text size="sm" className="flex-1 text-xs text-typography-500">
+          <Icon as={Info} size="xs" className="mt-[1px] text-content-secondary" />
+          <Text size="sm" className="flex-1 text-xs text-content-secondary">
             Using the same seed will not trigger image generation again.
           </Text>
         </View>

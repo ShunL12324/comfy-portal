@@ -41,12 +41,12 @@ interface CustomSliderProps {
 const styles = {
   container: 'flex-row items-center',
   button: {
-    base: 'items-center justify-center rounded-lg bg-background-200',
+    base: 'items-center justify-center rounded-lg bg-surface-muted',
     disabled: 'opacity-50',
   },
-  icon: 'text-typography-400',
+  icon: 'text-content-tertiary',
   sliderContainer: 'flex-1',
-  value: 'min-w-[48px] h-8 rounded-lg bg-background-100 items-center justify-center mr-4',
+  value: 'min-w-[48px] h-8 rounded-lg bg-surface-sunken items-center justify-center mr-4',
 } as const;
 
 const sliderStyles = StyleSheet.create({

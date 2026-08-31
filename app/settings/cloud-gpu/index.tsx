@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { BottomSheetProvider } from '@/context/bottom-sheet-context';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
@@ -51,18 +52,15 @@ export default function CloudGpuSettings() {
 
   if (!CLOUD_GPU_SUPPORTED) {
     return (
-      <View className="bg-background-0 flex-1">
+      <View className="bg-surface-base flex-1">
         <AppBar title="Cloud GPU" showBack />
-        <VStack space="md" className="px-8 py-16 items-center">
-          <Icon as={CloudOff} className="h-8 w-8 text-typography-300" />
-          <Text className="text-sm text-typography-400 text-center">{CLOUD_GPU_UNSUPPORTED_REASON}</Text>
-        </VStack>
+        <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
       </View>
     );
   }
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title="Cloud GPU" showBack />
       {/* These inputs go through AdaptiveTextInput, and BottomSheetContext
           defaults to true — so on a plain screen they'd render the BottomSheet
@@ -71,9 +69,9 @@ export default function CloudGpuSettings() {
         <ScrollView className="flex-1">
           <VStack className="px-5 pb-8 pt-4" space="md">
             {!keychainAvailable && (
-              <HStack space="sm" className="rounded-xl bg-background-50 p-3 items-start">
-                <Icon as={ShieldAlert} size="sm" className="mt-0.5 text-warning-500" />
-                <Text className="text-xs text-typography-500 flex-1">
+              <HStack space="sm" className="rounded-xl bg-surface-raised p-3 items-start">
+                <Icon as={ShieldAlert} size="sm" className="mt-0.5 text-status-busy" />
+                <Text className="text-xs text-content-secondary flex-1">
                   This platform has no keychain, so keys are stored unencrypted. Prefer entering them on a phone.
                 </Text>
               </HStack>
@@ -96,11 +94,11 @@ export default function CloudGpuSettings() {
               }}
             />
 
-            <View className="my-1 bg-background-100 h-px" />
+            <View className="my-1 bg-surface-sunken h-px" />
 
             <VStack space="xs">
               <Text className="text-sm font-medium text-typography-600">Model downloads</Text>
-              <Text className="text-xs text-typography-400">
+              <Text className="text-xs text-content-tertiary">
                 Passed to the instance so gated models resolve. Leave blank if you only use public models.
               </Text>
             </VStack>
@@ -127,11 +125,11 @@ export default function CloudGpuSettings() {
               }}
             />
 
-            <Button onPress={handleSave} className="mt-2 rounded-lg bg-primary-500">
+            <Button onPress={handleSave} className="mt-2 rounded-lg bg-action">
               <ButtonText>Save</ButtonText>
             </Button>
 
-            <View className="my-1 bg-background-100 h-px" />
+            <View className="my-1 bg-surface-sunken h-px" />
 
             {/* Templates and running instances live on the Servers/Templates tabs,
                 not here — this page is credentials only. This link stays because
@@ -142,15 +140,15 @@ export default function CloudGpuSettings() {
               <Pressable className="py-2">
                 <HStack className="items-center justify-between">
                   <HStack space="sm" className="items-center">
-                    <Icon as={Server} size="md" className="text-primary-500" />
+                    <Icon as={Server} size="md" className="text-action" />
                     <VStack>
-                      <Text className="text-base font-medium text-typography-900">All Account Instances</Text>
-                      <Text className="text-xs text-typography-400">
+                      <Text className="text-base font-medium text-content-heading">All Account Instances</Text>
+                      <Text className="text-xs text-content-tertiary">
                         Advanced — raw vast.ai account view, for instances not tracked by the app
                       </Text>
                     </VStack>
                   </HStack>
-                  <Icon as={ChevronRight} size="sm" className="text-typography-400" />
+                  <Icon as={ChevronRight} size="sm" className="text-content-tertiary" />
                 </HStack>
               </Pressable>
             </Link>

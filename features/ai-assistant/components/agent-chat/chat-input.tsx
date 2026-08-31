@@ -38,7 +38,7 @@ export function ChatInput({
   return (
     <View className="px-4 py-2" style={{ paddingBottom: bottomPadding }}>
       <View
-        className="flex-row items-end rounded-[20px] border border-outline-50 bg-background-50 pl-3.5 pr-1 py-1 min-h-[44px]"
+        className="flex-row items-end rounded-[20px] border border-stroke-subtle bg-surface-raised pl-3.5 pr-1 py-1 min-h-[44px]"
       >
         {/* Style prop required — className not supported by BottomSheetTextInput (used internally via AdaptiveTextInput) */}
         <AdaptiveTextInput
@@ -66,20 +66,20 @@ export function ChatInput({
             onPress={onStop}
             className="w-[34px] h-[34px] rounded-full items-center justify-center mb-px bg-typography-900"
           >
-            <Icon as={Square} size="xs" className="text-typography-0" />
+            <Icon as={Square} size="xs" className="text-content-inverse" />
           </Pressable>
         ) : (
           <Pressable
             onPress={handleSend}
             disabled={!canSend}
             className={`w-[34px] h-[34px] rounded-full items-center justify-center mb-px ${
-              canSend ? 'bg-typography-900' : 'bg-background-200'
+              canSend ? 'bg-typography-900' : 'bg-surface-muted'
             }`}
           >
             <Icon
               as={Send}
               size="xs"
-              className={canSend ? 'text-typography-0' : 'text-typography-400'}
+              className={canSend ? 'text-content-inverse' : 'text-content-tertiary'}
             />
           </Pressable>
         )}

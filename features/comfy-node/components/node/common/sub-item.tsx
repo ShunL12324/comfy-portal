@@ -40,14 +40,14 @@ export default function SubItem({ title, children, className, rightComponent, no
       return (
         <View className={`mt-4 ${className}`}>
           <View className="mb-1 flex-row items-center justify-between">
-            <Text size="sm" className="flex-1 truncate text-typography-700">
+            <Text size="sm" className="flex-1 truncate text-content-body">
               {title}
             </Text>
             {rightComponent}
           </View>
           {children && (
             <View>
-              <Text size="sm" className="text-typography-500">
+              <Text size="sm" className="text-content-secondary">
                 {missingDeps.length > 0 && <>The following inputs are missing: {missingDeps.join(', ')}.</>}
                 {missingDeps.length > 0 && linkedDeps.length > 0 && <>{'\n'}</>}
                 {linkedDeps.length > 0 && (
@@ -56,7 +56,7 @@ export default function SubItem({ title, children, className, rightComponent, no
                     {linkedDeps.map((dep, index) => (
                       <React.Fragment key={dep}>
                         {index > 0 && ', '}
-                        <Text size="sm" className="text-typography-500" underline>
+                        <Text size="sm" className="text-content-secondary" underline>
                           {dep}
                         </Text>
                       </React.Fragment>
@@ -81,8 +81,8 @@ export default function SubItem({ title, children, className, rightComponent, no
                   }}
                   className="mt-2"
                 >
-                  <ButtonIcon as={GitBranch} size="sm" className="text-typography-0" />
-                  <ButtonText size="sm" className="text-typography-0">
+                  <ButtonIcon as={GitBranch} size="sm" className="text-content-inverse" />
+                  <ButtonText size="sm" className="text-content-inverse">
                     Report Issue
                   </ButtonText>
                 </Button>
@@ -97,7 +97,7 @@ export default function SubItem({ title, children, className, rightComponent, no
   return (
     <View className={`mt-4 ${className}`}>
       <View className="mb-1 flex-row items-center justify-between">
-        <Text size="sm" className="flex-1 truncate text-typography-700">
+        <Text size="sm" className="flex-1 truncate text-content-body">
           {title}
         </Text>
         {rightComponent}

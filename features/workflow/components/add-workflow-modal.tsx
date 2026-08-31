@@ -182,7 +182,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
   return (
     <KeyboardModal isOpen={isOpen} onClose={handleClose}>
       <KeyboardModal.Header>
-        <Text className="text-lg font-semibold text-primary-500">Add Workflow from Preset</Text>
+        <Text className="text-lg font-semibold text-action">Add Workflow from Preset</Text>
       </KeyboardModal.Header>
 
       <KeyboardModal.Body scrollEnabled={false}>
@@ -190,7 +190,7 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
           {/* Fixed sections */}
           <VStack space="md">
             <KeyboardModal.Item title="Name" error={error}>
-              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-background-0">
+              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-surface-base">
                 <InputField
                   defaultValue={name}
                   onChangeText={(value) => {
@@ -198,13 +198,13 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
                     setError('');
                   }}
                   placeholder="Enter workflow name"
-                  className="px-3 py-2 text-sm text-primary-500"
+                  className="px-3 py-2 text-sm text-action"
                 />
               </Input>
             </KeyboardModal.Item>
 
             <KeyboardModal.Item title="Thumbnail (Optional)">
-              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-background-0">
+              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
                 {customThumbnail ? (
                   <Image
                     source={{ uri: customThumbnail }}
@@ -232,12 +232,12 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
           {/* Scrollable section */}
           <KeyboardModal.Item title="Select Preset">
             <ScrollView className="h-40">
-              <Accordion type="single" className="w-full space-y-2 bg-background-200 shadow-none">
+              <Accordion type="single" className="w-full space-y-2 bg-surface-muted shadow-none">
                 {WORKFLOW_PRESETS.map((preset) => (
                   <AccordionItem
                     key={preset.id}
                     value={preset.id}
-                    className={`overflow-hidden rounded-lg shadow-none ${selectedPreset?.id === preset.id ? 'bg-background-100' : 'bg-background-200'
+                    className={`overflow-hidden rounded-lg shadow-none ${selectedPreset?.id === preset.id ? 'bg-surface-sunken' : 'bg-surface-muted'
                       }`}
                   >
                     <AccordionHeader className="rounded-lg p-0">
@@ -257,23 +257,23 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
                       >
                         <HStack className="w-full flex-row items-center justify-between">
                           <HStack space="sm" className="flex-row items-center justify-start">
-                            <Icon as={Scroll} size="sm" className="text-typography-900" />
+                            <Icon as={Scroll} size="sm" className="text-content-heading" />
                             <Text
-                              className={`text-xs font-medium ${selectedPreset?.id === preset.id ? 'text-typography-900' : 'text-typography-700'
+                              className={`text-xs font-medium ${selectedPreset?.id === preset.id ? 'text-content-heading' : 'text-content-body'
                                 }`}
                             >
                               {preset.title}
                             </Text>
                           </HStack>
                           {selectedPreset?.id === preset.id ? (
-                            <Icon as={CircleCheck} size="sm" className="text-success-500" />
+                            <Icon as={CircleCheck} size="sm" className="text-status-online" />
                           ) : (
-                            <Icon as={Circle} size="sm" className="text-typography-700" />
+                            <Icon as={Circle} size="sm" className="text-content-body" />
                           )}
                         </HStack>
                       </AccordionTrigger>
                     </AccordionHeader>
-                    <AccordionContent className="bg-background-200">
+                    <AccordionContent className="bg-surface-muted">
                       <VStack space="sm" className="px-0 py-3">
                         <Text className="text-xs text-typography-600">{preset.description}</Text>
                       </VStack>
@@ -291,15 +291,15 @@ export const AddWorkflowModal = ({ isOpen, onClose, serverId }: AddWorkflowModal
           <Button
             variant="outline"
             onPress={handleClose}
-            className="flex-1 rounded-md border-primary-200 bg-background-0"
+            className="flex-1 rounded-md border-primary-200 bg-surface-base"
           >
-            <ButtonText className="text-primary-500">Cancel</ButtonText>
+            <ButtonText className="text-action">Cancel</ButtonText>
           </Button>
           <Button
             variant="solid"
             onPress={handleAddWorkflow}
             isDisabled={!selectedPreset || !name.trim()}
-            className={`flex-1 rounded-md ${!selectedPreset || !name.trim() ? 'bg-primary-200' : 'bg-primary-500'}`}
+            className={`flex-1 rounded-md ${!selectedPreset || !name.trim() ? 'bg-primary-200' : 'bg-action'}`}
           >
             <ButtonText className="text-background-0">Add</ButtonText>
           </Button>

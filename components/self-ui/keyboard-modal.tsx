@@ -61,7 +61,7 @@ const KeyboardModalItem = ({ children, title, error, className }: KeyboardModalI
       {children}
       {error && (
         <FormControlError>
-          <FormControlErrorText className="mt-1 text-xs text-error-600">{error}</FormControlErrorText>
+          <FormControlErrorText className="mt-1 text-xs text-status-danger-pressed">{error}</FormControlErrorText>
         </FormControlError>
       )}
     </FormControl>
@@ -76,7 +76,7 @@ const KeyboardModalRoot = ({ isOpen, onClose, children, closeOnOverlayClick = tr
       <ModalBackdrop />
       <ModalContent
         style={{ width: windowWidth * 0.8 }}
-        className="overflow-hidden rounded-xl border-0 bg-background-200"
+        className="overflow-hidden rounded-xl border-0 bg-surface-muted"
       >
         {children}
       </ModalContent>

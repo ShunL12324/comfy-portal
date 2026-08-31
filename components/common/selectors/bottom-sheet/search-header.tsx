@@ -45,7 +45,7 @@ export function SearchHeader({
 
   return (
     <VStack space="md">
-      <Text className="px-4 pb-2 pt-4 text-lg font-medium text-primary-500">
+      <Text className="px-4 pb-2 pt-4 text-lg font-medium text-action">
         {title}
       </Text>
 

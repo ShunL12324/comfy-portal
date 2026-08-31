@@ -264,10 +264,10 @@ function EmptyStateView() {
       <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-primary-50">
         <Icon as={Bot} size="lg" className="text-primary-400" />
       </View>
-      <Text className="text-center text-sm font-medium text-typography-700">
+      <Text className="text-center text-sm font-medium text-content-body">
         How can I help?
       </Text>
-      <Text className="mt-1 text-center text-xs text-typography-400">
+      <Text className="mt-1 text-center text-xs text-content-tertiary">
         Ask me to adjust prompts, tweak parameters,{'\n'}or optimize your workflow.
       </Text>
     </View>
@@ -283,7 +283,7 @@ function NotConfiguredView() {
           <View className="mb-3 rounded-full bg-warning-100 p-2">
             <Icon as={AlertTriangle} size="md" className="text-warning-600" />
           </View>
-          <Text className="text-center text-base font-semibold text-typography-900">
+          <Text className="text-center text-base font-semibold text-content-heading">
             AI Not Configured
           </Text>
           <Text className="mt-1 text-center text-sm text-typography-600">
@@ -293,8 +293,8 @@ function NotConfiguredView() {
             onPress={() => router.push('/settings/ai-assistant')}
             className="mt-4 flex-row items-center gap-2 rounded-xl bg-typography-900 px-5 py-2.5 active:opacity-80"
           >
-            <Icon as={Settings} size="sm" className="text-typography-0" />
-            <Text className="text-sm font-semibold text-typography-0">Open Settings</Text>
+            <Icon as={Settings} size="sm" className="text-content-inverse" />
+            <Text className="text-sm font-semibold text-content-inverse">Open Settings</Text>
           </Pressable>
         </View>
       </View>
@@ -331,9 +331,9 @@ function TypingIndicator() {
       <View className="h-7 w-7 items-center justify-center rounded-full bg-primary-100">
         <Icon as={Bot} size="xs" className="text-primary-600" />
       </View>
-      <View className="flex-row items-center gap-2 rounded-2xl rounded-bl-md bg-background-100 px-4 py-3">
+      <View className="flex-row items-center gap-2 rounded-2xl rounded-bl-md bg-surface-sunken px-4 py-3">
         <RotatingSpinner size="sm" />
-        <Text className="text-xs text-typography-500">Thinking...</Text>
+        <Text className="text-xs text-content-secondary">Thinking...</Text>
       </View>
     </View>
   );

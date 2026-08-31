@@ -99,16 +99,16 @@ function NodesTabContent({
   const scrollStyle = { flex: 1 as const, backgroundColor: bgColor };
 
   return (
-    <View className="flex-1 bg-background-0">
-      <View className="px-4 pt-4 pb-2 bg-background-0">
+    <View className="flex-1 bg-surface-base">
+      <View className="px-4 pt-4 pb-2 bg-surface-base">
         <HStack
-          className="items-center rounded-lg bg-background-0 px-3 py-3"
+          className="items-center rounded-lg bg-surface-base px-3 py-3"
           style={{
             borderWidth: 1,
             borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
           }}
         >
-          <Icon as={Search} size="sm" className="text-typography-400 mr-2" />
+          <Icon as={Search} size="sm" className="text-content-tertiary mr-2" />
           <AdaptiveTextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -229,14 +229,14 @@ function RunWorkflowScreenContent() {
   if (!server) {
     return (
       <VStack className="flex-1 items-center justify-center px-6" space="md">
-        <View className="rounded-full bg-background-50 p-3">
+        <View className="rounded-full bg-surface-raised p-3">
           <Icon as={ServerCrash} size="xl" className="h-10 w-10 text-typography-300" />
         </View>
         <VStack className="items-center" space="xs">
           <Text className="text-center text-base font-semibold text-typography-800">
             Server Not Found
           </Text>
-          <Text className="text-center text-sm text-typography-500">
+          <Text className="text-center text-sm text-content-secondary">
             Please check your server list and try again.
           </Text>
         </VStack>
@@ -245,7 +245,7 @@ function RunWorkflowScreenContent() {
   }
 
   return (
-    <View className="z-0 flex-1 bg-background-0">
+    <View className="z-0 flex-1 bg-surface-base">
       <AppBar
         showBack
         title={workflowRecord.name}
@@ -255,12 +255,12 @@ function RunWorkflowScreenContent() {
         }
         rightElement={
           <HStack className="items-center" space="xs">
-            <Button variant="link" className="h-9 w-9 rounded-xl p-0" onPress={openHistoryGallery}>
-              <Icon as={Images} size="md" className="text-primary-500" />
+            <Button variant="link" className="h-9 w-9 rounded-xl p-0" hitSlop={4} onPress={openHistoryGallery}>
+              <Icon as={Images} size="md" className="text-action" />
             </Button>
           </HStack>
         }
-        className="relative z-30 bg-background-0"
+        className="relative z-30 bg-surface-base"
       />
 
       {useSplitLayout ? (
@@ -276,15 +276,15 @@ function RunWorkflowScreenContent() {
             }}
           >
             {/* Panel Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 bg-background-0">
+            <View className="flex-row items-center justify-between px-4 py-3 bg-surface-base">
               <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
               <HStack className="items-center" space="xs">
                 {tabIndex === 1 && (
                   <Pressable
                     onPress={() => aiChatTabRef.current?.clearChat()}
-                    className="rounded-lg p-2 active:bg-background-100"
+                    className="rounded-lg p-2 active:bg-surface-sunken"
                   >
-                    <Icon as={Trash2} size="sm" className="text-typography-400" />
+                    <Icon as={Trash2} size="sm" className="text-content-tertiary" />
                   </Pressable>
                 )}
                 <GenerateActionButton onGenerate={handleGenerate} />
@@ -342,15 +342,15 @@ function RunWorkflowScreenContent() {
             keyboardBlurBehavior="restore"
           >
             {/* Sheet Header: toggle + contextual actions + generate button */}
-            <View className="flex-row items-center justify-between px-4 pb-2 bg-background-0">
+            <View className="flex-row items-center justify-between px-4 pb-2 bg-surface-base">
               <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
               <HStack className="items-center" space="xs">
                 {tabIndex === 1 && (
                   <Pressable
                     onPress={() => aiChatTabRef.current?.clearChat()}
-                    className="rounded-lg p-2 active:bg-background-100"
+                    className="rounded-lg p-2 active:bg-surface-sunken"
                   >
-                    <Icon as={Trash2} size="sm" className="text-typography-400" />
+                    <Icon as={Trash2} size="sm" className="text-content-tertiary" />
                   </Pressable>
                 )}
                 <GenerateActionButton onGenerate={handleGenerate} />

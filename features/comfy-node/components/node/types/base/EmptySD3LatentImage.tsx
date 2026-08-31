@@ -67,7 +67,7 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
     <BaseNode node={node}>
       <SubItem title="Resolution">
         {hasLinkedDimensions ? (
-          <Text size="sm" className="text-typography-500">
+          <Text size="sm" className="text-content-secondary">
             Width and height are linked from another node. Edit the source node to change final image size.
           </Text>
         ) : (
@@ -81,11 +81,11 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
             />
             <View className="flex-row items-center gap-2">
               <View className="flex-1 flex-col gap-2">
-                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
+                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-content-primary">
                   Width
                 </Text>
                 <Input
-                  className="flex-1 rounded-md border-0 bg-background-50"
+                  className="flex-1 rounded-md border-0 bg-surface-raised"
                   variant="outline"
                   size="sm"
                   isDisabled={selectedResolution !== 'Custom'}
@@ -115,11 +115,11 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
               </View>
               <Text className="font-medium">×</Text>
               <View className="flex-1 flex-col gap-2">
-                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-typography-950">
+                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-content-primary">
                   Height
                 </Text>
                 <Input
-                  className="flex-1 rounded-md border-0 bg-background-50"
+                  className="flex-1 rounded-md border-0 bg-surface-raised"
                   variant="outline"
                   size="sm"
                   isDisabled={selectedResolution !== 'Custom'}

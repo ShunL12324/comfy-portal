@@ -118,7 +118,7 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
                   variant="outline"
                   size="md"
                   onPress={onRefresh}
-                  className="aspect-square rounded-lg border-0 bg-background-200 p-0"
+                  className="aspect-square rounded-lg border-0 bg-surface-muted p-0"
                 >
                   {isRefreshing ? (
                     <Spinner size="small" className="text-background-400" />

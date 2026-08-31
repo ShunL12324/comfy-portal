@@ -123,12 +123,12 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
         >
           <Box
             className={`relative overflow-hidden rounded-xl ${
-              isSelected ? 'border-[3px] border-outline-400' : 'bg-background-200'
+              isSelected ? 'border-[3px] border-outline-400' : 'bg-surface-muted'
             }`}
           >
             {isSelected && (
-              <Box className="absolute right-2 top-2 z-10 rounded-full bg-background-50 p-1">
-                <Icon as={Check} size="sm" className="text-typography-950" />
+              <Box className="absolute right-2 top-2 z-10 rounded-full bg-surface-raised p-1">
+                <Icon as={Check} size="sm" className="text-content-primary" />
               </Box>
             )}
             <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-background-100">
@@ -143,7 +143,7 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
             </Box>
             <VStack className="p-3">
               <Text
-                className={`text-sm ${isSelected ? 'font-medium text-primary-500' : 'text-primary-900'}`}
+                className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-primary-900'}`}
                 numberOfLines={1}
                 ellipsizeMode="middle"
               >
@@ -160,12 +160,12 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
       files === null ? (
         <VStack space="md" className="flex-1 items-center justify-center p-8">
           <Spinner size="small" className="text-background-400" />
-          <Text className="text-sm text-typography-400">Reading the server&apos;s images…</Text>
+          <Text className="text-sm text-content-tertiary">Reading the server&apos;s images…</Text>
         </VStack>
       ) : (
         <VStack space="md" className="flex-1 items-center justify-center p-8">
           <Icon as={failed ? WifiOff : ImageOff} className="h-8 w-8 text-typography-300" />
-          <Text className="text-center text-sm text-typography-400">
+          <Text className="text-center text-sm text-content-tertiary">
             {failed
               ? 'Could not reach the server to read its images. Check that it is online, then refresh.'
               : 'No images in this server’s input folder yet. Anything you upload shows up here afterwards.'}

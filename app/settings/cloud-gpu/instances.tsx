@@ -1,8 +1,8 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { StatusDot } from '@/components/self-ui/status-pill';
 import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
@@ -74,12 +74,12 @@ export default function CloudInstances() {
   const totalPerHour = running.reduce((sum, i) => sum + i.pricePerHour, 0);
 
   return (
-    <View className="bg-background-0 flex-1">
+    <View className="bg-surface-base flex-1">
       <AppBar title="Instances" showBack />
 
       {running.length > 0 && (
-        <View className="mx-5 mt-3 rounded-xl bg-background-50 p-3">
-          <Text className="text-sm font-medium text-typography-900">
+        <View className="mx-5 mt-3 rounded-xl bg-surface-raised p-3">
+          <Text className="text-sm font-medium text-content-heading">
             {running.length} running · {formatUsd(totalPerHour)}/hr
           </Text>
         </View>
@@ -91,17 +91,17 @@ export default function CloudInstances() {
       >
         <VStack className="px-5 pb-8 pt-4" space="sm">
           {!CLOUD_GPU_SUPPORTED ? (
-            <EmptyState icon={CloudOff} text={CLOUD_GPU_UNSUPPORTED_REASON} />
+            <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
           ) : !hydrated || instances === null ? (
             <View className="py-12 items-center">
               <Spinner size="small" />
             </View>
           ) : !vastApiKey ? (
-            <EmptyState icon={CloudOff} text="Add a vast.ai API key in Cloud GPU settings to see your instances." />
+            <EmptyState icon={CloudOff}>Add a vast.ai API key in Cloud GPU settings to see your instances.</EmptyState>
           ) : error ? (
-            <EmptyState icon={CloudOff} text={error} />
+            <EmptyState icon={CloudOff}>{error}</EmptyState>
           ) : instances.length === 0 ? (
-            <EmptyState icon={Server} text="No instances on this account." />
+            <EmptyState icon={Server}>No instances on this account.</EmptyState>
           ) : (
             instances.map((instance) => (
               <InstanceCard key={instance.id} instance={instance} onDestroy={() => setPendingDestroy(instance)} />
@@ -125,48 +125,40 @@ export default function CloudInstances() {
   );
 }
 
-function EmptyState({ icon, text }: { icon: React.ElementType; text: string }) {
-  return (
-    <VStack space="md" className="px-6 py-12 items-center">
-      <Icon as={icon} className="h-8 w-8 text-typography-300" />
-      <Text className="text-sm text-typography-400 text-center">{text}</Text>
-    </VStack>
-  );
-}
 
 function InstanceCard({ instance, onDestroy }: { instance: VastInstance; onDestroy: () => void }) {
   const isRunning = instance.status === 'running';
   const cost = instance.startedAt ? accruedCost(instance.startedAt, instance.pricePerHour) : 0;
 
   return (
-    <View className="rounded-xl bg-background-50 p-4">
+    <View className="rounded-xl bg-surface-raised p-4">
       <HStack className="items-start justify-between">
         <VStack className="flex-1" space="xs">
           <HStack space="xs" className="items-center">
             <StatusDot tone={isRunning ? 'ready' : 'offline'} />
-            <Text className="text-base font-medium text-typography-900" numberOfLines={1}>
+            <Text className="text-base font-medium text-content-heading" numberOfLines={1}>
               {instance.gpuName || `Instance ${instance.id}`}
             </Text>
           </HStack>
-          <Text className="text-xs text-typography-400">
+          <Text className="text-xs text-content-tertiary">
             {instance.label ? `${instance.label} · ` : ''}
             {instance.status}
             {instance.publicIp ? ` · ${instance.publicIp}` : ''}
           </Text>
           {isRunning && instance.startedAt && (
-            <Text className="text-xs text-typography-500">
+            <Text className="text-xs text-content-secondary">
               {formatUptime(instance.startedAt)} · {formatUsd(cost)} so far · {formatUsd(instance.pricePerHour)}/hr
             </Text>
           )}
           {!isRunning && instance.statusMessage ? (
-            <Text className="text-xs text-typography-400" numberOfLines={2}>
+            <Text className="text-xs text-content-tertiary" numberOfLines={2}>
               {instance.statusMessage}
             </Text>
           ) : null}
         </VStack>
 
         <Button variant="outline" size="xs" onPress={onDestroy} className="ml-3 rounded-lg border-error-300">
-          <ButtonText className="text-xs text-error-500">Destroy</ButtonText>
+          <ButtonText className="text-xs text-status-danger">Destroy</ButtonText>
         </Button>
       </HStack>
     </View>

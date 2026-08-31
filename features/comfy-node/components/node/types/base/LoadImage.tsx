@@ -380,16 +380,16 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
           onPress={handleToggleQuickAction}
           className={`flex-row items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${
             hasQuickAction
-              ? 'bg-primary-500 active:bg-primary-600'
-              : 'bg-background-50 active:bg-background-100'
+              ? 'bg-action active:bg-action-pressed'
+              : 'bg-surface-raised active:bg-surface-sunken'
           }`}
         >
           <Icon
             as={Share}
-            className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
+            className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-content-inverse' : 'text-content-tertiary'}`}
           />
           <Text
-            className={`text-xs font-medium ${hasQuickAction ? 'text-typography-0' : 'text-typography-400'}`}
+            className={`text-xs font-medium ${hasQuickAction ? 'text-content-inverse' : 'text-content-tertiary'}`}
           >
             Quick Action
           </Text>
@@ -400,16 +400,16 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         <Pressable
           onPress={handleOpenSourcePicker}
           className={`relative h-48 w-full items-center justify-center rounded-xl ${
-            isMissing && !isUploading ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-background-50'
+            isMissing && !isUploading ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-surface-raised'
           }`}
         >
           {isMissing && !isUploading ? (
             <VStack space="md" className="h-full w-full items-center justify-center px-4">
-              <Icon as={AlertTriangle} className="h-8 w-8 text-error-500" />
-              <Text size="sm" className="text-error-600 font-medium" numberOfLines={1}>
+              <Icon as={AlertTriangle} className="h-8 w-8 text-status-danger" />
+              <Text size="sm" className="text-status-danger-pressed font-medium" numberOfLines={1}>
                 {node.inputs.image}
               </Text>
-              <Text size="xs" className="text-error-500">
+              <Text size="xs" className="text-status-danger">
                 Not installed on server
               </Text>
             </VStack>
@@ -438,8 +438,8 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
             </>
           ) : !isUploading ? (
             <VStack space="md" className="h-full w-full items-center justify-center">
-              <Icon as={ImageIcon} className="h-8 w-8 text-typography-500" />
-              <Text size="sm" className="text-typography-500">
+              <Icon as={ImageIcon} className="h-8 w-8 text-content-secondary" />
+              <Text size="sm" className="text-content-secondary">
                 Upload Image
               </Text>
             </VStack>
@@ -452,7 +452,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
               </Text>
               <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
                 <Animated.View
-                  className="h-full bg-primary-500 rounded-full"
+                  className="h-full bg-action rounded-full"
                   style={animatedProgressStyle}
                 />
               </View>
@@ -479,24 +479,24 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         >
           <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: safeAreaInsets.bottom + 16 }}>
             <VStack space="sm">
-              <Text className="mb-1 text-sm font-semibold text-typography-900">Set Image</Text>
+              <Text className="mb-1 text-sm font-semibold text-content-heading">Set Image</Text>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('server');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
               >
-                <Icon as={HardDrive} className="h-4 w-4 text-typography-700" />
+                <Icon as={HardDrive} className="h-4 w-4 text-content-body" />
                 <VStack className="flex-1">
-                  <Text className="text-sm text-typography-900">Already on Server</Text>
-                  <Text className="text-xs text-typography-400">
+                  <Text className="text-sm text-content-heading">Already on Server</Text>
+                  <Text className="text-xs text-content-tertiary">
                     Pick from the server&apos;s input folder — no upload
                   </Text>
                 </VStack>
               </Pressable>
 
-              <Text className="mb-1 mt-2 text-xs font-medium uppercase text-typography-400">
+              <Text className="mb-1 mt-2 text-xs font-medium text-content-tertiary">
                 Upload
               </Text>
 
@@ -504,30 +504,30 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
                 onPress={() => {
                   handleSelectSourcePickerAction('library');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
               >
-                <Icon as={ImageIcon} className="h-4 w-4 text-typography-700" />
-                <Text className="text-sm text-typography-900">Photo Library</Text>
+                <Icon as={ImageIcon} className="h-4 w-4 text-content-body" />
+                <Text className="text-sm text-content-heading">Photo Library</Text>
               </Pressable>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('files');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
               >
-                <Icon as={Folder} className="h-4 w-4 text-typography-700" />
-                <Text className="text-sm text-typography-900">Files</Text>
+                <Icon as={Folder} className="h-4 w-4 text-content-body" />
+                <Text className="text-sm text-content-heading">Files</Text>
               </Pressable>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('camera');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-background-50 px-4 py-3"
+                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
               >
-                <Icon as={Camera} className="h-4 w-4 text-typography-700" />
-                <Text className="text-sm text-typography-900">Camera</Text>
+                <Icon as={Camera} className="h-4 w-4 text-content-body" />
+                <Text className="text-sm text-content-heading">Camera</Text>
               </Pressable>
             </VStack>
           </BottomSheetView>

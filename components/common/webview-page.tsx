@@ -61,7 +61,7 @@ export function WebViewPage({
   }, [uri]);
 
   return (
-    <View className="flex-1 bg-background-0">
+    <View className="flex-1 bg-surface-base">
       <WebView
         key={reloadKey}
         className="flex-1"
@@ -90,13 +90,13 @@ export function WebViewPage({
       />
 
       {status !== 'ready' && (
-        <View className="absolute inset-0 items-center justify-center bg-background-0 px-6">
+        <View className="absolute inset-0 items-center justify-center bg-surface-base px-6">
           {status === 'error' ? (
-            <View className="w-full max-w-[360px] items-center rounded-2xl border border-outline-200 bg-background-50 px-5 py-6">
-              <Text className="text-center text-base font-semibold text-typography-900">{errorTitle}</Text>
-              <Text className="mt-2 text-center text-sm text-typography-500">{errorMessage}</Text>
+            <View className="w-full max-w-[360px] items-center rounded-2xl border border-stroke bg-surface-raised px-5 py-6">
+              <Text className="text-center text-base font-semibold text-content-heading">{errorTitle}</Text>
+              <Text className="mt-2 text-center text-sm text-content-secondary">{errorMessage}</Text>
               <View className="mt-5 flex-row items-center">
-                <Button size="sm" variant="outline" onPress={retry} className="rounded-lg border-outline-300 bg-background-0">
+                <Button size="sm" variant="outline" onPress={retry} className="rounded-lg border-outline-300 bg-surface-base">
                   <ButtonIcon as={RefreshCw} />
                   <ButtonText>Retry</ButtonText>
                 </Button>
@@ -109,10 +109,10 @@ export function WebViewPage({
           ) : (
             <View className="items-center">
               <RotatingSpinner size="sm" preset="subtle" />
-              <Text className="mt-3 text-base font-medium text-typography-900">
+              <Text className="mt-3 text-base font-medium text-content-heading">
                 {status === 'slow-loading' ? slowLoadingTitle : loadingTitle}
               </Text>
-              <Text className="mt-1 text-center text-sm text-typography-500">
+              <Text className="mt-1 text-center text-sm text-content-secondary">
                 {status === 'slow-loading' ? slowLoadingDescription : 'Please wait a moment.'}
               </Text>
               {status === 'slow-loading' && (

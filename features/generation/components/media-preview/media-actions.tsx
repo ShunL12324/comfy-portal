@@ -99,8 +99,8 @@ export const MediaActions = memo(function MediaActions({
               onPress={handleSaveToGallery}
               className="h-12 w-full justify-start border-background-100 px-4"
             >
-              <Icon as={Save} size="sm" className="mr-2 text-primary-500" />
-              <Text className="text-sm text-primary-500">Save Media</Text>
+              <Icon as={Save} size="sm" className="mr-2 text-action" />
+              <Text className="text-sm text-action">Save Media</Text>
             </Button>
             {workflowId && (
               <Button
@@ -109,8 +109,8 @@ export const MediaActions = memo(function MediaActions({
                 onPress={handleSetAsThumbnail}
                 className="h-12 w-full justify-start border-background-100 px-4"
               >
-                <Icon as={ImageIcon} size="sm" className="mr-2 text-primary-500" />
-                <Text className="text-sm text-primary-500">Set as Workflow Thumbnail</Text>
+                <Icon as={ImageIcon} size="sm" className="mr-2 text-action" />
+                <Text className="text-sm text-action">Set as Workflow Thumbnail</Text>
               </Button>
             )}
           </VStack>

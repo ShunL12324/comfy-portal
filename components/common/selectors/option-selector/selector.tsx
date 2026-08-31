@@ -33,14 +33,14 @@ export function OptionSelector<T extends string>({
   return (
     <>
       <Pressable
-        className="flex-row items-center justify-between rounded-xl bg-background-50 px-4 py-3"
+        className="flex-row items-center justify-between rounded-xl bg-surface-raised px-4 py-3"
         onPress={handlePress}
       >
         <HStack space="sm" className="flex-1 items-center">
           {selectedOption?.icon}
-          <Text className="text-sm text-typography-900">{selectedOption?.label || value}</Text>
+          <Text className="text-sm text-content-heading">{selectedOption?.label || value}</Text>
         </HStack>
-        <Icon as={ChevronDown} size="sm" className="text-typography-950" />
+        <Icon as={ChevronDown} size="sm" className="text-content-primary" />
       </Pressable>
 
       <SearchableBottomSheet

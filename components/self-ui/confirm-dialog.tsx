@@ -17,7 +17,7 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   confirmButtonVariant?: 'solid' | 'outline' | 'link';
-  confirmButtonColor?: string; // e.g., 'bg-error-500'
+  confirmButtonColor?: string; // e.g., 'bg-status-danger'
 }
 
 export const ConfirmDialog = ({
@@ -29,7 +29,7 @@ export const ConfirmDialog = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   confirmButtonVariant = 'solid',
-  confirmButtonColor = 'bg-primary-500',
+  confirmButtonColor = 'bg-action',
 }: ConfirmDialogProps) => {
   const theme = useResolvedTheme();
   const activeTheme = theme ?? 'light';
@@ -77,17 +77,17 @@ export const ConfirmDialog = ({
               }}
             >
               <View className="p-6">
-                <Heading size="sm" className="mb-2 text-typography-950">
+                <Heading size="sm" className="mb-2 text-content-primary">
                   {title}
                 </Heading>
-                <Text className="mb-6 text-sm text-typography-400">
+                <Text className="mb-6 text-sm text-content-tertiary">
                   {description}
                 </Text>
                 <HStack space="sm">
                   <Button
                     variant="outline"
                     onPress={onClose}
-                    className="flex-1 rounded-md bg-background-100 py-2"
+                    className="flex-1 rounded-md bg-surface-sunken py-2"
                   >
                     <ButtonText className="text-sm text-primary-400">{cancelText}</ButtonText>
                   </Button>

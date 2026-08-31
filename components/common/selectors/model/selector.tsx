@@ -50,8 +50,8 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
     <>
       <HStack space="xs" className="mt-2 items-center justify-between">
         <HStack space="xs" className="items-center">
-          <Icon as={Sliders} size="xs" className="text-typography-900" />
-          <Text className="text-xs text-typography-900">{label}</Text>
+          <Icon as={Sliders} size="xs" className="text-content-heading" />
+          <Text className="text-xs text-content-heading">{label}</Text>
         </HStack>
       </HStack>
       <HStack space="sm" className="mt-2 w-full items-center">
@@ -73,8 +73,8 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
 function ModelPreview({ image, label }: { image?: string; label: string }) {
   if (!image) {
     return (
-      <Box className="h-full w-full items-center justify-center bg-background-200">
-        <Icon as={ImageIcon} size="sm" className="text-typography-400" />
+      <Box className="h-full w-full items-center justify-center bg-surface-muted">
+        <Icon as={ImageIcon} size="sm" className="text-content-tertiary" />
       </Box>
     );
   }
@@ -162,7 +162,7 @@ export function ModelSelector({
   const renderTrigger = useCallback(
     () => (
       <Box
-        className={`overflow-hidden rounded-xl ${isMissing ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-background-50'}`}
+        className={`overflow-hidden rounded-xl ${isMissing ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-surface-raised'}`}
       >
         <Pressable onPress={handlePress}>
           <HStack space="sm" className="items-center justify-between p-3">
@@ -172,20 +172,20 @@ export function ModelSelector({
               </Box>
               <VStack space="xs" className="flex-1">
                 <Text
-                  className={`text-sm font-medium ${isMissing ? 'text-error-600' : 'text-typography-950'}`}
+                  className={`text-sm font-medium ${isMissing ? 'text-status-danger-pressed' : 'text-content-primary'}`}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {missingLabel || currentOption?.label || 'Select model'}
                 </Text>
-                <Text className={`text-xs ${isMissing ? 'text-error-500' : 'text-typography-400'}`}>
+                <Text className={`text-xs ${isMissing ? 'text-status-danger' : 'text-content-tertiary'}`}>
                   {isMissing
                     ? 'Not installed on server'
                     : currentOption?.description || currentOption?.serverName || 'Choose a model'}
                 </Text>
               </VStack>
             </HStack>
-            <Icon as={ChevronDown} size="sm" className="text-typography-400" />
+            <Icon as={ChevronDown} size="sm" className="text-content-tertiary" />
           </HStack>
         </Pressable>
         {type === 'loras' && (
@@ -208,7 +208,7 @@ export function ModelSelector({
             )}
             {onDelete && (
               <TouchableOpacity
-                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg border-[0.5px] border-error-300 bg-background-50 p-3"
+                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg border-[0.5px] border-error-300 bg-surface-raised p-3"
                 onPress={onDelete}
               >
                 <Icon as={Trash2} size="xs" className="text-error-300" />
@@ -232,12 +232,12 @@ export function ModelSelector({
         className="w-[48.5%] active:opacity-80"
       >
         <Box
-          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-background-200'
+          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-surface-muted'
             }`}
         >
           {isSelected && (
-            <Box className="absolute right-2 top-2 z-10 rounded-full bg-background-50 p-1">
-              <Icon as={Check} size="sm" className="text-typography-950" />
+            <Box className="absolute right-2 top-2 z-10 rounded-full bg-surface-raised p-1">
+              <Icon as={Check} size="sm" className="text-content-primary" />
             </Box>
           )}
           <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-background-100">
@@ -245,7 +245,7 @@ export function ModelSelector({
           </Box>
           <VStack space="xs" className="p-3">
             <Text
-              className={`text-sm ${isSelected ? 'font-medium text-primary-500' : 'text-primary-900'}`}
+              className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-primary-900'}`}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -277,7 +277,7 @@ export function ModelSelector({
       numColumns={2}
       emptyComponent={
         <VStack className="items-center py-12">
-          <Text className="text-sm text-typography-400">No models installed for this input</Text>
+          <Text className="text-sm text-content-tertiary">No models installed for this input</Text>
         </VStack>
       }
     />

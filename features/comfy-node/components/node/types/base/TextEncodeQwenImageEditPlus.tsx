@@ -48,7 +48,7 @@ export default function TextEncodeQwenImageEditPlus({
         dependencies={['prompt']}
         rightComponent={
           <Pressable onPress={handleOpenEditor} className="p-1">
-            <Icon as={Maximize2} size="sm" className="text-typography-500" />
+            <Icon as={Maximize2} size="sm" className="text-content-secondary" />
           </Pressable>
         }
       >

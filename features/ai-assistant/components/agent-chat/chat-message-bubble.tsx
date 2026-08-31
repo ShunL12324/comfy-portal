@@ -219,12 +219,12 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
                 key={index}
                 className="rounded-2xl rounded-br-md bg-typography-900 px-3.5 py-2.5"
               >
-                <Text className="text-sm leading-5 text-typography-0">{part.text}</Text>
+                <Text className="text-sm leading-5 text-content-inverse">{part.text}</Text>
               </View>
             ) : (
               <View
                 key={index}
-                className="w-full rounded-2xl rounded-bl-md bg-background-100 px-3.5 py-2.5"
+                className="w-full rounded-2xl rounded-bl-md bg-surface-sunken px-3.5 py-2.5"
               >
                 <Markdown style={mdStyles} mergeStyle={false}>
                   {part.text}
@@ -246,7 +246,7 @@ export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubblePr
 
       {/* Avatar for user */}
       {isUser && (
-        <View className="ml-2 mt-1 h-7 w-7 items-center justify-center rounded-full bg-background-200">
+        <View className="ml-2 mt-1 h-7 w-7 items-center justify-center rounded-full bg-surface-muted">
           <Icon as={User} size="xs" className="text-typography-600" />
         </View>
       )}
@@ -281,7 +281,7 @@ function ToolPartCard({ part }: { part: ToolUIPart | DynamicToolUIPart }) {
   return (
     <View
       className={`mt-2 w-full rounded-xl border px-3 py-2.5 ${
-        failed ? 'border-error-200 bg-error-50' : 'border-outline-50 bg-background-50'
+        failed ? 'border-error-200 bg-error-50' : 'border-stroke-subtle bg-surface-raised'
       }`}
     >
       <View className="flex-row items-center gap-1.5">
@@ -291,12 +291,12 @@ function ToolPartCard({ part }: { part: ToolUIPart | DynamicToolUIPart }) {
           <Icon
             as={failed ? AlertCircle : Check}
             size="2xs"
-            className={failed ? 'text-error-600' : 'text-success-600'}
+            className={failed ? 'text-status-danger-pressed' : 'text-success-600'}
           />
         )}
         <Text
-          className={`text-xs font-semibold uppercase tracking-wide ${
-            failed ? 'text-error-700' : 'text-typography-500'
+          className={`text-xs font-semibold ${
+            failed ? 'text-error-700' : 'text-content-secondary'
           }`}
         >
           {label}

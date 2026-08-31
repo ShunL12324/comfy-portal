@@ -71,7 +71,7 @@ export function CredentialField({
         autoCorrect={false}
       />
 
-      {hint ? <Text className="-mt-1 text-xs text-typography-400">{hint}</Text> : null}
+      {hint ? <Text className="-mt-1 text-xs text-content-tertiary">{hint}</Text> : null}
 
       <HStack space="sm" className="items-center">
         <Button
@@ -93,16 +93,16 @@ export function CredentialField({
 
         {state === 'ok' && (
           <HStack space="xs" className="flex-1 items-center">
-            <Icon as={CheckCircle2} size="xs" className="text-success-500" />
-            <Text className="flex-1 text-xs text-typography-500" numberOfLines={1}>
+            <Icon as={CheckCircle2} size="xs" className="text-status-online" />
+            <Text className="flex-1 text-xs text-content-secondary" numberOfLines={1}>
               {detail}
             </Text>
           </HStack>
         )}
         {state === 'failed' && (
           <HStack space="xs" className="flex-1 items-center">
-            <Icon as={XCircle} size="xs" className="text-error-500" />
-            <Text className="flex-1 text-xs text-error-500" numberOfLines={2}>
+            <Icon as={XCircle} size="xs" className="text-status-danger" />
+            <Text className="flex-1 text-xs text-status-danger" numberOfLines={2}>
               {detail}
             </Text>
           </HStack>

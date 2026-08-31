@@ -156,7 +156,7 @@ export const EditServerModal = forwardRef<
       <BottomSheetScrollView style={{ paddingHorizontal: 16 }}>
         <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
             <View className="pb-2">
-              <Text className="text-lg font-semibold text-primary-500">Edit Server</Text>
+              <Text className="text-lg font-semibold text-action">Edit Server</Text>
             </View>
 
             <BottomSheetFormInput
@@ -217,10 +217,10 @@ export const EditServerModal = forwardRef<
             </VStack>
 
             <HStack space="sm" className="mt-3">
-              <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-background-100 py-2">
+              <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-surface-sunken py-2">
                 <ButtonText className="text-primary-400">Cancel</ButtonText>
               </Button>
-              <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-primary-500 py-2">
+              <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-action py-2">
                 <ButtonText className="text-background-0">Save</ButtonText>
               </Button>
             </HStack>

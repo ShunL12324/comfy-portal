@@ -25,7 +25,7 @@ export default function ImageResizeKJv2({ node, workflowId }: ImageResizeKJv2Pro
   return (
     <BaseNode node={node}>
       <SubItem title="Width">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Width"
             keyboardType="numeric"
@@ -35,7 +35,7 @@ export default function ImageResizeKJv2({ node, workflowId }: ImageResizeKJv2Pro
         </Input>
       </SubItem>
       <SubItem title="Height">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Height"
             keyboardType="numeric"
@@ -70,7 +70,7 @@ export default function ImageResizeKJv2({ node, workflowId }: ImageResizeKJv2Pro
         />
       </SubItem>
       <SubItem title="Divisible By">
-        <Input className="flex-1 rounded-md border-0 bg-background-50" variant="outline" size="sm">
+        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
           <InputField
             placeholder="Divisible By"
             keyboardType="numeric"

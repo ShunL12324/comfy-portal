@@ -40,7 +40,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View className={`flex-1 bg-background-0`}>
+    <View className={`flex-1 bg-surface-base`}>
       <AppBar
         title="Servers"
         titleSize="xl"
@@ -50,12 +50,12 @@ export default function HomeScreen() {
               variant="solid"
               action="primary"
               size="md"
-              className="h-11 flex-1 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+              className="h-11 flex-1 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
               onPress={() => addServerModalRef.current?.present()}
             >
               <HStack space="sm" className="items-center justify-center">
-                <Icon as={Plus} size="md" className="text-primary-500" />
-                <Text className="text-sm font-medium text-typography-900">Add Server</Text>
+                <Icon as={Plus} size="md" className="text-action" />
+                <Text className="text-sm font-medium text-content-heading">Add Server</Text>
               </HStack>
             </Button>
             {CLOUD_GPU_SUPPORTED && (
@@ -63,17 +63,17 @@ export default function HomeScreen() {
                 variant="solid"
                 action="secondary"
                 size="md"
-                className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+                className="h-11 w-11 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
                 onPress={() => router.push('/cloud/launch')}
               >
-                <Icon as={Cloud} size="md" className="text-primary-500" />
+                <Icon as={Cloud} size="md" className="text-action" />
               </Button>
             )}
             <Button
               variant="solid"
               action="secondary"
               size="md"
-              className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
+              className="h-11 w-11 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
               onPress={handleRefreshServers}
             >
               <MotiView
@@ -88,7 +88,7 @@ export default function HomeScreen() {
                   repeatReverse: false,
                 }}
               >
-                <Icon as={RefreshCcw} size="sm" className="text-primary-500" />
+                <Icon as={RefreshCcw} size="sm" className="text-action" />
               </MotiView>
             </Button>
           </HStack>
@@ -127,8 +127,8 @@ export default function HomeScreen() {
                       <Icon as={ScanSearch} size="xl" className="mb-2 h-16 w-16 text-typography-200" />
                     </MotiView>
                     <VStack space="xs" className="items-center">
-                      <Text className="text-center text-sm text-typography-500">
-                        Click the <Text className="text-primary-500">+ Add Server</Text> button above to connect to your
+                      <Text className="text-center text-sm text-content-secondary">
+                        Click the <Text className="text-action">+ Add Server</Text> button above to connect to your
                         ComfyUI instance
                       </Text>
                     </VStack>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
 
                   <VStack space="md" className="items-center">
                     <HStack space="xs" className="items-center justify-center">
-                      <Text className="text-sm text-typography-500">New to ComfyUI?</Text>
+                      <Text className="text-sm text-content-secondary">New to ComfyUI?</Text>
                       <Link href="/guide" asChild>
                         <Button
                           variant="outline"
@@ -145,8 +145,8 @@ export default function HomeScreen() {
                           className="rounded-xl border-0 px-0 data-[hover=true]:opacity-70"
                         >
                           <HStack space="xs" className="items-center justify-center">
-                            <Text className="text-sm font-medium text-primary-500">Setup Instructions</Text>
-                            <Icon as={ArrowRight} size="xs" className="text-primary-500" />
+                            <Text className="text-sm font-medium text-action">Setup Instructions</Text>
+                            <Icon as={ArrowRight} size="xs" className="text-action" />
                           </HStack>
                         </Button>
                       </Link>

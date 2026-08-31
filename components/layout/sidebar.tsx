@@ -42,11 +42,11 @@ const SidebarItem = ({ icon, label, isActive, onPress, colors }: SidebarItemProp
           <Icon
             as={icon}
             size="lg"
-            className={isActive ? 'text-typography-950' : 'text-typography-400'}
+            className={isActive ? 'text-content-primary' : 'text-content-tertiary'}
           />
           <Text
             size="md"
-            className={isActive ? 'font-medium text-typography-950' : 'text-typography-400'}
+            className={isActive ? 'font-medium text-content-primary' : 'text-content-tertiary'}
           >
             {label}
           </Text>
@@ -64,7 +64,7 @@ export const Sidebar = ({ activeTab, onChangeTab }: SidebarProps) => {
 
   return (
     <VStack
-      className="border-r border-outline-0 bg-background-0"
+      className="border-r border-stroke-hairline bg-surface-base"
       style={{ width: sidebarWidth, paddingTop: insets.top }}
     >
       {/* Navigation items */}

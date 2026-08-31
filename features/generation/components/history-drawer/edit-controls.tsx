@@ -18,7 +18,7 @@ export const SelectButton = React.memo(function SelectButton({ isSelectionMode, 
     variant="outline"
     size="sm"
     onPress={onPress}
-    className="h-8 w-[88px] items-center justify-center overflow-hidden rounded-lg border-outline-50 bg-background-0"
+    className="h-8 w-[88px] items-center justify-center overflow-hidden rounded-lg border-stroke-subtle bg-surface-base"
   >
     <MotiView
       animate={{
@@ -33,8 +33,8 @@ export const SelectButton = React.memo(function SelectButton({ isSelectionMode, 
       className="absolute"
     >
       <HStack space="xs" className="items-center">
-        <Icon as={Check} size="sm" className="text-primary-500" />
-        <Text className="text-sm font-medium text-primary-500">Done</Text>
+        <Icon as={Check} size="sm" className="text-action" />
+        <Text className="text-sm font-medium text-action">Done</Text>
       </HStack>
     </MotiView>
     <MotiView
@@ -50,8 +50,8 @@ export const SelectButton = React.memo(function SelectButton({ isSelectionMode, 
       className="absolute"
     >
       <HStack space="xs" className="items-center">
-        <Icon as={CheckSquare} size="sm" className="text-primary-500" />
-        <Text className="text-sm font-medium text-primary-500">Select</Text>
+        <Icon as={CheckSquare} size="sm" className="text-action" />
+        <Text className="text-sm font-medium text-action">Select</Text>
       </HStack>
     </MotiView>
   </Button>
@@ -81,9 +81,9 @@ export const BottomPanel = React.memo(
           <Icon
             as={selectedMedia.length === mediaItems.length ? MinusSquare : PlusSquare}
             size="sm"
-            className="mr-2 text-primary-500"
+            className="mr-2 text-action"
           />
-          <Text className="text-sm text-primary-500">
+          <Text className="text-sm text-action">
             {selectedMedia.length === mediaItems.length ? 'Deselect All' : 'Select All'}
           </Text>
         </Button>
@@ -95,8 +95,8 @@ export const BottomPanel = React.memo(
             isDisabled={selectedMedia.length === 0}
             className="h-12 flex-1 justify-start border-background-100 px-4"
           >
-            <Icon as={Share} size="sm" className="mr-2 text-primary-500" />
-            <Text className="text-sm text-primary-500">Share</Text>
+            <Icon as={Share} size="sm" className="mr-2 text-action" />
+            <Text className="text-sm text-action">Share</Text>
           </Button>
           <Button
             variant="outline"
@@ -105,8 +105,8 @@ export const BottomPanel = React.memo(
             isDisabled={selectedMedia.length === 0}
             className="h-12 flex-1 justify-start border-background-100 px-4"
           >
-            <Icon as={Download} size="sm" className="mr-2 text-primary-500" />
-            <Text className="text-sm text-primary-500">Save</Text>
+            <Icon as={Download} size="sm" className="mr-2 text-action" />
+            <Text className="text-sm text-action">Save</Text>
           </Button>
         </HStack>
         <Button
@@ -116,8 +116,8 @@ export const BottomPanel = React.memo(
           isDisabled={selectedMedia.length === 0}
           className="h-12 w-full justify-start border-background-100 px-4"
         >
-          <Icon as={Trash2} size="sm" className="mr-2 text-error-500" />
-          <Text className="text-sm text-error-500">Delete Selected</Text>
+          <Icon as={Trash2} size="sm" className="mr-2 text-status-danger" />
+          <Text className="text-sm text-status-danger">Delete Selected</Text>
         </Button>
       </VStack>
     </BottomActionPanel>
