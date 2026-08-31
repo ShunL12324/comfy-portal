@@ -42,12 +42,14 @@ export default function TemplateEditor() {
   const [models, setModels] = useState<TemplateModel[]>(existing?.models ?? []);
   const [extensions, setExtensions] = useState<string[]>(existing?.extensions ?? []);
   const [workflows, setWorkflows] = useState(existing?.workflows ?? []);
+  const [ollamaModels, setOllamaModels] = useState<string[]>(existing?.ollamaModels ?? []);
 
   const [modelInput, setModelInput] = useState('');
   const [resolving, setResolving] = useState(false);
   const [modelError, setModelError] = useState('');
   const [extensionInput, setExtensionInput] = useState('');
   const [workflowJson, setWorkflowJson] = useState('');
+  const [ollamaModelInput, setOllamaModelInput] = useState('');
 
   const diskGb = useMemo(() => estimateDiskGb(models), [models]);
   const knownSize = models.reduce((sum, m) => sum + (m.sizeBytes ?? 0), 0);
@@ -88,6 +90,13 @@ export default function TemplateEditor() {
     setExtensionInput('');
   };
 
+  const addOllamaModel = () => {
+    const tag = ollamaModelInput.trim();
+    if (!tag) return;
+    setOllamaModels((prev) => [...prev, tag]);
+    setOllamaModelInput('');
+  };
+
   const addWorkflowFromJson = () => {
     try {
       const parsed = parseWorkflowTemplate(JSON.parse(workflowJson));
@@ -117,6 +126,7 @@ export default function TemplateEditor() {
       models,
       extensions,
       workflows,
+      ollamaModels,
       disk: diskGb,
     };
     if (isNew) addTemplate(payload);
@@ -205,6 +215,42 @@ export default function TemplateEditor() {
                   {url.replace('https://github.com/', '')}
                 </Text>
                 <Pressable onPress={() => setExtensions((prev) => prev.filter((_, i) => i !== index))} className="p-1">
+                  <Icon as={Trash2} size="xs" className="text-error-400" />
+                </Pressable>
+              </HStack>
+            ))}
+
+            {/* ---- Ollama models ---- */}
+            <SectionHeader
+              title="Ollama models"
+              subtitle="For workflows whose custom nodes call a local LLM — e.g. a prompt optimizer. Leave empty if none do."
+            />
+            <VStack space="xs">
+              <FormInput
+                title=""
+                defaultValue={ollamaModelInput}
+                onChangeText={setOllamaModelInput}
+                placeholder="e.g. huihui_ai/Qwen3.8-abliterated:27b"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={addOllamaModel}
+                isDisabled={!ollamaModelInput.trim()}
+                style={{ width: 108 }}
+                className="rounded-lg"
+              >
+                <ButtonText className="text-xs">Add</ButtonText>
+              </Button>
+            </VStack>
+            {ollamaModels.map((tag, index) => (
+              <HStack key={`${tag}-${index}`} className="rounded-xl bg-background-50 p-3 items-center justify-between">
+                <Text className="text-xs text-typography-700 flex-1" numberOfLines={1}>
+                  {tag}
+                </Text>
+                <Pressable onPress={() => setOllamaModels((prev) => prev.filter((_, i) => i !== index))} className="p-1">
                   <Icon as={Trash2} size="xs" className="text-error-400" />
                 </Pressable>
               </HStack>

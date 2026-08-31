@@ -1,5 +1,5 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { Server, Settings2 } from 'lucide-react-native';
+import { LayoutTemplate, Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -74,6 +74,13 @@ export const Sidebar = ({ activeTab, onChangeTab }: SidebarProps) => {
           label="Servers"
           isActive={activeTab === 'server'}
           onPress={() => onChangeTab('server')}
+          colors={colors}
+        />
+        <SidebarItem
+          icon={LayoutTemplate}
+          label="Templates"
+          isActive={activeTab === 'explore'}
+          onPress={() => onChangeTab('explore')}
           colors={colors}
         />
         <SidebarItem

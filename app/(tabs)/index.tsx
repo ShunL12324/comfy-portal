@@ -10,17 +10,28 @@ import { VStack } from '@/components/ui/vstack';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
+import { LaunchCard } from '@/features/cloud/components/launch-card';
+import { useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
 import { CLOUD_GPU_SUPPORTED } from '@/features/cloud/utils/availability';
 import { Link, useRouter } from 'expo-router';
 import { ArrowRight, Cloud, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 export default function HomeScreen() {
   const router = useRouter();
   const addServerModalRef = useRef<AddServerModalRef>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { servers, refreshServer } = useServersStore();
+  // Select the stable `launches` array itself, then derive with useMemo --
+  // filtering inside the Zustand selector returns a new array every read,
+  // which useSyncExternalStore treats as a changed snapshot on every render
+  // and loops ("Maximum update depth exceeded").
+  //
+  // Not `.active()` — a failed launch should stay visible (with its error)
+  // until the user destroys or dismisses it, not vanish the moment it fails.
+  const launches = useProvisioningStore((s) => s.launches);
+  const pendingLaunches = useMemo(() => launches.filter((l) => l.stage !== 'ready'), [launches]);
 
   const handleRefreshServers = async () => {
     setIsRefreshing(true);
@@ -53,7 +64,7 @@ export default function HomeScreen() {
                 action="secondary"
                 size="md"
                 className="h-11 w-11 rounded-xl bg-background-50 data-[focus=true]:bg-background-0 data-[active=true]:bg-background-0"
-                onPress={() => router.push('/settings/cloud-gpu/launch')}
+                onPress={() => router.push('/cloud/launch')}
               >
                 <Icon as={Cloud} size="md" className="text-primary-500" />
               </Button>
@@ -86,8 +97,15 @@ export default function HomeScreen() {
 
       <ScrollView className="flex-1">
         <VStack space="md" className="px-5 pb-6 w-full">
-          {servers.length > 0 ? (
-            servers.map((server, index) => <ServerCard key={server.id} id={server.id} index={index} />)
+          {servers.length > 0 || pendingLaunches.length > 0 ? (
+            <>
+              {pendingLaunches.map((launch, index) => (
+                <LaunchCard key={launch.instanceId} launch={launch} index={index} />
+              ))}
+              {servers.map((server, index) => (
+                <ServerCard key={server.id} id={server.id} index={pendingLaunches.length + index} />
+              ))}
+            </>
           ) : (
             <Center className="mt-10">
               <MotiView

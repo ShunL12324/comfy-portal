@@ -50,7 +50,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Servers' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Templates' }} />
       <Tabs.Screen name="setting" options={{ title: 'Settings' }} />
     </Tabs>
   );

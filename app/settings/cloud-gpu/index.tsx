@@ -16,7 +16,7 @@ import { isSecureStorageAvailable } from '@/services/secure-store';
 import { verifyApiKey } from '@/services/vast';
 import { showToast } from '@/utils/toast';
 import { Link } from 'expo-router';
-import { ChevronRight, CloudOff, LayoutTemplate, Server, ShieldAlert } from 'lucide-react-native';
+import { ChevronRight, CloudOff, Server, ShieldAlert } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -133,29 +133,21 @@ export default function CloudGpuSettings() {
 
             <View className="my-1 bg-background-100 h-px" />
 
-            <Link href="/settings/cloud-gpu/templates" asChild>
-              <Pressable className="py-2">
-                <HStack className="items-center justify-between">
-                  <HStack space="sm" className="items-center">
-                    <Icon as={LayoutTemplate} size="md" className="text-primary-500" />
-                    <VStack>
-                      <Text className="text-base font-medium text-typography-900">Templates</Text>
-                      <Text className="text-xs text-typography-400">What to install on a fresh instance</Text>
-                    </VStack>
-                  </HStack>
-                  <Icon as={ChevronRight} size="sm" className="text-typography-400" />
-                </HStack>
-              </Pressable>
-            </Link>
-
+            {/* Templates and running instances live on the Servers/Templates tabs,
+                not here — this page is credentials only. This link stays because
+                it answers a different question ("is anything on this vast.ai
+                account I'm not tracking"), not because instance management
+                belongs in settings. */}
             <Link href="/settings/cloud-gpu/instances" asChild>
               <Pressable className="py-2">
                 <HStack className="items-center justify-between">
                   <HStack space="sm" className="items-center">
                     <Icon as={Server} size="md" className="text-primary-500" />
                     <VStack>
-                      <Text className="text-base font-medium text-typography-900">Instances</Text>
-                      <Text className="text-xs text-typography-400">Everything running on your vast.ai account</Text>
+                      <Text className="text-base font-medium text-typography-900">All Account Instances</Text>
+                      <Text className="text-xs text-typography-400">
+                        Advanced — raw vast.ai account view, for instances not tracked by the app
+                      </Text>
                     </VStack>
                   </HStack>
                   <Icon as={ChevronRight} size="sm" className="text-typography-400" />

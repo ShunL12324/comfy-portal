@@ -59,6 +59,9 @@ export function parseTemplateFile(text: string): Omit<GpuTemplate, 'id' | 'creat
     disk: typeof template.disk === 'number' ? template.disk : 100,
     models,
     extensions: Array.isArray(template.extensions) ? template.extensions.filter((e: unknown) => typeof e === 'string') : [],
+    ollamaModels: Array.isArray(template.ollamaModels)
+      ? template.ollamaModels.filter((m: unknown) => typeof m === 'string')
+      : [],
     workflows: Array.isArray(template.workflows)
       ? template.workflows.filter((w: any) => w && typeof w.name === 'string' && w.data)
       : [],

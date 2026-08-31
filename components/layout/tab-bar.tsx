@@ -1,4 +1,4 @@
-import { Server, Settings2 } from 'lucide-react-native';
+import { LayoutTemplate, Server, Settings2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -9,7 +9,7 @@ import { Pressable } from '../ui/pressable';
 import { Text } from '../ui/text';
 import { VStack } from '../ui/vstack';
 
-const NUM_TABS = 2;
+const NUM_TABS = 3;
 
 export type TabRoute = 'server' | 'explore' | 'setting';
 
@@ -50,7 +50,7 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
       case 'explore':
         return tabWidth + 40;
       case 'setting':
-        return tabWidth + 40;
+        return tabWidth * 2 + 40;
       default:
         return 40;
     }
@@ -81,6 +81,18 @@ export const TabBar = ({ activeTab, onChangeTab }: TabBarProps) => {
           label="Server"
           isActive={activeTab === 'server'}
           onPress={() => onChangeTab('server')}
+        />
+        <TabItem
+          icon={
+            <Icon
+              as={LayoutTemplate}
+              size="lg"
+              className={`${activeTab === 'explore' ? 'text-typography-950' : 'text-typography-400'}`}
+            />
+          }
+          label="Templates"
+          isActive={activeTab === 'explore'}
+          onPress={() => onChangeTab('explore')}
         />
         <TabItem
           icon={
