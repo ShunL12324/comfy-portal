@@ -74,7 +74,7 @@ export function AppBar({
             )}
             {!centerTitle && (
               <VStack className="shrink" style={{ maxWidth: leftTitleMaxWidth }}>
-                <Heading size={titleSize} className="text-content-primary" numberOfLines={1} ellipsizeMode="tail">
+                <Heading size={titleSize} className="font-serif font-normal text-content-primary" numberOfLines={1} ellipsizeMode="tail">
                   {title}
                 </Heading>
                 {subtitle && (
@@ -88,7 +88,7 @@ export function AppBar({
           {centerTitle && (
             <View className="absolute left-0 right-0 items-center pointer-events-none">
               <VStack className="items-center">
-                <Heading size={titleSize} className="text-content-primary">
+                <Heading size={titleSize} className="font-serif font-normal text-content-primary">
                   {title}
                 </Heading>
                 {subtitle && <Text className="text-sm text-content-secondary">{subtitle}</Text>}

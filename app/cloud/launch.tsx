@@ -89,7 +89,6 @@ export default function LaunchWizard() {
               <Text className="text-sm text-content-secondary">Pick what to install on the new machine.</Text>
               {templates.length === 0 ? (
                 <EmptyState
-                  icon={LayoutTemplate}
                   action={
                     <Button variant="outline" onPress={() => router.push('/explore')} className="rounded-lg">
                       <ButtonText className="text-action">Go to Explore</ButtonText>

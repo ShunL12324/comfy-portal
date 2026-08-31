@@ -91,17 +91,17 @@ export default function CloudInstances() {
       >
         <VStack className="px-5 pb-8 pt-4" space="sm">
           {!CLOUD_GPU_SUPPORTED ? (
-            <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
+            <EmptyState>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
           ) : !hydrated || instances === null ? (
             <View className="py-12 items-center">
               <Spinner size="small" />
             </View>
           ) : !vastApiKey ? (
-            <EmptyState icon={CloudOff}>Add a vast.ai API key in Cloud GPU settings to see your instances.</EmptyState>
+            <EmptyState>Add a vast.ai API key in Cloud GPU settings to see your instances.</EmptyState>
           ) : error ? (
-            <EmptyState icon={CloudOff}>{error}</EmptyState>
+            <EmptyState>{error}</EmptyState>
           ) : instances.length === 0 ? (
-            <EmptyState icon={Server}>No instances on this account.</EmptyState>
+            <EmptyState>No instances on this account.</EmptyState>
           ) : (
             instances.map((instance) => (
               <InstanceCard key={instance.id} instance={instance} onDestroy={() => setPendingDestroy(instance)} />

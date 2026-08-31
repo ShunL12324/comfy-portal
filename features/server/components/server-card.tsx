@@ -15,28 +15,32 @@ import { Menu, MenuItem, MenuItemLabel } from '@/components/ui/menu';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
-import type { Server as ServerConfig } from '@/features/server/types';
 import { router } from 'expo-router';
-import { EllipsisVertical, Loader, Server, Settings2, Trash2 } from 'lucide-react-native';
+import { EllipsisVertical, Settings2, Trash2 } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useRef, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { EditServerModal, type EditServerModalRef } from './edit-server-modal';
 
-// Types
+/**
+ * One server, as a row in a list — not a card.
+ *
+ * The rows share a single hairline container (the screen draws it, so the
+ * boundary between two servers is one line rather than a gap between two
+ * boxes), and every latency lines up down the right edge in mono. That column
+ * is the point: three servers should be scannable as three numbers, which a
+ * stack of self-contained cards behind leading icon tiles never allowed.
+ *
+ * While a refresh is in flight the latency drops to an em dash and returns
+ * with the new number — the state shows in the data rather than in a spinner
+ * laid over the top of it.
+ */
+
 interface ServerCardProps {
   id: string;
   index?: number;
-}
-
-interface ServerInfoProps {
-  name: string;
-  host: string;
-  port: number;
-  models?: any[];
-  status: 'online' | 'offline' | 'refreshing';
-  latency?: number;
-  cloud?: ServerConfig['cloud'];
+  /** Rows draw their own top hairline; the first in a container doesn't. */
+  isFirst?: boolean;
 }
 
 interface ActionMenuProps {
@@ -44,72 +48,26 @@ interface ActionMenuProps {
   onDelete: () => void;
 }
 
-// Sub-components
-const ServerInfo = ({ name, host, port, models, status, latency, cloud }: ServerInfoProps) => {
-  const isRefreshing = status === 'refreshing';
-  const isOnline = status === 'online';
-
-  return (
-    <HStack space="md" className="flex-1 items-center">
-      <View className="h-16 w-16 items-center justify-center rounded-lg bg-surface-base p-2">
-        <Icon as={Server} size="xl" className="text-action" />
-      </View>
-      <VStack space="xs" className="flex-1">
-        <HStack space="sm" className="items-center">
-          {isRefreshing ? (
-            <MotiView
-              from={{ rotate: '0deg' }}
-              animate={{ rotate: '360deg' }}
-              transition={{ loop: true, type: 'timing', duration: 1000 }}
-              className="h-4 w-4 items-center justify-center"
-            >
-              <Icon as={Loader} size="sm" className="text-action" />
-            </MotiView>
-          ) : (
-            <StatusDot tone={isOnline ? 'ready' : 'offline'} />
-          )}
-          <Text className="flex-1 text-base font-semibold text-content-primary" numberOfLines={1}>
-            {name}
-          </Text>
-        </HStack>
-        {/* Connection data, not prose — mono so an address and a latency read
-            as values rather than as a sentence. */}
-        <Text className="font-mono text-xs text-content-secondary" numberOfLines={1}>
-          {host}:{port} • {models?.length ?? 'No'} models
-          {isOnline && latency !== undefined ? ` • ${latency}ms` : ''}
-          {!isOnline && !isRefreshing ? ' • Offline' : ''}
-        </Text>
-        {/* Rented hardware bills whether or not it's being used, so the running
-            total sits on the card rather than behind a tap. */}
-        {cloud ? (
-          <Text className="text-xs text-warning-600" numberOfLines={1}>
-            {formatUptime(cloud.startedAt)} •{' '}
-            {formatUsd(accruedCost(cloud.startedAt, cloud.pricePerHour))} so far •{' '}
-            {formatUsd(cloud.pricePerHour)}/hr
-          </Text>
-        ) : null}
-      </VStack>
-    </HStack>
-  );
-};
-
+/**
+ * Edit and delete have to live somewhere, and the component sheet's row is
+ * pure data with no affordance for them. A narrow, muted trigger after the
+ * number column is the smallest thing that keeps them discoverable.
+ */
 const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
   <Menu
     placement="bottom right"
-    className="rounded-xl border border-background-200 bg-surface-sunken p-1"
-    trigger={({ ...triggerProps }) => {
-      return (
-        <TouchableOpacity {...triggerProps} hitSlop={4} className="h-9 w-9 items-center justify-center rounded-md">
-          <Icon as={EllipsisVertical} size="md" className="text-content-secondary" />
-        </TouchableOpacity>
-      );
-    }}
+    className="rounded-[10px] border border-ink/10 bg-surface-sunken p-1"
+    trigger={({ ...triggerProps }) => (
+      <TouchableOpacity {...triggerProps} hitSlop={8} className="h-9 w-6 items-center justify-center">
+        <Icon as={EllipsisVertical} size="sm" className="text-content-tertiary" />
+      </TouchableOpacity>
+    )}
   >
     <MenuItem
       key="edit"
       textValue="Edit"
       onPress={onEdit}
-      className="rounded-lg p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
+      className="rounded-md p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
     >
       <Icon as={Settings2} size="sm" className="mr-2 text-content-body" />
       <MenuItemLabel size="sm">Edit</MenuItemLabel>
@@ -118,10 +76,10 @@ const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
       key="delete"
       textValue="Delete"
       onPress={onDelete}
-      className="rounded-lg p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
+      className="rounded-md p-3 data-[focus=true]:bg-surface-muted data-[active=true]:bg-surface-muted"
     >
-      <Icon as={Trash2} size="sm" className="mr-2 text-status-danger-pressed" />
-      <MenuItemLabel size="sm" className="text-status-danger-pressed">
+      <Icon as={Trash2} size="sm" className="mr-2 text-status-danger" />
+      <MenuItemLabel size="sm" className="text-status-danger">
         Delete
       </MenuItemLabel>
     </MenuItem>
@@ -131,22 +89,22 @@ const ActionMenu = ({ onEdit, onDelete }: ActionMenuProps) => (
 const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: () => void; onDelete: () => void }) => (
   <AlertDialog isOpen={isOpen} onClose={onClose}>
     <AlertDialogBackdrop onPress={onClose} />
-    <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-surface-muted">
+    <AlertDialogContent className="max-w-md overflow-hidden rounded-[10px] border-0 bg-surface-muted">
       <AlertDialogHeader className="px-0">
-        <Text className="text-lg font-semibold text-content-primary">Delete Server</Text>
+        <Text className="font-serif text-lg text-content-primary">Delete Server</Text>
       </AlertDialogHeader>
       <AlertDialogBody className="px-0 py-4">
-        <Text className="text-sm text-content-tertiary">
+        <Text className="text-sm text-content-secondary">
           Are you sure you want to delete this server? This action cannot be undone.
         </Text>
       </AlertDialogBody>
       <AlertDialogFooter className="px-0">
         <HStack space="sm" className="py-0">
-          <Button variant="outline" onPress={onClose} className="flex-1 rounded-md bg-surface-sunken">
-            <ButtonText className="text-sm text-content-tertiary">Cancel</ButtonText>
+          <Button variant="outline" onPress={onClose} className="h-9 flex-1 rounded-md border border-ink/15 bg-transparent">
+            <ButtonText className="text-sm text-content-body">Cancel</ButtonText>
           </Button>
-          <Button variant="solid" onPress={onDelete} className="flex-1 rounded-md bg-status-danger active:bg-status-danger-pressed">
-            <ButtonText className="text-sm text-content-heading">Delete</ButtonText>
+          <Button variant="solid" onPress={onDelete} className="h-9 flex-1 rounded-md bg-status-danger active:opacity-80">
+            <ButtonText className="text-sm text-white">Delete</ButtonText>
           </Button>
         </HStack>
       </AlertDialogFooter>
@@ -154,8 +112,7 @@ const DeleteAlert = ({ isOpen, onClose, onDelete }: { isOpen: boolean; onClose: 
   </AlertDialog>
 );
 
-// Main component
-export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
+export const ServerCard = ({ id, index = 0, isFirst = false }: ServerCardProps) => {
   const editModalRef = useRef<EditServerModalRef>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const removeServer = useServersStore((state) => state.removeServer);
@@ -163,32 +120,57 @@ export const ServerCard = ({ id, index = 0 }: ServerCardProps) => {
 
   if (!server) return null;
 
-  const { name, host, port, status, latency, models, cloud } = server;
+  const { name, host, port, status, latency, cloud } = server;
+  const isRefreshing = status === 'refreshing';
+  const isOnline = status === 'online';
 
-  const handleEdit = () => {
-    editModalRef.current?.present();
-  };
+  const latencyText = isRefreshing || !isOnline || latency === undefined ? '—' : `${latency} ms`;
+  // The word under the number states what the row is, not what it contains —
+  // model counts live inside the server, and putting one here would break the
+  // column into two different kinds of fact.
+  const stateWord = isRefreshing ? 'Checking' : isOnline ? 'Ready' : 'Offline';
 
   return (
     <>
       <MotiView
-        from={{ opacity: 0, scale: 0.98, translateY: 10 }}
-        animate={{ opacity: 1, scale: 1, translateY: 0 }}
-        transition={{
-          type: 'timing',
-          duration: 300,
-          delay: index * 100,
-        }}
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: 'timing', duration: 200, delay: index * 40 }}
       >
         <TouchableOpacity
           onPress={() => router.push(`/workflow/${id}`)}
-          activeOpacity={0.8}
-          className="overflow-hidden rounded-xl bg-surface-raised p-3.5"
+          activeOpacity={0.7}
+          className={`flex-row items-center gap-3 px-4 py-3.5 ${isFirst ? '' : 'border-t border-ink/10'}`}
         >
-          <HStack space="sm" className="items-center justify-between">
-            <ServerInfo name={name} host={host} port={port} models={models} status={status} latency={latency} cloud={cloud} />
-            <ActionMenu onEdit={handleEdit} onDelete={() => setIsDeleteAlertOpen(true)} />
-          </HStack>
+          <StatusDot tone={isRefreshing ? 'busy' : isOnline ? 'ready' : 'offline'} pulse={isRefreshing} />
+
+          <VStack className="min-w-0 flex-1" space="xs">
+            <Text className="text-[15px] font-semibold text-content-primary" numberOfLines={1}>
+              {name}
+            </Text>
+            <Text className="font-mono text-xs text-content-tertiary" numberOfLines={1}>
+              {host}:{port}
+            </Text>
+            {/* Rented hardware bills whether or not anyone is watching, so the
+                running total stays on the row. */}
+            {cloud ? (
+              <Text className="font-mono text-xs text-status-busy" numberOfLines={1}>
+                {formatUptime(cloud.startedAt)} · {formatUsd(accruedCost(cloud.startedAt, cloud.pricePerHour))} ·{' '}
+                {formatUsd(cloud.pricePerHour)}/hr
+              </Text>
+            ) : null}
+          </VStack>
+
+          {/* Numbers first, words second — the mono column is what makes a
+              list of servers scannable. */}
+          <VStack className="items-end" space="xs">
+            <Text className="font-mono text-[13px] text-content-body">{latencyText}</Text>
+            <Text className="text-xs text-content-tertiary" numberOfLines={1}>
+              {stateWord}
+            </Text>
+          </VStack>
+
+          <ActionMenu onEdit={() => editModalRef.current?.present()} onDelete={() => setIsDeleteAlertOpen(true)} />
         </TouchableOpacity>
       </MotiView>
 

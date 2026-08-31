@@ -111,7 +111,7 @@ const LocalWorkflowsTab = memo(function LocalWorkflowsTab({ serverId, openImport
   );
 
   const renderEmptyList = () => (
-    <EmptyState icon={FileSearch} title="No Local Workflows" align="top">
+    <EmptyState title="No Local Workflows" align="top">
       Import a workflow JSON file to get started.
     </EmptyState>
   );
@@ -447,7 +447,6 @@ const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWor
           contentContainerClassName="items-center px-5 pb-6"
         >
           <EmptyState
-            icon={ServerCrash}
             title="No Synced Server Workflows"
             align="top"
             action={
@@ -560,7 +559,6 @@ const WorkflowsScreen = () => {
     return (
       <View className="flex-1 bg-surface-base">
         <EmptyState
-          icon={ServerCrash}
           title="Server Not Found"
           >
             This server no longer exists in your server list.
@@ -572,7 +570,6 @@ const WorkflowsScreen = () => {
     return (
       <View className="flex-1 bg-surface-base">
         <EmptyState
-          icon={ServerCrash}
           title="Server ID Missing"
           >
             The current route does not include a valid server ID.

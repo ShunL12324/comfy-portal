@@ -66,8 +66,14 @@ const CustomLightTheme = {
 };
 
 function RootLayoutNav() {
+  // Three voices, per the design system: a serif for titles and the occasional
+  // human moment, the platform sans for every control, and a mono for every
+  // number. The serif never appears in a button, a label, or beside a numeral.
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Newsreader: require('../assets/fonts/Newsreader-Regular.ttf'),
+    NewsreaderItalic: require('../assets/fonts/Newsreader-Italic.ttf'),
+    NewsreaderSemiBold: require('../assets/fonts/Newsreader-SemiBold.ttf'),
   });
 
   const insets = useSafeAreaInsets();

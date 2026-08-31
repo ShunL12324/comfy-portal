@@ -61,7 +61,7 @@ export default function LaunchStatus() {
       <ScrollView className="flex-1">
         <VStack className="px-5 pb-8 pt-4" space="md">
           {!launch ? (
-            <EmptyState icon={CloudOff}>No longer tracked — it may already have been destroyed.</EmptyState>
+            <EmptyState>No longer tracked — it may already have been destroyed.</EmptyState>
           ) : (
             <>
               <LaunchProgress launch={launch} />

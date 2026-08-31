@@ -54,7 +54,7 @@ export default function CloudGpuSettings() {
     return (
       <View className="bg-surface-base flex-1">
         <AppBar title="Cloud GPU" showBack />
-        <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
+        <EmptyState>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
       </View>
     );
   }

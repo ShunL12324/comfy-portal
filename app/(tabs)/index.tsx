@@ -1,4 +1,5 @@
 import { AppBar } from '@/components/layout/app-bar';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Center } from '@/components/ui/center';
 import { HStack } from '@/components/ui/hstack';
@@ -102,59 +103,41 @@ export default function HomeScreen() {
               {pendingLaunches.map((launch, index) => (
                 <LaunchCard key={launch.instanceId} launch={launch} index={index} />
               ))}
-              {servers.map((server, index) => (
-                <ServerCard key={server.id} id={server.id} index={pendingLaunches.length + index} />
-              ))}
+              {/* One hairline container around every row, so the boundary
+                  between two servers is a single line and the latencies form
+                  one column down the right edge. */}
+              {servers.length > 0 ? (
+                <View className="overflow-hidden rounded-[10px] border border-ink/10">
+                  {servers.map((server, index) => (
+                    <ServerCard
+                      key={server.id}
+                      id={server.id}
+                      index={pendingLaunches.length + index}
+                      isFirst={index === 0}
+                    />
+                  ))}
+                </View>
+              ) : null}
             </>
           ) : (
-            <Center className="mt-10">
-              <MotiView
-                from={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'timing', duration: 300 }}
-              >
-                <VStack space="lg" className="items-center px-6">
-                  <VStack space="lg" className="items-center">
-                    <MotiView
-                      from={{ scale: 0.95, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{
-                        type: 'timing',
-                        duration: 500,
-                        delay: 100,
-                      }}
-                    >
-                      <Icon as={ScanSearch} size="xl" className="mb-2 h-16 w-16 text-typography-200" />
-                    </MotiView>
-                    <VStack space="xs" className="items-center">
-                      <Text className="text-center text-sm text-content-secondary">
-                        Click the <Text className="text-action">+ Add Server</Text> button above to connect to your
-                        ComfyUI instance
-                      </Text>
-                    </VStack>
-                  </VStack>
-
-                  <VStack space="md" className="items-center">
-                    <HStack space="xs" className="items-center justify-center">
-                      <Text className="text-sm text-content-secondary">New to ComfyUI?</Text>
-                      <Link href="/guide" asChild>
-                        <Button
-                          variant="outline"
-                          action="secondary"
-                          size="md"
-                          className="rounded-xl border-0 px-0 data-[hover=true]:opacity-70"
-                        >
-                          <HStack space="xs" className="items-center justify-center">
-                            <Text className="text-sm font-medium text-action">Setup Instructions</Text>
-                            <Icon as={ArrowRight} size="xs" className="text-action" />
-                          </HStack>
-                        </Button>
-                      </Link>
-                    </HStack>
-                  </VStack>
-                </VStack>
-              </MotiView>
-            </Center>
+            <EmptyState
+              title="Nothing here yet."
+              action={
+                <HStack space="xs" className="items-center">
+                  <Text className="text-sm text-content-tertiary">New to ComfyUI?</Text>
+                  <Link href="/guide" asChild>
+                    <Button variant="link" size="sm" className="h-7 px-0 data-[hover=true]:opacity-70">
+                      <HStack space="xs" className="items-center">
+                        <Text className="text-sm font-medium text-action">Setup Instructions</Text>
+                        <Icon as={ArrowRight} size="xs" className="text-action" />
+                      </HStack>
+                    </Button>
+                  </Link>
+                </HStack>
+              }
+            >
+              Add a server to connect to your ComfyUI instance.
+            </EmptyState>
           )}
         </VStack>
       </ScrollView>

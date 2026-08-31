@@ -207,6 +207,22 @@ module.exports = {
           muted: 'rgb(var(--color-background-200)/<alpha-value>)',
         },
 
+        /**
+         * Two surfaces and one accent — the design system's whole structural
+         * vocabulary. `paper` is the page, `well` is anything recessed into it
+         * (a field, a list row, a segmented track), and `ink` is the
+         * foreground: text, the filled button, the on-state of a switch.
+         *
+         * Structure comes from hairlines rather than more surfaces, so borders
+         * are written as `border-ink/10` — the accent at low opacity — instead
+         * of a separate grey. That keeps one rule for both themes: the scales
+         * invert, so ink is near-white on dark and near-black on light, and a
+         * hairline stays a hairline either way.
+         */
+        paper: 'rgb(var(--color-background-0)/<alpha-value>)',
+        well: 'rgb(var(--color-background-50)/<alpha-value>)',
+        ink: 'rgb(var(--color-typography-950)/<alpha-value>)',
+
         /** Text, by role rather than by darkness. */
         content: {
           primary: 'rgb(var(--color-typography-950)/<alpha-value>)',
@@ -251,6 +267,11 @@ module.exports = {
         // Reserved for machine values — seeds, host:port, latency, file paths —
         // so they read as data rather than prose.
         mono: ['SpaceMono'],
+        // Titles and human moments only. Never a button, never a label, never
+        // beside a numeral: the serif is an accent, not a costume.
+        serif: ['Newsreader'],
+        'serif-italic': ['NewsreaderItalic'],
+        'serif-semibold': ['NewsreaderSemiBold'],
         roboto: ['Roboto', 'sans-serif'],
       },
       fontWeight: {

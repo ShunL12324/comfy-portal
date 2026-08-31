@@ -80,7 +80,7 @@ export default function ExploreScreen() {
     return (
       <View className="bg-surface-base flex-1">
         <AppBar title="Templates" titleSize="xl" />
-        <EmptyState icon={CloudOff}>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
+        <EmptyState>{CLOUD_GPU_UNSUPPORTED_REASON}</EmptyState>
       </View>
     );
   }
@@ -110,7 +110,7 @@ export default function ExploreScreen() {
           </HStack>
 
           {templates.length === 0 ? (
-            <EmptyState icon={LayoutTemplate}>
+            <EmptyState>
               A template lists the models, extensions and workflows to install on a fresh instance.
             </EmptyState>
           ) : (
