@@ -144,46 +144,44 @@ export function ModelSelector({
 
   const { options, fromServer } = useModelOptions({ serverId, classType, inputName, folders });
 
-  // Always show the configured value, even when it isn't in the list. It is what
-  // gets sent on generate either way, and the old fallback to "Select model"
-  // claimed nothing was chosen — inviting the user to "fix" a workflow that was
-  // never broken.
+  // The server's node definition is exhaustive, so a value missing from it
+  // genuinely isn't installed — flagged on the trigger rather than cleared,
+  // since silently dropping it would erase what the workflow actually asked
+  // for, and generate rejecting it is the honest outcome for a model that was
+  // never there. From the local folder-cache fallback (fromServer: false)
+  // absence only means we haven't rescanned since it appeared, so it isn't
+  // flagged. 'None' is excluded: ComfyUI uses it as the literal enum for an
+  // unset optional model, not a missing one.
   //
-  // What being absent *means* depends on where the list came from. From the
-  // server's node definition it's exhaustive, so the model really isn't
-  // installed and generate will be rejected. From the local folder cache it
-  // only means we haven't rescanned since it appeared.
-  //
-  // 'None' is excluded because ComfyUI uses it as the literal enum for an unset
-  // optional model — there "Select model" is the honest label.
-  const optionsWithCurrent =
-    !value || value === 'None' || options.some((option) => option.value === value)
-      ? options
-      : [
-        {
-          value,
-          label: value.replace(/\.[^/.]+$/, ''),
-          description: fromServer ? 'Not installed on server' : 'From workflow · not in synced list',
-          serverName: server?.name,
-        },
-        ...options,
-      ];
+  // The picker itself only ever shows real, installed models — a value that
+  // isn't there isn't something to pick, so it's never added as a tile.
+  const isMissing = fromServer && !!value && value !== 'None' && !options.some((option) => option.value === value);
+  const currentOption = options.find((option) => option.value === value);
+  const missingLabel = isMissing ? value.replace(/\.[^/.]+$/, '') : undefined;
 
   const renderTrigger = useCallback(
-    (option: SelectorOption | undefined) => (
-      <Box className={`overflow-hidden rounded-xl bg-background-50`}>
+    () => (
+      <Box
+        className={`overflow-hidden rounded-xl ${isMissing ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-background-50'}`}
+      >
         <Pressable onPress={handlePress}>
           <HStack space="sm" className="items-center justify-between p-3">
             <HStack space="sm" className="flex-1 items-center">
               <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-background-100">
-                <ModelPreview image={option?.image} label={option?.label || ''} />
+                <ModelPreview image={currentOption?.image} label={currentOption?.label || ''} />
               </Box>
               <VStack space="xs" className="flex-1">
-                <Text className="text-sm font-medium text-typography-950" numberOfLines={1} ellipsizeMode="tail">
-                  {option?.label || 'Select model'}
+                <Text
+                  className={`text-sm font-medium ${isMissing ? 'text-error-600' : 'text-typography-950'}`}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {missingLabel || currentOption?.label || 'Select model'}
                 </Text>
-                <Text className="text-xs text-typography-400">
-                  {option?.description || option?.serverName || 'Choose a model'}
+                <Text className={`text-xs ${isMissing ? 'text-error-500' : 'text-typography-400'}`}>
+                  {isMissing
+                    ? 'Not installed on server'
+                    : currentOption?.description || currentOption?.serverName || 'Choose a model'}
                 </Text>
               </VStack>
             </HStack>
@@ -221,7 +219,7 @@ export function ModelSelector({
         )}
       </Box>
     ),
-    [handlePress, type, localClipStrength, localModelStrength, onDelete],
+    [handlePress, type, localClipStrength, localModelStrength, onDelete, isMissing, currentOption, missingLabel],
   );
 
   const renderItem = useCallback(
@@ -268,7 +266,7 @@ export function ModelSelector({
       onClose={handleClose}
       onSelect={onChange}
       title={`Select ${type}`}
-      options={optionsWithCurrent}
+      options={options}
       value={value}
       searchPlaceholder={`Search ${type}...`}
       showRefreshButton={!!onRefresh}
@@ -277,6 +275,11 @@ export function ModelSelector({
       renderTrigger={renderTrigger}
       renderItem={renderItem}
       numColumns={2}
+      emptyComponent={
+        <VStack className="items-center py-12">
+          <Text className="text-sm text-typography-400">No models installed for this input</Text>
+        </VStack>
+      }
     />
   );
 }

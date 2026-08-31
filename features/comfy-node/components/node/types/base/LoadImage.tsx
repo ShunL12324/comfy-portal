@@ -9,6 +9,7 @@ import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
 import { clearNodeSchemaCache } from '@/services/node-schema';
+import { useNodeSchema } from '@/hooks/useNodeSchema';
 import { showToast } from '@/utils/toast';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
@@ -16,7 +17,7 @@ import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
-import { Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from 'lucide-react-native';
+import { AlertTriangle, Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -59,6 +60,17 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const pendingSourcePickerActionRef = useRef<PendingSourcePickerAction>(null);
   const serverPickerModalRef = useRef<BottomSheetModal>(null);
   const [isServerPickerVisible, setIsServerPickerVisible] = useState(false);
+
+  // The server's node definition is exhaustive, so a filename missing from it
+  // genuinely isn't on the box — flagged rather than left to fail silently as
+  // a broken preview image.
+  const schema = useNodeSchema(serverId, node.class_type);
+  const imageInput = schema?.inputs.image;
+  const isMissing =
+    imageInput?.kind === 'combo' &&
+    typeof node.inputs.image === 'string' &&
+    !!node.inputs.image &&
+    !imageInput.options.includes(node.inputs.image);
 
   // Animated value for progress
   const progressWidth = useSharedValue(0);
@@ -387,9 +399,21 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       <SubItem title="image">
         <Pressable
           onPress={handleOpenSourcePicker}
-          className="relative h-48 w-full items-center justify-center rounded-xl bg-background-50"
+          className={`relative h-48 w-full items-center justify-center rounded-xl ${
+            isMissing && !isUploading ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-background-50'
+          }`}
         >
-          {image ? (
+          {isMissing && !isUploading ? (
+            <VStack space="md" className="h-full w-full items-center justify-center px-4">
+              <Icon as={AlertTriangle} className="h-8 w-8 text-error-500" />
+              <Text size="sm" className="text-error-600 font-medium" numberOfLines={1}>
+                {node.inputs.image}
+              </Text>
+              <Text size="xs" className="text-error-500">
+                Not installed on server
+              </Text>
+            </VStack>
+          ) : image ? (
             <>
               <Image
                 source={{ uri: image }}

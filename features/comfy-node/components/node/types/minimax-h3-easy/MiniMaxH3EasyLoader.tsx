@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
+import { OptionalModelSelector } from './optional-model-selector';
 
 interface MiniMaxH3EasyLoaderProps {
   node: Node;
@@ -22,7 +23,7 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
   return (
     <BaseNode node={node}>
       <SubItem title="FL2VA Transformer" node={node} dependencies={['fl2va_model']}>
-        <ModelSelector
+        <OptionalModelSelector
           value={node.inputs.fl2va_model}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'fl2va_model', model)}
           type="diffusion_models"
@@ -33,7 +34,7 @@ export default function MiniMaxH3EasyLoader({ node, serverId, workflowId }: Mini
       </SubItem>
 
       <SubItem title="Ref2VA Transformer" node={node} dependencies={['ref2va_model']}>
-        <ModelSelector
+        <OptionalModelSelector
           value={node.inputs.ref2va_model}
           onChange={(model) => updateNodeInput(workflowId, node.id, 'ref2va_model', model)}
           type="diffusion_models"
