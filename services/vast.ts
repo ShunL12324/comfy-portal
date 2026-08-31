@@ -54,6 +54,10 @@ export interface VastInstance {
   ports: Record<string, number>;
   /** Unix seconds. */
   startedAt: number | null;
+  /** vast's SSH proxy relay — how the supervisor is actually reached; see
+   *  services/ssh-supervisor.ts. Absent until vast places the instance. */
+  sshHost: string | null;
+  sshPort: number | null;
 }
 
 export class VastError extends Error {
@@ -117,6 +121,17 @@ async function request(apiKey: string, path: string, init?: { method?: string; b
 export async function verifyApiKey(apiKey: string): Promise<{ email?: string; balance?: number }> {
   const data = await request(apiKey, '/users/current/');
   return { email: data?.email, balance: data?.credit };
+}
+
+/**
+ * Registers the device's SSH public key with the account.
+ *
+ * Must happen before `createInstance`, not after — vast only injects an
+ * account's registered keys into `authorized_keys` at instance-creation time,
+ * so a key added once a box is already running never reaches it.
+ */
+export async function registerSshKey(apiKey: string, publicKeyOpenSsh: string): Promise<void> {
+  await request(apiKey, '/ssh/', { method: 'POST', body: { ssh_key: publicKeyOpenSsh } });
 }
 
 const EU_COUNTRY_HINTS = [
@@ -226,6 +241,8 @@ function toInstance(i: any): VastInstance {
     publicIp: i.public_ipaddr ?? null,
     ports,
     startedAt: i.start_date ? Math.floor(i.start_date) : null,
+    sshHost: i.ssh_host ?? null,
+    sshPort: i.ssh_port ?? null,
   };
 }
 

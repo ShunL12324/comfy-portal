@@ -2,17 +2,14 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Spinner } from '@/components/ui/spinner';
+import { RotatingSpinner } from '@/components/ui/rotating-spinner';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
-import {
-  modelKey,
-  retryModels,
-  type SupervisorModel,
-  type SupervisorSnapshot,
-} from '@/services/cloud-supervisor';
+import type { SupervisorModel, SupervisorSnapshot } from '@/services/cloud-supervisor';
+import { modelKey } from '@/services/cloud-supervisor';
 import { formatBytes } from '@/services/model-url';
+import { retryModels } from '@/services/ssh-supervisor';
 import { AlertTriangle, Check, RotateCw, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 
@@ -66,7 +63,7 @@ export function LaunchProgress({ launch }: { launch: LaunchRecord }) {
           return (
             <HStack key={stage.id} space="sm" className="items-center">
               {active ? (
-                <Spinner size="small" />
+                <RotatingSpinner size="sm" />
               ) : (
                 <Icon
                   as={done ? Check : X}
@@ -133,7 +130,7 @@ function SetupSteps({ snapshot }: { snapshot: SupervisorSnapshot }) {
         <HStack key={step.id} className="items-center justify-between py-1">
           <HStack space="sm" className="items-center flex-1">
             {step.state === 'running' ? (
-              <Spinner size="small" />
+              <RotatingSpinner size="sm" />
             ) : (
               <Icon
                 as={step.state === 'done' ? Check : AlertTriangle}
@@ -164,8 +161,8 @@ function ModelList({
   const { totals } = snapshot;
 
   const target =
-    launch.host && launch.supervisorPort
-      ? { host: launch.host, port: launch.supervisorPort, token: launch.token }
+    launch.sshHost && launch.sshPort
+      ? { sshHost: launch.sshHost, sshPort: launch.sshPort, token: launch.token }
       : null;
 
   const retry = async (keys?: string[]) => {
@@ -247,7 +244,7 @@ function ModelRow({
         {failed ? (
           <Pressable onPress={onRetry} disabled={retrying} className="p-1">
             {retrying ? (
-              <Spinner size="small" />
+              <RotatingSpinner size="sm" />
             ) : (
               <Icon as={RotateCw} size="xs" className="text-primary-500" />
             )}

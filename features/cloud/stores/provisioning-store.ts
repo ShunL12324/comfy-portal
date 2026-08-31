@@ -37,8 +37,10 @@ export interface LaunchRecord {
   stage: LaunchStage;
   /** Populated once vast publishes the ports. */
   host?: string;
-  supervisorPort?: number;
   comfyPort?: number;
+  /** Populated once vast places the instance — how the supervisor is reached. */
+  sshHost?: string;
+  sshPort?: number;
   /** Set when the server makes it into the list, so a retry doesn't duplicate. */
   serverId?: string;
   /** Last snapshot, so returning to the screen renders instantly. */

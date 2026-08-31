@@ -1,13 +1,16 @@
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowToServer } from '@/services/comfy-api';
-import { getStatus, isReachable, SUPERVISOR_PORT } from '@/services/cloud-supervisor';
+import { SUPERVISOR_PORT } from '@/services/cloud-supervisor';
+import { ensureSshKeyPair, isSshKeyRegistered, markSshKeyRegistered } from '@/services/ssh-keys';
+import { getStatus, isReachable } from '@/services/ssh-supervisor';
 import {
   createInstance,
   getInstance,
   hasVastGivenUp,
   isTerminalStatus,
   ONSTART_LIMIT,
+  registerSshKey,
 } from '@/services/vast';
 import { generateUUID } from '@/utils/uuid';
 
@@ -113,6 +116,14 @@ export interface CreateLaunchOptions {
 export async function createLaunch(options: CreateLaunchOptions): Promise<number> {
   const { template, offerId, pricePerHour, credentials } = options;
 
+  // vast only pushes a newly-registered key to instances created afterwards —
+  // this has to land before createInstance, not after.
+  const { publicKeyOpenSsh } = await ensureSshKeyPair();
+  if (!(await isSshKeyRegistered())) {
+    await registerSshKey(credentials.vastApiKey, publicKeyOpenSsh);
+    await markSshKeyRegistered();
+  }
+
   // Random per launch: it is the only thing standing between a public port and
   // anyone who portscans it.
   const token = generateUUID();
@@ -217,11 +228,10 @@ export async function advanceLaunch(
   }
 
   const comfyPort = instance.ports[String(COMFY_PORT)];
-  const supervisorPort = instance.ports[String(SUPERVISOR_PORT)];
 
   // Nothing on the instance exists yet — no supervisor to ask, so vast's own
   // words are the only honest thing to show.
-  if (!instance.publicIp || !supervisorPort) {
+  if (!instance.publicIp || !comfyPort || !instance.sshHost || !instance.sshPort) {
     store.update(instanceId, {
       stage: 'placing',
       vastStatus: instance.statusMessage || `vast: ${instance.status}`,
@@ -229,17 +239,18 @@ export async function advanceLaunch(
     return;
   }
 
-  const target = { host: instance.publicIp, port: supervisorPort, token: record.token };
+  const target = { sshHost: instance.sshHost, sshPort: instance.sshPort, token: record.token };
   store.update(instanceId, {
     host: instance.publicIp,
-    supervisorPort,
     comfyPort,
+    sshHost: instance.sshHost,
+    sshPort: instance.sshPort,
     vastStatus: instance.statusMessage,
   });
 
-  if (!(await isReachable(target.host, target.port))) {
-    // The port is mapped but the container is still coming up — usually the
-    // image pull, which is the bulk of the wait now that nothing installs.
+  if (!(await isReachable(target))) {
+    // SSH may already be up while the image is still pulling and the onstart
+    // script hasn't started the supervisor yet — that's still "booting".
     store.update(instanceId, { stage: 'booting' });
     return;
   }
@@ -257,7 +268,7 @@ export async function advanceLaunch(
 
   if (snapshot.phase !== 'ready' || !comfyPort) return;
 
-  const serverId = registerServer(record, target.host, comfyPort);
+  const serverId = registerServer(record, instance.publicIp, comfyPort);
   store.update(instanceId, { serverId, stage: 'ready', snapshot });
 
   if (template?.workflows.length) {
