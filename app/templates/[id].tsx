@@ -1,345 +1,169 @@
-import { AppBar } from '@/components/layout/app-bar';
-import { BottomSheetProvider } from '@/context/bottom-sheet-context';
-import { FormInput } from '@/components/self-ui/form-input';
-import { StyledTextarea } from '@/components/self-ui/styled-textarea';
-import { Button, ButtonText } from '@/components/ui/button';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { Spinner } from '@/components/ui/spinner';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import { VStack } from '@/components/ui/vstack';
-import { GpuPicker } from '@/features/cloud/components/gpu-picker';
-import { ModelRow } from '@/features/cloud/components/model-row';
-import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
-import { useTemplateStore } from '@/features/cloud/stores/template-store';
-import { estimateDiskGb, type GpuTemplate, type TemplateModel } from '@/features/cloud/types';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser';
-import { formatBytes, resolveModelUrl } from '@/services/model-url';
-import { showToast } from '@/utils/toast';
+import { useState } from 'react';
+import { ScrollView, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, Plus, Trash2, X } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import { AppBar } from '@/components/layout/app-bar';
+import { Action, ActionRow, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Sheet } from '@/components/ui/design-system/overlays';
+import { Box, GitBranch, Puzzle, Settings2 } from '@/constants/icons';
+import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
+import { Spinner } from '@/components/ui/spinner';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function TemplateEditor() {
+export default function EnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const c = useDesign();
   const insets = useSafeAreaInsets();
-  const isNew = id === 'new';
-
-  const { getTemplate, addTemplate, updateTemplate } = useTemplateStore();
-  const civitaiApiKey = useCloudCredentialsStore((s) => s.civitaiApiKey);
-  const localWorkflows = useWorkflowStore((s) => s.workflow);
-
-  const existing = isNew ? undefined : getTemplate(id);
-
-  const [name, setName] = useState(existing?.name ?? '');
-  const [gpuQuery, setGpuQuery] = useState(existing?.gpuQuery ?? 'RTX 4090');
-  const [models, setModels] = useState<TemplateModel[]>(existing?.models ?? []);
-  const [extensions, setExtensions] = useState<string[]>(existing?.extensions ?? []);
-  const [workflows, setWorkflows] = useState(existing?.workflows ?? []);
-  const [ollamaModels, setOllamaModels] = useState<string[]>(existing?.ollamaModels ?? []);
-
-  const [modelInput, setModelInput] = useState('');
-  const [resolving, setResolving] = useState(false);
-  const [modelError, setModelError] = useState('');
-  const [extensionInput, setExtensionInput] = useState('');
-  const [workflowJson, setWorkflowJson] = useState('');
-  const [ollamaModelInput, setOllamaModelInput] = useState('');
-
-  const diskGb = useMemo(() => estimateDiskGb(models), [models]);
-  const knownSize = models.reduce((sum, m) => sum + (m.sizeBytes ?? 0), 0);
-
-  const addModel = async () => {
-    setModelError('');
-    setResolving(true);
-    try {
-      const resolved = await resolveModelUrl(modelInput, civitaiApiKey);
-      setModels((prev) => [
-        ...prev,
-        {
-          url: resolved.url,
-          // Civitai tells us what the file is; otherwise start at checkpoints
-          // and let the user correct it.
-          type: resolved.suggestedType ?? 'checkpoints',
-          filename: resolved.filename,
-          sizeBytes: resolved.sizeBytes,
-          label: resolved.label,
-        },
-      ]);
-      setModelInput('');
-    } catch (error) {
-      setModelError(error instanceof Error ? error.message : 'Could not resolve that URL');
-    } finally {
-      setResolving(false);
-    }
-  };
-
-  const addExtension = () => {
-    const url = extensionInput.trim();
-    if (!url) return;
-    if (!/^https?:\/\/.+\/.+/.test(url)) {
-      showToast.error('Invalid', 'Paste a git repository URL', insets.top + 8);
-      return;
-    }
-    setExtensions((prev) => [...prev, url]);
-    setExtensionInput('');
-  };
-
-  const addOllamaModel = () => {
-    const tag = ollamaModelInput.trim();
-    if (!tag) return;
-    setOllamaModels((prev) => [...prev, tag]);
-    setOllamaModelInput('');
-  };
-
-  const addWorkflowFromJson = () => {
-    try {
-      const parsed = parseWorkflowTemplate(JSON.parse(workflowJson));
-      setWorkflows((prev) => [...prev, { name: `Workflow ${prev.length + 1}`, data: parsed }]);
-      setWorkflowJson('');
-    } catch {
-      showToast.error('Invalid', 'That is not a valid workflow JSON', insets.top + 8);
-    }
-  };
-
-  const addWorkflowFromLibrary = (workflowId: string) => {
-    const source = localWorkflows.find((w) => w.id === workflowId);
-    if (!source) return;
-    // A copy, not a reference: WorkflowRecord is tied to a server, and this
-    // template has to survive being exported to a device that has neither.
-    setWorkflows((prev) => [...prev, { name: source.name, data: source.data }]);
-  };
-
-  const handleSave = () => {
-    if (!name.trim()) {
-      showToast.error('Error', 'Give the template a name', insets.top + 8);
-      return;
-    }
-    const payload: Omit<GpuTemplate, 'id' | 'createdAt' | 'updatedAt'> = {
-      name: name.trim(),
-      gpuQuery: gpuQuery.trim(),
-      models,
-      extensions,
-      workflows,
-      ollamaModels,
-      disk: diskGb,
-    };
-    if (isNew) addTemplate(payload);
-    else updateTemplate(id, payload);
-    router.back();
-  };
-
-  const alreadyAdded = (workflowName: string) => workflows.some((w) => w.name === workflowName);
-
+  const hydrated = useEnvironmentsHydrated();
+  const environment = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
+  const update = useEnvironmentStore((state) => state.updateEnvironment);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  if (!hydrated) return <Spinner />;
+  if (!environment)
+    return (
+      <View style={{ flex: 1, backgroundColor: c.paper }}>
+        <AppBar title="Environment" showBack />
+        <Copy>Environment not found.</Copy>
+      </View>
+    );
+  const resources = [
+    {
+      key: 'models',
+      title: 'Models',
+      detail: 'Model files for generation',
+      count: environment.models.length,
+      icon: Box,
+    },
+    {
+      key: 'extensions',
+      title: 'Extensions',
+      detail: 'Custom nodes and integrations',
+      count: environment.extensions.length,
+      icon: Puzzle,
+    },
+    {
+      key: 'workflows',
+      title: 'Workflows',
+      detail: 'Workflow files for generation',
+      count: environment.workflows.length,
+      icon: GitBranch,
+    },
+  ] as const;
   return (
-    <View className="bg-surface-base flex-1">
-      <AppBar title={isNew ? 'New Template' : 'Edit Template'} showBack />
-      {/* These inputs go through AdaptiveTextInput, and BottomSheetContext
-          defaults to true — so on a plain screen they'd render the BottomSheet
-          variant and reach for a sheet that isn't there. */}
-      <BottomSheetProvider isInSheet={false}>
-        <ScrollView className="flex-1">
-          <VStack className="px-5 pb-8 pt-4" space="md">
-            <FormInput title="Name" defaultValue={name} onChangeText={setName} placeholder="e.g. Qwen image edit" />
-          <GpuPicker value={gpuQuery} onChange={setGpuQuery} />
-
-            {/* ---- Models ---- */}
-            <SectionHeader
-              title="Models"
-              subtitle={
-                models.length
-                  ? `${models.length} file${models.length === 1 ? '' : 's'}${knownSize ? ` · ${formatBytes(knownSize)}` : ''} · ${diskGb} GB disk`
-                  : 'Paste a HuggingFace or Civitai link'
-              }
-            />
-            <VStack space="xs">
-              <FormInput
-                title=""
-                defaultValue={modelInput}
-                onChangeText={setModelInput}
-                placeholder="https://civitai.com/models/... or huggingface.co/..."
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={modelError}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={addModel}
-                isDisabled={resolving || !modelInput.trim()}
-                style={{ width: 108 }}
-                className="rounded-lg"
-              >
-                {resolving ? <Spinner size="small" /> : <ButtonText className="text-xs">Add</ButtonText>}
-              </Button>
-            </VStack>
-            {models.map((model, index) => (
-              <ModelRow
-                key={`${model.url}-${index}`}
-                model={model}
-                onChangeType={(type) => setModels((prev) => prev.map((m, i) => (i === index ? { ...m, type } : m)))}
-                onRemove={() => setModels((prev) => prev.filter((_, i) => i !== index))}
-              />
-            ))}
-
-            {/* ---- Extensions ---- */}
-            <SectionHeader title="Extensions" subtitle="Custom node repositories to clone" />
-            <VStack space="xs">
-              <FormInput
-                title=""
-                defaultValue={extensionInput}
-                onChangeText={setExtensionInput}
-                placeholder="https://github.com/user/ComfyUI-Something"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={addExtension}
-                isDisabled={!extensionInput.trim()}
-                style={{ width: 108 }}
-                className="rounded-lg"
-              >
-                <ButtonText className="text-xs">Add</ButtonText>
-              </Button>
-            </VStack>
-            {extensions.map((url, index) => (
-              <HStack key={`${url}-${index}`} className="rounded-xl bg-surface-raised p-3 items-center justify-between">
-                <Text className="text-xs text-content-body flex-1" numberOfLines={1}>
-                  {url.replace('https://github.com/', '')}
-                </Text>
-                <Pressable onPress={() => setExtensions((prev) => prev.filter((_, i) => i !== index))} className="p-1">
-                  <Icon as={Trash2} size="xs" className="text-error-400" />
-                </Pressable>
-              </HStack>
-            ))}
-
-            {/* ---- Ollama models ---- */}
-            <SectionHeader
-              title="Ollama models"
-              subtitle="For workflows whose custom nodes call a local LLM — e.g. a prompt optimizer. Leave empty if none do."
-            />
-            <VStack space="xs">
-              <FormInput
-                title=""
-                defaultValue={ollamaModelInput}
-                onChangeText={setOllamaModelInput}
-                placeholder="e.g. huihui_ai/Qwen3.8-abliterated:27b"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={addOllamaModel}
-                isDisabled={!ollamaModelInput.trim()}
-                style={{ width: 108 }}
-                className="rounded-lg"
-              >
-                <ButtonText className="text-xs">Add</ButtonText>
-              </Button>
-            </VStack>
-            {ollamaModels.map((tag, index) => (
-              <HStack key={`${tag}-${index}`} className="rounded-xl bg-surface-raised p-3 items-center justify-between">
-                <Text className="text-xs text-content-body flex-1" numberOfLines={1}>
-                  {tag}
-                </Text>
-                <Pressable onPress={() => setOllamaModels((prev) => prev.filter((_, i) => i !== index))} className="p-1">
-                  <Icon as={Trash2} size="xs" className="text-error-400" />
-                </Pressable>
-              </HStack>
-            ))}
-
-            {/* ---- Workflows ---- */}
-            <SectionHeader title="Workflows" subtitle="Copied into the template, so it stays complete on its own" />
-            {workflows.map((workflow, index) => (
-              <HStack
-                key={`${workflow.name}-${index}`}
-                className="rounded-xl bg-surface-raised p-3 items-center justify-between"
-              >
-                <Text className="text-sm text-content-heading flex-1" numberOfLines={1}>
-                  {workflow.name}
-                </Text>
-                <Pressable onPress={() => setWorkflows((prev) => prev.filter((_, i) => i !== index))} className="p-1">
-                  <Icon as={Trash2} size="xs" className="text-error-400" />
-                </Pressable>
-              </HStack>
-            ))}
-
-            {localWorkflows.length > 0 && (
-              <VStack space="xs">
-                <Text className="text-xs text-content-tertiary">From this device</Text>
-                {localWorkflows.map((workflow) => {
-                  const added = alreadyAdded(workflow.name);
-                  return (
-                    <Pressable
-                      key={workflow.id}
-                      onPress={() => !added && addWorkflowFromLibrary(workflow.id)}
-                      className="rounded-xl border-stroke-subtle p-3 flex-row items-center justify-between border-[0.5px] active:opacity-70"
-                    >
-                      <Text className="text-sm text-content-body flex-1" numberOfLines={1}>
-                        {workflow.name}
-                      </Text>
-                      <Icon
-                        as={added ? Check : Plus}
-                        size="xs"
-                        className={added ? 'text-status-online' : 'text-action'}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </VStack>
-            )}
-
-            <VStack space="xs">
-              <Text className="text-xs text-content-tertiary">Or paste workflow JSON</Text>
-              <StyledTextarea
-                value={workflowJson}
-                onChangeText={setWorkflowJson}
-                placeholder="{ ... }"
-                minHeight={70}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={addWorkflowFromJson}
-                isDisabled={!workflowJson.trim()}
-                style={{ width: 108 }}
-                className="rounded-lg"
-              >
-                <ButtonText className="text-xs">Add</ButtonText>
-              </Button>
-            </VStack>
-
-            <HStack space="sm" className="mt-4">
-              <Button variant="outline" onPress={() => router.back()} className="rounded-lg flex-1">
-                <HStack space="xs" className="items-center">
-                  <Icon as={X} size="xs" className="text-content-secondary" />
-                  <ButtonText className="text-content-secondary">Cancel</ButtonText>
-                </HStack>
-              </Button>
-              <Button onPress={handleSave} className="rounded-lg bg-action flex-1">
-                <ButtonText>Save</ButtonText>
-              </Button>
-            </HStack>
-          </VStack>
-        </ScrollView>
-      </BottomSheetProvider>
+    <View style={{ flex: 1, backgroundColor: c.paper }}>
+      <AppBar
+        title={environment.name}
+        titleSize="sm"
+        showBack
+        rightElement={
+          <Action
+            kind="text"
+            icon={Settings2}
+            label="Edit environment"
+            onPress={() => {
+              setName(environment.name);
+              setDescription(environment.description);
+              setEditing(true);
+            }}
+          />
+        }
+      />
+      <ScrollView
+        testID="environment-content"
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: t.layout.gutter,
+          gap: t.layout.field,
+          paddingBottom: t.layout.inset,
+        }}
+      >
+        {!!environment.description && <Copy muted>{environment.description}</Copy>}
+        {resources.map(({ key, title, detail, count, icon: Icon }) => (
+          <Pressable
+            key={key}
+            accessibilityRole="button"
+            accessibilityLabel={title}
+            onPress={() => router.push({ pathname: '/environments/[id]/[resource]', params: { id, resource: key } })}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: t.layout.field,
+              paddingHorizontal: t.layout.rowX,
+              paddingVertical: t.layout.rowY,
+              borderRadius: t.radius.panel,
+              backgroundColor: c.card,
+            }}
+          >
+            <View
+              style={{
+                width: t.height.control,
+                height: t.height.control,
+                borderRadius: t.radius.small,
+                backgroundColor: c.raised,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon size={t.icon.large} strokeWidth={iconStroke(t.icon.large)} color={c.secondary} />
+            </View>
+            <View style={{ flex: 1, gap: t.layout.label }}>
+              <Row style={{ gap: t.layout.related }}>
+                <Copy size="section" style={{ fontWeight: '500' }}>
+                  {title}
+                </Copy>
+                <Copy muted size="metadata">
+                  {count}
+                </Copy>
+              </Row>
+              <Copy muted size="label">
+                {detail}
+              </Copy>
+            </View>
+          </Pressable>
+        ))}
+        <Copy muted size="metadata">
+          Changes apply to future builds. Running servers stay unchanged.
+        </Copy>
+      </ScrollView>
+      <View
+        style={{
+          backgroundColor: c.paper,
+          paddingHorizontal: t.layout.gutter,
+          paddingTop: t.layout.related,
+          paddingBottom: Math.max(insets.bottom, t.layout.field),
+        }}
+      >
+        <Action
+          kind="primary"
+          fill
+          onPress={() => router.push({ pathname: '/cloud/launch', params: { environmentId: id } })}
+        >
+          Create instance
+        </Action>
+      </View>
+      <Sheet open={editing} onClose={() => setEditing(false)} title="Edit environment">
+        <Field label="Name" value={name} onChange={setName} placeholder="Environment name" />
+        <Field label="Description" multiline value={description} onChange={setDescription} placeholder="Description" />
+        <ActionRow>
+          <Action kind="secondary" fill onPress={() => setEditing(false)}>
+            Cancel
+          </Action>
+          <Action
+            kind="primary"
+            fill
+            disabled={!name.trim()}
+            onPress={() => {
+              update(id, { name: name.trim(), description: description.trim() });
+              setEditing(false);
+            }}
+          >
+            Save changes
+          </Action>
+        </ActionRow>
+      </Sheet>
     </View>
-  );
-}
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <VStack space="xs" className="mt-2">
-      <Text className="text-sm font-medium text-typography-600">{title}</Text>
-      <Text className="text-xs text-content-tertiary">{subtitle}</Text>
-    </VStack>
   );
 }

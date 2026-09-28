@@ -1,12 +1,11 @@
-import { StatusDot } from '@/components/self-ui/status-pill';
-import { Text } from '@/components/ui/text';
-import { Colors } from '@/constants/Colors';
+import { Copy, Status, useDesign } from '@/components/ui/design-system/primitives';
 import { useGenerationNodeState } from '@/features/generation/context/generation-context';
 import { Node } from '@/features/workflow/types';
-import { useResolvedTheme } from '@/store/theme';
 import { MotiView } from 'moti';
 import { ReactNode } from 'react';
 import { View } from 'react-native';
+import { designTokens as t } from '@/constants/design-tokens';
+import { ControlDensityProvider } from '@/components/ui/design-system/control-density';
 
 export interface BaseNodeProps {
   node: Node;
@@ -17,55 +16,54 @@ export interface BaseNodeProps {
 /**
  * One ComfyUI node.
  *
- * The class name is set in mono because that is what it is — an identifier
- * copied verbatim from the graph, not a title someone wrote. A running node
+ * All display titles share one type role, including class-name fallbacks. A running node
  * sharpens its border and carries a progress line along its bottom edge, so
  * the node itself reports its state instead of a badge parked beside it.
  */
 export default function BaseNode({ node, children, badges }: BaseNodeProps) {
   const { isCurrentNode, isGenerating } = useGenerationNodeState(node.id);
-  const theme = useResolvedTheme();
-  const colors = theme === 'dark' ? Colors.dark : Colors.light;
   const running = isCurrentNode && isGenerating;
+  const c = useDesign();
 
-  // A title the user set is prose; a bare class_type is an identifier. Only
-  // the identifier gets the mono treatment.
   const title = node._meta?.title || node.class_type;
-  const isIdentifier = !node._meta?.title && !!node.class_type;
   const isUnknown = !node._meta?.title && !node.class_type;
 
   return (
-    <MotiView
-      animate={{ borderColor: running ? colors.typography[950] : colors.outline[50] }}
-      transition={{ type: 'timing', duration: 200 }}
-      className="my-2 overflow-hidden rounded-lg border bg-surface-base"
-    >
-      <View className="p-4">
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text
-            size="sm"
-            bold
-            className={`flex-1 truncate ${isIdentifier ? 'font-mono' : ''} ${isUnknown ? 'text-status-danger' : ''}`}
-            numberOfLines={1}
-            strikeThrough={isUnknown}
-          >
-            {title || 'UNKNOWN_NODE'}
-          </Text>
-          <View className="flex-row items-center gap-2">
-            {running ? (
-              <View className="flex-row items-center gap-1.5">
-                <StatusDot tone="busy" pulse />
-                <Text className="text-xs text-content-tertiary">running</Text>
-              </View>
-            ) : null}
-            {badges}
+    <ControlDensityProvider value="compact">
+      <MotiView
+        testID={`node-card-${node.id}`}
+        animate={{ borderColor: running ? c.tint : c.subtle }}
+        transition={{ type: 'timing', duration: 200 }}
+        style={{
+          marginVertical: t.node.cardGap / 2,
+          backgroundColor: c.workspaceCard,
+          overflow: 'hidden',
+          borderRadius: t.radius.panel,
+          borderWidth: 1,
+        }}
+      >
+        <View style={{ padding: t.node.inset }}>
+          <View style={{ marginBottom: t.node.headerGap }} className="flex-row items-center justify-between">
+            <Copy
+              size="label"
+              style={[t.node.title, isUnknown ? { color: c.danger } : undefined]}
+              className="flex-1 truncate"
+              numberOfLines={1}
+              strikeThrough={isUnknown}
+            >
+              {title || 'UNKNOWN_NODE'}
+            </Copy>
+            <View className="gap-2 flex-row items-center">
+              {running ? <Status state="busy" label="running" /> : null}
+              {badges}
+            </View>
           </View>
+          <View style={{ gap: t.node.fieldGap }}>{children}</View>
         </View>
-        {children}
-      </View>
 
-      {/* Sits on the node's own bottom edge rather than floating above it. */}
-      {running ? <View className="h-0.5 w-full bg-ink" /> : null}
-    </MotiView>
+        {/* Sits on the node's own bottom edge rather than floating above it. */}
+        {running ? <View className="bottom-0 left-0 right-0 h-0.5 bg-tint absolute" /> : null}
+      </MotiView>
+    </ControlDensityProvider>
   );
 }

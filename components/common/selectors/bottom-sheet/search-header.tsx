@@ -1,13 +1,8 @@
-import { AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
 import { Box } from '@/components/ui/box';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Search } from 'lucide-react-native';
-import React, { useCallback, useRef, useState } from 'react';
+import { Title, Field } from '@/components/ui/design-system/primitives';
+import React from 'react';
 import { View } from 'react-native';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface SearchHeaderProps {
   title: string;
@@ -26,63 +21,37 @@ export function SearchHeader({
   showSearch = true,
   rightElement,
 }: SearchHeaderProps) {
-  const [localValue, setLocalValue] = useState(searchQuery);
-  const debounceTimeout = useRef<NodeJS.Timeout>(undefined);
-  const colors = useThemeColor();
-
-  const handleChange = useCallback(
-    (text: string) => {
-      setLocalValue(text);
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-      debounceTimeout.current = setTimeout(() => {
-        onSearchChange(text);
-      }, 300);
-    },
-    [onSearchChange],
-  );
-
   return (
-    <VStack space="md">
-      <Text className="px-4 pb-2 pt-4 text-lg font-medium text-action">
-        {title}
-      </Text>
+    <View
+      testID="selector-header"
+      style={{
+        paddingHorizontal: t.layout.inset,
+        paddingTop: t.layout.related,
+        paddingBottom: t.layout.inset,
+        gap: t.layout.field,
+        flexDirection: 'column',
+      }}
+    >
+      <View testID="selector-title-row" style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.related }}>
+        <Box className="flex-1">
+          <Title compact numberOfLines={1}>
+            {title}
+          </Title>
+        </Box>
+        {rightElement}
+      </View>
 
       {showSearch && (
-        <Box className="px-4 pb-4">
-          <HStack space="sm" className="items-center">
-            <View
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.background[200],
-                borderRadius: 8,
-                paddingHorizontal: 12,
-                height: 40,
-              }}
-            >
-              <Icon as={Search} size="sm" className="mr-2 text-content-tertiary" />
-              <AdaptiveTextInput
-                placeholder={searchPlaceholder}
-                value={localValue}
-                onChangeText={handleChange}
-                style={{
-                  flex: 1,
-                  fontSize: 16,
-                  color: colors.primary[500],
-                }}
-                placeholderTextColor={colors.typography[400]}
-                autoCapitalize="none"
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-              />
-            </View>
-            {rightElement}
-          </HStack>
-        </Box>
+        <View testID="selector-search">
+          <Field
+            search
+            label={searchPlaceholder}
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={onSearchChange}
+          />
+        </View>
       )}
-    </VStack>
+    </View>
   );
 }

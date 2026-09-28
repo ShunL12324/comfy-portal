@@ -1,9 +1,9 @@
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
+import { Copy } from '@/components/ui/design-system/primitives';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { Info } from 'lucide-react-native';
+import { Info } from '@/constants/icons';
 import { View } from 'react-native';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
@@ -18,19 +18,19 @@ export default function SaveImage({ node, serverId, workflowId }: SaveImageProps
   return (
     <BaseNode node={node}>
       <SubItem title="Filename Prefix">
-        <Input className="w-full rounded-lg border-0 bg-surface-raised">
+        <Input className="rounded-lg bg-surface-raised w-full border-0">
           <InputField
             placeholder="Enter filename prefix"
-            className="w-full border-0 bg-surface-raised text-sm"
+            className="bg-surface-raised w-full border-0"
             value={node.inputs?.filename_prefix || ''}
             onChangeText={(value) => updateNodeInput(workflowId, node.id, 'filename_prefix', value)}
           />
         </Input>
-        <View className="mt-2 flex-row items-start gap-2">
-          <Icon as={Info} size="xs" className="mt-[1px] text-content-secondary" />
-          <Text size="sm" className="flex-1 text-xs text-content-secondary">
+        <View className="mt-2 gap-2 flex-row items-start">
+          <Icon as={Info} size="xs" className="text-content-secondary mt-0.5" />
+          <Copy size="metadata" muted className="flex-1">
             This will only affect the filename of the image stored on the server.
-          </Text>
+          </Copy>
         </View>
       </SubItem>
     </BaseNode>

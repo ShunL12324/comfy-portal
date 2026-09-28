@@ -1,13 +1,13 @@
 import { BottomActionPanel } from '@/components/self-ui/bottom-action-panel';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
+import { Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
-import * as MediaLibrary from 'expo-media-library';
-import { ImageIcon, Save } from 'lucide-react-native';
+import * as MediaLibrary from '@/services/media-library';
+import { ImageIcon, Save } from '@/constants/icons';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ export const MediaActions = memo(function MediaActions({
   serverId,
 }: MediaActionsProps) {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+  const c = useDesign();
   const safeAreaInsets = useSafeAreaInsets();
 
   const handleSaveToGallery = async () => {
@@ -43,7 +44,7 @@ export const MediaActions = memo(function MediaActions({
       if (!permissionResponse?.granted) {
         const { granted } = await requestPermission();
         if (!granted) {
-          showToast.error('Permission needed', 'Please grant permission to save media.', safeAreaInsets.top + 16);
+          showToast.error('Permission needed', 'Please grant permission to save media.');
           return;
         }
       }
@@ -51,11 +52,11 @@ export const MediaActions = memo(function MediaActions({
       if (mediaUrl) {
         await MediaLibrary.saveToLibraryAsync(mediaUrl);
         onClose();
-        showToast.success('Media saved to your gallery', undefined, safeAreaInsets.top + 16);
+        showToast.success('Media saved to your gallery', undefined);
       }
     } catch (error) {
       console.error('Failed to save media:', error);
-      showToast.error('Failed to save media', undefined, safeAreaInsets.top + 16);
+      showToast.error('Failed to save media', undefined);
     }
   };
 
@@ -76,41 +77,43 @@ export const MediaActions = memo(function MediaActions({
           thumbnail: localImageUri,
         });
 
-        showToast.success('Thumbnail updated', undefined, safeAreaInsets.top + 16);
+        showToast.success('Thumbnail updated', undefined);
       }
     } catch (error) {
       console.error('Failed to set thumbnail:', error);
-      showToast.error('Failed to set thumbnail', undefined, safeAreaInsets.top + 16);
+      showToast.error('Failed to set thumbnail', undefined);
     }
     onClose();
   };
 
   return (
     <>
-      {isOpen && (
-        <Pressable className="absolute inset-0 z-40 bg-black/30" onPress={onClose} />
-      )}
-      <View className="absolute bottom-0 left-0 right-0 z-50">
+      {isOpen && <Pressable className="inset-0 bg-media/20 absolute z-40" onPress={onClose} />}
+      <View className="bottom-0 left-0 right-0 absolute z-50">
         <BottomActionPanel isOpen={isOpen}>
           <VStack space="sm">
             <Button
               variant="outline"
               size="lg"
               onPress={handleSaveToGallery}
-              className="h-12 w-full justify-start border-stroke-subtle px-4"
+              className="h-12 border-stroke-subtle px-4 w-full justify-start"
             >
               <Icon as={Save} size="sm" className="mr-2 text-action" />
-              <Text className="text-sm text-action">Save Media</Text>
+              <Copy size="label" style={{ color: c.tint }}>
+                Save Media
+              </Copy>
             </Button>
             {workflowId && (
               <Button
                 variant="outline"
                 size="lg"
                 onPress={handleSetAsThumbnail}
-                className="h-12 w-full justify-start border-stroke-subtle px-4"
+                className="h-12 border-stroke-subtle px-4 w-full justify-start"
               >
                 <Icon as={ImageIcon} size="sm" className="mr-2 text-action" />
-                <Text className="text-sm text-action">Set as Workflow Thumbnail</Text>
+                <Copy size="label" style={{ color: c.tint }}>
+                  Set as Workflow Thumbnail
+                </Copy>
               </Button>
             )}
           </VStack>

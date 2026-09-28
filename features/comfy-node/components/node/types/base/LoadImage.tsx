@@ -1,7 +1,7 @@
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
+import { Title, Copy, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
@@ -17,14 +17,15 @@ import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
-import { AlertTriangle, Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from 'lucide-react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertTriangle, Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from '@/constants/icons';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BaseNode from '../../common/base-node';
 import { ServerImagePicker } from '../../common/server-image-picker';
 import SubItem from '../../common/sub-item';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface LoadImageNodeProps {
   node: Node;
@@ -47,14 +48,13 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const addQuickAction = useQuickActionStore((state) => state.addAction);
   const removeQuickAction = useQuickActionStore((state) => state.removeAction);
   const hasQuickAction = useQuickActionStore((state) =>
-    state.actions.some(
-      (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
-    ),
+    state.actions.some((a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id),
   );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const safeAreaInsets = useSafeAreaInsets();
+  const c = useDesign();
   const cancelUploadRef = useRef<(() => Promise<void>) | null>(null);
   const sourcePickerModalRef = useRef<BottomSheetModal>(null);
   const pendingSourcePickerActionRef = useRef<PendingSourcePickerAction>(null);
@@ -76,7 +76,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const progressWidth = useSharedValue(0);
 
   useEffect(() => {
-    progressWidth.value = withTiming(uploadProgress * 100, { duration: 300 });
+    progressWidth.set(withTiming(uploadProgress * 100, { duration: 300 }));
   }, [uploadProgress, progressWidth]);
 
   useEffect(() => {
@@ -85,21 +85,6 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       sourcePickerModalRef.current?.dismiss();
     }
   }, [isUploading]);
-
-  // Auto-upload shared image from Share Extension
-  const sharedImageHandled = useRef(false);
-  useEffect(() => {
-    if (!sharedImageUri || sharedImageHandled.current || isUploading) return;
-    sharedImageHandled.current = true;
-
-    const fileName = sharedImageUri.split('/').pop() || 'shared_image.jpg';
-    uploadPickedAsset({
-      uri: sharedImageUri,
-      fileName,
-      mimeType: null,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sharedImageUri, isUploading]);
 
   useEffect(() => {
     let isMounted = true;
@@ -154,7 +139,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const uploadPickedAsset = async (asset: UploadAssetCandidate) => {
     setIsUploading(true);
     setUploadProgress(0);
-    progressWidth.value = 0;
+    progressWidth.set(0);
 
     try {
       const normalized = await normalizeAsset(asset);
@@ -165,7 +150,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         normalized.mimeType ?? undefined,
         (progress) => {
           setUploadProgress(progress);
-        }
+        },
       );
       cancelUploadRef.current = cancel;
 
@@ -182,7 +167,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       if (error instanceof Error && error.message.includes('canceled')) {
         // Upload canceled, do nothing
       } else {
-        showToast.error('Error uploading image', error instanceof Error ? error.message : undefined, safeAreaInsets.top + 8);
+        showToast.error('Error uploading image', error instanceof Error ? error.message : undefined);
       }
     } finally {
       setIsUploading(false);
@@ -191,10 +176,26 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
     }
   };
 
+  // Auto-upload shared image from Share Extension. The upload itself is not
+  // reactive: it runs once per shared image, with the latest handlers.
+  const sharedImageHandled = useRef(false);
+  const uploadSharedImage = useEffectEvent((uri: string) => {
+    uploadPickedAsset({
+      uri,
+      fileName: uri.split('/').pop() || 'shared_image.jpg',
+      mimeType: null,
+    });
+  });
+  useEffect(() => {
+    if (!sharedImageUri || sharedImageHandled.current || isUploading) return;
+    sharedImageHandled.current = true;
+    uploadSharedImage(sharedImageUri);
+  }, [sharedImageUri, isUploading]);
+
   const handlePickFromLibrary = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      showToast.error('Permission to access media library is required', undefined, safeAreaInsets.top + 8);
+      showToast.error('Permission to access media library is required', undefined);
       return;
     }
 
@@ -214,13 +215,9 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       result = await Promise.race([pickerPromise, timeoutPromise]);
     } catch (pickerError) {
       if (pickerError instanceof Error && pickerError.message === 'PICKER_TIMEOUT') {
-        showToast.error(
-          'Photo Library timed out',
-          'Try using "Files" instead',
-          safeAreaInsets.top + 8,
-        );
+        showToast.error('Photo Library timed out', 'Try using "Files" instead');
       } else {
-        showToast.error('Failed to pick image', pickerError instanceof Error ? pickerError.message : undefined, safeAreaInsets.top + 8);
+        showToast.error('Failed to pick image', pickerError instanceof Error ? pickerError.message : undefined);
       }
       return;
     } finally {
@@ -257,7 +254,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const handlePickFromCamera = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (!permissionResult.granted) {
-      showToast.error('Permission to access camera is required', undefined, safeAreaInsets.top + 8);
+      showToast.error('Permission to access camera is required', undefined);
       return;
     }
 
@@ -331,13 +328,11 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
 
     if (action === 'server') {
       setIsServerPickerVisible(true);
-      serverPickerModalRef.current?.present();
     }
   };
 
   const handleCloseServerPicker = useCallback(() => {
     setIsServerPickerVisible(false);
-    serverPickerModalRef.current?.dismiss();
   }, []);
 
   const handleSelectServerImage = useCallback(
@@ -352,11 +347,13 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const handleToggleQuickAction = useCallback(() => {
     if (hasQuickAction) {
       // Remove existing quick actions for this node
-      const existing = useQuickActionStore.getState().actions.filter(
-        (a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id,
-      );
-      existing.forEach((a) => { removeQuickAction(a.id); });
-      showToast.success('Quick Action removed', undefined, safeAreaInsets.top + 8);
+      const existing = useQuickActionStore
+        .getState()
+        .actions.filter((a) => a.serverId === serverId && a.workflowId === workflowId && a.targetNodeId === node.id);
+      existing.forEach((a) => {
+        removeQuickAction(a.id);
+      });
+      showToast.success('Quick Action removed', undefined);
     } else {
       const workflow = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId);
       const name = workflow?.name
@@ -368,9 +365,9 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
         workflowId,
         targetNodeId: node.id,
       });
-      showToast.success('Quick Action enabled', 'Share images from Photos to this node', safeAreaInsets.top + 8);
+      showToast.success('Quick Action enabled', 'Share images from Photos to this node');
     }
-  }, [hasQuickAction, removeQuickAction, addQuickAction, serverId, workflowId, node.id, node._meta?.title, safeAreaInsets.top]);
+  }, [hasQuickAction, removeQuickAction, addQuickAction, serverId, workflowId, node.id, node._meta?.title]);
 
   return (
     <BaseNode
@@ -378,40 +375,39 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
       badges={
         <Pressable
           onPress={handleToggleQuickAction}
-          className={`flex-row items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${
-            hasQuickAction
-              ? 'bg-action active:bg-action-pressed'
-              : 'bg-surface-raised active:bg-surface-sunken'
+          className={`gap-1.5 rounded-lg px-2.5 py-1.5 flex-row items-center ${
+            hasQuickAction ? 'bg-action active:bg-action-pressed' : 'bg-surface-raised active:bg-surface-sunken'
           }`}
         >
           <Icon
             as={Share}
-            className={`h-3.5 w-3.5 ${hasQuickAction ? 'text-content-inverse' : 'text-content-tertiary'}`}
+            size="xs"
+            className={`${hasQuickAction ? 'text-content-inverse' : 'text-content-tertiary'}`}
           />
-          <Text
-            className={`text-xs font-medium ${hasQuickAction ? 'text-content-inverse' : 'text-content-tertiary'}`}
-          >
+          <Copy size="metadata" style={{ fontWeight: '500', color: hasQuickAction ? c.onTint : c.muted }}>
             Quick Action
-          </Text>
+          </Copy>
         </Pressable>
       }
     >
       <SubItem title="image">
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Set image: ${node.inputs.image || 'Choose'}`}
           onPress={handleOpenSourcePicker}
-          className={`relative h-48 w-full items-center justify-center rounded-xl ${
-            isMissing && !isUploading ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-surface-raised'
+          className={`h-40 rounded-md relative w-full items-center justify-center ${
+            isMissing && !isUploading ? 'border-status-danger/50 bg-well border-[0.5px]' : 'bg-surface-raised'
           }`}
         >
           {isMissing && !isUploading ? (
-            <VStack space="md" className="h-full w-full items-center justify-center px-4">
-              <Icon as={AlertTriangle} className="h-8 w-8 text-status-danger" />
-              <Text size="sm" className="text-status-danger-pressed font-medium" numberOfLines={1}>
+            <VStack space="sm" className="px-4 h-full w-full items-center justify-center">
+              <StateIcon icon={AlertTriangle} color={c.danger} />
+              <Copy style={{ fontWeight: '400', color: c.danger }} numberOfLines={1}>
                 {node.inputs.image}
-              </Text>
-              <Text size="xs" className="text-status-danger">
+              </Copy>
+              <Copy size="metadata" style={{ color: c.danger }}>
                 Not installed on server
-              </Text>
+              </Copy>
             </VStack>
           ) : image ? (
             <>
@@ -420,50 +416,51 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
                 style={{
                   width: '100%',
                   height: '100%',
-                  borderRadius: 12,
+                  borderRadius: t.radius.panel,
                 }}
                 contentFit="contain"
                 transition={200}
                 cachePolicy="memory-disk"
               />
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear image"
+                hitSlop={8}
                 onPress={(event) => {
                   event.stopPropagation();
                   handleClearImage();
                 }}
-                className="absolute right-2 top-2 rounded-full bg-black/35 p-1.5 active:bg-black/45"
+                className="right-2 top-2 bg-media/50 p-1.5 active:opacity-pressed absolute rounded-full"
               >
-                <Icon as={X} className="h-4 w-4 text-white" />
+                <Icon size="sm" as={X} className="text-on-media" />
               </Pressable>
             </>
           ) : !isUploading ? (
-            <VStack space="md" className="h-full w-full items-center justify-center">
-              <Icon as={ImageIcon} className="h-8 w-8 text-content-secondary" />
-              <Text size="sm" className="text-content-secondary">
-                Upload Image
-              </Text>
+            <VStack space="sm" className="h-full w-full items-center justify-center">
+              <StateIcon icon={ImageIcon} />
+              <Copy muted>Upload Image</Copy>
             </VStack>
           ) : null}
           {isUploading && (
-            <VStack space="sm" className="absolute inset-0 items-center justify-center rounded-xl bg-black/50 p-4">
-              <Icon as={ImageIcon} className="h-8 w-8 text-typography-600 mb-2" />
-              <Text size="sm" className="text-typography-600 font-medium">
+            <VStack space="sm" className="inset-0 rounded-md bg-media/50 p-4 absolute items-center justify-center">
+              <StateIcon icon={ImageIcon} color={c.onMedia} />
+              <Copy style={{ fontWeight: '400', color: c.onMedia }}>
                 Uploading... {Math.round(uploadProgress * 100)}%
-              </Text>
-              <View className="h-1 w-full bg-white/30 rounded-full overflow-hidden">
-                <Animated.View
-                  className="h-full bg-action rounded-full"
-                  style={animatedProgressStyle}
-                />
+              </Copy>
+              <View className="h-1 bg-on-media/30 w-full overflow-hidden rounded-full">
+                <Animated.View className="bg-action h-full rounded-full" style={animatedProgressStyle} />
               </View>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancel upload"
+                hitSlop={4}
                 onPress={(event) => {
                   event.stopPropagation();
                   void handleCancelUpload();
                 }}
-                className="mt-2 rounded-full bg-white/20 p-2 active:bg-white/30"
+                className="mt-2 bg-on-media/20 p-2 active:opacity-pressed rounded-full"
               >
-                <Icon as={X} className="h-5 w-5 text-white" />
+                <Icon size="lg" as={X} className="text-on-media" />
               </Pressable>
             </VStack>
           )}
@@ -477,57 +474,61 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
           enablePanDownToClose
           onDismiss={handleSourcePickerDismiss}
         >
-          <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: safeAreaInsets.bottom + 16 }}>
+          <BottomSheetView
+            style={{ paddingHorizontal: t.layout.inset, paddingBottom: safeAreaInsets.bottom + t.layout.inset }}
+          >
             <VStack space="sm">
-              <Text className="mb-1 text-sm font-semibold text-content-heading">Set Image</Text>
+              <Title compact className="mb-1">
+                Set Image
+              </Title>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('server');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
+                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
               >
-                <Icon as={HardDrive} className="h-4 w-4 text-content-body" />
+                <Icon size="sm" as={HardDrive} className="text-content-body" />
                 <VStack className="flex-1">
-                  <Text className="text-sm text-content-heading">Already on Server</Text>
-                  <Text className="text-xs text-content-tertiary">
+                  <Copy>Already on Server</Copy>
+                  <Copy size="metadata" muted>
                     Pick from the server&apos;s input folder — no upload
-                  </Text>
+                  </Copy>
                 </VStack>
               </Pressable>
 
-              <Text className="mb-1 mt-2 text-xs font-medium text-content-tertiary">
+              <Copy size="metadata" muted className="mb-1 mt-2" style={{ fontWeight: '500' }}>
                 Upload
-              </Text>
+              </Copy>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('library');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
+                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
               >
-                <Icon as={ImageIcon} className="h-4 w-4 text-content-body" />
-                <Text className="text-sm text-content-heading">Photo Library</Text>
+                <Icon size="sm" as={ImageIcon} className="text-content-body" />
+                <Copy>Photo Library</Copy>
               </Pressable>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('files');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
+                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
               >
-                <Icon as={Folder} className="h-4 w-4 text-content-body" />
-                <Text className="text-sm text-content-heading">Files</Text>
+                <Icon size="sm" as={Folder} className="text-content-body" />
+                <Copy>Files</Copy>
               </Pressable>
 
               <Pressable
                 onPress={() => {
                   handleSelectSourcePickerAction('camera');
                 }}
-                className="flex-row items-center gap-3 rounded-xl bg-surface-raised px-4 py-3"
+                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
               >
-                <Icon as={Camera} className="h-4 w-4 text-content-body" />
-                <Text className="text-sm text-content-heading">Camera</Text>
+                <Icon size="sm" as={Camera} className="text-content-body" />
+                <Copy>Camera</Copy>
               </Pressable>
             </VStack>
           </BottomSheetView>

@@ -23,7 +23,7 @@ export const BottomActionPanel = React.memo(function BottomActionPanel({ isOpen,
         type: 'timing',
         duration: 200,
       }}
-      className="absolute bottom-0 left-0 right-0 border-t-[0.5px] border-t-background-100 bg-surface-base"
+      className="absolute bottom-0 left-0 right-0 border-t-[0.5px] border-t-stroke-hairline bg-surface-base"
     >
       <View style={{ paddingBottom }} className="px-4 py-4">
         {children}

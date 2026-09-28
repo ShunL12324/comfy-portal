@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { createTooltip } from '@gluestack-ui/core/tooltip/creator';
-import { View, Text, ViewStyle } from 'react-native';
+import { View, ViewStyle } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
@@ -35,7 +36,7 @@ const tooltipContentStyle = tva({
 });
 
 const tooltipTextStyle = tva({
-  base: 'font-normal tracking-normal web:select-none text-xs text-typography-50',
+  base: 'font-body font-normal tracking-normal web:select-none text-xs text-typography-50',
 
   variants: {
     isTruncated: {
@@ -70,7 +71,7 @@ const tooltipTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });

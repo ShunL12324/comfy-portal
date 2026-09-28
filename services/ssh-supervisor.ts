@@ -81,7 +81,7 @@ async function curlJson<T>(
 ): Promise<T> {
   const bodyJson = init?.body ? JSON.stringify(init.body) : undefined;
   const command = [
-    'curl -s -m 10',
+    'curl -fsS -m 10',
     `-X ${init?.method ?? 'GET'}`,
     `-H ${shellQuote(`Authorization: Bearer ${target.token}`)}`,
     bodyJson ? `-H "Content-Type: application/json" -d ${shellQuote(bodyJson)}` : '',

@@ -1,285 +1,342 @@
-import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { HStack } from '@/components/ui/hstack';
-import { Image } from '@/components/ui/image';
-import { Input, InputField } from '@/components/ui/input';
-import { Link, LinkText } from '@/components/ui/link';
-import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser';
+import { useState } from 'react';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
+import * as Clipboard from 'expo-clipboard';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
+import { Action, ActionRow, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Sheet } from '@/components/ui/design-system/overlays';
+import {
+  FileJson,
+  Clipboard as ClipboardIcon,
+  Images,
+  ImagePlus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from '@/constants/icons';
+import { useServersStore } from '@/features/server/stores/server-store';
+import { useWorkflowStore } from '../stores/workflow-store';
+import { parseWorkflowTemplate } from '../utils/workflow-parser';
+import type { Workflow, WorkflowRecord } from '../types';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
-import * as ExpoClipboard from 'expo-clipboard';
-import { generateUUID } from '@/utils/uuid';
-import * as DocumentPicker from 'expo-document-picker';
-import { Directory, File, Paths } from 'expo-file-system';
-import * as ImagePicker from 'expo-image-picker';
-import { CheckCircle, Clipboard, FileJson, ImagePlus } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
-interface AddWorkflowModalProps {
+interface ImportWorkflowModalProps {
   isOpen: boolean;
   onClose: () => void;
   serverId: string;
 }
-
-export function ImportWorkflowModal({ isOpen, onClose, serverId }: AddWorkflowModalProps) {
-  const insets = useSafeAreaInsets();
-  const [name, setName] = useState('New Workflow');
+export function ImportWorkflowModal(props: ImportWorkflowModalProps) {
+  return props.isOpen ? <ImportFlow {...props} /> : null;
+}
+function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
+  const c = useDesign();
+  const serverName = useServersStore((state) => state.servers.find((server) => server.id === serverId)?.name);
+  const assets = useWorkflowStore((state) => state.assets);
+  const [step, setStep] = useState<'source' | 'configure' | 'library'>('source');
+  const [name, setName] = useState('');
+  const [data, setData] = useState<Workflow>();
+  const [method, setMethod] = useState<WorkflowRecord['addMethod']>('file');
   const [thumbnail, setThumbnail] = useState('');
-  const [error, setError] = useState('');
-  const [workflowData, setWorkflowData] = useState<any>(null);
-  const [uploadedFileName, setUploadedFileName] = useState('');
-  const addWorkflow = useWorkflowStore((state) => state.addWorkflow);
-
-  useEffect(() => {
-    if (name.trim().length > 50) {
-      setName(name.slice(0, 50));
-      showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
-    }
-  }, [insets.top, name]);
-
-  const handleAdd = async () => {
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!workflowData) {
-      setError('Please import a workflow first');
-      return;
-    }
-
-    const workflowId = generateUUID();
-    let finalThumbnail = '';
-    if (thumbnail) {
-      const ext = thumbnail.split('.').pop();
-      const workflowDir = new Directory(Paths.document, 'workflows', workflowId);
-      const thumbnailFile = new File(workflowDir, `thumbnail.${ext}`);
-
-      try {
-        workflowDir.create({ intermediates: true, idempotent: true });
-        new File(thumbnail).copy(thumbnailFile);
-        finalThumbnail = thumbnailFile.uri;
-      } catch (error) {
-        console.error('Failed to save thumbnail:', error);
-      }
-    }
-
-    addWorkflow({
-      name: name.trim(),
-      serverId,
-      thumbnail: finalThumbnail,
-      addMethod: workflowData.addMethod,
-      data: workflowData.data,
-    });
-
-    handleClose();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(false);
+  const parse = (text: string, source: WorkflowRecord['addMethod'], title: string) => {
+    const workflow = parseWorkflowTemplate(JSON.parse(text));
+    if (!Object.keys(workflow).length) throw new Error('Workflow has no nodes.');
+    setData(workflow);
+    setName(title);
+    setMethod(source);
+    setStep('configure');
+    showToast.success('Workflow loaded', 'Review it before adding.');
   };
-
-  const handleSelectImage = async () => {
-    // Request permission
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      try {
-        const tempId = await generateUUID();
-        const savedImage = await saveWorkflowThumbnail({
-          serverId,
-          workflowId: tempId,
-          imageUri: result.assets[0].uri,
-          mimeType: result.assets[0].mimeType,
-        });
-
-        if (savedImage) {
-          const localImageUri = savedImage.path.startsWith('file://') ? savedImage.path : `file://${savedImage.path}`;
-          setThumbnail(localImageUri);
-        }
-      } catch (error) {
-        console.error('Failed to save thumbnail:', error);
-        alert('Failed to save image. Please try again.');
-      }
-    }
-  };
-
-  const handleClose = () => {
-    setName('');
-    setThumbnail('');
-    setError('');
-    setWorkflowData(null);
-    setUploadedFileName('');
-    onClose();
-  };
-
-  const handleImportFromFile = async () => {
+  const readFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: ['application/json', '*/*'],
         copyToCacheDirectory: true,
-        multiple: false,
       });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const fileContent = await new File(result.assets[0].uri).text();
-      const jsonData = JSON.parse(fileContent);
-
-      setWorkflowData({
-        addMethod: 'file',
-        data: parseWorkflowTemplate(jsonData),
-      });
-      setUploadedFileName(result.assets[0].name);
-      setName(result.assets[0].name);
-    } catch (error) {
-      console.error('Failed to import workflow file:', error);
-      showToast.error('Import Failed', 'Please make sure it is a valid workflow JSON file.', insets.top);
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      const text = Platform.OS === 'web' ? await (await fetch(asset.uri)).text() : await new File(asset.uri).text();
+      parse(text, 'file', asset.name.replace(/\.json$/i, ''));
+    } catch {
+      showToast.error('Could not load workflow', 'Choose a valid ComfyUI workflow JSON file.');
     }
   };
-
-  const handleImportFromClipboard = async () => {
+  const paste = async () => {
+    let text: string;
     try {
-      const hasClipboardText = await ExpoClipboard.hasStringAsync();
-      if (!hasClipboardText) {
-        showToast.error('Import Failed', 'No text content found in clipboard.', insets.top);
-        return;
-      }
-
-      const clipboardContent = await ExpoClipboard.getStringAsync();
-      if (!clipboardContent) {
-        showToast.error('Import Failed', 'Clipboard is empty.', insets.top);
-        return;
-      }
-
-      const jsonData = JSON.parse(clipboardContent);
-
-      setWorkflowData({
-        addMethod: 'clipboard',
-        data: parseWorkflowTemplate(jsonData),
-      });
-      setUploadedFileName('Imported from clipboard');
-    } catch (error) {
-      console.error('Failed to import workflow from clipboard:', error);
-      showToast.error('Import Failed', 'Please make sure you have copied a valid workflow JSON.', insets.top);
+      text = await Clipboard.getStringAsync();
+    } catch {
+      showToast.error('Could not read clipboard', 'Allow clipboard access and try again.');
+      return;
+    }
+    if (!text.trim()) {
+      showToast.error('Clipboard is empty', 'Copy a ComfyUI workflow JSON first.');
+      return;
+    }
+    try {
+      parse(text, 'clipboard', 'Imported workflow');
+    } catch {
+      showToast.error('Could not load workflow', 'The clipboard does not contain valid ComfyUI workflow JSON.');
     }
   };
-
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      base64: Platform.OS === 'web',
+    });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setThumbnail(asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri);
+    }
+  };
+  const save = async () => {
+    if (busy || !data || !name.trim()) return;
+    setBusy(true);
+    try {
+      const store = useWorkflowStore.getState();
+      const id = store.addWorkflow({ serverId, name: name.trim(), data, addMethod: method });
+      let previewFailed = false;
+      if (thumbnail) {
+        try {
+          const saved = await saveWorkflowThumbnail({ serverId, workflowId: id, imageUri: thumbnail });
+          if (saved) store.updateWorkflow(id, { thumbnail: saved.path });
+          else previewFailed = true;
+        } catch {
+          previewFailed = true;
+        }
+      }
+      onClose();
+      if (previewFailed) showToast.info('Workflow added', 'Preview image could not be saved.');
+      else showToast.success('Workflow added');
+    } catch {
+      showToast.error('Could not add workflow', 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const importSelected = () => {
+    const store = useWorkflowStore.getState();
+    for (const assetId of selected) store.importAsset(assetId, serverId);
+    showToast.success(`${selected.length} workflow${selected.length === 1 ? '' : 's'} added`);
+    onClose();
+  };
   return (
-    <KeyboardModal isOpen={isOpen} onClose={handleClose}>
-      <KeyboardModal.Header>
-        <Text className="text-lg font-semibold text-action">Import Workflow</Text>
-      </KeyboardModal.Header>
+    <Sheet
 
-      <KeyboardModal.Body scrollEnabled={false}>
-        <VStack space="md">
-          <KeyboardModal.Item title="Name" error={error}>
-            <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-surface-base">
-              <InputField
-                defaultValue={name}
-                onChangeText={(value) => {
-                  setName(value);
-                  setError('');
-                }}
-                placeholder="Enter workflow name"
-                className="px-3 py-2 text-sm text-action"
-              />
-            </Input>
-          </KeyboardModal.Item>
-
-          <VStack space="sm">
-            <HStack space="sm" className="items-center">
-              <Text className="text-sm font-medium text-content-body">Import Workflow</Text>
-              <Link href="https://shunl12324.github.io/comfy-portal/guide/workflow-json">
-                <LinkText className="text-xs">Where to get my workflow file?</LinkText>
-              </Link>
-            </HStack>
+      open={isOpen}
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      title={step === 'library' ? 'Saved workflows' : 'Add workflow'}
+    >
+      {step !== 'library' && (
+        <Copy muted size="label">
+          Into {serverName}
+        </Copy>
+      )}
+      {step === 'library' && (
+        <Row>
+          <Action kind="text" icon={ChevronLeft} label="Back to add options" onPress={() => setStep('source')} />
+        </Row>
+      )}
+      {step === 'source' && (
+        <>
+          {[
+            {
+              title: 'From a file',
+              subtitle: 'Choose a workflow JSON file',
+              icon: FileJson,
+              onPress: readFile,
+              label: 'Choose JSON file',
+            },
+            {
+              title: 'From Clipboard',
+              subtitle: 'Paste copied workflow JSON',
+              icon: ClipboardIcon,
+              onPress: paste,
+              label: 'Paste from clipboard',
+            },
+            ...(assets.length
+              ? [
+                  {
+                    title: 'Saved workflows',
+                    subtitle: 'Choose a saved workflow',
+                    icon: Images,
+                    onPress: () => setStep('library'),
+                    label: 'Saved workflows',
+                  },
+                ]
+              : []),
+          ].map(({ title, subtitle, icon: Icon, onPress, label }) => (
             <Pressable
-              onPress={handleImportFromFile}
-              className="h-32 w-full items-center justify-center rounded-lg border border-dashed border-primary-300 bg-surface-base"
+              key={title}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={onPress}
+              style={{
+                minHeight: 64,
+                padding: t.layout.field,
+                gap: t.layout.field,
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: c.card,
+                borderRadius: t.radius.panel,
+              }}
             >
-              <VStack space="sm" className="items-center">
-                <FileJson size={24} className={workflowData ? 'text-action' : 'text-content-secondary'} />
-                <VStack space="xs" className="items-center">
-                  {uploadedFileName ? (
-                    <>
-                      <Text className="text-sm font-medium text-action">{uploadedFileName}</Text>
-                      <Text className="text-xs text-content-secondary">Click to change file</Text>
-                    </>
+              <View
+                style={{
+                  width: t.height.control,
+                  height: t.height.control,
+                  borderRadius: t.radius.small,
+                  backgroundColor: c.raised,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon size={t.icon.large} strokeWidth={iconStroke(t.icon.large)} color={c.ink} />
+              </View>
+              <View style={{ flex: 1, gap: t.layout.label }}>
+                <Copy>{title}</Copy>
+                <Copy muted size="metadata">
+                  {subtitle}
+                </Copy>
+              </View>
+              <ChevronRight size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={c.muted} />
+            </Pressable>
+          ))}
+          <Action kind="secondary" fill onPress={onClose}>
+            Cancel
+          </Action>
+        </>
+      )}
+      {step === 'configure' && data && (
+        <>
+          <Field label="Workflow name" value={name} onChange={setName} placeholder="Workflow name" />
+          <Row style={{ alignItems: 'flex-start', gap: t.layout.field }}>
+            <View style={{ width: 112, gap: t.layout.related }}>
+              <Copy size="label">Preview image</Copy>
+              <View style={{ width: 112, height: 112 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose preview image"
+                  onPress={pickImage}
+                  style={{
+                    width: 112,
+                    height: 112,
+                    borderRadius: t.radius.control,
+                    overflow: 'hidden',
+                    backgroundColor: c.well,
+                    borderWidth: thumbnail ? 0 : 1,
+                    borderStyle: 'dashed',
+                    borderColor: c.faint,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: t.layout.related,
+                  }}
+                >
+                  {thumbnail ? (
+                    <Image source={{ uri: thumbnail }} style={{ width: 112, height: 112 }} contentFit="cover" />
                   ) : (
                     <>
-                      <Text className="text-sm font-medium text-content-body">Click to select workflow file</Text>
-                      <Text className="text-xs text-content-secondary">Supports JSON format</Text>
+                      <ImagePlus size={t.icon.hero} strokeWidth={iconStroke(t.icon.hero)} color={c.ink} />
+                      <Copy muted size="metadata">
+                        Add image
+                      </Copy>
+                      <Copy muted size="micro">
+                        Optional
+                      </Copy>
                     </>
                   )}
-                </VStack>
-              </VStack>
-            </Pressable>
-
-            <Button
-              variant="solid"
-              onPress={handleImportFromClipboard}
-              className={`w-full rounded-md ${workflowData?.addMethod === 'clipboard' ? 'bg-status-online' : ''}`}
-            >
-              <ButtonIcon as={workflowData?.addMethod === 'clipboard' ? CheckCircle : Clipboard} size="md" />
-              <ButtonText className="text-content-inverse">
-                {workflowData?.addMethod === 'clipboard' ? 'Imported from Clipboard' : 'Import from Clipboard'}
-              </ButtonText>
-            </Button>
-          </VStack>
-
-          <VStack space="xs">
-            <Text className="text-sm font-medium text-content-body">Thumbnail (Optional)</Text>
-            <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
-              {thumbnail ? (
-                <Image
-                  source={{ uri: thumbnail }}
-                  className="h-40 w-full"
-                  resizeMode="cover"
-                  alt="Workflow thumbnail"
-                />
-              ) : (
-                <VStack className="h-40 items-center justify-center">
-                  <ImagePlus className="text-content-secondary" />
-                  <Text className="mt-2 text-sm text-content-secondary">Add thumbnail</Text>
-                </VStack>
-              )}
-            </Pressable>
-          </VStack>
-        </VStack>
-      </KeyboardModal.Body>
-
-      <KeyboardModal.Footer>
-        <HStack space="sm">
-          <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-surface-sunken">
-            <ButtonText className="text-content-body">Cancel</ButtonText>
-          </Button>
-          <Button
-            variant="solid"
-            onPress={handleAdd}
-            className={`flex-1 rounded-md ${!name.trim() || !workflowData ? 'bg-primary-300 opacity-50' : 'bg-action'
-              }`}
-            disabled={!name.trim() || !workflowData}
-          >
-            <ButtonText className="text-content-inverse">Add</ButtonText>
-          </Button>
-        </HStack>
-      </KeyboardModal.Footer>
-    </KeyboardModal>
+                </Pressable>
+                {!!thumbnail && (
+                  <View style={{ position: 'absolute', top: 0, right: 0 }}>
+                    <Action kind="tonal" icon={X} label="Remove preview image" onPress={() => setThumbnail('')} />
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={{ flex: 1, gap: t.layout.related }}>
+              <Copy size="label">Nodes · {Object.keys(data).length}</Copy>
+              {/* Plain RN ScrollView: Gorhom tracks one scrollable per sheet, so a nested sheet scrollable would take over the sheet's own. */}
+              <ScrollView
+                style={{ height: 112, borderRadius: t.radius.control, backgroundColor: c.card }}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: t.layout.label, padding: t.layout.related }}
+              >
+                {Object.entries(data).map(([id, node]) => (
+                  <Row key={id} style={{ minHeight: t.height.small, gap: t.layout.related }}>
+                    <Copy mono muted size="micro">
+                      {id.padStart(2, '0')}
+                    </Copy>
+                    <Copy size="metadata" numberOfLines={1} style={{ flex: 1 }}>
+                      {node._meta?.title || node.class_type}
+                    </Copy>
+                  </Row>
+                ))}
+              </ScrollView>
+            </View>
+          </Row>
+          <ActionRow>
+            <Action kind="secondary" fill disabled={busy} onPress={onClose}>
+              Cancel
+            </Action>
+            <Action kind="primary" fill disabled={!name.trim()} loading={busy} onPress={save}>
+              Add workflow
+            </Action>
+          </ActionRow>
+        </>
+      )}
+      {step === 'library' && (
+        <>
+          <Field
+            label="Search saved workflows"
+            search
+            value={query}
+            onChange={setQuery}
+            placeholder="Search workflows"
+          />
+          {assets
+            .filter((asset) => asset.name.toLowerCase().includes(query.toLowerCase()))
+            .map((asset) => {
+              const active = selected.includes(asset.id);
+              return (
+                <Pressable
+                  key={asset.id}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: active }}
+                  onPress={() =>
+                    setSelected((ids) => (active ? ids.filter((id) => id !== asset.id) : [...ids, asset.id]))
+                  }
+                  style={{
+                    minHeight: 64,
+                    borderRadius: t.radius.panel,
+                    backgroundColor: active ? c.raised : c.card,
+                    borderWidth: 1,
+                    borderColor: active ? c.ink : 'transparent',
+                    padding: t.layout.field,
+                    gap: t.layout.label,
+                  }}
+                >
+                  <Copy>{asset.name}</Copy>
+                  <Copy size="metadata" style={{ color: c.secondary }}>
+                    {Object.keys(asset.data).length} nodes
+                  </Copy>
+                </Pressable>
+              );
+            })}
+          {!assets.length && <Copy muted>No saved workflows yet.</Copy>}
+          <Action kind="primary" disabled={!selected.length} onPress={importSelected}>
+            Add selected ({selected.length})
+          </Action>
+        </>
+      )}
+    </Sheet>
   );
 }

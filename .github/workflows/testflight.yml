@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
 
     steps:
@@ -72,7 +72,7 @@ jobs:
       - name: Expo prebuild
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: npx expo prebuild --clean --no-install
+        run: pnpm exec expo prebuild --platform ios --no-install
 
       # ── CocoaPods cache ───────────────────────────────────
       # Restore cached Pods based on the generated Podfile.lock.

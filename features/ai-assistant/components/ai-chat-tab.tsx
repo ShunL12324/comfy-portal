@@ -1,30 +1,29 @@
 import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { Action, Copy, Row, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
+import { designTokens as t } from '@/constants/design-tokens';
 import { createLanguageModel } from '@/features/ai-assistant/model';
 import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import { useChatSessionStore } from '@/features/ai-assistant/stores/chat-session-store';
-import {
-  createWorkflowTools,
-  serializeWorkflowIndex,
-} from '@/features/ai-assistant/tools/workflow-tools';
 import { WorkflowHistory } from '@/features/ai-assistant/tools/workflow-history';
+import { createWorkflowTools, serializeWorkflowIndex } from '@/features/ai-assistant/tools/workflow-tools';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { useChat } from '@ai-sdk/react';
 import { APICallError, DirectChatTransport, ToolLoopAgent, isStepCount, type UIMessage } from 'ai';
-import { AlertTriangle, Bot, Settings } from 'lucide-react-native';
-import React, {
+import { useRouter } from 'expo-router';
+import { Bot, Settings } from '@/constants/icons';
+import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
+  type ReactNode,
 } from 'react';
-import { Pressable, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ScrollView } from 'react-native';
 import { ChatInput } from './agent-chat/chat-input';
 import { ChatMessageBubble } from './agent-chat/chat-message-bubble';
 
@@ -79,6 +78,8 @@ interface AIChatTabProps {
   workflowId: string;
   serverId: string;
   onRunWorkflow: () => void;
+  onConversationStateChange?: (state: { hasMessages: boolean; isBusy: boolean }) => void;
+  onComposerChange?: (composer: ReactNode) => void;
 }
 
 /**
@@ -96,11 +97,10 @@ function isConfigError(error: unknown): boolean {
 }
 
 export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
-  ({ workflowId, serverId, onRunWorkflow }, ref) => {
+  ({ workflowId, serverId, onRunWorkflow, onConversationStateChange, onComposerChange }, ref) => {
     const persistedMessages = useChatSessionStore(
       useCallback(
-        (state): UIMessage[] =>
-          state.sessions[`${serverId}:${workflowId}`]?.messages ?? EMPTY_MESSAGES,
+        (state): UIMessage[] => state.sessions[`${serverId}:${workflowId}`]?.messages ?? EMPTY_MESSAGES,
         [serverId, workflowId],
       ),
     );
@@ -113,27 +113,31 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
     const restoreWorkflowData = useWorkflowStore((state) => state.restoreWorkflowData);
     const router = useRouter();
+    const c = useDesign();
+    const [providerConfigError, setProviderConfigError] = useState(false);
 
     // Undo stack lives across renders; cleared with the chat.
-    const historyRef = useRef(new WorkflowHistory());
+    const [history] = useState(() => new WorkflowHistory());
 
     // `onRunWorkflow` changes identity on every workflow edit, so it's read
     // through a ref — otherwise the agent (and the whole chat) would be rebuilt
     // on every keystroke in any node input.
     const runWorkflowRef = useRef(onRunWorkflow);
-    runWorkflowRef.current = onRunWorkflow;
+    useEffect(() => {
+      runWorkflowRef.current = onRunWorkflow;
+    }, [onRunWorkflow]);
 
     const agent = useMemo(() => {
       if (!provider) return null;
 
+      // Tool registration stores callbacks; only execute() reads the ref during a request.
+      // eslint-disable-next-line react-hooks/refs
       const tools = createWorkflowTools({
-        getWorkflowData: () =>
-          useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data || {},
-        updateNodeInput: (nodeId, inputKey, value) =>
-          updateNodeInput(workflowId, nodeId, inputKey, value),
+        getWorkflowData: () => useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data || {},
+        updateNodeInput: (nodeId, inputKey, value) => updateNodeInput(workflowId, nodeId, inputKey, value),
         restoreWorkflowData: (data) => restoreWorkflowData(workflowId, data),
         runWorkflow: () => runWorkflowRef.current(),
-        history: historyRef.current,
+        history,
       });
 
       return new ToolLoopAgent({
@@ -146,8 +150,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
         // injected per call — a snapshot captured at construction would go
         // stale as soon as the user or the agent changed anything.
         prepareCall: ({ options, ...settings }) => {
-          const data =
-            useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data;
+          const data = useWorkflowStore.getState().workflow.find((w) => w.id === workflowId)?.data;
           const index = data ? serializeWorkflowIndex(data) : '(empty workflow)';
           const custom = useAIAssistantStore.getState().customPrompt?.trim();
           return {
@@ -162,10 +165,28 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
           };
         },
       });
-    }, [provider, workflowId, updateNodeInput, restoreWorkflowData]);
+    }, [provider, workflowId, updateNodeInput, restoreWorkflowData, history]);
 
     const transport = useMemo(
-      () => (agent ? new DirectChatTransport({ agent }) : undefined),
+      () =>
+        agent
+          ? new DirectChatTransport({
+              agent,
+              // The local transport serializes errors before useChat receives
+              // them. Classify the original error here and expose useful copy
+              // without echoing provider responses or request credentials.
+              onError: (cause) => {
+                setProviderConfigError(isConfigError(cause));
+                if (APICallError.isInstance(cause)) {
+                  if (cause.statusCode === 401 || cause.statusCode === 403)
+                    return 'The provider rejected your credentials. Check configuration.';
+                  if (cause.statusCode === 404) return 'The model or endpoint was not found. Check configuration.';
+                  if (cause.statusCode === 429) return 'The provider is busy or out of quota. Try again later.';
+                }
+                return 'Could not complete the response. Try again.';
+              },
+            })
+          : undefined,
       [agent],
     );
 
@@ -181,6 +202,9 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     });
 
     const isBusy = status === 'submitted' || status === 'streaming';
+    useEffect(() => {
+      onConversationStateChange?.({ hasMessages: configured && messages.length > 0, isBusy });
+    }, [configured, isBusy, messages.length, onConversationStateChange]);
 
     // Watchdog: abort a turn that has gone quiet. Resets on every new chunk,
     // so a long but healthy response is never cut off.
@@ -191,10 +215,11 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     }, [isBusy, messages, stop]);
 
     const handleClearChat = useCallback(() => {
+      setProviderConfigError(false);
       clearSession(serverId, workflowId);
       setMessages([]);
-      historyRef.current.clear();
-    }, [clearSession, serverId, workflowId, setMessages]);
+      history.clear();
+    }, [clearSession, serverId, workflowId, setMessages, history]);
 
     useImperativeHandle(ref, () => ({
       clearChat: handleClearChat,
@@ -214,23 +239,42 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
     const handleSend = useCallback(
       (text: string) => {
         if (!transport || isBusy) return;
+        setProviderConfigError(false);
         void sendMessage({ text });
       },
       [transport, isBusy, sendMessage],
     );
 
+    const composer = useMemo(
+      () => (configured ? <ChatInput onSend={handleSend} isBusy={isBusy} onStop={stop} /> : null),
+      [configured, handleSend, isBusy, stop],
+    );
+    useEffect(() => {
+      onComposerChange?.(composer);
+      return () => onComposerChange?.(null);
+    }, [composer, onComposerChange]);
+
     if (!configured) {
-      return <NotConfiguredView />;
+      return (
+        <View testID="run-agent-chat" style={{ flex: 1, backgroundColor: c.workspace }}>
+          <NotConfiguredView />
+        </View>
+      );
     }
 
     return (
-      <View className="flex-1">
+      <View testID="run-agent-chat" style={{ flex: 1, backgroundColor: c.workspace }}>
         <AdaptiveScrollView
           ref={scrollViewRef as any}
+          testID="agent-chat-messages"
           style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          enableFooterMarginAdjustment={!!onComposerChange}
           contentContainerStyle={{
-            padding: 16,
-            paddingBottom: 8,
+            paddingHorizontal: t.layout.inset,
+            paddingTop: t.layout.inset,
+            paddingBottom: t.layout.related,
+            gap: t.layout.inset,
             flexGrow: 1,
           }}
         >
@@ -244,13 +288,13 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             <ErrorNotice
               error={error}
               onOpenSettings={
-                isConfigError(error) ? () => router.push('/settings/ai-assistant') : undefined
+                providerConfigError || isConfigError(error) ? () => router.push('/settings/ai-assistant') : undefined
               }
             />
           )}
         </AdaptiveScrollView>
 
-        <ChatInput onSend={handleSend} isBusy={isBusy} onStop={stop} />
+        {!onComposerChange && composer}
       </View>
     );
   },
@@ -260,81 +304,67 @@ AIChatTab.displayName = 'AIChatTab';
 
 function EmptyStateView() {
   return (
-    <View className="flex-1 items-center justify-center py-12">
-      <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-primary-50">
-        <Icon as={Bot} size="lg" className="text-content-body" />
-      </View>
-      <Text className="text-center text-sm font-medium text-content-body">
-        How can I help?
-      </Text>
-      <Text className="mt-1 text-center text-xs text-content-tertiary">
-        Ask me to adjust prompts, tweak parameters,{'\n'}or optimize your workflow.
-      </Text>
+    <View style={{ gap: t.layout.related }}>
+      <Row style={{ gap: t.layout.label }}>
+        <StateIcon icon={Bot} size={t.icon.small} />
+        <Copy style={{ fontWeight: '500' }}>Workflow assistant</Copy>
+      </Row>
+      <Copy size="label" muted>
+        Adjust prompts, change parameters, or inspect this workflow through a conversation.
+      </Copy>
     </View>
   );
 }
-
 function NotConfiguredView() {
   const router = useRouter();
   return (
-    <View className="flex-1 items-center justify-center px-6 py-12">
-      <View className="w-full rounded-2xl bg-warning-50 px-5 py-6">
-        <View className="items-center">
-          <View className="mb-3 rounded-full bg-warning-100 p-2">
-            <Icon as={AlertTriangle} size="md" className="text-warning-600" />
-          </View>
-          <Text className="text-center text-base font-semibold text-content-heading">
-            AI Not Configured
-          </Text>
-          <Text className="mt-1 text-center text-sm text-typography-600">
-            Set up your API provider to use the AI Agent.
-          </Text>
-          <Pressable
-            onPress={() => router.push('/settings/ai-assistant')}
-            className="mt-4 flex-row items-center gap-2 rounded-xl bg-typography-900 px-5 py-2.5 active:opacity-80"
-          >
-            <Icon as={Settings} size="sm" className="text-content-inverse" />
-            <Text className="text-sm font-semibold text-content-inverse">Open Settings</Text>
-          </Pressable>
-        </View>
-      </View>
+    <View style={{ padding: t.layout.inset, gap: t.layout.related }}>
+      <Copy style={{ fontWeight: '500' }}>Connect an AI provider</Copy>
+      <Copy size="label" muted>
+        Choose a provider and model to let the assistant help edit this workflow.
+      </Copy>
+      <Row>
+        <Action kind="secondary" small icon={Settings} onPress={() => router.push('/settings/ai-assistant')}>
+          Open settings
+        </Action>
+      </Row>
     </View>
   );
 }
-
-function ErrorNotice({
-  error,
-  onOpenSettings,
-}: {
-  error: Error;
-  onOpenSettings?: () => void;
-}) {
+function ErrorNotice({ error, onOpenSettings }: { error: Error; onOpenSettings?: () => void }) {
+  const c = useDesign();
   return (
-    <View className="mb-3 rounded-2xl bg-error-50 px-4 py-3">
-      <Text className="text-sm text-error-700">{error.message}</Text>
+    <View
+      accessibilityRole="alert"
+      style={{
+        backgroundColor: c.well,
+        borderRadius: t.radius.panel,
+        borderWidth: 1,
+        borderColor: c.line,
+        padding: t.layout.rowX,
+        gap: t.layout.related,
+      }}
+    >
+      <Copy size="label" style={{ color: c.danger }}>
+        {error.message}
+      </Copy>
       {onOpenSettings && (
-        <Pressable
-          onPress={onOpenSettings}
-          className="mt-2 flex-row items-center gap-1.5 self-start rounded-lg bg-warning-100 px-3 py-2 active:opacity-80"
-        >
-          <Icon as={Settings} size="xs" className="text-warning-700" />
-          <Text className="text-xs font-semibold text-warning-700">Check AI Configuration</Text>
-        </Pressable>
+        <Row>
+          <Action kind="text" small icon={Settings} onPress={onOpenSettings}>
+            Check configuration
+          </Action>
+        </Row>
       )}
     </View>
   );
 }
-
 function TypingIndicator() {
   return (
-    <View className="mb-3 flex-row items-center gap-2">
-      <View className="h-7 w-7 items-center justify-center rounded-full bg-primary-100">
-        <Icon as={Bot} size="xs" className="text-content-body" />
-      </View>
-      <View className="flex-row items-center gap-2 rounded-2xl rounded-bl-md bg-surface-sunken px-4 py-3">
-        <RotatingSpinner size="sm" />
-        <Text className="text-xs text-content-secondary">Thinking...</Text>
-      </View>
-    </View>
+    <Row style={{ paddingVertical: t.layout.label, gap: t.layout.related }}>
+      <RotatingSpinner size="sm" />
+      <Copy muted size="label">
+        Thinking…
+      </Copy>
+    </Row>
   );
 }

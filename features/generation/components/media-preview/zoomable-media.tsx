@@ -1,3 +1,4 @@
+import { useDesign } from '@/components/ui/design-system/primitives';
 import { isVideoUrl } from '@/features/generation/utils/media';
 import { Zoomable, type ZoomableRef } from '@likashefqet/react-native-image-zoom';
 import { Image } from 'expo-image';
@@ -28,6 +29,7 @@ export const ZoomableMedia = memo(function ZoomableMedia({
 }: ZoomableMediaProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const c = useDesign();
   const zoomableRef = useRef<ZoomableRef>(null);
 
   // Reset zoom when component mounts (modal opens)
@@ -74,7 +76,7 @@ export const ZoomableMedia = memo(function ZoomableMedia({
               flex: 1,
               justifyContent: 'center',
               alignItems: 'center',
-              backgroundColor: 'black',
+              backgroundColor: c.media,
               paddingTop: insets.top,
               paddingBottom: insets.bottom,
               paddingLeft: insets.left,
@@ -103,7 +105,7 @@ export const ZoomableMedia = memo(function ZoomableMedia({
   // Image: Use Zoomable for zoom handling
   return (
     <Pressable
-      className="flex-1 bg-black"
+      className="flex-1 bg-media"
       onLongPress={onLongPress}
       delayLongPress={500}
     >

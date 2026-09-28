@@ -1,7 +1,7 @@
 'use client';
 import { createLink } from '@gluestack-ui/core/link/creator';
 import { Pressable } from 'react-native';
-import { Text } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { withStyleContext } from '@gluestack-ui/utils/nativewind-utils';
@@ -18,11 +18,11 @@ cssInterop(UILink, { className: 'style' });
 cssInterop(UILink.Text, { className: 'style' });
 
 const linkStyle = tva({
-  base: 'group/link web:outline-0 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:ring-2 data-[focus-visible=true]:web:ring-indicator-primary data-[focus-visible=true]:web:outline-0 data-[disabled=true]:opacity-4 ',
+  base: 'group/link web:outline-0 data-[disabled=true]:web:cursor-not-allowed data-[focus-visible=true]:web:ring-2 data-[focus-visible=true]:web:ring-indicator-primary data-[focus-visible=true]:web:outline-0 data-[disabled=true]:opacity-disabled',
 });
 
 const linkTextStyle = tva({
-  base: 'underline text-info-700 data-[hover=true]:text-info-600 data-[hover=true]:no-underline data-[active=true]:text-info-700 font-normal font-body web:font-sans web:tracking-sm web:my-0 web:bg-transparent web:border-0 web:box-border web:display-inline web:list-none web:margin-0 web:padding-0 web:position-relative web:text-start web:whitespace-pre-wrap web:word-wrap-break-word',
+  base: 'text-tint data-[hover=true]:text-tint data-[active=true]:text-tint font-normal font-body web:font-sans web:tracking-sm web:my-0 web:bg-transparent web:border-0 web:box-border web:display-inline web:list-none web:margin-0 web:padding-0 web:position-relative web:text-start web:whitespace-pre-wrap web:word-wrap-break-word underline data-[hover=true]:no-underline',
 
   variants: {
     isTruncated: {
@@ -39,11 +39,11 @@ const linkTextStyle = tva({
     },
     size: {
       '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
+      xs: 'text-xs',
+      sm: 'text-sm',
+      md: 'text-base',
+      lg: 'text-lg',
+      xl: 'text-xl',
       '2xl': 'text-2xl',
       '3xl': 'text-3xl',
       '4xl': 'text-4xl',
@@ -57,33 +57,27 @@ const linkTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });
 
-type ILinkProps = React.ComponentProps<typeof UILink> &
-  VariantProps<typeof linkStyle> & { className?: string };
+type ILinkProps = React.ComponentProps<typeof UILink> & VariantProps<typeof linkStyle> & { className?: string };
 
-const Link = React.forwardRef<React.ComponentRef<typeof UILink>, ILinkProps>(
-  function Link({ className, ...props }, ref) {
-    return (
-      <UILink
-        ref={ref}
-        {...props}
-        className={linkStyle({ class: className })}
-      />
-    );
-  }
-);
+const Link = React.forwardRef<React.ComponentRef<typeof UILink>, ILinkProps>(function Link(
+  { className, ...props },
+  ref,
+) {
+  return <UILink ref={ref} {...props} className={linkStyle({ class: className })} />;
+});
 
 type ILinkTextProps = React.ComponentProps<typeof UILink.Text> &
   VariantProps<typeof linkTextStyle> & { className?: string };
 
-const LinkText = React.forwardRef<
-  React.ComponentRef<typeof UILink.Text>,
-  ILinkTextProps
->(function LinkText({ className, size = 'md', ...props }, ref) {
+const LinkText = React.forwardRef<React.ComponentRef<typeof UILink.Text>, ILinkTextProps>(function LinkText(
+  { className, size = 'md', ...props },
+  ref,
+) {
   return (
     <UILink.Text
       ref={ref}

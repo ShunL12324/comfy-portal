@@ -2,7 +2,7 @@ import { Box } from '@/components/ui/box';
 import { Icon } from '@/components/ui/icon';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Check, PlayCircle } from 'lucide-react-native';
+import { Check, PlayCircle } from '@/constants/icons';
 import React, { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -18,11 +18,11 @@ interface HistoryItemProps {
 function SelectionIndicator({ isSelected }: { isSelected: boolean }) {
   return (
     <View
-      className={`absolute right-1.5 bottom-1.5 h-5 w-5 rounded-full items-center justify-center ${
-        isSelected ? 'bg-typography-950' : 'bg-black/20 border border-white/40'
+      className={`right-1.5 bottom-1.5 h-5 w-5 absolute items-center justify-center rounded-full ${
+        isSelected ? 'bg-ink' : 'bg-media/20 border-on-media/40 border'
       }`}
     >
-      {isSelected && <Icon as={Check} size="2xs" className="text-content-inverse" />}
+      {isSelected && <Icon as={Check} size="xs" className="text-content-inverse" />}
     </View>
   );
 }
@@ -33,7 +33,7 @@ function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden bg-surface-sunken">
+      <Box className="bg-surface-sunken aspect-square overflow-hidden">
         <Image
           source={url}
           style={{ width: '100%', height: '100%' }}
@@ -42,16 +42,14 @@ function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
           recyclingKey={url}
         />
       </Box>
-      {isSelected && (
-        <View className="absolute inset-0 border-[3px] border-typography-950" />
-      )}
+      {isSelected && <View className="inset-0 border-ink absolute border-[3px]" />}
       {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
     </Pressable>
   );
 }
 
 function VideoItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
-  const player = useVideoPlayer(url, p => {
+  const player = useVideoPlayer(url, (p) => {
     p.loop = false;
     p.pause();
     p.muted = true;
@@ -62,20 +60,18 @@ function VideoItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
-      <Box className="aspect-square overflow-hidden bg-surface-sunken">
+      <Box className="bg-surface-sunken aspect-square overflow-hidden">
         <VideoView
           player={player}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           nativeControls={false}
         />
-        <View className="absolute inset-0 items-center justify-center bg-black/20">
-          <Icon as={PlayCircle} className="text-white opacity-90 h-8 w-8" />
+        <View className="inset-0 bg-media/20 absolute items-center justify-center">
+          <Icon size="display" as={PlayCircle} className="text-on-media" />
         </View>
       </Box>
-      {isSelected && (
-        <View className="absolute inset-0 border-[3px] border-typography-950" />
-      )}
+      {isSelected && <View className="inset-0 border-ink absolute border-[3px]" />}
       {isSelectionMode && <SelectionIndicator isSelected={isSelected} />}
     </Pressable>
   );
@@ -91,9 +87,6 @@ export const HistoryItem = React.memo(
     }
     return <ImageItem {...props} />;
   },
-  (prev, next) => (
-    prev.url === next.url &&
-    prev.isSelectionMode === next.isSelectionMode &&
-    prev.isSelected === next.isSelected
-  ),
+  (prev, next) =>
+    prev.url === next.url && prev.isSelectionMode === next.isSelectionMode && prev.isSelected === next.isSelected,
 );

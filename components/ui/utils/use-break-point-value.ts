@@ -1,5 +1,4 @@
 import { Dimensions, useWindowDimensions } from 'react-native';
-import { useEffect, useState } from 'react';
 
 import resolveConfig from 'tailwindcss/resolveConfig';
 const tailwindConfig = require('@/tailwind.config');
@@ -63,19 +62,7 @@ export const getBreakPointValue = (values: BreakPointValue, width: number) => {
 
 export function useBreakpointValue(values: BreakPointValue): any {
   const { width } = useWindowDimensions();
-
-  const [currentBreakPointValue, setCurrentBreakPointValue] = useState(getBreakPointValue(values, width));
-
-  useEffect(() => {
-    if (typeof values === 'object') {
-      const finalBreakPointResolvedValue = getBreakPointValue(values, width);
-      setCurrentBreakPointValue(finalBreakPointResolvedValue);
-    }
-  }, [values, width]);
-
-  if (typeof values !== 'object') return values;
-
-  return currentBreakPointValue;
+  return getBreakPointValue(values, width);
 }
 
 export function isValidBreakpoint(breakPointWidth: any, width: any = Dimensions.get('window')?.width) {

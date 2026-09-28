@@ -16,6 +16,7 @@ import {
   MotionComponentProps,
 } from '@legendapp/motion';
 import { View, Pressable, ScrollView, ViewStyle } from 'react-native';
+import { designTokens } from '@/constants/design-tokens';
 
 const SCOPE = 'ALERT_DIALOG';
 
@@ -61,7 +62,7 @@ const alertDialogStyle = tva({
 });
 
 const alertDialogContentStyle = tva({
-  base: 'bg-background-0 rounded-lg overflow-hidden border border-outline-100 p-6',
+  base: 'bg-surface-overlay rounded-lg overflow-hidden border border-outline-100 p-6',
   parentVariants: {
     size: {
       xs: 'w-[60%] max-w-[360px]',
@@ -255,7 +256,7 @@ const AlertDialogBackdrop = React.forwardRef<
         opacity: 0,
       }}
       animate={{
-        opacity: 0.5,
+        opacity: designTokens.opacity.scrim,
       }}
       exit={{
         opacity: 0,

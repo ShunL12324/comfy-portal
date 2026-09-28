@@ -1,3 +1,4 @@
+import { createDurableStorage } from '@/services/durable-storage';
 import { secureStorage } from '@/services/secure-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -12,6 +13,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 export interface CloudCredentials {
   /** vast.ai API key — rents and destroys instances. */
   vastApiKey: string;
+  runpodApiKey: string;
   /** Sent to the instance so gated Civitai downloads work. */
   civitaiApiKey: string;
   /** Sent to the instance so gated HuggingFace repos resolve. */
@@ -26,26 +28,30 @@ interface CloudCredentialsState extends CloudCredentials {
   hasVastKey: () => boolean;
 }
 
+export const credentialStorage = createDurableStorage(secureStorage);
+
 export const useCloudCredentialsStore = create<CloudCredentialsState>()(
   persist(
     (set, get) => ({
       vastApiKey: '',
+      runpodApiKey: '',
       civitaiApiKey: '',
       huggingFaceToken: '',
       hydrated: false,
 
       setCredential: (key, value) => set({ [key]: value.trim() } as Pick<CloudCredentials, typeof key>),
 
-      clearAll: () => set({ vastApiKey: '', civitaiApiKey: '', huggingFaceToken: '' }),
+      clearAll: () => set({ vastApiKey: '', runpodApiKey: '', civitaiApiKey: '', huggingFaceToken: '' }),
 
       hasVastKey: () => get().vastApiKey.length > 0,
     }),
     {
       name: 'cloud-credentials',
-      storage: createJSONStorage(() => secureStorage),
+      storage: createJSONStorage(() => credentialStorage),
       // `hydrated` describes this session, not the saved value.
-      partialize: ({ vastApiKey, civitaiApiKey, huggingFaceToken }) => ({
+      partialize: ({ vastApiKey, runpodApiKey, civitaiApiKey, huggingFaceToken }) => ({
         vastApiKey,
+        runpodApiKey,
         civitaiApiKey,
         huggingFaceToken,
       }),

@@ -1,25 +1,27 @@
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { AlertTriangle } from '@/constants/icons';
+import { router } from 'expo-router';
+import { destroyCloudInstance } from '@/features/cloud/services/provider';
+import { launchKey, useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
+import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
+import { showToast } from '@/utils/toast';
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
-import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
-import { Button, ButtonText } from '@/components/ui/button';
-import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
+import { ThemedBottomSheetModal, ThemedSheetFooter } from '@/components/self-ui/themed-bottom-sheet-modal';
+import { designTokens as t } from '@/constants/design-tokens';
+import { Action, Copy, Segments, Title } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Server } from '@/features/server/types';
 import { validateHost, validatePort } from '@/services/network';
-import { useResolvedTheme } from '@/store/theme';
-import {
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Keyboard } from 'react-native';
+import { BottomSheetModal, type BottomSheetFooterProps } from '@gorhom/bottom-sheet';
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EditServerModalProps {
   serverId: string;
+  onRemoved?: () => void;
 }
 
 export interface EditServerModalRef {
@@ -28,13 +30,12 @@ export interface EditServerModalRef {
 
 const MAX_NAME_LENGTH = 30;
 
-export const EditServerModal = forwardRef<
-  EditServerModalRef,
-  EditServerModalProps
->((props, ref) => {
+export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalProps>((props, ref) => {
   const { serverId } = props;
-  const theme = useResolvedTheme();
-  const isDarkMode = theme === 'dark';
+  const [confirming, setConfirming] = useState<'disconnect' | 'destroy' | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const removeLock = useRef(false);
+  const cloud = useServersStore((state) => state.servers.find((server) => server.id === serverId)?.cloud);
   const insets = useSafeAreaInsets();
   const updateServer = useServersStore((state) => state.updateServer);
 
@@ -52,7 +53,7 @@ export const EditServerModal = forwardRef<
 
   // Load server data
   const loadServerData = useCallback(() => {
-    const server = useServersStore.getState().servers.find(s => s.id === serverId);
+    const server = useServersStore.getState().servers.find((s) => s.id === serverId);
     if (server) {
       setName(server.name);
       setHost(server.host);
@@ -106,7 +107,6 @@ export const EditServerModal = forwardRef<
    * ignored and the trigger looks dead.
    */
   const handleDismissed = useCallback(() => {
-    isPresentedRef.current = false;
     setNameError('');
     setHostError('');
     setPortError('');
@@ -117,46 +117,49 @@ export const EditServerModal = forwardRef<
     bottomSheetModalRef.current?.dismiss();
   }, []);
 
-  // Track whether the modal is currently presented, so the global
-  // keyboardWillHide listener only fires snapToIndex when this sheet
-  // is actually visible — prevents conflicts with other BottomSheets.
-  const isPresentedRef = useRef(false);
-
   // Expose present method
   useImperativeHandle(ref, () => ({
     present: () => {
       loadServerData();
       bottomSheetModalRef.current?.present();
-      isPresentedRef.current = true;
     },
   }));
 
-  // Workaround: manually restore position when keyboard hides
-  // https://github.com/gorhom/react-native-bottom-sheet/issues/1894
-  useEffect(() => {
-    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
-      if (isPresentedRef.current) {
-        bottomSheetModalRef.current?.snapToIndex(0);
-      }
-    });
-    return () => hideSubscription.remove();
-  }, []);
+  const renderFooter = (footerProps: BottomSheetFooterProps) => (
+    <ThemedSheetFooter {...footerProps} belowActions={<>
+        <Action kind={cloud ? 'secondary' : 'primary'} destructive fill icon={AlertTriangle} onPress={() => setConfirming('disconnect')}>Remove connection</Action>
+        {cloud && <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirming('destroy')}>Destroy instance</Action>}
+      </>}>
+      <Action kind="secondary" fill onPress={handleClose}>
+        Cancel
+      </Action>
+      <Action kind="primary" fill onPress={handleSave}>
+        Save changes
+      </Action>
+    </ThemedSheetFooter>
+  );
 
   return (
-    <ThemedBottomSheetModal
-      ref={bottomSheetModalRef}
-      index={0}
-      snapPoints={['70%']}
-      onDismiss={handleDismissed}
-      enablePanDownToClose={true}
-      topInset={insets.top}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-    >
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }}>
-        <VStack space="md" style={{ paddingBottom: insets.bottom + 24 }}>
-            <View className="pb-2">
-              <Text className="text-lg font-semibold text-action">Edit Server</Text>
+    <>
+      <ThemedBottomSheetModal
+        ref={bottomSheetModalRef}
+        index={0}
+        enableDynamicSizing
+        footerComponent={renderFooter}
+        onDismiss={handleDismissed}
+        enablePanDownToClose={true}
+        topInset={insets.top}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+      >
+        <AdaptiveScrollView
+          keyboardShouldPersistTaps="handled"
+          enableFooterMarginAdjustment
+          contentContainerStyle={{ paddingHorizontal: t.layout.inset, paddingBottom: insets.bottom + t.layout.inset }}
+        >
+          <VStack style={{ gap: t.layout.field }}>
+            <View style={{ paddingBottom: t.layout.related }}>
+              <Title>Server settings</Title>
             </View>
 
             <BottomSheetFormInput
@@ -204,29 +207,80 @@ export const EditServerModal = forwardRef<
               secureTextEntry={true}
             />
 
-            <VStack space="xs">
-              <Text className="text-sm font-medium text-typography-600">Use SSL</Text>
-              <SegmentedControl
+            <VStack style={{ gap: t.layout.label }}>
+              <Copy size="label" muted>
+                Use SSL
+              </Copy>
+              <Segments
                 options={['Auto', 'Always', 'Never']}
                 value={useSSL}
                 onChange={(value) => {
                   setUseSSL(value as Server['useSSL']);
                 }}
-                className="mt-1"
               />
             </VStack>
 
-            <HStack space="sm" className="mt-3">
-              <Button variant="outline" onPress={handleClose} className="flex-1 rounded-md bg-surface-sunken py-2">
-                <ButtonText className="text-content-body">Cancel</ButtonText>
-              </Button>
-              <Button variant="solid" onPress={handleSave} className="flex-1 rounded-md bg-action py-2">
-                <ButtonText className="text-content-inverse">Save</ButtonText>
-              </Button>
-            </HStack>
+            {cloud && (
+              <Action
+                kind="secondary"
+                onPress={() => {
+                  handleClose();
+                  router.push({
+                    pathname: '/cloud/launch-status/[instanceId]',
+                    params: { instanceId: launchKey(cloud) },
+                  });
+                }}
+              >
+                Installation details
+              </Action>
+            )}
           </VStack>
-      </BottomSheetScrollView>
-    </ThemedBottomSheetModal>
+        </AdaptiveScrollView>
+      </ThemedBottomSheetModal>
+      <ConfirmDialog
+        isOpen={confirming !== null}
+        destructive
+        loading={removing}
+        title={confirming === 'destroy' ? 'Destroy instance?' : 'Remove connection?'}
+        description={
+          confirming === 'destroy'
+            ? 'Permanently delete this rented instance and its server files. Compute billing stops after deletion; separately billed storage may remain. Downloaded gallery items stay on this device.'
+            : 'Remove this saved connection. The server and provider billing continue. Saved workflow assets and downloaded gallery items stay on this device.'
+        }
+        confirmText={confirming === 'destroy' ? 'Destroy instance' : 'Remove connection'}
+        onClose={() => {
+          if (!removeLock.current) setConfirming(null);
+        }}
+        onConfirm={async () => {
+          if (removeLock.current) return;
+          removeLock.current = true;
+          setRemoving(true);
+          try {
+            if (confirming === 'destroy' && cloud) {
+              const credentials = useCloudCredentialsStore.getState();
+              const key = cloud.provider === 'runpod' ? credentials.runpodApiKey : credentials.vastApiKey;
+              if (!key) throw new Error('Add your provider key in Cloud accounts before destroying this instance.');
+              await destroyCloudInstance(cloud.provider, String(cloud.instanceId), credentials);
+              useProvisioningStore.getState().remove(launchKey(cloud));
+              const servers = useServersStore.getState();
+              servers.servers
+                .filter((server) => server.cloud && launchKey(server.cloud) === launchKey(cloud))
+                .forEach((server) => servers.removeServer(server.id));
+            } else {
+              useServersStore.getState().removeServer(serverId);
+            }
+            setConfirming(null);
+            handleClose();
+            props.onRemoved?.();
+          } catch (error) {
+            showToast.error('Could not remove server', error instanceof Error ? error.message : 'Please retry.');
+          } finally {
+            removeLock.current = false;
+            setRemoving(false);
+          }
+        }}
+      />
+    </>
   );
 });
 

@@ -2,17 +2,8 @@
 import React from 'react';
 import { H4 } from '@expo/html-elements';
 import { createActionsheet } from '@gluestack-ui/core/actionsheet/creator';
-import {
-  Pressable,
-  View,
-  Text,
-  ScrollView,
-  VirtualizedList,
-  FlatList,
-  SectionList,
-  PressableProps,
-  ViewStyle,
-} from 'react-native';
+import { Pressable, View, ScrollView, VirtualizedList, FlatList, SectionList, PressableProps, ViewStyle } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
@@ -23,6 +14,7 @@ import {
   createMotionAnimatedComponent,
   MotionComponentProps,
 } from '@legendapp/motion';
+import { designTokens } from '@/constants/design-tokens';
 
 const ItemWrapper = React.forwardRef<
   React.ComponentRef<typeof Pressable>,
@@ -106,11 +98,11 @@ cssInterop(PrimitiveIcon, {
 const actionsheetStyle = tva({ base: 'w-full h-full web:pointer-events-none' });
 
 const actionsheetContentStyle = tva({
-  base: 'items-center rounded-tl-3xl rounded-tr-3xl p-5 pt-2 bg-background-0 web:pointer-events-auto web:select-none shadow-hard-5 border border-b-0 border-outline-100 pb-safe',
+  base: 'items-center rounded-tl-3xl rounded-tr-3xl p-5 pt-2 bg-surface-overlay web:pointer-events-auto web:select-none shadow-hard-5 border border-b-0 border-outline-100 pb-safe',
 });
 
 const actionsheetItemStyle = tva({
-  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 web:data-[focus-visible=true]:outline-indicator-primary gap-2',
+  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-disabled data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 web:data-[focus-visible=true]:outline-indicator-primary gap-2',
 });
 
 const actionsheetItemTextStyle = tva({
@@ -218,12 +210,12 @@ const actionsheetIconStyle = tva({
   base: 'text-background-500 fill-none',
   variants: {
     size: {
-      '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'w-[18px] h-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      '2xs': 'size-icon-micro',
+      'xs': 'size-icon-small',
+      'sm': 'size-icon-control',
+      'md': 'size-icon-medium',
+      'lg': 'size-icon-large',
+      'xl': 'size-icon-hero',
     },
   },
 });
@@ -404,7 +396,7 @@ const ActionsheetBackdrop = React.forwardRef<
         opacity: 0,
       }}
       animate={{
-        opacity: 0.5,
+        opacity: designTokens.opacity.scrim,
       }}
       exit={{
         opacity: 0,

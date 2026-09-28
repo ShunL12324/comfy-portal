@@ -26,7 +26,7 @@ export const headingStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
     size: {
       '5xl': 'text-6xl',

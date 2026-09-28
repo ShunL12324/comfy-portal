@@ -1,4 +1,4 @@
-import { type Node, type Workflow } from "@/features/workflow/types";
+import { type Node, type Workflow } from '@/features/workflow/types';
 
 /**
  * Parse a JSON template into a Workflow type
@@ -6,18 +6,27 @@ import { type Node, type Workflow } from "@/features/workflow/types";
  * @returns A Workflow object
  */
 export function parseWorkflowTemplate(template: Record<string, any>): Workflow {
+  if (!template || typeof template !== 'object' || Array.isArray(template)) {
+    throw new Error('Workflow must be an object keyed by node id.');
+  }
   const workflow: Workflow = {};
 
   for (const [nodeId, nodeData] of Object.entries(template)) {
-    if (typeof nodeData !== 'object' || nodeData === null) {
+    if (typeof nodeData !== 'object' || nodeData === null || Array.isArray(nodeData)) {
       throw new Error(`Invalid node data for node ${nodeId}`);
     }
 
+    if (typeof nodeData.class_type !== 'string' || !nodeData.class_type.trim()) {
+      throw new Error('Workflow node ' + nodeId + ' has no class type.');
+    }
+    if (nodeData.inputs != null && (typeof nodeData.inputs !== 'object' || Array.isArray(nodeData.inputs))) {
+      throw new Error('Workflow node ' + nodeId + ' has invalid inputs.');
+    }
     const node: Node = {
       id: nodeId,
-      inputs: nodeData.inputs || {},
+      inputs: JSON.parse(JSON.stringify(nodeData.inputs || {})),
       class_type: nodeData.class_type || '',
-      _meta: nodeData._meta,
+      _meta: nodeData._meta ? JSON.parse(JSON.stringify(nodeData._meta)) : undefined,
     };
 
     workflow[nodeId] = node;

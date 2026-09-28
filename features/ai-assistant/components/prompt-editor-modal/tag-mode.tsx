@@ -1,13 +1,11 @@
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import { Action, Copy } from '@/components/ui/design-system/primitives';
 import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { generateUUID } from '@/utils/uuid';
-import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Check, Minus, Plus, Trash2 } from '@/constants/icons';
 import { MotiView } from 'moti';
-import React, { useEffect, useState } from 'react';
-import { Pressable, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 interface Tag {
@@ -54,18 +52,6 @@ const formatTagsToPrompt = (tags: Tag[]): string => {
     .join(', ');
 };
 
-const getStrengthColor = (strength: number) => {
-  if (strength <= 0.5) return 'text-success-400';
-  if (strength <= 0.8) return 'text-status-online';
-  if (strength <= 1.0) return 'text-success-600';
-  if (strength <= 1.2) return 'text-warning-400';
-  if (strength <= 1.5) return 'text-status-busy';
-  if (strength <= 1.8) return 'text-error-400';
-  if (strength <= 2.0) return 'text-status-danger';
-  if (strength <= 2.3) return 'text-status-danger-pressed';
-  return 'text-error-700';
-};
-
 interface TagItemProps {
   tag: string;
   strength: number;
@@ -76,17 +62,17 @@ interface TagItemProps {
 function TagItem({ tag, strength, selected, onSelect }: TagItemProps) {
   return (
     <View
-      className={`h-8 flex-row items-center gap-[0.5px] rounded-full border px-2 ${
-        selected ? 'border-primary-700 bg-surface-muted' : 'border-transparent bg-surface-raised'
+      className={`h-8 px-2 flex-row items-center rounded-full border ${
+        selected ? 'border-ink bg-surface-muted' : 'bg-surface-raised border-transparent'
       }`}
     >
       <Pressable onPress={onSelect} className="max-w-[90%] flex-row items-center">
-        <Text size="sm" className="text-ellipsis px-2 py-1 text-content-heading">
+        <Copy size="label" className="px-2 py-1 text-ellipsis">
           {tag}
-        </Text>
-        <Text size="sm" className={`${getStrengthColor(strength)} text-xs`} bold>
+        </Copy>
+        <Copy size="metadata" style={{ fontWeight: '600' }}>
           {strength.toFixed(1)}
-        </Text>
+        </Copy>
       </Pressable>
     </View>
   );
@@ -97,19 +83,19 @@ export function TagMode({ value, onChange }: TagModeProps) {
   const [newTag, setNewTag] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
-  // Sync tags to parent value
-  useEffect(() => {
-    const prompt = formatTagsToPrompt(tags);
-    onChange(prompt);
-  }, [tags, onChange]);
+  // Re-parse only when the value changes from outside; our own edits round-trip
+  // to the same prompt, so tag ids and selection survive them.
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (value !== formatTagsToPrompt(tags)) setTags(parsePromptToTags(value));
+  }
 
-  // Re-parse tags when value changes externally
-  useEffect(() => {
-    const currentPrompt = formatTagsToPrompt(tags);
-    if (value !== currentPrompt) {
-      setTags(parsePromptToTags(value));
-    }
-  }, [value]);
+  // Every edit happens in an event handler, which reports the new prompt directly.
+  const commitTags = (next: Tag[]) => {
+    setTags(next);
+    onChange(formatTagsToPrompt(next));
+  };
 
   const handleTagSelect = (tagId: string) => {
     if (selectedTagId === tagId) {
@@ -134,7 +120,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
             }
           : tag,
       );
-      setTags(updatedTags);
+      commitTags(updatedTags);
       setSelectedTagId(null);
       setNewTag('');
     }
@@ -155,13 +141,13 @@ export function TagMode({ value, onChange }: TagModeProps) {
     };
 
     const updatedTags = [...tags, newTagObj];
-    setTags(updatedTags);
+    commitTags(updatedTags);
     setNewTag('');
   };
 
   const handleRemoveTag = (tagId: string) => {
     const updatedTags = tags.filter((tag) => tag.id !== tagId);
-    setTags(updatedTags);
+    commitTags(updatedTags);
   };
 
   const handleUpdateTagStrength = (tagId: string, newStrength: number) => {
@@ -173,7 +159,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
           }
         : tag,
     );
-    setTags(updatedTags);
+    commitTags(updatedTags);
   };
 
   const handleIncreaseStrength = () => {
@@ -213,7 +199,7 @@ export function TagMode({ value, onChange }: TagModeProps) {
           updatedTags[currentIndex],
           updatedTags[currentIndex - 1],
         ];
-        setTags(updatedTags);
+        commitTags(updatedTags);
       }
     }
   };
@@ -227,23 +213,27 @@ export function TagMode({ value, onChange }: TagModeProps) {
           updatedTags[currentIndex + 1],
           updatedTags[currentIndex],
         ];
-        setTags(updatedTags);
+        commitTags(updatedTags);
       }
     }
   };
 
   return (
     <View className="flex-1">
-      <Text className="mb-3 text-sm font-medium text-typography-600">Tags</Text>
+      <Copy size="label" muted className="mb-3" style={{ fontWeight: '500' }}>
+        Tags
+      </Copy>
 
       <MotiView
         from={{ opacity: 0, translateX: -20 }}
         animate={{ opacity: 1, translateX: 0 }}
         transition={{ type: 'timing', duration: 200 }}
       >
-        <View className="mb-4 flex-row flex-wrap gap-2">
+        <View className="mb-4 gap-2 flex-row flex-wrap">
           {tags.length === 0 ? (
-            <Text className="text-sm text-content-tertiary">No tags yet. Add one below.</Text>
+            <Copy size="label" muted>
+              No tags yet. Add one below.
+            </Copy>
           ) : (
             tags.map((tag) => (
               <TagItem
@@ -264,83 +254,72 @@ export function TagMode({ value, onChange }: TagModeProps) {
         animate={{ opacity: 1, translateX: 0 }}
         transition={{ type: 'timing', duration: 200 }}
       >
-        <View className="mb-4 flex-row items-center justify-between gap-2">
-          <Button
-            size="sm"
-            variant="solid"
-            action="primary"
+        <View className="mb-4 gap-2 flex-row items-center justify-between">
+          <Action
+            small
+            kind="secondary"
+            icon={ArrowUp}
+            label="Move tag up"
             disabled={selectedTagId === null}
-            className={`${selectedTagId === null ? 'opacity-60' : ''}`}
             onPress={handleMoveTagUp}
-          >
-            <ButtonIcon as={ArrowUp} />
-          </Button>
-          <Button
-            size="sm"
-            variant="solid"
-            action="primary"
+          />
+          <Action
+            small
+            kind="secondary"
+            icon={ArrowDown}
+            label="Move tag down"
             disabled={selectedTagId === null}
-            className={`${selectedTagId === null ? 'opacity-60' : ''}`}
             onPress={handleMoveTagDown}
-          >
-            <ButtonIcon as={ArrowDown} />
-          </Button>
-          <Button
-            size="sm"
-            variant="solid"
-            action="primary"
+          />
+          <Action
+            small
+            kind="secondary"
+            icon={Plus}
+            label="Increase tag strength"
             disabled={selectedTagId === null}
-            className={`${selectedTagId === null ? 'opacity-60' : ''}`}
             onPress={handleIncreaseStrength}
           >
-            <ButtonIcon as={Plus} />
-            <ButtonText>Stronger</ButtonText>
-          </Button>
-          <Button
-            size="sm"
-            variant="solid"
-            action="primary"
+            Stronger
+          </Action>
+          <Action
+            small
+            kind="secondary"
+            icon={Minus}
+            label="Decrease tag strength"
             disabled={selectedTagId === null}
-            className={`${selectedTagId === null ? 'opacity-60' : ''}`}
             onPress={handleDecreaseStrength}
           >
-            <ButtonIcon as={Minus} />
-            <ButtonText>Weaker</ButtonText>
-          </Button>
-          <TouchableOpacity
-            className={`rounded-md border-[0.5px] border-error-500 p-2 ${
-              selectedTagId === null ? 'opacity-60' : ''
-            }`}
+            Weaker
+          </Action>
+          <Action
+            kind="secondary"
+            destructive
+            icon={Trash2}
+            label="Remove tag"
             disabled={selectedTagId === null}
             onPress={handleRemoveSelectedTag}
-          >
-            <Icon as={Trash2} size="sm" className="text-status-danger" />
-          </TouchableOpacity>
+          />
         </View>
       </MotiView>
 
       {/* Add/Edit input */}
       <Animated.View
-        className="flex-row items-center gap-2"
+        className="gap-2 flex-row items-center"
         layout={LinearTransition.springify().damping(10).stiffness(100).duration(100)}
       >
-        <Input className="flex-1 rounded-md border-0 bg-surface-sunken">
+        <Input className="rounded-md bg-surface-sunken flex-1 border-0">
           <InputField
             placeholder={selectedTagId ? 'Edit tag' : 'Add a tag'}
             value={newTag}
             onChangeText={setNewTag}
             onSubmitEditing={handleAddTag}
-            className="rounded-md text-sm"
+            className="rounded-md"
           />
         </Input>
-        <MotiView
-          animate={{ width: selectedTagId ? 100 : 80 }}
-          transition={{ type: 'timing', duration: 200 }}
-        >
-          <Button size="sm" variant="solid" action="primary" onPress={handleAddTag} className="w-full">
-            <ButtonIcon as={selectedTagId ? Check : Plus} />
-            <ButtonText>{selectedTagId ? 'Confirm' : 'Add'}</ButtonText>
-          </Button>
+        <MotiView animate={{ width: selectedTagId ? 100 : 80 }} transition={{ type: 'timing', duration: 200 }}>
+          <Action kind="primary" icon={selectedTagId ? Check : Plus} onPress={handleAddTag} fill>
+            {selectedTagId ? 'Confirm' : 'Add'}
+          </Action>
         </MotiView>
       </Animated.View>
     </View>

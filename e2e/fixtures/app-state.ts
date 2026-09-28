@@ -36,6 +36,22 @@ export async function seedServer(page: Page) {
   );
 }
 
+/**
+ * The theme every spec runs under.
+ *
+ * Seeded explicitly rather than inherited from the store's default: a spec that
+ * depends on whatever the default happens to be breaks the day the default
+ * changes, which is exactly what happened when a fresh install started opening
+ * in Dark. Dark is what a first launch actually shows, so that is what the
+ * suite covers.
+ */
+export const SEEDED_THEME = 'dark';
+
 export async function clearState(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript((theme) => {
+    window.localStorage.clear();
+    // Shape must match the store's persist config (zustand, version 1), or
+    // rehydration drops it and the default silently takes over again.
+    window.localStorage.setItem('theme-storage', JSON.stringify({ state: { preference: theme }, version: 1 }));
+  }, SEEDED_THEME);
 }

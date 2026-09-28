@@ -12,15 +12,29 @@ export function formatUptime(startedAtSeconds: number, nowMs = Date.now()): stri
  * Shown wherever a running instance is, not hidden behind a tap: the whole
  * failure mode this guards against is forgetting a machine is on.
  */
-export function accruedCost(
-  startedAtSeconds: number,
-  pricePerHour: number,
-  nowMs = Date.now(),
-): number {
+export function accruedCost(startedAtSeconds: number, pricePerHour: number, nowMs = Date.now()): number {
   const hours = Math.max(0, nowMs / 1000 - startedAtSeconds) / 3600;
   return hours * pricePerHour;
 }
 
 export function formatUsd(amount: number): string {
-  return amount < 0.01 ? '<$0.01' : `$${amount.toFixed(2)}`;
+  return amount === 0 ? '$0.00' : amount < 0.01 ? '<$0.01' : `$${amount.toFixed(2)}`;
+}
+
+/** Running estimates are not invoices; a GPU starting rate excludes storage. */
+export function formatRentalCost(rental: {
+  startedAt: number;
+  pricePerHour: number;
+  priceScope?: 'instance' | 'gpu-starting';
+}): string {
+  if (rental.priceScope === 'gpu-starting')
+    return formatUptime(rental.startedAt) + ' · GPU from ' + formatUsd(rental.pricePerHour) + '/hr';
+  return (
+    formatUptime(rental.startedAt) +
+    ' · Est. ' +
+    formatUsd(accruedCost(rental.startedAt, rental.pricePerHour)) +
+    ' · ' +
+    formatUsd(rental.pricePerHour) +
+    '/hr'
+  );
 }

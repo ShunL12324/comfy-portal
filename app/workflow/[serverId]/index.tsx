@@ -1,624 +1,242 @@
+import { RefreshFlatList } from '@/components/ui/design-system/pull-refresh';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
-import { EmptyState } from '@/components/self-ui/empty-state';
-import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { FlatList } from '@/components/ui/flat-list';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import { VStack } from '@/components/ui/vstack';
+import { Action, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Sheet } from '@/components/ui/design-system/overlays';
+import { Settings2, Plus } from '@/constants/icons';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { AddWorkflowModal } from '@/features/workflow/components/add-workflow-modal';
-import { ImportWorkflowModal } from '@/features/workflow/components/import-workflow-modal';
-import { WorkflowCard } from '@/features/workflow/components/workflow-card';
+import { EditServerModal, type EditServerModalRef } from '@/features/server/components/edit-server-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser';
-import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as apiListWorkflows, ServerWorkflowFile } from '@/services/comfy-api';
-import { showToast } from '@/utils/toast';
-import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  FadeIn,
-  FadeOut,
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabView as RNETabView } from 'react-native-tab-view';
+import { compareWorkflowUsage } from '@/features/workflow/utils/workflow-usage';
+import { WorkflowCard } from '@/features/workflow/components/workflow-card';
+import { ImportWorkflowModal } from '@/features/workflow/components/import-workflow-modal';
+import { syncWorkflows } from '@/features/workflow/services/sync-workflows';
+import { FilterChips } from '@/components/ui/design-system/filter-chips';
+import { designTokens as t } from '@/constants/design-tokens';
 
-interface LocalWorkflowsTabProps {
-  serverId: string;
-  openImportModal: () => void;
-}
-
-interface WorkflowTabToggleProps {
-  index: number;
-  onChange: (index: number) => void;
-}
-
-const TOGGLE_CONTAINER_WIDTH = 112;
-const TOGGLE_CONTAINER_HEIGHT = 40;
-const TOGGLE_HORIZONTAL_PADDING = 4;
-const TOGGLE_ITEM_COUNT = 2;
-const TOGGLE_THUMB_WIDTH = (TOGGLE_CONTAINER_WIDTH - TOGGLE_HORIZONTAL_PADDING * 2) / TOGGLE_ITEM_COUNT;
-const TOGGLE_THUMB_HEIGHT = TOGGLE_CONTAINER_HEIGHT - TOGGLE_HORIZONTAL_PADDING * 2;
-const TOGGLE_ANIMATION_STEP = TOGGLE_THUMB_WIDTH;
-
-const WorkflowTabToggle = memo(function WorkflowTabToggle({ index, onChange }: WorkflowTabToggleProps) {
-  const togglePosition = useSharedValue(index === 0 ? 0 : 1);
-
-  useEffect(() => {
-    togglePosition.value = withTiming(index === 0 ? 0 : 1, {
-      duration: 180,
-      easing: Easing.bezier(0.4, 0, 0.2, 1),
-    });
-  }, [index, togglePosition]);
-
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: togglePosition.value * TOGGLE_ANIMATION_STEP }],
-  }));
-
-  return (
-    <View
-      className="relative rounded-full bg-surface-raised p-1"
-      style={{ width: TOGGLE_CONTAINER_WIDTH, height: TOGGLE_CONTAINER_HEIGHT }}
-    >
-      <Animated.View
-        className="absolute left-1 top-1 rounded-full bg-action"
-        style={[{ width: TOGGLE_THUMB_WIDTH, height: TOGGLE_THUMB_HEIGHT }, thumbStyle]}
-      />
-      <HStack className="h-8">
-        <Pressable
-          onPress={() => onChange(0)}
-          accessibilityLabel="Switch to local workflows"
-          className="h-8 items-center justify-center rounded-full"
-          style={{ width: TOGGLE_THUMB_WIDTH }}
-        >
-          <Icon as={Folder} size="sm" className={index === 0 ? 'text-content-inverse' : 'text-content-secondary'} />
-        </Pressable>
-        <Pressable
-          onPress={() => onChange(1)}
-          accessibilityLabel="Switch to server workflows"
-          className="h-8 items-center justify-center rounded-full"
-          style={{ width: TOGGLE_THUMB_WIDTH }}
-        >
-          <Icon as={ServerIcon} size="sm" className={index === 1 ? 'text-content-inverse' : 'text-content-secondary'} />
-        </Pressable>
-      </HStack>
-    </View>
-  );
-});
-
-const LocalWorkflowsTab = memo(function LocalWorkflowsTab({ serverId, openImportModal }: LocalWorkflowsTabProps) {
-  const workflows = useWorkflowStore((state) => state.workflow);
-  const { layout } = useDeviceLayout();
-  const numColumns = layout === 'expanded' ? 4 : layout === 'regular' ? 3 : 2;
-  const filteredWorkflows = useMemo(() =>
-    workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod !== 'server-sync'),
-    [workflows, serverId]
-  );
-
-  const renderEmptyList = () => (
-    <EmptyState title="No Local Workflows" align="top">
-      Import a workflow JSON file to get started.
-    </EmptyState>
-  );
-
-  return (
-    <View className="flex-1">
-      <View className="bg-surface-base px-4 pb-2 pt-1">
-        <HStack className="items-center justify-between rounded-lg bg-surface-raised px-4 py-3">
-          <VStack space="xs">
-            <Text className="text-sm font-semibold text-content-heading">Local Workflows</Text>
-            <Text className="text-xs text-content-secondary">{filteredWorkflows.length} items</Text>
-          </VStack>
-          <Button size="sm" variant="link" onPress={openImportModal}>
-            <ButtonIcon as={UploadCloud} />
-            <ButtonText>Import Workflow</ButtonText>
-          </Button>
-        </HStack>
-      </View>
-      <FlatList
-        key={numColumns}
-        data={filteredWorkflows}
-        renderItem={({ item }) => (
-          <View style={{ width: `${100 / numColumns}%` }} className="p-1.5">
-            <WorkflowCard id={item.id} />
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-        numColumns={numColumns}
-        ListEmptyComponent={renderEmptyList}
-        contentContainerClassName="px-2.5 pb-8 pt-2"
-      />
-    </View>
-  );
-});
-
-interface ServerWorkflowsTabProps {
-  serverId: string;
-  isActiveTab: boolean;
-  onRequestClear: () => void;
-}
-
-const ServerWorkflowsTab = ({ serverId, isActiveTab, onRequestClear }: ServerWorkflowsTabProps) => {
-  const [refreshing, setRefreshing] = useState(false);
-  const [serverWorkflows, setServerWorkflows] = useState<ServerWorkflowFile[]>([]);
-  const { addWorkflow, updateWorkflow, workflow: storedWorkflows } = useWorkflowStore();
-  const { layout } = useDeviceLayout();
-  const numColumns = layout === 'expanded' ? 4 : layout === 'regular' ? 3 : 2;
-  const workflowsToDisplay = useMemo(
-    () => storedWorkflows.filter((wf) => wf.serverId === serverId && wf.addMethod === 'server-sync'),
-    [storedWorkflows, serverId]
-  );
-  const cancelSyncRef = useRef(false);
-  const hasAutoSyncedRef = useRef(false);
-  const syncRunIdRef = useRef(0);
-  const refreshingRef = useRef(refreshing);
-  const insets = useSafeAreaInsets();
-
-  const [syncProgressText, setSyncProgressText] = useState('');
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [syncedCount, setSyncedCount] = useState(0);
-  const [failedCount, setFailedCount] = useState(0);
-  const syncIconRotation = useSharedValue(0);
-
-  useEffect(() => {
-    if (refreshing) {
-      syncIconRotation.value = 0;
-      syncIconRotation.value = withRepeat(
-        withTiming(360, {
-          duration: 1000,
-          easing: Easing.linear,
-        }),
-        -1,
-        false,
-      );
-      return;
-    }
-
-    cancelAnimation(syncIconRotation);
-    syncIconRotation.value = withTiming(0, { duration: 150, easing: Easing.out(Easing.cubic) });
-  }, [refreshing, syncIconRotation]);
-
-  const syncIconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${syncIconRotation.value}deg` }],
-  }));
-
-  const onRefresh = useCallback(async () => {
-    const currentRunId = syncRunIdRef.current + 1;
-    syncRunIdRef.current = currentRunId;
-    cancelSyncRef.current = false;
-    const isCurrentRun = () => syncRunIdRef.current === currentRunId;
-    const isActiveRun = () => isCurrentRun() && !cancelSyncRef.current;
-
-    if (!serverId) {
-      console.log('Server ID is missing, cannot refresh.');
-      if (isCurrentRun()) {
-        setRefreshing(false);
-      }
-      return;
-    }
-    setRefreshing(true);
-    console.log(`Refreshing server workflows for serverId: ${serverId}...`);
-    setSyncProgressText('Starting sync...');
-    setSkippedCount(0);
-    setSyncedCount(0);
-    setFailedCount(0);
-    let processedCount = 0;
-    let localSkippedCount = 0;
-    let localSyncedCount = 0;
-    let localFailedCount = 0;
-    let fetchedFiles: ServerWorkflowFile[] = [];
-
-    try {
-      fetchedFiles = await apiListWorkflows(serverId);
-      if (!isActiveRun()) {
-        return;
-      }
-      setServerWorkflows(fetchedFiles);
-      const totalFiles = fetchedFiles.length;
-      if (totalFiles === 0) {
-        setSyncProgressText('No files found on server.');
-        return;
-      }
-
-      for (const serverFile of fetchedFiles) {
-        if (!isActiveRun()) {
-          console.log('Sync cancelled by user action.');
-          break;
-        }
-        processedCount++;
-        setSyncProgressText(`Processing ${processedCount}/${totalFiles}: ${serverFile.filename}`);
-        try {
-          const latestWorkflows = useWorkflowStore.getState().workflow;
-          const identicalWorkflowInStore = latestWorkflows.find(
-            (wf) => wf.serverId === serverId &&
-              wf.addMethod === 'server-sync' &&
-              wf.metadata?.originalFilename === serverFile.filename &&
-              wf.metadata?.serverFileModified === serverFile.modified &&
-              wf.metadata?.serverFileSize === serverFile.size &&
-              wf.metadata?.raw_content === serverFile.raw_content
-          );
-
-          const now = new Date().toISOString();
-          const newMetadataBase = {
-            originalFilename: serverFile.filename,
-            lastSyncedAt: now,
-            serverFileSize: serverFile.size,
-            serverFileModified: serverFile.modified,
-            raw_content: serverFile.raw_content,
-          };
-
-          if (identicalWorkflowInStore) {
-            updateWorkflow(identicalWorkflowInStore.id, {
-              metadata: {
-                ...identicalWorkflowInStore.metadata,
-                lastSyncedAt: now,
-              }
-            });
-            localSkippedCount += 1;
-            setSkippedCount(localSkippedCount);
-            continue;
-          }
-
-          if (!isActiveRun()) { break; }
-          setSyncProgressText(`Downloading ${processedCount}/${totalFiles}: ${serverFile.filename}`);
-          const rawWorkflowData = await apiGetAndConvertWorkflow(serverId, serverFile.filename);
-
-          if (!isActiveRun()) { break; }
-          if (!rawWorkflowData) {
-            console.warn(`No data returned from getAndConvertWorkflow for ${serverFile.filename}`);
-            localFailedCount += 1;
-            setFailedCount(localFailedCount);
-            continue;
-          }
-
-          if (!isActiveRun()) { break; }
-          setSyncProgressText(`Parsing ${processedCount}/${totalFiles}: ${serverFile.filename}`);
-          const parsedData = parseWorkflowTemplate(rawWorkflowData);
-          const workflowName = serverFile.filename.split('/').pop()?.replace(/\.json$/i, '') || serverFile.filename;
-
-          const latestWorkflowsForPath = useWorkflowStore.getState().workflow;
-          const existingWorkflowForPath = latestWorkflowsForPath.find(
-            (wf) => wf.serverId === serverId &&
-              wf.addMethod === 'server-sync' &&
-              wf.metadata?.originalFilename === serverFile.filename
-          );
-
-          if (existingWorkflowForPath) {
-            updateWorkflow(existingWorkflowForPath.id, {
-              name: workflowName,
-              data: parsedData,
-              metadata: {
-                ...existingWorkflowForPath.metadata,
-                ...newMetadataBase,
-              },
-            });
-            localSyncedCount += 1;
-            setSyncedCount(localSyncedCount);
-          } else {
-            addWorkflow({
-              name: workflowName,
-              serverId: serverId,
-              data: parsedData,
-              addMethod: 'server-sync',
-              metadata: newMetadataBase,
-              lastUsed: new Date(serverFile.modified * 1000),
-            });
-            localSyncedCount += 1;
-            setSyncedCount(localSyncedCount);
-          }
-        } catch (convertError) {
-          if (!isActiveRun()) {
-            break;
-          }
-          console.warn(`Error processing workflow ${serverFile.filename}:`, convertError);
-          localFailedCount += 1;
-          setFailedCount(localFailedCount);
-        }
-      }
-      if (!isCurrentRun()) {
-        return;
-      }
-      if (cancelSyncRef.current) {
-        setSyncProgressText('Sync cancelled.');
-      } else {
-        setSyncProgressText(`Sync complete. Synced: ${localSyncedCount}, Skipped: ${localSkippedCount}, Failed: ${localFailedCount}`);
-      }
-    } catch (error) {
-      if (!isCurrentRun()) {
-        return;
-      }
-      if (cancelSyncRef.current) {
-        setSyncProgressText('Sync cancelled.');
-        return;
-      }
-      console.warn('Failed to refresh server workflows:', error);
-      showToast.error(
-        'Sync Error',
-        'An error occurred while syncing workflows. Please check your connection and server status.',
-        insets.top + 8
-      );
-      setSyncProgressText('Error listing server workflows.');
-      localFailedCount += fetchedFiles?.length || 0;
-      setFailedCount(localFailedCount);
-    } finally {
-      if (isCurrentRun()) {
-        setRefreshing(false);
-      }
-    }
-  }, [serverId, addWorkflow, updateWorkflow, insets.top]);
-
-  useEffect(() => {
-    refreshingRef.current = refreshing;
-    if (!isActiveTab && refreshing) {
-      console.log('ServerWorkflowsTab became inactive during sync. Cancelling...');
-      cancelSyncRef.current = true;
-    }
-  }, [isActiveTab, refreshing]);
-
-  useEffect(() => {
-    if (!isActiveTab || refreshing || hasAutoSyncedRef.current || workflowsToDisplay.length > 0) {
-      return;
-    }
-    hasAutoSyncedRef.current = true;
-    void onRefresh();
-  }, [isActiveTab, refreshing, workflowsToDisplay.length, onRefresh]);
-
-  useEffect(() => {
-    cancelSyncRef.current = false;
-    refreshingRef.current = refreshing;
-
-    return () => {
-      if (refreshingRef.current) {
-        console.log('ServerWorkflowsTab unmounting. Cancelling any active sync...');
-        cancelSyncRef.current = true;
-      }
-    };
-  }, [refreshing]);
-
-  const renderActionRow = () => (
-    <View className="bg-surface-base px-4 pb-2 pt-1">
-      <Animated.View
-        className="rounded-lg bg-surface-raised px-4 py-3"
-        layout={LinearTransition.duration(180)}
-      >
-        <HStack className="items-center justify-between">
-          <VStack space="xs">
-            <Text className="text-sm font-semibold text-content-heading">Server Workflows</Text>
-            <Text className="text-xs text-content-secondary">Synced {workflowsToDisplay.length} items</Text>
-          </VStack>
-          <HStack space="sm">
-            <Button
-              size="sm"
-              variant="link"
-              disabled={refreshing}
-              onPress={onRefresh}
-            >
-              <Animated.View style={syncIconAnimatedStyle}>
-                <ButtonIcon as={RefreshCw} />
-              </Animated.View>
-              <ButtonText>{refreshing ? 'Syncing' : 'Sync'}</ButtonText>
-            </Button>
-            <Button
-              size="sm"
-              variant="link"
-              action="negative"
-              disabled={refreshing || workflowsToDisplay.length === 0}
-              onPress={onRequestClear}
-            >
-              <ButtonIcon as={Trash2} />
-              <ButtonText>Clear</ButtonText>
-            </Button>
-          </HStack>
-        </HStack>
-        {refreshing && !!syncProgressText && (
-          <Animated.View
-            className="pt-1"
-            layout={LinearTransition.duration(180)}
-            entering={FadeIn.duration(140)}
-            exiting={FadeOut.duration(120)}
-          >
-            <Text className="text-xs text-content-secondary">{syncProgressText}</Text>
-          </Animated.View>
-        )}
-      </Animated.View>
-    </View>
-  );
-
-  const renderMainContent = () => {
-    if (workflowsToDisplay.length === 0) {
-      return (
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="items-center px-5 pb-6"
-        >
-          <EmptyState
-            title="No Synced Server Workflows"
-            align="top"
-            action={
-              <VStack space="xs" className="w-full rounded-lg bg-surface-raised px-4 py-3">
-                <Text className="text-center text-xs text-content-secondary">
-                  Make sure <Text className="font-medium text-content-body">comfy-portal-endpoint</Text> is installed on
-                  the server side.
-                </Text>
-                <ExpoLink href="https://github.com/ShunL12324/comfy-portal-endpoint" className="self-center">
-                  <Text className="text-xs text-action underline">Installation guide</Text>
-                </ExpoLink>
-              </VStack>
-            }
-          >
-            Tap Sync above to refresh.
-          </EmptyState>
-        </ScrollView>
-      );
-    }
-
-    return (
-      <FlatList
-        key={numColumns}
-        data={workflowsToDisplay}
-        renderItem={({ item, index }) => (
-          <MotiView
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'timing',
-              duration: 300,
-              delay: index * 50,
-            }}
-            style={{ width: `${100 / numColumns}%` }}
-            className="p-1.5"
-          >
-            <WorkflowCard id={item.id} />
-          </MotiView>
-        )}
-        keyExtractor={(item) => item.id}
-        numColumns={numColumns}
-        contentContainerClassName="px-2.5 pb-8 pt-2"
-        className="flex-1"
-      />
-    );
-  };
-
-  return (
-    <View className="flex-1 bg-surface-base">
-      {renderActionRow()}
-      {renderMainContent()}
-    </View>
-  );
-};
-
-const WorkflowsScreen = () => {
+export default function ServerScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
-  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
-  const workflows = useWorkflowStore((state) => state.workflow);
-  const { clearServerSyncedWorkflows } = useWorkflowStore();
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isClearAlertOpen, setIsClearAlertOpen] = useState(false);
-  const openAddModal = useCallback(() => setIsAddModalOpen(true), []);
-  const openImportModal = useCallback(() => setIsImportModalOpen(true), []);
-
-  const layout = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: 'local', title: 'Local' },
-    { key: 'server', title: 'Server' },
-  ]);
-  const serverTabIndex = routes.findIndex((route) => route.key === 'server');
-  const handleRequestClear = useCallback(() => {
-    setIsClearAlertOpen(true);
-  }, []);
-
-  const handleClearServerWorkflows = useCallback(() => {
-    if (serverId) {
-      clearServerSyncedWorkflows(serverId);
-      console.log(`Cleared server-synced workflows for serverId: ${serverId}`);
+  const router = useRouter();
+  const c = useDesign();
+  const server = useServersStore((state) => state.servers.find((item) => item.id === serverId));
+  const all = useWorkflowStore((state) => state.workflow);
+  // Editing an endpoint restarts workflow discovery; cached hardware changes do not.
+  const connectionIdentity = useMemo(
+    () => ({
+      id: server?.id,
+      host: server?.host,
+      port: server?.port,
+      useSSL: server?.useSSL,
+      token: server?.token,
+    }),
+    [server?.id, server?.host, server?.port, server?.useSSL, server?.token],
+  );
+  const editRef = useRef<EditServerModalRef>(null);
+  const [query, setQuery] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [hiddenOpen, setHiddenOpen] = useState(false);
+  const [source, setSource] = useState('all');
+  const [syncState, setSyncState] = useState<'checking' | 'ready' | 'unsupported' | 'error'>('checking');
+  const hiddenByServer = useWorkflowStore((state) => state.hiddenServerWorkflows);
+  const hidden = hiddenByServer[serverId] ?? [];
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshLock = useRef(false);
+  const requestId = useRef(0);
+  const serverWorkflows = useMemo(
+    () => all.filter((item) => item.serverId === serverId).sort(compareWorkflowUsage),
+    [all, serverId],
+  );
+  const workflows = useMemo(
+    () =>
+      serverWorkflows.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query.trim().toLowerCase()) &&
+          (source === 'all' ||
+            (source === 'server' ? item.addMethod === 'server-sync' : item.addMethod !== 'server-sync')),
+      ),
+    [serverWorkflows, query, source],
+  );
+  const refresh = useCallback(() => {
+    const connection = useServersStore.getState().servers.find((item) => item.id === serverId);
+    // Already refreshing: nothing new is issued. The spinner is cleared anyway,
+    // because pull-to-refresh sets it before calling and would otherwise spin
+    // forever on the one path that does no work.
+    if (!connection || refreshLock.current) {
+      setRefreshing(false);
+      return Promise.resolve();
     }
-  }, [serverId, clearServerSyncedWorkflows]);
+    const request = ++requestId.current;
+    refreshLock.current = true;
+    const isCurrent = () => request === requestId.current;
 
-  const renderScene = useCallback(({ route }: { route: { key: string } }) => {
-    if (!serverId) return null;
-    if (route.key === 'local') {
-      return <LocalWorkflowsTab serverId={serverId} openImportModal={openImportModal} />;
-    }
-    if (route.key === 'server') {
-      return (
-        <ServerWorkflowsTab
-          serverId={serverId}
-          isActiveTab={index === serverTabIndex}
-          onRequestClear={handleRequestClear}
-        />
-      );
-    }
-    return null;
-  }, [serverId, openImportModal, index, serverTabIndex, handleRequestClear]);
+    setSyncState('checking');
+    const workflowSync = syncWorkflows(connection.id).then(
+      (result) => {
+        if (isCurrent()) {
+          setSyncState(result?.state ?? 'ready');
+        }
+      },
+      () => {
+        if (isCurrent()) {
+          setSyncState('error');
+        }
+      },
+    );
 
-  const serverWorkflowsCount = useMemo(() =>
-    serverId
-      ? workflows.filter((workflow) => workflow.serverId === serverId && workflow.addMethod === 'server-sync').length
-      : 0,
-    [workflows, serverId]
+    return Promise.allSettled([workflowSync]).then(() => {
+      // Released even for a superseded request: holding the lock after the
+      // work has finished would block every later refresh.
+      if (isCurrent()) {
+        refreshLock.current = false;
+        setRefreshing(false);
+      }
+    });
+  }, [serverId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!connectionIdentity.id) return;
+      void refresh();
+      return () => {
+        requestId.current += 1;
+        refreshLock.current = false;
+      };
+    }, [refresh, connectionIdentity]),
   );
 
-  if (!server) {
+  if (!server)
     return (
-      <View className="flex-1 bg-surface-base">
-        <EmptyState
-          title="Server Not Found"
-          >
-            This server no longer exists in your server list.
-        </EmptyState>
+      <View style={{ flex: 1, backgroundColor: c.paper }}>
+        <AppBar title="Server" showBack />
+        <Copy>Connection not found.</Copy>
       </View>
     );
-  }
-  if (!serverId) {
-    return (
-      <View className="flex-1 bg-surface-base">
-        <EmptyState
-          title="Server ID Missing"
-          >
-            The current route does not include a valid server ID.
-        </EmptyState>
-      </View>
-    );
-  }
-
   return (
-    <View className={`flex-1 bg-surface-base`}>
+    <View style={{ flex: 1, backgroundColor: c.paper }}>
       <AppBar
-        title={server?.name || 'Workflows'}
+        title="Workflows"
+        titleSize="sm"
         showBack
-        centerTitle={true}
-        rightElement={<WorkflowTabToggle index={index} onChange={setIndex} />}
+        rightElement={
+          <Row style={{ gap: t.layout.related }}>
+            <Action kind="text" icon={Plus} label="Add workflow" onPress={() => setImporting(true)} />
+            <Action
+              kind="text"
+              icon={Settings2}
+              label={`Server settings: ${server.name}`}
+              onPress={() => editRef.current?.present()}
+            />
+          </Row>
+        }
       />
-      <RNETabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-        renderTabBar={() => null}
-        style={{ flex: 1 }}
-        lazy
-      />
-      <ImportWorkflowModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        serverId={serverId}
-      />
-      <AddWorkflowModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        serverId={serverId}
-      />
-      <ConfirmDialog
-        isOpen={isClearAlertOpen}
-        onClose={() => setIsClearAlertOpen(false)}
-        onConfirm={() => {
-          handleClearServerWorkflows();
-          setIsClearAlertOpen(false);
+      <RefreshFlatList
+        testID="server-workflow-list"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        ListHeaderComponent={
+          <View style={{ gap: 0 }}>
+            <View style={{ gap: t.layout.field, paddingTop: t.layout.inset, paddingBottom: t.layout.field }}>
+              <Field label="Search workflows" search value={query} onChange={setQuery} placeholder="Search workflows" />
+              <FilterChips
+                label="Workflow sources"
+                value={source}
+                onChange={setSource}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'imported', label: 'Imported' },
+                  { value: 'server', label: 'Server' },
+                ]}
+              />
+            </View>
+          </View>
+        }
+        data={workflows}
+        keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={() => {
+          setRefreshing(true);
+          return refresh();
         }}
-        title="Clear Synced Workflows"
-        description={`This will remove ${serverWorkflowsCount} synced workflow${serverWorkflowsCount === 1 ? '' : 's'} from ${server.name}. This action cannot be undone.`}
-        confirmText="Clear"
-        confirmButtonColor="bg-status-danger"
+        contentContainerStyle={{
+          paddingHorizontal: t.layout.gutter,
+          paddingBottom: t.layout.section,
+        }}
+        renderItem={({ item }) => <WorkflowCard id={item.id} />}
+        ItemSeparatorComponent={() => (
+          <View
+            style={{
+              height: 1,
+              backgroundColor: c.line,
+              marginLeft: t.height.touch + t.layout.field,
+            }}
+          />
+        )}
+        ListFooterComponent={
+          syncState === 'error' || hidden.length > 0 ? (
+            <View style={{ paddingTop: t.layout.field, gap: t.layout.related }}>
+              {syncState === 'error' && (
+                <Copy muted size="metadata">
+                  Sync unavailable · Pull to retry.
+                </Copy>
+              )}
+              {hidden.length > 0 && (
+                <Action kind="text" small onPress={() => setHiddenOpen(true)}>
+                  Hidden workflows ({hidden.length})
+                </Action>
+              )}
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <View
+            style={{
+              padding: t.layout.inset,
+              gap: t.layout.related,
+            }}
+          >
+            <Copy>{query || source !== 'all' ? 'No matching workflows' : 'No workflows yet'}</Copy>
+            <Copy muted>
+              {query || source !== 'all'
+                ? 'Try another name or source.'
+                : syncState === 'unsupported'
+                  ? 'Add a workflow, or install Comfy Portal Endpoint to sync server files.'
+                  : 'Add a workflow file or choose a saved workflow.'}
+            </Copy>
+          </View>
+        }
       />
+      <Sheet open={hiddenOpen} onClose={() => setHiddenOpen(false)} title="Hidden workflows" compactTitle>
+        <Copy muted size="label">
+          Hidden on this device. Server files and generated results are kept.
+        </Copy>
+        {hidden.length ? (
+          hidden.map((filename) => (
+            <View key={filename} style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.related }}>
+              <Copy mono size="label" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
+                {filename}
+              </Copy>
+              <Action
+                kind="secondary"
+                small
+                label={`Restore ${filename}`}
+                onPress={() => {
+                  useWorkflowStore.getState().restoreHiddenServerWorkflow(serverId, filename);
+                  void refresh();
+                }}
+              >
+                Restore
+              </Action>
+            </View>
+          ))
+        ) : (
+          <Copy muted size="label">
+            No hidden workflows.
+          </Copy>
+        )}
+      </Sheet>
+      <EditServerModal ref={editRef} serverId={serverId} onRemoved={() => router.replace('/')} />
+      <ImportWorkflowModal isOpen={importing} onClose={() => setImporting(false)} serverId={serverId} />
     </View>
   );
-};
-
-export default WorkflowsScreen;
+}

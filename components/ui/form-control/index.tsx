@@ -1,5 +1,6 @@
 'use client';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import React from 'react';
 import { createFormControl } from '@gluestack-ui/core/form-control/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
@@ -28,12 +29,12 @@ const formControlErrorIconStyle = tva({
   base: 'text-error-700 fill-none',
   variants: {
     size: {
-      '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      '2xs': 'size-icon-micro',
+      'xs': 'size-icon-small',
+      'sm': 'size-icon-control',
+      'md': 'size-icon-medium',
+      'lg': 'size-icon-large',
+      'xl': 'size-icon-hero',
     },
   },
 });
@@ -43,7 +44,7 @@ const formControlErrorStyle = tva({
 });
 
 const formControlErrorTextStyle = tva({
-  base: 'text-error-700',
+  base: 'font-body text-error-700',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -77,7 +78,7 @@ const formControlErrorTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });
@@ -87,7 +88,7 @@ const formControlHelperStyle = tva({
 });
 
 const formControlHelperTextStyle = tva({
-  base: 'text-typography-500',
+  base: 'font-body text-typography-500',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -121,7 +122,7 @@ const formControlHelperTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });
@@ -131,7 +132,7 @@ const formControlLabelStyle = tva({
 });
 
 const formControlLabelTextStyle = tva({
-  base: 'font-medium text-typography-900',
+  base: 'font-body font-medium text-typography-900',
   variants: {
     isTruncated: {
       true: 'web:truncate',
@@ -165,7 +166,7 @@ const formControlLabelTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });
@@ -205,7 +206,7 @@ const formControlLabelAstrickStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });

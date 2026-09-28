@@ -1,6 +1,7 @@
 'use client';
 import { createAlert } from '@gluestack-ui/core/alert/creator';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import {
   withStyleContext,
@@ -68,7 +69,7 @@ const alertTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
   parentVariants: {
@@ -86,12 +87,12 @@ const alertIconStyle = tva({
   base: 'fill-none',
   variants: {
     size: {
-      '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      '2xs': 'size-icon-micro',
+      'xs': 'size-icon-small',
+      'sm': 'size-icon-control',
+      'md': 'size-icon-medium',
+      'lg': 'size-icon-large',
+      'xl': 'size-icon-hero',
     },
   },
   parentVariants: {

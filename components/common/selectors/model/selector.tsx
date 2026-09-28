@@ -1,20 +1,22 @@
+import { useCompactControls } from '@/components/ui/design-system/control-density';
 import { NumberSlider } from '@/components/self-ui/slider';
-import { Box } from '@/components/ui/box';
+import { Action, Copy, FieldLabel, Row, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
+import { View as Box } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { clearNodeSchemaCache } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from 'lucide-react-native';
+import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from '@/constants/icons';
 import React, { useCallback, useRef } from 'react';
-import { TouchableOpacity } from 'react-native';
 import { SearchableBottomSheet } from '../bottom-sheet';
+import { getOptionSurfaceStyle } from '../bottom-sheet/item';
 import { SelectorOption } from '../types';
 import { useModelOptions } from './use-model-options';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface ModelSelectorProps {
   value: string;
@@ -41,7 +43,7 @@ interface ModelSelectorProps {
 interface StrengthControlProps {
   label: string;
   value: number;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
   onChangeEnd?: (value: number) => void;
 }
 
@@ -51,19 +53,18 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
       <HStack space="xs" className="mt-2 items-center justify-between">
         <HStack space="xs" className="items-center">
           <Icon as={Sliders} size="xs" className="text-content-heading" />
-          <Text className="text-xs text-content-heading">{label}</Text>
+          <FieldLabel>{label}</FieldLabel>
         </HStack>
       </HStack>
       <HStack space="sm" className="mt-2 w-full items-center">
         <NumberSlider
-          defaultValue={value}
+          value={value}
           minValue={0}
           maxValue={2}
           step={0.05}
           onChange={onChange}
           onChangeEnd={onChangeEnd}
           decimalPlaces={2}
-          space={12}
         />
       </HStack>
     </>
@@ -71,15 +72,25 @@ function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthContro
 }
 
 function ModelPreview({ image, label }: { image?: string; label: string }) {
-  if (!image) {
+  const c = useDesign();
+  const [failedImage, setFailedImage] = React.useState<string>();
+  if (!image || failedImage === image) {
     return (
-      <Box className="h-full w-full items-center justify-center bg-surface-muted">
-        <Icon as={ImageIcon} size="sm" className="text-content-tertiary" />
+      <Box className="h-full w-full items-center justify-center" style={{ backgroundColor: c.well }}>
+        <StateIcon icon={ImageIcon} size={t.icon.control} />
       </Box>
     );
   }
 
-  return <Image source={{ uri: image }} alt={label} style={{ height: '100%', width: '100%' }} contentFit="cover" />;
+  return (
+    <Image
+      source={{ uri: image }}
+      alt={label}
+      style={{ height: '100%', width: '100%' }}
+      contentFit="cover"
+      onError={() => setFailedImage(image)}
+    />
+  );
 }
 
 export function ModelSelector({
@@ -98,8 +109,9 @@ export function ModelSelector({
   initialModelStrength = 1,
 }: ModelSelectorProps) {
   const [isVisible, setIsVisible] = React.useState(false);
-  const [localClipStrength, setLocalClipStrength] = React.useState(initialClipStrength);
-  const [localModelStrength, setLocalModelStrength] = React.useState(initialModelStrength);
+  const [preview, setPreview] = React.useState<SelectorOption | null>(null);
+  const c = useDesign();
+  const compact = useCompactControls();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const syncModels = useServersStore((state) => state.syncModels);
@@ -127,19 +139,13 @@ export function ModelSelector({
   const onRefresh = customOnRefresh || defaultOnRefresh;
   const finalIsRefreshing = customIsRefreshing ?? isRefreshing;
 
-  // Update local strength values when initialStrength changes
-  React.useEffect(() => {
-    setLocalClipStrength(initialClipStrength);
-    setLocalModelStrength(initialModelStrength);
-  }, [initialClipStrength, initialModelStrength]);
-
   const handlePress = useCallback(() => {
     setIsVisible(true);
-    bottomSheetRef.current?.present();
   }, []);
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
+    setPreview(null);
   }, []);
 
   const { options, fromServer } = useModelOptions({ serverId, classType, inputName, folders });
@@ -162,27 +168,69 @@ export function ModelSelector({
   const renderTrigger = useCallback(
     () => (
       <Box
-        className={`overflow-hidden rounded-xl ${isMissing ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-surface-raised'}`}
+        className={
+          compact
+            ? 'overflow-hidden'
+            : `rounded-lg overflow-hidden ${isMissing ? 'border-stroke bg-surface-sunken border-[0.5px]' : 'bg-surface-raised'}`
+        }
       >
-        <Pressable onPress={handlePress}>
-          <HStack space="sm" className="items-center justify-between p-3">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Select model: ${value || 'Choose'}`}
+          onPress={handlePress}
+        >
+          {compact && (
+            <Box
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 0,
+                right: 0,
+                bottom: 4,
+                borderRadius: t.radius.control,
+                backgroundColor: c.well,
+              }}
+            />
+          )}
+          <HStack
+            space="sm"
+            className={compact ? 'items-center justify-between' : 'p-3 items-center justify-between'}
+            style={
+              compact
+                ? {
+                    paddingHorizontal: t.node.inset,
+                    minHeight: t.height.touch,
+                    paddingVertical: isMissing ? t.node.inlineGap : 0,
+                  }
+                : undefined
+            }
+          >
             <HStack space="sm" className="flex-1 items-center">
-              <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-stroke-subtle">
-                <ModelPreview image={currentOption?.image} label={currentOption?.label || ''} />
-              </Box>
+              {!!currentOption?.image && (
+                <Box className="h-8 w-8 rounded-md overflow-hidden">
+                  <ModelPreview image={currentOption.image} label={currentOption.label} />
+                </Box>
+              )}
               <VStack space="xs" className="flex-1">
-                <Text
-                  className={`text-sm font-medium ${isMissing ? 'text-status-danger-pressed' : 'text-content-primary'}`}
+                <Copy
+                  style={{ fontWeight: compact ? '400' : '500', color: isMissing ? c.danger : c.ink }}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {missingLabel || currentOption?.label || 'Select model'}
-                </Text>
-                <Text className={`text-xs ${isMissing ? 'text-status-danger' : 'text-content-tertiary'}`}>
-                  {isMissing
-                    ? 'Not installed on server'
-                    : currentOption?.description || currentOption?.serverName || 'Choose a model'}
-                </Text>
+                  {missingLabel || currentOption?.label || value || 'Select model'}
+                </Copy>
+                {(!compact || isMissing) && (
+                  <Copy
+                    size={compact ? 'metadata' : 'label'}
+                    muted={!isMissing}
+                    style={isMissing ? { color: c.danger } : undefined}
+                  >
+                    {isMissing
+                      ? 'Not installed on server'
+                      : currentOption?.description || currentOption?.serverName || 'Choose a model'}
+                  </Copy>
+                )}
               </VStack>
             </HStack>
             <Icon as={ChevronDown} size="sm" className="text-content-tertiary" />
@@ -193,70 +241,109 @@ export function ModelSelector({
             {onLoraModelStrengthChange && (
               <StrengthControl
                 label="Model Strength"
-                value={localModelStrength}
-                onChange={setLocalModelStrength}
+                value={initialModelStrength}
                 onChangeEnd={onLoraModelStrengthChange}
               />
             )}
             {onLoraClipStrengthChange && (
               <StrengthControl
                 label="Clip Strength"
-                value={localClipStrength}
-                onChange={setLocalClipStrength}
+                value={initialClipStrength}
                 onChangeEnd={onLoraClipStrengthChange}
               />
             )}
             {onDelete && (
-              <TouchableOpacity
-                className="mt-4 flex-row items-center justify-center gap-2 rounded-lg border-[0.5px] border-error-300 bg-surface-raised p-3"
+              <Pressable
+                className="active:opacity-pressed mt-4 gap-2 rounded-lg border-stroke bg-surface-raised p-3 flex-row items-center justify-center border-[0.5px]"
                 onPress={onDelete}
               >
-                <Icon as={Trash2} size="xs" className="text-error-300" />
-                <Text className="text-xs text-error-300">Remove LoRA</Text>
-              </TouchableOpacity>
+                <Icon as={Trash2} size="xs" className="text-status-danger" />
+                <Copy size="label" style={{ color: c.danger }}>
+                  Remove LoRA
+                </Copy>
+              </Pressable>
             )}
           </VStack>
         )}
       </Box>
     ),
-    [handlePress, type, localClipStrength, localModelStrength, onDelete, isMissing, currentOption, missingLabel],
+    [
+      handlePress,
+      type,
+      initialClipStrength,
+      initialModelStrength,
+      onLoraClipStrengthChange,
+      onLoraModelStrengthChange,
+      value,
+      onDelete,
+      isMissing,
+      currentOption,
+      missingLabel,
+      c,
+      compact,
+    ],
   );
 
   const renderItem = useCallback(
     (item: SelectorOption, isSelected: boolean) => (
-      <Pressable
-        onPress={() => {
-          onChange(item.value);
-          handleClose();
-        }}
-        className="w-[48.5%] active:opacity-80"
+      <Box
+        testID={`selector-option-${item.value}`}
+        style={[getOptionSurfaceStyle(c, isSelected), { padding: t.layout.related }]}
       >
-        <Box
-          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-surface-muted'
-            }`}
-        >
-          {isSelected && (
-            <Box className="absolute right-2 top-2 z-10 rounded-full bg-surface-raised p-1">
-              <Icon as={Check} size="sm" className="text-content-primary" />
+        <Row style={{ gap: t.layout.related }}>
+          {item.image ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Preview ${item.label}`}
+              onPress={() => setPreview(item)}
+              style={{
+                width: t.height.touch,
+                height: t.height.touch,
+                borderRadius: t.radius.small,
+                overflow: 'hidden',
+              }}
+            >
+              <ModelPreview image={item.image} label={item.label} />
+            </Pressable>
+          ) : (
+            <Box
+              style={{
+                width: t.height.touch,
+                height: t.height.touch,
+                borderRadius: t.radius.small,
+                overflow: 'hidden',
+              }}
+            >
+              <ModelPreview label={item.label} />
             </Box>
           )}
-          <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-stroke-subtle">
-            <ModelPreview image={item.image} label={item.label} />
-          </Box>
-          <VStack space="xs" className="p-3">
-            <Text
-              className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-content-primary'}`}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.label}
-            </Text>
-            <Text className="text-xs text-content-tertiary">{item.description || item.serverName}</Text>
-          </VStack>
-        </Box>
-      </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
+            accessibilityState={{ selected: isSelected }}
+            aria-pressed={isSelected}
+            onPress={() => {
+              onChange(item.value);
+              handleClose();
+            }}
+            style={{ flex: 1, minHeight: t.height.touch, justifyContent: 'center' }}
+          >
+            <Row style={{ gap: t.layout.related }}>
+              <Box style={{ flex: 1, gap: t.layout.label }}>
+                <Copy size="body" numberOfLines={2} style={{ fontWeight: '500' }}>
+                  {item.label}
+                </Copy>
+                <Copy muted size="metadata" numberOfLines={1}>
+                  {item.description || item.serverName || item.value}
+                </Copy>
+              </Box>
+              {isSelected && <Icon as={Check} size="sm" className="text-tint" />}
+            </Row>
+          </Pressable>
+        </Row>
+      </Box>
     ),
-    [onChange, handleClose],
+    [onChange, handleClose, c],
   );
 
   return (
@@ -265,8 +352,9 @@ export function ModelSelector({
       isVisible={isVisible}
       onClose={handleClose}
       onSelect={onChange}
-      title={`Select ${type}`}
-      options={options}
+      title={preview ? 'Model preview' : `Select ${type}`}
+      options={preview ? [] : options}
+      showSearch={!preview}
       value={value}
       searchPlaceholder={`Search ${type}...`}
       showRefreshButton={!!onRefresh}
@@ -274,11 +362,36 @@ export function ModelSelector({
       isRefreshing={finalIsRefreshing}
       renderTrigger={renderTrigger}
       renderItem={renderItem}
-      numColumns={2}
+      numColumns={1}
       emptyComponent={
-        <VStack className="items-center py-12">
-          <Text className="text-sm text-content-tertiary">No models installed for this input</Text>
-        </VStack>
+        preview ? (
+          <Box style={{ gap: t.layout.field }}>
+            <Row>
+              <Action kind="text" onPress={() => setPreview(null)}>
+                Back to models
+              </Action>
+            </Row>
+            <Box style={{ height: 280, borderRadius: t.radius.control, overflow: 'hidden' }}>
+              <Image source={{ uri: preview.image }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+            </Box>
+            <Copy>{preview.label}</Copy>
+            <Copy mono muted size="metadata">
+              {preview.value}
+            </Copy>
+            <Action
+              onPress={() => {
+                onChange(preview.value);
+                handleClose();
+              }}
+            >
+              Use model
+            </Action>
+          </Box>
+        ) : (
+          <Box>
+            <Copy muted>No models installed for this input. Refresh after installing on your server.</Copy>
+          </Box>
+        )
       }
     />
   );

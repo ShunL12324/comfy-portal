@@ -1,4 +1,4 @@
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { NativeSegments } from '@/components/ui/design-system/native-controls';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
@@ -16,7 +16,8 @@ export default function CLIPVisionEncode({ node, workflowId }: CLIPVisionEncodeP
   return (
     <BaseNode node={node}>
       <SubItem title="Crop">
-        <SegmentedControl
+        <NativeSegments
+          label="Crop"
           options={['none', 'center']}
           value={node.inputs.crop}
           onChange={(value) => updateNodeInput(workflowId, node.id, 'crop', value)}

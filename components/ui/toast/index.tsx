@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { createToastHook } from '@gluestack-ui/core/toast/creator';
-import { AccessibilityInfo, Text, View, ViewStyle } from 'react-native';
+import { AccessibilityInfo, View, ViewStyle } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import {

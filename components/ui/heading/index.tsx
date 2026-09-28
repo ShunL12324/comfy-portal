@@ -1,8 +1,26 @@
 import React, { forwardRef, memo } from 'react';
-import { H1, H2, H3, H4, H5, H6 } from '@expo/html-elements';
+import { H1 as ExpoH1, H2 as ExpoH2, H3 as ExpoH3, H4 as ExpoH4, H5 as ExpoH5, H6 as ExpoH6 } from '@expo/html-elements';
 import { headingStyle } from './styles';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
+import { resolveTypography } from '@/components/ui/design-system/typography';
+
+function withTypography(Component: typeof ExpoH1) {
+  const Wrapped = forwardRef<React.ComponentRef<typeof ExpoH1>, React.ComponentProps<typeof ExpoH1>>(
+    function TypographyHeading({ style, ...props }, ref) {
+      // Expo's DOM declarations include CSS styles and a constructor ref;
+      // its native implementation forwards the RN styles and ref unchanged.
+      return <Component {...props} ref={ref as any} style={[style, resolveTypography(style as any)]} />;
+    },
+  );
+  return Wrapped;
+}
+const H1 = withTypography(ExpoH1);
+const H2 = withTypography(ExpoH2);
+const H3 = withTypography(ExpoH3);
+const H4 = withTypography(ExpoH4);
+const H5 = withTypography(ExpoH5);
+const H6 = withTypography(ExpoH6);
 
 type IHeadingProps = VariantProps<typeof headingStyle> &
   React.ComponentPropsWithoutRef<typeof H1> & {
@@ -51,7 +69,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -70,7 +87,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -89,7 +105,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -108,7 +123,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -127,7 +141,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -147,7 +160,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );
@@ -166,7 +178,6 @@ const MappedHeading = memo(
                 class: className,
               })}
               {...props}
-              // @ts-expect-error : type issue
               ref={ref}
             />
           );

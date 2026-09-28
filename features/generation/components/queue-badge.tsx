@@ -1,27 +1,23 @@
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
-import { Icon } from '@/components/ui/icon';
+import { Action, Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
-import { Text } from '@/components/ui/text';
-import {
-  useGenerationActions,
-  useGenerationStatus,
-} from '@/features/generation/context/generation-context';
+import { useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { QueueItem } from '@/services/comfy-client';
-import { Clock, Trash2, X } from 'lucide-react-native';
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { Trash2, X } from '@/constants/icons';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface ParsedQueueItem {
   promptId: string;
   isRunning: boolean;
 }
 
-function parseQueueItems(
-  running: QueueItem[],
-  pending: QueueItem[],
-): ParsedQueueItem[] {
+function parseQueueItems(running: QueueItem[], pending: QueueItem[]): ParsedQueueItem[] {
   const items: ParsedQueueItem[] = [];
   for (const item of running) {
     items.push({ promptId: item[1], isRunning: true });
@@ -34,22 +30,25 @@ function parseQueueItems(
 
 export const QueueBadge = memo(() => {
   const { queueRemaining } = useGenerationStatus();
-  const { getQueue, deleteQueueItems, clearQueue, cancel } =
-    useGenerationActions();
+  const c = useDesign();
+  const { getQueue, deleteQueueItems, clearQueue, cancel } = useGenerationActions();
   const insets = useSafeAreaInsets();
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const [items, setItems] = useState<ParsedQueueItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmClear, setConfirmClear] = useState(false);
   const isOpenRef = useRef(false);
 
   const fetchQueue = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await getQueue();
       setItems(parseQueueItems(data.queue_running, data.queue_pending));
-    } catch (e) {
-      console.error('Failed to fetch queue:', e);
+    } catch {
+      setError('Could not load the queue. Try refreshing.');
     } finally {
       setLoading(false);
     }
@@ -74,8 +73,8 @@ export const QueueBadge = memo(() => {
           await deleteQueueItems([item.promptId]);
         }
         await fetchQueue();
-      } catch (e) {
-        console.error('Failed to delete queue item:', e);
+      } catch {
+        setError('Could not cancel this job. Refresh its status and retry.');
       }
     },
     [cancel, deleteQueueItems, fetchQueue],
@@ -86,8 +85,8 @@ export const QueueBadge = memo(() => {
       await cancel();
       await clearQueue();
       await fetchQueue();
-    } catch (e) {
-      console.error('Failed to clear queue:', e);
+    } catch {
+      setError('Could not clear the queue. Refresh and retry.');
     }
   }, [cancel, clearQueue, fetchQueue]);
 
@@ -101,110 +100,112 @@ export const QueueBadge = memo(() => {
   return (
     <>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open queue, ${queueRemaining} jobs`}
         onPress={handleOpen}
-        className={`ml-1.5 h-8 w-8 items-center justify-center rounded-full active:opacity-80 ${
-          queueRemaining > 0
-            ? 'bg-status-busy'
-            : 'bg-surface-sunken active:bg-surface-muted'
-        }`}
+        style={{ width: t.height.touch, height: t.height.touch, alignItems: 'center', justifyContent: 'center' }}
       >
-        <Text
-          className={`text-[10px] font-bold ${
-            queueRemaining > 0 ? 'text-white' : 'text-content-secondary'
-          }`}
+        <View
+          testID="queue-surface"
+          style={{
+            width: t.height.small,
+            height: t.height.small,
+            borderRadius: t.radius.pill,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: queueRemaining > 0 ? c.warning : c.workspaceCard,
+          }}
         >
-          {queueRemaining}
-        </Text>
+          <Copy size="micro" style={{ fontWeight: '600', color: queueRemaining > 0 ? c.onWarning : c.secondary }}>
+            {queueRemaining > 99 ? '99+' : queueRemaining}
+          </Copy>
+        </View>
       </Pressable>
 
       <ThemedBottomSheetModal
         ref={sheetRef}
         index={0}
-        snapPoints={['34%']}
+        enableDynamicSizing
         topInset={insets.top}
         enablePanDownToClose
         onDismiss={handleDismiss}
       >
-        <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 16 }}>
-          {/* Header */}
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold text-content-heading">
-              Queue
-            </Text>
-            {items.length > 0 && (
-              <Pressable
-                onPress={handleClearAll}
-                className="flex-row items-center gap-1 rounded-lg px-2 py-1 active:bg-surface-sunken"
-              >
-                <Icon as={Trash2} size="2xs" className="text-status-danger" />
-                <Text className="text-xs font-medium text-status-danger">
-                  Clear All
-                </Text>
-              </Pressable>
-            )}
-          </View>
-
+        <AdaptiveScrollView
+          contentContainerStyle={{ paddingHorizontal: t.layout.inset, paddingBottom: insets.bottom + t.layout.inset }}
+        >
+          <Copy style={{ fontWeight: '500', marginBottom: t.layout.field }}>Queue · {items.length}</Copy>
+          {!!error && (
+            <>
+              <Copy accessibilityRole="alert">{error}</Copy>
+              <Action kind="text" loading={loading} onPress={fetchQueue}>
+                Retry
+              </Action>
+            </>
+          )}
           {/* List */}
           {loading && items.length === 0 ? (
-            <View className="flex-row items-center justify-center gap-2 py-6">
+            <View className="gap-2 py-6 flex-row items-center justify-center">
               <RotatingSpinner size="sm" />
             </View>
           ) : items.length === 0 ? (
-            <View className="items-center py-6">
-              <Text className="text-sm text-content-tertiary">
-                Queue is empty
-              </Text>
+            <View className="py-6 items-center">
+              <Copy muted>Queue is empty</Copy>
             </View>
           ) : (
-            items.map((item) => (
-              <QueueRow
-                key={item.promptId}
-                item={item}
-                onDelete={() => handleDelete(item)}
-              />
+            items.map((item, index) => (
+              <QueueRow key={item.promptId} item={item} index={index} onDelete={() => handleDelete(item)} />
             ))
           )}
-        </BottomSheetView>
+          {items.length > 0 && (
+            <Action kind="secondary" destructive fill onPress={() => setConfirmClear(true)}>
+              Clear all
+            </Action>
+          )}
+        </AdaptiveScrollView>
       </ThemedBottomSheetModal>
+      <ConfirmDialog
+        isOpen={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => {
+          setConfirmClear(false);
+          void handleClearAll();
+        }}
+        destructive
+        title="Cancel all jobs?"
+        description="This interrupts the running job and removes every waiting job from the server queue."
+        confirmText="Cancel all jobs"
+      />
     </>
   );
 });
 
 QueueBadge.displayName = 'QueueBadge';
 
-function QueueRow({
-  item,
-  onDelete,
-}: {
-  item: ParsedQueueItem;
-  onDelete: () => void;
-}) {
+function QueueRow({ item, index, onDelete }: { item: ParsedQueueItem; index: number; onDelete: () => void }) {
+  const c = useDesign();
   return (
-    <View className="mb-1.5 flex-row items-center justify-between rounded-xl bg-surface-raised px-4 py-3">
-      <View className="flex-1 flex-row items-center gap-3">
-        {item.isRunning ? (
-          <RotatingSpinner size="sm" />
-        ) : (
-          <Icon as={Clock} size="xs" className="text-content-tertiary" />
-        )}
-        <View className="flex-1">
-          <Text
-            className="text-sm font-medium text-content-body"
-            numberOfLines={1}
-          >
-            {item.promptId.slice(0, 8)}...
-          </Text>
-          <Text className="text-xs text-content-tertiary">
-            {item.isRunning ? 'Running' : 'Pending'}
-          </Text>
-        </View>
+    <View
+      style={{
+        marginBottom: t.layout.list,
+        backgroundColor: c.card,
+        padding: t.layout.field,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: t.radius.panel,
+      }}
+    >
+      <View style={{ flex: 1, gap: t.layout.label }}>
+        <Copy>Task {index + 1}</Copy>
+        <Copy muted size="metadata">
+          {item.isRunning ? 'Running' : 'Waiting'}
+        </Copy>
       </View>
-      <Pressable
+      <Action
+        kind="text"
+        icon={item.isRunning ? X : Trash2}
+        label={item.isRunning ? 'Cancel running job' : 'Remove queued job'}
         onPress={onDelete}
-        className="ml-2 rounded-lg p-1.5 active:bg-surface-muted"
-      >
-        <Icon as={X} size="xs" className="text-content-tertiary" />
-      </Pressable>
+      />
     </View>
   );
 }

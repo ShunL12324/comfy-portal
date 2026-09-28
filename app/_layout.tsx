@@ -1,33 +1,31 @@
-import '@/shims/crypto-random-uuid';
-import '@/shims/ai-sdk-streams';
+import { DesignScope } from '@/components/ui/design-system/primitives';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
-import { Colors } from '@/constants/Colors';
-import '@/global.css';
-import { useResolvedTheme, useThemeStore } from '@/store/theme';
-import { useServersStore } from '@/features/server/stores/server-store';
-import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { designColors } from '@/constants/design-tokens';
+import { useLaunchPoller } from '@/features/cloud/hooks/use-launch-poller';
 import { disconnectAllClients, reconcileAll } from '@/features/generation/services/job-recovery';
-import { toastConfig, showToast } from '@/utils/toast';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
+import { useServersStore } from '@/features/server/stores/server-store';
+import { runStorageMigrations } from '@/services/storage-migration';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import '@/global.css';
 import { useIncomingShare } from '@/hooks/use-incoming-share';
+import '@/shims/ai-sdk-streams';
+import '@/shims/crypto-random-uuid';
+import { useResolvedTheme, useThemeStore } from '@/store/theme';
+import { showToast, AppToast } from '@/utils/toast';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import * as Sentry from '@sentry/react-native';
+import { useFonts } from 'expo-font';
+import { fontAssets } from '@/constants/font-assets';
+import { Stack, useRouter } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useLaunchPoller } from '@/features/cloud/hooks/use-launch-poller';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import {
-  configureReanimatedLogger,
-  ReanimatedLogLevel,
-} from 'react-native-reanimated';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
-import * as Sentry from '@sentry/react-native';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
 Sentry.init({
   dsn: 'https://98d5701ad9a66997c72863211e66306a@o4509226334683136.ingest.us.sentry.io/4510933704048640',
@@ -53,7 +51,8 @@ const CustomDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: Colors.dark.background[0],
+    background: designColors.dark.paper,
+    card: designColors.dark.paper,
   },
 };
 
@@ -61,22 +60,15 @@ const CustomLightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: Colors.light.background[0],
+    background: designColors.light.paper,
+    card: designColors.light.paper,
   },
 };
 
 function RootLayoutNav() {
-  // Three voices, per the design system: a serif for titles and the occasional
-  // human moment, the platform sans for every control, and a mono for every
-  // number. The serif never appears in a button, a label, or beside a numeral.
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    Newsreader: require('../assets/fonts/Newsreader-Regular.ttf'),
-    NewsreaderItalic: require('../assets/fonts/Newsreader-Italic.ttf'),
-    NewsreaderSemiBold: require('../assets/fonts/Newsreader-SemiBold.ttf'),
-  });
+  // One family: IBM Plex Sans for titles, prose, controls and numeric readouts.
+  const [loaded] = useFonts(fontAssets);
 
-  const insets = useSafeAreaInsets();
   const preference = useThemeStore((s) => s.preference);
   const colorScheme = useResolvedTheme();
   const router = useRouter();
@@ -97,6 +89,10 @@ function RootLayoutNav() {
   // disconnected client. Coming back to the foreground is the moment to ask
   // what finished while we were away and pull those results down.
   useEffect(() => {
+    // Started here rather than waited on: the gallery renders from the store
+    // and fills in as assets are indexed. `reconcileAll` awaits the same pass
+    // internally, so ordering does not depend on this line.
+    void runStorageMigrations();
     void reconcileAll();
 
     const subscription = AppState.addEventListener('change', (nextAppState) => {
@@ -125,7 +121,7 @@ function RootLayoutNav() {
     const actions = useQuickActionStore.getState().actions;
 
     if (actions.length === 0) {
-      showToast.error('No Quick Actions configured', 'Create one from a Load Image node first', insets.top + 8);
+      showToast.error('No Quick Actions configured', 'Create one from a Load Image node first');
       clearSharedPayloads();
       return;
     }
@@ -139,7 +135,7 @@ function RootLayoutNav() {
     );
 
     if (!validAction) {
-      showToast.error('Quick Action target no longer exists', 'Please reconfigure from a Load Image node', insets.top + 8);
+      showToast.error('Quick Action target no longer exists', 'Please reconfigure from a Load Image node');
       clearSharedPayloads();
       return;
     }
@@ -170,28 +166,27 @@ function RootLayoutNav() {
     <>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
-        <GluestackUIProvider mode={preference}>
-          <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
-              <BottomSheetModalProvider>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                  }}
-                >
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="+not-found"
-                    options={{ headerShown: false }}
-                  />
-                </Stack>
-              </BottomSheetModalProvider>
+          <GluestackUIProvider mode={preference}>
+            <DesignScope mode={colorScheme === 'dark' ? 'dark' : 'light'}>
+              <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme}>
+                <BottomSheetModalProvider>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                    }}
+                  >
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+                  </Stack>
+                </BottomSheetModalProvider>
 
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          </ThemeProvider>
-        </GluestackUIProvider>
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              </ThemeProvider>
+            </DesignScope>
+          </GluestackUIProvider>
         </KeyboardProvider>
       </GestureHandlerRootView>
-      <Toast config={toastConfig} topOffset={insets.top + 8} />
+      <AppToast />
     </>
   );
 }

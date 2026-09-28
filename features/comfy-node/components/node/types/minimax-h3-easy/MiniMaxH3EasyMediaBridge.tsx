@@ -1,5 +1,5 @@
 import { NumberInput } from '@/components/self-ui/number-input';
-import { Text } from '@/components/ui/text';
+import { Copy } from '@/components/ui/design-system/primitives';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
@@ -36,16 +36,14 @@ export default function MiniMaxH3EasyMediaBridge({ node, workflowId }: MiniMaxH3
             maxValue={max}
             step={1}
             decimalPlaces={0}
-            buttonSize={24}
-            space={12}
           />
         </SubItem>
       ))}
       <SubItem title="Media sources">
-        <Text size="sm" className="text-content-secondary">
+        <Copy muted>
           Connect each source to its numbered input on the desktop editor. Only the counts are
           editable here.
-        </Text>
+        </Copy>
       </SubItem>
     </BaseNode>
   );

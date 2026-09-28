@@ -1,6 +1,7 @@
-import { useServersStore } from "@/features/server/stores/server-store";
+import { useServersStore } from '@/features/server/stores/server-store';
 import * as FileSystem from 'expo-file-system/legacy';
-import { buildServerUrl, fetchWithAuth } from "./network";
+import { buildServerUrl, fetchWithAuth } from './network';
+import { withRequestTimeout } from '@/utils/request-timeout';
 
 interface UploadImageResponse {
   name: string;
@@ -51,27 +52,32 @@ interface ListWorkflowsResponse {
   workflows: ServerWorkflowFile[];
 }
 
+export class WorkflowExtensionUnavailableError extends Error {
+  constructor() {
+    super('Server workflow discovery needs Comfy Portal Endpoint.');
+    this.name = 'WorkflowExtensionUnavailableError';
+  }
+}
+
 export const uploadImage = (
   fileUri: string,
   fileName: string,
   serverId: string,
   mimeType?: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): { promise: Promise<UploadImageResponse>; cancel: () => Promise<void> } => {
   const server = useServersStore.getState().servers.find((server) => server.id === serverId);
   if (!server) {
     return {
       promise: Promise.reject(new Error('server not found')),
-      cancel: async () => { },
+      cancel: async () => {},
     };
   }
 
   let task: FileSystem.UploadTask | null = null;
 
   const promise = (async () => {
-    const uploadPath = server.token
-      ? `/upload/image?token=${encodeURIComponent(server.token)}`
-      : '/upload/image';
+    const uploadPath = server.token ? `/upload/image?token=${encodeURIComponent(server.token)}` : '/upload/image';
     const url = await buildServerUrl(server.useSSL, server.host, server.port, uploadPath);
 
     task = FileSystem.createUploadTask(
@@ -86,8 +92,8 @@ export const uploadImage = (
         },
         headers: server.token
           ? {
-            Authorization: `Bearer ${server.token}`,
-          }
+              Authorization: `Bearer ${server.token}`,
+            }
           : undefined,
         mimeType: resolveImageMimeType(fileName, mimeType),
         httpMethod: 'POST',
@@ -96,7 +102,7 @@ export const uploadImage = (
         if (onProgress && data.totalBytesExpectedToSend > 0) {
           onProgress(data.totalBytesSent / data.totalBytesExpectedToSend);
         }
-      }
+      },
     );
 
     const uploadResult = await task.uploadAsync();
@@ -140,38 +146,53 @@ export const uploadImage = (
   };
 };
 
-export const listWorkflows = async (serverId: string): Promise<ServerWorkflowFile[]> => {
-  try {
-    const server = useServersStore.getState().servers.find((s) => s.id === serverId);
-    if (!server) {
-      throw new Error('Server not found');
+export const listWorkflows = async (serverId: string): Promise<ServerWorkflowFile[]> =>
+  withRequestTimeout(async (requestSignal) => {
+    try {
+      const server = useServersStore.getState().servers.find((s) => s.id === serverId);
+      if (!server) {
+        throw new Error('Server not found');
+      }
+
+      const url = await buildServerUrl(server.useSSL, server.host, server.port, '/api/cpe/workflow/list');
+      const response = await fetchWithAuth(url, server.token, {
+        method: 'GET',
+        signal: requestSignal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 405) throw new WorkflowExtensionUnavailableError();
+        const errorText = await response.text();
+        throw new Error(`Failed to list workflows: ${response.status} ${errorText}`);
+      }
+
+      const data: ListWorkflowsResponse = await response.json();
+
+      if (
+        data.status !== 'success' ||
+        !Array.isArray(data.workflows) ||
+        data.workflows.some(
+          (file) =>
+            !file ||
+            typeof file.filename !== 'string' ||
+            !file.filename.trim() ||
+            !Number.isFinite(file.modified) ||
+            !Number.isFinite(file.size) ||
+            (file.raw_content !== undefined && typeof file.raw_content !== 'string'),
+        )
+      ) {
+        throw new Error('Failed to list workflows: Server reported an error');
+      }
+
+      return data.workflows;
+    } catch (error) {
+      if (!(error instanceof WorkflowExtensionUnavailableError)) console.warn('Error listing workflows:', error);
+      throw error;
     }
-
-    const url = await buildServerUrl(server.useSSL, server.host, server.port, '/api/cpe/workflow/list');
-    const response = await fetchWithAuth(url, server.token, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to list workflows: ${response.status} ${errorText}`);
-    }
-
-    const data: ListWorkflowsResponse = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error('Failed to list workflows: Server reported an error');
-    }
-
-    return data.workflows;
-  } catch (error) {
-    console.warn('Error listing workflows:', error);
-    throw error;
-  }
-};
+  }, 10_000);
 
 // Interface for the expected response from /cpe/workflow/get-and-convert
 interface GetAndConvertWorkflowSuccessResponse {
@@ -189,61 +210,68 @@ interface GetAndConvertWorkflowErrorResponse {
 
 type GetAndConvertWorkflowResponse = GetAndConvertWorkflowSuccessResponse | GetAndConvertWorkflowErrorResponse;
 
-export const getAndConvertWorkflow = async (serverId: string, filename: string): Promise<any> => {
-  try {
-    const server = useServersStore.getState().servers.find((s) => s.id === serverId);
-    if (!server) {
-      throw new Error('Server not found');
-    }
+export const getAndConvertWorkflow = async (serverId: string, filename: string): Promise<any> =>
+  withRequestTimeout(async (requestSignal) => {
+    try {
+      const server = useServersStore.getState().servers.find((s) => s.id === serverId);
+      if (!server) {
+        throw new Error('Server not found');
+      }
 
-    const params = new URLSearchParams();
-    params.append('filename', filename);
+      const params = new URLSearchParams();
+      params.append('filename', filename);
 
-    const url = await buildServerUrl(server.useSSL, server.host, server.port, `/cpe/workflow/get-and-convert?${params.toString()}`);
+      const url = await buildServerUrl(
+        server.useSSL,
+        server.host,
+        server.port,
+        `/cpe/workflow/get-and-convert?${params.toString()}`,
+      );
 
-    const response = await fetchWithAuth(url, server.token, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+      const response = await fetchWithAuth(url, server.token, {
+        method: 'GET',
+        signal: requestSignal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorDetails = errorText;
-      try {
-        const errorJson: GetAndConvertWorkflowErrorResponse = JSON.parse(errorText);
-        errorDetails = errorJson.message || errorText;
-        if (errorJson.details) {
-          errorDetails += ` (Details: ${errorJson.details})`;
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorDetails = errorText;
+        try {
+          const errorJson: GetAndConvertWorkflowErrorResponse = JSON.parse(errorText);
+          errorDetails = errorJson.message || errorText;
+          if (errorJson.details) {
+            errorDetails += ` (Details: ${errorJson.details})`;
+          }
+        } catch {
+          // Not a JSON error response, use the raw text
         }
-      } catch {
-        // Not a JSON error response, use the raw text
+        throw new Error(`Failed to get and convert workflow: ${response.status} ${errorDetails}`);
       }
-      throw new Error(`Failed to get and convert workflow: ${response.status} ${errorDetails}`);
-    }
 
-    const data: GetAndConvertWorkflowResponse = await response.json();
+      const data: GetAndConvertWorkflowResponse = await response.json();
 
-    if (data.status !== 'success') {
-      const errorResponse = data as GetAndConvertWorkflowErrorResponse;
-      let errorMessage = `Failed to get and convert workflow: ${errorResponse.message}`;
-      if (errorResponse.details) {
-        errorMessage += ` (Details: ${errorResponse.details})`;
+      if (data.status !== 'success') {
+        const errorResponse = data as GetAndConvertWorkflowErrorResponse;
+        let errorMessage = `Failed to get and convert workflow: ${errorResponse.message}`;
+        if (errorResponse.details) {
+          errorMessage += ` (Details: ${errorResponse.details})`;
+        }
+        throw new Error(errorMessage);
       }
-      throw new Error(errorMessage);
-    }
-    // Assuming the actual converted workflow is nested under data.workflow
-    if (!data.data || typeof data.data.workflow === 'undefined') {
-      throw new Error('Converted workflow data is missing in the response');
-    }
+      // Assuming the actual converted workflow is nested under data.workflow
+      if (!data.data || typeof data.data.workflow === 'undefined') {
+        throw new Error('Converted workflow data is missing in the response');
+      }
 
-    return data.data.workflow;
-  } catch (error) {
-    console.warn('Error getting and converting workflow:', error);
-    throw error;
-  }
-};
+      return data.data.workflow;
+    } catch (error) {
+      console.warn('Error getting and converting workflow:', error);
+      throw error;
+    }
+  }, 10_000);
 
 /**
  * Writes a workflow into the server's `user/default/workflows/` via
@@ -254,11 +282,7 @@ export const getAndConvertWorkflow = async (serverId: string, filename: string):
  * callers should treat failure as non-fatal, since the app can still run the
  * workflow by sending it inline.
  */
-export const saveWorkflowToServer = async (
-  serverId: string,
-  name: string,
-  workflow: unknown,
-): Promise<void> => {
+export const saveWorkflowToServer = async (serverId: string, name: string, workflow: unknown): Promise<void> => {
   const server = useServersStore.getState().servers.find((s) => s.id === serverId);
   if (!server) throw new Error('Server not found');
 

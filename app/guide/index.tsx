@@ -1,10 +1,7 @@
-import { AppBar } from '@/components/layout/app-bar';
 import { WebViewPage } from '@/components/common/webview-page';
-import { HStack } from '@/components/ui/hstack';
-import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import React, { useState } from 'react';
+import { AppBar } from '@/components/layout/app-bar';
+import { Segments } from '@/components/ui/design-system/primitives';
+import { useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { SceneMap, TabView } from 'react-native-tab-view';
 
@@ -47,41 +44,22 @@ export default function GuideScreen() {
     { key: 'runpod', title: 'RunPod Server' },
   ]);
 
-  const renderTabBar = (props: any) => {
-    return (
-      <VStack className="bg-surface-base">
-        <AppBar title="ComfyUI Server Setup" showBack />
-        <HStack className="border-b border-stroke px-5">
-          {props.navigationState.routes.map((route: any, i: number) => {
-            const isActive = index === i;
-            return (
-              <Pressable
-                key={route.key}
-                onPress={() => setIndex(i)}
-                className="flex-1"
-              >
-                <VStack className="items-center pb-3">
-                  <Text
-                    className={`text-sm font-medium ${
-                      isActive ? 'text-content-primary' : 'text-content-secondary'
-                    }`}
-                  >
-                    {route.title}
-                  </Text>
-                </VStack>
-                {isActive && (
-                  <View className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-900" />
-                )}
-              </Pressable>
-            );
-          })}
-        </HStack>
-      </VStack>
-    );
-  };
+  const renderTabBar = () => (
+    <AppBar
+      title="Connection guide"
+      showBack
+      bottomElement={
+        <Segments
+          options={['Local', 'Remote', 'RunPod']}
+          value={['Local', 'Remote', 'RunPod'][index]}
+          onChange={(value) => setIndex(['Local', 'Remote', 'RunPod'].indexOf(value))}
+        />
+      }
+    />
+  );
 
   return (
-    <View className="flex-1 bg-surface-base">
+    <View className="bg-surface-base flex-1">
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

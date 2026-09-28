@@ -18,10 +18,10 @@ export async function ensureSshKeyPair(): Promise<SshKeyPair> {
   throw new Error(UNSUPPORTED);
 }
 
-export async function isSshKeyRegistered(): Promise<boolean> {
+export async function isSshKeyRegistered(_accountHash: string): Promise<boolean> {
   return false;
 }
 
-export async function markSshKeyRegistered(): Promise<void> {
+export async function markSshKeyRegistered(_accountHash: string): Promise<void> {
   throw new Error(UNSUPPORTED);
 }

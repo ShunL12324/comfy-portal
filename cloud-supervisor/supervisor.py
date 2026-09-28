@@ -28,7 +28,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-SUPERVISOR_VERSION = 1
+SUPERVISOR_VERSION = 2
 
 WORKSPACE = os.environ.get("CP_WORKSPACE", "/workspace")
 COMFY_DIR = os.environ.get("COMFY_DIR", "/opt/comfyui")
@@ -698,22 +698,27 @@ def install_extensions(extensions):
     pip = os.path.join(COMFY_DIR, "venv", "bin", "pip")
     for url in extensions:
         name = os.path.basename(url.rstrip("/")).replace(".git", "")
+        step_id = "extension:" + url
+        STATE.step(step_id, "running", name)
         path = os.path.join(root, name)
-        if os.path.isdir(path):
-            log("skip %s (present)" % name)
-            continue
-        result = subprocess.run(
-            ["git", "clone", "--depth", "1", url, path],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            # One bad node shouldn't cost the user the whole instance.
-            log("WARN clone failed %s: %s" % (url, result.stderr.strip()[:200]))
-            continue
+        if not os.path.isdir(path):
+            result = subprocess.run(
+                ["git", "clone", "--depth", "1", url, path],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                STATE.step(step_id, "failed", result.stderr.strip()[:200])
+                raise RuntimeError("Could not clone extension " + name)
         requirements = os.path.join(path, "requirements.txt")
         if os.path.isfile(requirements) and os.path.isfile(pip):
-            subprocess.run([pip, "install", "-q", "-r", requirements], capture_output=True)
+            result = subprocess.run(
+                [pip, "install", "-q", "-r", requirements],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                STATE.step(step_id, "failed", result.stderr.strip()[:200])
+                raise RuntimeError("Could not install dependencies for " + name)
+        STATE.step(step_id, "done", name)
         log("installed %s" % name)
 
 
@@ -730,6 +735,8 @@ def pull_ollama(models):
         STATE.step("ollama:" + model, "running")
         result = subprocess.run(["ollama", "pull", model], capture_output=True, text=True)
         STATE.step("ollama:" + model, "done" if result.returncode == 0 else "failed")
+        if result.returncode != 0:
+            raise RuntimeError("Could not pull Ollama model " + model)
     with STATE.lock:
         STATE.services.setdefault("ollama", {})["models"] = list(models)
 
@@ -773,12 +780,16 @@ def run():
     queue_downloads(models)
 
     def side_work():
-        STATE.step("extensions", "running")
-        install_extensions(manifest["extensions"])
-        STATE.step("extensions", "done")
-        STATE.step("ollama", "running")
-        pull_ollama(manifest["ollamaModels"])
-        STATE.step("ollama", "done")
+        try:
+            STATE.step("extensions", "running")
+            install_extensions(manifest["extensions"])
+            STATE.step("extensions", "done")
+            STATE.step("ollama", "running")
+            pull_ollama(manifest["ollamaModels"])
+            STATE.step("ollama", "done")
+        except Exception as exc:
+            STATE.fail("environment_install_failed", str(exc))
+            log("environment install failed: %s" % exc)
 
     side = threading.Thread(target=side_work, daemon=True)
     side.start()
@@ -789,6 +800,11 @@ def run():
         # than no server, and the app offers a retry per model.
         log("%d model(s) failed: %s" % (len(failed), ", ".join(failed)))
     side.join(timeout=1800)
+    if side.is_alive():
+        STATE.fail("environment_install_timeout", "Extensions or Ollama installation exceeded 30 minutes.")
+        return
+    if STATE.phase == "failed":
+        return
 
     STATE.set_phase("starting")
     argv = [
@@ -837,10 +853,34 @@ def run():
     supervise(PROCESSES)
 
 
+def start_direct_ssh():
+    # Vast supplies its own SSH service. RunPod uses this image's key-only service.
+    key = os.environ.get("CP_SSH_PUBLIC_KEY", "").strip()
+    if not key:
+        return
+    fields = key.split()
+    if len(fields) < 2 or fields[0] not in ("ssh-rsa", "ssh-ed25519") or "\n" in key or "\r" in key:
+        raise ValueError("Invalid SSH public key")
+    base64.b64decode(fields[1], validate=True)
+    os.makedirs("/root/.ssh", mode=0o700, exist_ok=True)
+    os.chmod("/root/.ssh", 0o700)
+    with open("/root/.ssh/authorized_keys", "w") as handle:
+        handle.write(key + "\n")
+    os.chmod("/root/.ssh/authorized_keys", 0o600)
+    os.makedirs("/run/sshd", exist_ok=True)
+    subprocess.run(["ssh-keygen", "-A"], check=True, capture_output=True)
+    subprocess.run([
+        "/usr/sbin/sshd", "-o", "PasswordAuthentication=no",
+        "-o", "KbdInteractiveAuthentication=no", "-o", "PermitRootLogin=prohibit-password",
+        "-o", "PubkeyAuthentication=yes", "-o", "UsePAM=no",
+    ], check=True, capture_output=True)
+
+
 def main():
     signal.signal(signal.SIGTERM, lambda *_: os._exit(0))
     threading.Thread(target=serve_http, daemon=True).start()
     try:
+        start_direct_ssh()
         run()
     except Exception as exc:  # noqa: BLE001 - last resort, must reach /v1/status
         STATE.fail("supervisor_crashed", "%s: %s" % (type(exc).__name__, exc))

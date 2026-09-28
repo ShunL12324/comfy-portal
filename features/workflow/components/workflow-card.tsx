@@ -1,142 +1,130 @@
-import {
-  AlertDialog,
-  AlertDialogBackdrop,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-} from '@/components/ui/alert-dialog';
-import { Button, ButtonText } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
+import { Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { Image } from '@/components/ui/image';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
+import { Pressable } from '@/components/ui/pressable';
+import { View } from '@/components/ui/view';
 import { EditWorkflowModal } from '@/features/workflow/components/edit-workflow-modal';
+import { useMediaStore } from '@/features/gallery/stores/media-store';
+import { workflowUsageLabel } from '@/features/workflow/utils/workflow-usage';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { formatDateToYYYYMMDD } from '@/utils/date';
 import { useRouter } from 'expo-router';
-import { ImageIcon, Settings2 } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, View } from 'react-native';
-
-interface WorkflowCardProps {
-  id: string;
-}
-
-export const WorkflowCard = ({ id }: WorkflowCardProps) => {
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = React.useState(false);
-  const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
-  const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === id));
-  // Above the early return: this used to sit below it, so deleting a workflow
-  // — the record goes from found to undefined between renders — changed the
-  // hook count and blew up with "Rendered more hooks than during the previous
-  // render".
+import { GitBranch } from '@/constants/icons';
+import { MotiView } from 'moti';
+import { usePressFeedback } from '@/components/ui/design-system/press-feedback';
+import { useState } from 'react';
+import { workflowSourceNotice } from '../utils/workflow-source';
+import { WorkflowSourceSheet } from './workflow-source-sheet';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
+export function WorkflowCard({ id }: { id: string }) {
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [failedImage, setFailedImage] = useState<string>();
+  const record = useWorkflowStore((s) => s.workflow.find((w) => w.id === id));
+  const generatedPreview = useMediaStore(
+    (state) =>
+      state.assets.find(
+        (asset) => asset.kind === 'image' && asset.serverId === record?.serverId && asset.workflowId === id,
+      )?.path,
+  );
+  const preview = record?.thumbnail || generatedPreview;
   const router = useRouter();
-
-  if (!workflowRecord) return null;
-
-  const handleDelete = () => {
-    removeWorkflow(id);
-    setIsDeleteAlertOpen(false);
-  };
-
+  const c = useDesign();
+  const press = usePressFeedback();
+  if (!record) return null;
+  const notice = workflowSourceNotice(record);
+  const origin = record.addMethod === 'server-sync' ? 'Server' : 'Imported';
   return (
     <>
-      {/* Cards press by fading only — nothing else in the app scales or lifts
-          on press, and this was the one card that did. */}
-      <Pressable
-        className="overflow-hidden rounded-xl bg-surface-raised active:opacity-80 shadow-lg shadow-black/5 relative"
-        onPress={() => router.push(`/workflow/${workflowRecord?.serverId}/run/${workflowRecord?.id}`)}
-      >
-        {/* Top Image Section */}
-        <View className="h-48 w-full bg-surface-sunken">
-          {workflowRecord?.thumbnail ? (
-            <Image
-              source={{ uri: workflowRecord?.thumbnail }}
-              className="w-full flex-1"
-              alt={workflowRecord.name || 'Workflow thumbnail'}
-              onError={(error) => {
-                console.error('[WorkflowCard] Failed to load thumbnail:', error.nativeEvent.error);
-                if (error.nativeEvent.error.includes('no such file')) {
-                  useWorkflowStore.getState().updateWorkflow(id, { thumbnail: undefined });
-                }
-              }}
-            />
-          ) : (
-            <View className="flex-1 items-center justify-center bg-surface-muted">
-              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-content-tertiary" />
-            </View>
-          )}
-        </View>
-
-        {/* Bottom Info Section - Revised Structure */}
-        <View className="p-4">
-          <Heading size="sm" className="text-content-heading" numberOfLines={1}>
-            {workflowRecord.name}
-          </Heading>
-
-          <VStack className="mt-2 space-y-1">
-            <Text className="text-xs text-content-secondary">
-              Last used: {workflowRecord.lastUsed ? formatDateToYYYYMMDD(workflowRecord.lastUsed) : 'Never'}
-            </Text>
-            {workflowRecord.addMethod === 'server-sync' && workflowRecord.metadata?.originalFilename && (
-              <Text className="text-xs text-content-tertiary" numberOfLines={1}>
-                Path: {String(workflowRecord.metadata.originalFilename)}
-              </Text>
-            )}
-          </VStack>
-        </View>
-
-        {/* Settings Icon - Positioned absolutely at top-right, now directly opens Edit Modal */}
+      <MotiView animate={press.animate} transition={press.transition} style={{ position: 'relative' }}>
         <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            setIsEditModalOpen(true);
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${record.name}`}
+          onLongPress={() => setEditing(true)}
+          accessibilityHint={`${origin}. ${workflowUsageLabel(record.lastUsed)}. ${notice ?? ''}. Open workflow. Long press to manage.`}
+          onPress={() => router.push(`/workflow/${record.serverId}/run/${id}`)}
+          onPressIn={press.onPressIn}
+          onPressOut={press.onPressOut}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
           }}
-          className="absolute top-2 right-2 z-10 h-8 w-8 items-center justify-center rounded-md bg-black/20 active:bg-black/30"
+        />
+        <View
+          pointerEvents="box-none"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: t.layout.field,
+            paddingVertical: t.layout.rowY,
+          }}
         >
-          <Icon as={Settings2} size="sm" className="text-white" />
-        </Pressable>
-      </Pressable>
-
-      <EditWorkflowModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} workflowId={id} />
-
-      <AlertDialog isOpen={isDeleteAlertOpen} onClose={() => setIsDeleteAlertOpen(false)}>
-        <AlertDialogBackdrop />
-        <AlertDialogContent className="max-w-md overflow-hidden rounded-xl border-0 bg-surface-muted">
-          <AlertDialogHeader className="px-0">
-            <Heading size="sm" className="text-content-primary">
-              Delete Workflow
-            </Heading>
-          </AlertDialogHeader>
-          <AlertDialogBody className="px-0 py-4">
-            <Text className="text-sm text-content-tertiary">
-              Are you sure you want to delete this workflow? This action cannot be undone.
-            </Text>
-          </AlertDialogBody>
-          <AlertDialogFooter className="px-0">
-            <HStack space="sm" className="py-0">
-              <Button
-                variant="outline"
-                onPress={() => setIsDeleteAlertOpen(false)}
-                className="flex-1 rounded-md bg-surface-sunken"
-              >
-                <ButtonText className="text-sm text-content-tertiary">Cancel</ButtonText>
-              </Button>
-              <Button
-                variant="solid"
-                onPress={handleDelete}
-                className="flex-1 rounded-md bg-status-danger active:bg-status-danger-pressed"
-              >
-                <ButtonText className="text-sm text-content-heading">Delete</ButtonText>
-              </Button>
-            </HStack>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <View
+            pointerEvents="none"
+            style={{
+              width: t.height.touch,
+              height: t.height.touch,
+              flexShrink: 0,
+              overflow: 'hidden',
+              borderRadius: t.radius.small,
+              backgroundColor: c.raised,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {preview && failedImage !== preview ? (
+              <Image
+                size="none"
+                source={{ uri: preview }}
+                alt={record.name}
+                style={{ width: t.height.touch, height: t.height.touch }}
+                onError={() => setFailedImage(preview)}
+              />
+            ) : (
+              <GitBranch size={t.icon.large} strokeWidth={iconStroke(t.icon.large)} color={c.ink} />
+            )}
+          </View>
+          <View pointerEvents="box-none" style={{ flex: 1, minWidth: 0, gap: t.layout.label }}>
+            <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.related }}>
+              <Copy size="section" style={{ fontWeight: '500', flex: 1, minWidth: 0 }} numberOfLines={1}>
+                {record.name}
+              </Copy>
+            </View>
+            <View
+              pointerEvents="box-none"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.related }}
+            >
+              <View pointerEvents="none" style={{ flex: 1, minWidth: 0 }}>
+                <Copy muted size="metadata" numberOfLines={1}>
+                  {origin}
+                  {record.lastUsed ? ` · ${workflowUsageLabel(record.lastUsed)}` : ''}
+                </Copy>
+              </View>
+              {notice && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${notice}: ${record.name}`}
+                  onPress={() => setSourceOpen(true)}
+                  style={{
+                    minHeight: t.height.touch,
+                    justifyContent: 'center',
+                    maxWidth: '55%',
+                    flexShrink: 0,
+                    marginVertical: -(t.height.touch - t.leading.metadata) / 2,
+                  }}
+                >
+                  <Copy size="metadata" numberOfLines={1} style={{ color: c.ink }}>
+                    {notice}
+                  </Copy>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+      </MotiView>
+      <WorkflowSourceSheet id={id} open={sourceOpen} onClose={() => setSourceOpen(false)} />
+      <EditWorkflowModal isOpen={editing} onClose={() => setEditing(false)} workflowId={id} />
     </>
   );
-};
+}

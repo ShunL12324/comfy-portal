@@ -11,10 +11,10 @@ export const cardStyle = tva({
       lg: 'p-6 rounded-xl',
     },
     variant: {
-      elevated: 'bg-background-0',
+      elevated: 'bg-surface-card',
       outline: 'border border-outline-200 ',
       ghost: 'rounded-none',
-      filled: 'bg-background-50',
+      filled: 'bg-surface-inset',
     },
   },
 });

@@ -1,9 +1,8 @@
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { Action, Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
-import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import * as Linking from 'expo-linking';
-import { ExternalLink, RefreshCw } from 'lucide-react-native';
+import { ExternalLink, RefreshCw } from '@/constants/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { WebView } from 'react-native-webview';
 
@@ -26,6 +25,7 @@ export function WebViewPage({
   slowLoadingDescription = 'You can keep waiting or open this page in your browser.',
   errorTitle = 'Failed to load this page',
 }: WebViewPageProps) {
+  const c = useDesign();
   const [status, setStatusState] = useState<WebViewStatus>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
@@ -61,7 +61,7 @@ export function WebViewPage({
   }, [uri]);
 
   return (
-    <View className="flex-1 bg-surface-base">
+    <View className="bg-surface-base flex-1">
       <WebView
         key={reloadKey}
         className="flex-1"
@@ -90,36 +90,37 @@ export function WebViewPage({
       />
 
       {status !== 'ready' && (
-        <View className="absolute inset-0 items-center justify-center bg-surface-base px-6">
+        <View className="inset-0 bg-surface-base px-6 absolute items-center justify-center">
           {status === 'error' ? (
-            <View className="w-full max-w-[360px] items-center rounded-2xl border border-stroke bg-surface-raised px-5 py-6">
-              <Text className="text-center text-base font-semibold text-content-heading">{errorTitle}</Text>
-              <Text className="mt-2 text-center text-sm text-content-secondary">{errorMessage}</Text>
+            <View className="bg-surface-raised px-5 py-6 w-full max-w-[360px] items-center rounded-xl">
+              <Copy size="section" className="text-center" style={{ fontWeight: '600' }}>
+                {errorTitle}
+              </Copy>
+              <Copy className="mt-2 text-center" style={{ color: c.secondary }}>
+                {errorMessage}
+              </Copy>
               <View className="mt-5 flex-row items-center">
-                <Button size="sm" variant="outline" onPress={retry} className="rounded-lg border-outline-300 bg-surface-base">
-                  <ButtonIcon as={RefreshCw} />
-                  <ButtonText>Retry</ButtonText>
-                </Button>
-                <Button size="sm" variant="link" onPress={openInBrowser} className="ml-2">
-                  <ButtonIcon as={ExternalLink} />
-                  <ButtonText>Open in Browser</ButtonText>
-                </Button>
+                <Action kind="secondary" icon={RefreshCw} onPress={retry}>
+                  Retry
+                </Action>
+                <Action kind="text" icon={ExternalLink} onPress={openInBrowser}>
+                  Open browser
+                </Action>
               </View>
             </View>
           ) : (
             <View className="items-center">
               <RotatingSpinner size="sm" preset="subtle" />
-              <Text className="mt-3 text-base font-medium text-content-heading">
+              <Copy size="section" className="mt-3" style={{ fontWeight: '500' }}>
                 {status === 'slow-loading' ? slowLoadingTitle : loadingTitle}
-              </Text>
-              <Text className="mt-1 text-center text-sm text-content-secondary">
+              </Copy>
+              <Copy className="mt-1 text-center" style={{ color: c.secondary }}>
                 {status === 'slow-loading' ? slowLoadingDescription : 'Please wait a moment.'}
-              </Text>
+              </Copy>
               {status === 'slow-loading' && (
-                <Button size="sm" variant="link" onPress={openInBrowser} className="mt-2">
-                  <ButtonIcon as={ExternalLink} />
-                  <ButtonText>Open in Browser</ButtonText>
-                </Button>
+                <Action kind="text" icon={ExternalLink} onPress={openInBrowser}>
+                  Open browser
+                </Action>
               )}
             </View>
           )}

@@ -1,11 +1,8 @@
-import { Box } from '@/components/ui/box';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { Check } from 'lucide-react-native';
-import React from 'react';
+import { Copy, useDesign } from '@/components/ui/design-system/primitives';
+import { View as Box } from '@/components/ui/view';
+import { Check } from '@/constants/icons';
+import { designTokens as t, iconStroke, type DesignColors } from '@/constants/design-tokens';
 import { SelectorOption } from '../types';
 
 interface ItemProps {
@@ -14,30 +11,60 @@ interface ItemProps {
   onSelect: (value: string) => void;
 }
 
+/** One selection treatment for text rows, model rows and image/model tiles. */
+export function getOptionSurfaceStyle(c: DesignColors, isSelected: boolean, media = false) {
+  return {
+    backgroundColor: isSelected ? c.tintSurface : media ? c.card : 'transparent',
+    borderRadius: media ? t.radius.panel : t.radius.control,
+    borderWidth: 1,
+    borderColor: isSelected ? c.tint : media ? c.line : 'transparent',
+  };
+}
+
 export function Item({ item, isSelected, onSelect }: ItemProps) {
+  const c = useDesign();
   return (
-    <Pressable onPress={() => onSelect(item.value)} className="active:opacity-80">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      accessibilityState={{ selected: isSelected }}
+      aria-pressed={isSelected}
+      testID={`selector-option-${item.value}`}
+      onPress={() => onSelect(item.value)}
+      className="active:opacity-pressed"
+      style={getOptionSurfaceStyle(c, isSelected)}
+    >
       <Box
-        className={`mx-4 mb-2 overflow-hidden rounded-xl ${isSelected ? 'border-0 bg-surface-muted' : 'bg-surface-raised'}`}
+        style={{
+          minHeight: t.height.touch,
+          paddingHorizontal: t.layout.rowX,
+          paddingVertical: t.layout.rowY,
+          gap: t.layout.related,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
       >
-        <HStack space="sm" className="items-center justify-between p-3">
-          {item.icon}
-          <VStack space="xs" className="flex-1">
-            <Text
-              className={`text-base ${isSelected ? 'font-medium text-content-primary' : 'text-content-secondary'}`}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.label}
-            </Text>
-            {item.description && (
-              <Text className="text-xs text-content-tertiary" numberOfLines={2}>
-                {item.description}
-              </Text>
-            )}
-          </VStack>
-          {isSelected && <Icon as={Check} size="sm" className="text-content-primary" />}
-        </HStack>
+        {item.icon}
+        <Box style={{ flex: 1, gap: t.layout.label }}>
+          <Copy size="body" style={{ color: c.ink, fontWeight: '500' }} numberOfLines={2} ellipsizeMode="tail">
+            {item.label}
+          </Copy>
+          {item.description && (
+            <Copy size="label" muted numberOfLines={2}>
+              {item.description}
+            </Copy>
+          )}
+        </Box>
+        <Box style={{ width: t.icon.control, height: t.icon.control }}>
+          {isSelected && (
+            <Check
+              width={t.icon.control}
+              height={t.icon.control}
+              strokeWidth={iconStroke(t.icon.control)}
+              color={c.tint}
+            />
+          )}
+        </Box>
       </Box>
     </Pressable>
   );

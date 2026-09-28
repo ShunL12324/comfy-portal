@@ -1,22 +1,24 @@
-import { Box } from '@/components/ui/box';
-import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
-import { Link, Stack } from 'expo-router';
-
+import { Action, Copy, Title, useDesign } from '@/components/ui/design-system/primitives';
+import { designTokens as t } from '@/constants/design-tokens';
+import { View } from '@/components/ui/view';
+import { useRouter } from 'expo-router';
 export default function NotFoundScreen() {
+  const router = useRouter();
+  const c = useDesign();
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <Box className="flex-1 items-center justify-center p-5">
-        <Text className="text-xl font-bold">This screen doesn&apos;t exist.</Text>
-        <Link href="/" asChild>
-          <Pressable className="mt-4 py-4">
-            <Text className="font-medium text-action">
-              Go to home screen!
-            </Text>
-          </Pressable>
-        </Link>
-      </Box>
-    </>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: c.paper,
+        padding: t.layout.section,
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        gap: t.layout.field,
+      }}
+    >
+      <Title>Page unavailable</Title>
+      <Copy muted>This link no longer points to an available page.</Copy>
+      <Action kind="primary" onPress={() => router.replace('/')}>Open workspace</Action>
+    </View>
   );
 }

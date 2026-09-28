@@ -1,349 +1,38 @@
 'use client';
 import { Colors } from '@/constants/Colors';
+import { designColors } from '@/constants/design-tokens';
 import { vars } from 'nativewind';
 
-// Helper function to convert HEX to RGB
 function hexToRgb(hex: string) {
-  // Remove the # if present
-  hex = hex.replace('#', '');
-
-  // Parse the hex values
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-
-  return `${r} ${g} ${b}`;
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(' ');
 }
 
-// Convert all colors in a theme to RGB
-function convertThemeToRgb(theme: typeof Colors.light) {
-  const result: Record<string, Record<string, string>> = {};
-
-  for (const [category, colors] of Object.entries(theme)) {
-    result[category] = {};
-    for (const [shade, hex] of Object.entries(colors)) {
-      result[category][shade] = hexToRgb(hex);
+function themeVariables(theme: typeof Colors.light, colors: typeof designColors.light) {
+  const tokens: Record<string, string> = {};
+  for (const [category, shades] of Object.entries(theme)) {
+    for (const [shade, hex] of Object.entries(shades)) {
+      tokens[`--color-${category}-${shade}`] = hexToRgb(hex);
     }
   }
-
-  return result;
+  for (const status of ['error', 'warning', 'success', 'info'] as const) {
+    tokens[`--color-background-${status}`] = tokens[`--color-${status}-50`];
+  }
+  tokens['--color-background-muted'] = tokens['--color-background-100'];
+  for (const status of ['info', 'error'] as const) {
+    tokens[`--color-indicator-${status}`] = tokens[`--color-${status}-500`];
+  }
+  // Direct semantic variables keep NativeWind and style-based components identical.
+  for (const [name, value] of Object.entries(colors)) tokens[`--surface-role-${name}`] = hexToRgb(value);
+  tokens['--color-status-online'] = hexToRgb(colors.ready);
+  tokens['--color-card'] = hexToRgb(colors.card);
+  tokens['--color-tint'] = hexToRgb(colors.tint);
+  tokens['--color-on-tint'] = hexToRgb(colors.onTint);
+  tokens['--color-tint-surface'] = hexToRgb(colors.tintSurface);
+  tokens['--color-indicator-primary'] = tokens['--color-primary-500'];
+  return vars(tokens);
 }
 
-// Convert colors to RGB format
-const lightColors = convertThemeToRgb(Colors.light);
-const darkColors = convertThemeToRgb(Colors.dark);
-
 export const config = {
-  light: vars({
-    '--color-primary-0': lightColors.primary['0'],
-    '--color-primary-50': lightColors.primary['50'],
-    '--color-primary-100': lightColors.primary['100'],
-    '--color-primary-200': lightColors.primary['200'],
-    '--color-primary-300': lightColors.primary['300'],
-    '--color-primary-400': lightColors.primary['400'],
-    '--color-primary-500': lightColors.primary['500'],
-    '--color-primary-600': lightColors.primary['600'],
-    '--color-primary-700': lightColors.primary['700'],
-    '--color-primary-800': lightColors.primary['800'],
-    '--color-primary-900': lightColors.primary['900'],
-    '--color-primary-950': lightColors.primary['950'],
-
-    '--color-secondary-0': lightColors.secondary['0'],
-    '--color-secondary-50': lightColors.secondary['50'],
-    '--color-secondary-100': lightColors.secondary['100'],
-    '--color-secondary-200': lightColors.secondary['200'],
-    '--color-secondary-300': lightColors.secondary['300'],
-    '--color-secondary-400': lightColors.secondary['400'],
-    '--color-secondary-500': lightColors.secondary['500'],
-    '--color-secondary-600': lightColors.secondary['600'],
-    '--color-secondary-700': lightColors.secondary['700'],
-    '--color-secondary-800': lightColors.secondary['800'],
-    '--color-secondary-900': lightColors.secondary['900'],
-    '--color-secondary-950': lightColors.secondary['950'],
-
-    '--color-tertiary-0': lightColors.tertiary['0'],
-    '--color-tertiary-50': lightColors.tertiary['50'],
-    '--color-tertiary-100': lightColors.tertiary['100'],
-    '--color-tertiary-200': lightColors.tertiary['200'],
-    '--color-tertiary-300': lightColors.tertiary['300'],
-    '--color-tertiary-400': lightColors.tertiary['400'],
-    '--color-tertiary-500': lightColors.tertiary['500'],
-    '--color-tertiary-600': lightColors.tertiary['600'],
-    '--color-tertiary-700': lightColors.tertiary['700'],
-    '--color-tertiary-800': lightColors.tertiary['800'],
-    '--color-tertiary-900': lightColors.tertiary['900'],
-    '--color-tertiary-950': lightColors.tertiary['950'],
-
-    '--color-error-0': lightColors.error['0'],
-    '--color-error-50': lightColors.error['50'],
-    '--color-error-100': lightColors.error['100'],
-    '--color-error-200': lightColors.error['200'],
-    '--color-error-300': lightColors.error['300'],
-    '--color-error-400': lightColors.error['400'],
-    '--color-error-500': lightColors.error['500'],
-    '--color-error-600': lightColors.error['600'],
-    '--color-error-700': lightColors.error['700'],
-    '--color-error-800': lightColors.error['800'],
-    '--color-error-900': lightColors.error['900'],
-    '--color-error-950': lightColors.error['950'],
-
-    '--color-success-0': lightColors.success['0'],
-    '--color-success-50': lightColors.success['50'],
-    '--color-success-100': lightColors.success['100'],
-    '--color-success-200': lightColors.success['200'],
-    '--color-success-300': lightColors.success['300'],
-    '--color-success-400': lightColors.success['400'],
-    '--color-success-500': lightColors.success['500'],
-    '--color-success-600': lightColors.success['600'],
-    '--color-success-700': lightColors.success['700'],
-    '--color-success-800': lightColors.success['800'],
-    '--color-success-900': lightColors.success['900'],
-    '--color-success-950': lightColors.success['950'],
-
-    '--color-warning-0': lightColors.warning['0'],
-    '--color-warning-50': lightColors.warning['50'],
-    '--color-warning-100': lightColors.warning['100'],
-    '--color-warning-200': lightColors.warning['200'],
-    '--color-warning-300': lightColors.warning['300'],
-    '--color-warning-400': lightColors.warning['400'],
-    '--color-warning-500': lightColors.warning['500'],
-    '--color-warning-600': lightColors.warning['600'],
-    '--color-warning-700': lightColors.warning['700'],
-    '--color-warning-800': lightColors.warning['800'],
-    '--color-warning-900': lightColors.warning['900'],
-    '--color-warning-950': lightColors.warning['950'],
-
-    '--color-info-0': lightColors.info['0'],
-    '--color-info-50': lightColors.info['50'],
-    '--color-info-100': lightColors.info['100'],
-    '--color-info-200': lightColors.info['200'],
-    '--color-info-300': lightColors.info['300'],
-    '--color-info-400': lightColors.info['400'],
-    '--color-info-500': lightColors.info['500'],
-    '--color-info-600': lightColors.info['600'],
-    '--color-info-700': lightColors.info['700'],
-    '--color-info-800': lightColors.info['800'],
-    '--color-info-900': lightColors.info['900'],
-    '--color-info-950': lightColors.info['950'],
-
-    '--color-typography-0': lightColors.typography['0'],
-    '--color-typography-50': lightColors.typography['50'],
-    '--color-typography-100': lightColors.typography['100'],
-    '--color-typography-200': lightColors.typography['200'],
-    '--color-typography-300': lightColors.typography['300'],
-    '--color-typography-400': lightColors.typography['400'],
-    '--color-typography-500': lightColors.typography['500'],
-    '--color-typography-600': lightColors.typography['600'],
-    '--color-typography-700': lightColors.typography['700'],
-    '--color-typography-800': lightColors.typography['800'],
-    '--color-typography-900': lightColors.typography['900'],
-    '--color-typography-950': lightColors.typography['950'],
-
-    '--color-outline-0': lightColors.outline['0'],
-    '--color-outline-50': lightColors.outline['50'],
-    '--color-outline-100': lightColors.outline['100'],
-    '--color-outline-200': lightColors.outline['200'],
-    '--color-outline-300': lightColors.outline['300'],
-    '--color-outline-400': lightColors.outline['400'],
-    '--color-outline-500': lightColors.outline['500'],
-    '--color-outline-600': lightColors.outline['600'],
-    '--color-outline-700': lightColors.outline['700'],
-    '--color-outline-800': lightColors.outline['800'],
-    '--color-outline-900': lightColors.outline['900'],
-    '--color-outline-950': lightColors.outline['950'],
-
-    '--color-background-0': lightColors.background['0'],
-    '--color-background-50': lightColors.background['50'],
-    '--color-background-100': lightColors.background['100'],
-    '--color-background-200': lightColors.background['200'],
-    '--color-background-300': lightColors.background['300'],
-    '--color-background-400': lightColors.background['400'],
-    '--color-background-500': lightColors.background['500'],
-    '--color-background-600': lightColors.background['600'],
-    '--color-background-700': lightColors.background['700'],
-    '--color-background-800': lightColors.background['800'],
-    '--color-background-900': lightColors.background['900'],
-    '--color-background-950': lightColors.background['950'],
-
-    '--color-accent-0': lightColors.accent['0'],
-    '--color-accent-50': lightColors.accent['50'],
-    '--color-accent-100': lightColors.accent['100'],
-    '--color-accent-200': lightColors.accent['200'],
-    '--color-accent-300': lightColors.accent['300'],
-    '--color-accent-400': lightColors.accent['400'],
-    '--color-accent-500': lightColors.accent['500'],
-    '--color-accent-600': lightColors.accent['600'],
-    '--color-accent-700': lightColors.accent['700'],
-    '--color-accent-800': lightColors.accent['800'],
-    '--color-accent-900': lightColors.accent['900'],
-    '--color-accent-950': lightColors.accent['950'],
-
-    /* Background Special */
-    '--color-background-error': lightColors.error['50'],
-    '--color-background-warning': lightColors.warning['50'],
-    '--color-background-success': lightColors.success['50'],
-    '--color-background-info': lightColors.info['50'],
-    '--color-background-muted': lightColors.background['100'],
-
-    /* Focus Ring Indicator  */
-    '--color-indicator-primary': lightColors.primary['500'],
-    '--color-indicator-info': lightColors.info['500'],
-    '--color-indicator-error': lightColors.error['500'],
-  }),
-  dark: vars({
-    '--color-primary-0': darkColors.primary['0'],
-    '--color-primary-50': darkColors.primary['50'],
-    '--color-primary-100': darkColors.primary['100'],
-    '--color-primary-200': darkColors.primary['200'],
-    '--color-primary-300': darkColors.primary['300'],
-    '--color-primary-400': darkColors.primary['400'],
-    '--color-primary-500': darkColors.primary['500'],
-    '--color-primary-600': darkColors.primary['600'],
-    '--color-primary-700': darkColors.primary['700'],
-    '--color-primary-800': darkColors.primary['800'],
-    '--color-primary-900': darkColors.primary['900'],
-    '--color-primary-950': darkColors.primary['950'],
-
-    '--color-secondary-0': darkColors.secondary['0'],
-    '--color-secondary-50': darkColors.secondary['50'],
-    '--color-secondary-100': darkColors.secondary['100'],
-    '--color-secondary-200': darkColors.secondary['200'],
-    '--color-secondary-300': darkColors.secondary['300'],
-    '--color-secondary-400': darkColors.secondary['400'],
-    '--color-secondary-500': darkColors.secondary['500'],
-    '--color-secondary-600': darkColors.secondary['600'],
-    '--color-secondary-700': darkColors.secondary['700'],
-    '--color-secondary-800': darkColors.secondary['800'],
-    '--color-secondary-900': darkColors.secondary['900'],
-    '--color-secondary-950': darkColors.secondary['950'],
-
-    '--color-tertiary-0': darkColors.tertiary['0'],
-    '--color-tertiary-50': darkColors.tertiary['50'],
-    '--color-tertiary-100': darkColors.tertiary['100'],
-    '--color-tertiary-200': darkColors.tertiary['200'],
-    '--color-tertiary-300': darkColors.tertiary['300'],
-    '--color-tertiary-400': darkColors.tertiary['400'],
-    '--color-tertiary-500': darkColors.tertiary['500'],
-    '--color-tertiary-600': darkColors.tertiary['600'],
-    '--color-tertiary-700': darkColors.tertiary['700'],
-    '--color-tertiary-800': darkColors.tertiary['800'],
-    '--color-tertiary-900': darkColors.tertiary['900'],
-    '--color-tertiary-950': darkColors.tertiary['950'],
-
-    '--color-error-0': darkColors.error['0'],
-    '--color-error-50': darkColors.error['50'],
-    '--color-error-100': darkColors.error['100'],
-    '--color-error-200': darkColors.error['200'],
-    '--color-error-300': darkColors.error['300'],
-    '--color-error-400': darkColors.error['400'],
-    '--color-error-500': darkColors.error['500'],
-    '--color-error-600': darkColors.error['600'],
-    '--color-error-700': darkColors.error['700'],
-    '--color-error-800': darkColors.error['800'],
-    '--color-error-900': darkColors.error['900'],
-    '--color-error-950': darkColors.error['950'],
-
-    '--color-success-0': darkColors.success['0'],
-    '--color-success-50': darkColors.success['50'],
-    '--color-success-100': darkColors.success['100'],
-    '--color-success-200': darkColors.success['200'],
-    '--color-success-300': darkColors.success['300'],
-    '--color-success-400': darkColors.success['400'],
-    '--color-success-500': darkColors.success['500'],
-    '--color-success-600': darkColors.success['600'],
-    '--color-success-700': darkColors.success['700'],
-    '--color-success-800': darkColors.success['800'],
-    '--color-success-900': darkColors.success['900'],
-    '--color-success-950': darkColors.success['950'],
-
-    '--color-warning-0': darkColors.warning['0'],
-    '--color-warning-50': darkColors.warning['50'],
-    '--color-warning-100': darkColors.warning['100'],
-    '--color-warning-200': darkColors.warning['200'],
-    '--color-warning-300': darkColors.warning['300'],
-    '--color-warning-400': darkColors.warning['400'],
-    '--color-warning-500': darkColors.warning['500'],
-    '--color-warning-600': darkColors.warning['600'],
-    '--color-warning-700': darkColors.warning['700'],
-    '--color-warning-800': darkColors.warning['800'],
-    '--color-warning-900': darkColors.warning['900'],
-    '--color-warning-950': darkColors.warning['950'],
-
-    '--color-info-0': darkColors.info['0'],
-    '--color-info-50': darkColors.info['50'],
-    '--color-info-100': darkColors.info['100'],
-    '--color-info-200': darkColors.info['200'],
-    '--color-info-300': darkColors.info['300'],
-    '--color-info-400': darkColors.info['400'],
-    '--color-info-500': darkColors.info['500'],
-    '--color-info-600': darkColors.info['600'],
-    '--color-info-700': darkColors.info['700'],
-    '--color-info-800': darkColors.info['800'],
-    '--color-info-900': darkColors.info['900'],
-    '--color-info-950': darkColors.info['950'],
-
-    '--color-typography-0': darkColors.typography['0'],
-    '--color-typography-50': darkColors.typography['50'],
-    '--color-typography-100': darkColors.typography['100'],
-    '--color-typography-200': darkColors.typography['200'],
-    '--color-typography-300': darkColors.typography['300'],
-    '--color-typography-400': darkColors.typography['400'],
-    '--color-typography-500': darkColors.typography['500'],
-    '--color-typography-600': darkColors.typography['600'],
-    '--color-typography-700': darkColors.typography['700'],
-    '--color-typography-800': darkColors.typography['800'],
-    '--color-typography-900': darkColors.typography['900'],
-    '--color-typography-950': darkColors.typography['950'],
-
-    '--color-outline-0': darkColors.outline['0'],
-    '--color-outline-50': darkColors.outline['50'],
-    '--color-outline-100': darkColors.outline['100'],
-    '--color-outline-200': darkColors.outline['200'],
-    '--color-outline-300': darkColors.outline['300'],
-    '--color-outline-400': darkColors.outline['400'],
-    '--color-outline-500': darkColors.outline['500'],
-    '--color-outline-600': darkColors.outline['600'],
-    '--color-outline-700': darkColors.outline['700'],
-    '--color-outline-800': darkColors.outline['800'],
-    '--color-outline-900': darkColors.outline['900'],
-    '--color-outline-950': darkColors.outline['950'],
-
-    '--color-background-0': darkColors.background['0'],
-    '--color-background-50': darkColors.background['50'],
-    '--color-background-100': darkColors.background['100'],
-    '--color-background-200': darkColors.background['200'],
-    '--color-background-300': darkColors.background['300'],
-    '--color-background-400': darkColors.background['400'],
-    '--color-background-500': darkColors.background['500'],
-    '--color-background-600': darkColors.background['600'],
-    '--color-background-700': darkColors.background['700'],
-    '--color-background-800': darkColors.background['800'],
-    '--color-background-900': darkColors.background['900'],
-    '--color-background-950': darkColors.background['950'],
-
-    '--color-accent-0': darkColors.accent['0'],
-    '--color-accent-50': darkColors.accent['50'],
-    '--color-accent-100': darkColors.accent['100'],
-    '--color-accent-200': darkColors.accent['200'],
-    '--color-accent-300': darkColors.accent['300'],
-    '--color-accent-400': darkColors.accent['400'],
-    '--color-accent-500': darkColors.accent['500'],
-    '--color-accent-600': darkColors.accent['600'],
-    '--color-accent-700': darkColors.accent['700'],
-    '--color-accent-800': darkColors.accent['800'],
-    '--color-accent-900': darkColors.accent['900'],
-    '--color-accent-950': darkColors.accent['950'],
-
-    /* Background Special */
-    '--color-background-error': darkColors.error['950'],
-    '--color-background-warning': darkColors.warning['950'],
-    '--color-background-success': darkColors.success['950'],
-    '--color-background-info': darkColors.info['950'],
-    '--color-background-muted': darkColors.background['100'],
-
-    /* Focus Ring Indicator  */
-    '--color-indicator-primary': darkColors.primary['500'],
-    '--color-indicator-info': darkColors.info['500'],
-    '--color-indicator-error': darkColors.error['500'],
-  }),
+  light: themeVariables(Colors.light, designColors.light),
+  dark: themeVariables(Colors.dark, designColors.dark),
 };

@@ -1,50 +1,47 @@
-import { Icon } from '@/components/ui/icon';
+import { Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Link, type Href } from 'expo-router';
-import { ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { ChevronRight, type LucideIcon } from '@/constants/icons';
 import { MotiView } from 'moti';
-import type { ReactNode } from 'react';
-
+import { type ReactNode } from 'react';
 interface SettingRowProps {
   icon: LucideIcon;
   label: string;
-  /** Navigates on press. Mutually exclusive with `onPress`. */
   href?: Href;
   onPress?: () => void;
-  /** Replaces the trailing chevron — a Switch, a value, a badge. */
   right?: ReactNode;
-  /** Turns the chevron a quarter turn, for rows that expand in place. */
   expanded?: boolean;
 }
-
 /**
- * A row on a settings screen.
+ * A Settings entry: icon, label and trailing affordance on bare paper.
  *
- * Rows are separated by their own 16px of vertical padding — there are no
- * divider lines, which is what keeps a long settings list quiet.
+ * The row carries no fill, radius or rule of its own: Settings is one
+ * continuous list, so the rows themselves are the structure.
  */
-export function SettingRow({ icon, label, href, onPress, right, expanded }: SettingRowProps) {
+export function SettingRow({ icon: Icon, label, href, onPress, right, expanded }: SettingRowProps) {
+  const c = useDesign();
   const body = (
-    <Pressable className="py-4" onPress={onPress}>
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <Icon as={icon} size="lg" className="mr-3 text-action" />
-          <Text className="text-base font-medium text-content-heading">{label}</Text>
-        </View>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{
+        minHeight: t.height.touch,
+        justifyContent: 'center',
+        paddingVertical: t.layout.rowY,
+      }}
+    >
+      <Row style={{ gap: t.layout.field }}>
+        <Icon size={t.icon.control} strokeWidth={iconStroke(t.icon.control)} color={c.secondary} />
+        <Copy style={{ flex: 1, fontWeight: '500' }}>{label}</Copy>
         {right ?? (
-          <MotiView
-            animate={{ rotate: expanded ? '90deg' : '0deg' }}
-            transition={{ type: 'timing', duration: 200 }}
-          >
-            <Icon as={ChevronRight} size="sm" className="text-content-tertiary" />
+          <MotiView animate={{ rotate: expanded ? '90deg' : '0deg' }} transition={{ type: 'timing', duration: 160 }}>
+            <ChevronRight strokeWidth={iconStroke(t.icon.small)} size={t.icon.small} color={c.muted} />
           </MotiView>
         )}
-      </View>
+      </Row>
     </Pressable>
   );
-
   return href ? (
     <Link href={href} asChild>
       {body}

@@ -1,15 +1,16 @@
-import { Model, Server } from '@/features/server/types';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { Server } from '@/features/server/types';
 import {
   SyncModelsOptions,
   checkMultipleServers,
   checkServerStatus,
   syncServerModels,
 } from '@/features/server/utils/server-sync';
-import { cleanupServerData } from '@/services/image-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { fetchServerMetrics } from '../services/server-metrics';
 
 /**
  * How long a model catalogue is considered fresh. Short, because the thing that
@@ -25,26 +26,21 @@ export const MODEL_CACHE_MAX_AGE = 5 * 60 * 1000;
  * must never be persisted.
  */
 const inFlightModelSyncs = new Map<string, Promise<void>>();
+const inFlightObservations = new Map<string, Promise<void>>();
 
 interface ServersState {
   servers: Server[];
   loading: boolean;
   /** Returns the id of the newly created server. */
-  addServer: (
-    server: Omit<
-      Server,
-      'id' | 'status' | 'latency' | 'models' | 'lastModelSync'
-    >,
-  ) => string;
+  addServer: (server: Omit<Server, 'id' | 'status' | 'latency' | 'models' | 'lastModelSync'>) => string;
   removeServer: (id: string) => void;
   updateServer: (
     id: string,
-    updates: Partial<
-      Omit<Server, 'id' | 'status' | 'latency' | 'models' | 'lastModelSync'>
-    >,
+    updates: Partial<Omit<Server, 'id' | 'status' | 'latency' | 'models' | 'lastModelSync'>>,
   ) => void;
   refreshServers: () => Promise<void>;
   refreshServer: (id: string) => Promise<void>;
+  observeServer: (id: string, signal?: AbortSignal) => Promise<void>;
   /** Rescan a server's models now. Concurrent calls with the same scope share one scan. */
   syncModels: (id: string, options?: SyncModelsOptions) => Promise<void>;
   /** Rescan only if the cached catalogue is older than `maxAge`. */
@@ -73,8 +69,10 @@ export const useServersStore = create<ServersState>()(
 
       removeServer: (id) =>
         set((state) => {
-          // Clean up server data
-          cleanupServerData(id).catch(console.error);
+          useWorkflowStore.getState().detachServer(id);
+          // Generated media is deliberately untouched. It lives in one pool and
+          // only records that this machine produced it; removing the connection
+          // must never take the images and videos with it.
           // Clean up all chat sessions for this server (lazy require to avoid side-effect issues)
           const { useChatSessionStore } = require('@/features/ai-assistant/stores/chat-session-store');
           useChatSessionStore.getState().clearServerSessions(id);
@@ -85,11 +83,8 @@ export const useServersStore = create<ServersState>()(
 
       updateServer: (id, updates) =>
         set((state) => ({
-          servers: state.servers.map((s) =>
-            s.id === id ? { ...s, ...updates } : s,
-          ),
+          servers: state.servers.map((s) => (s.id === id ? { ...s, ...updates } : s)),
         })),
-
 
       refreshServers: async () => {
         set({ loading: true });
@@ -111,7 +106,10 @@ export const useServersStore = create<ServersState>()(
                   ...server,
                   status: result.status,
                   latency: result.latency,
+                  metrics: result.metrics,
                   CPEEnable: result.CPEEnable,
+                  gpuName: result.gpuName ?? server.gpuName,
+                  gpuNames: result.gpuNames ?? (result.gpuName ? [result.gpuName] : server.gpuNames),
                   ...(result.status === 'offline' && { CPEEnable: undefined }),
                 };
               }
@@ -140,9 +138,7 @@ export const useServersStore = create<ServersState>()(
         try {
           // update the target server status to refreshing
           set((state) => ({
-            servers: state.servers.map((s) =>
-              s.id === id ? { ...s, status: 'refreshing' } : s,
-            ),
+            servers: state.servers.map((s) => (s.id === id ? { ...s, status: 'refreshing' } : s)),
           }));
           const result = await checkServerStatus(server);
           set((state) => ({
@@ -152,7 +148,10 @@ export const useServersStore = create<ServersState>()(
                     ...s,
                     status: result.status,
                     latency: result.latency,
+                    metrics: result.metrics,
                     CPEEnable: result.CPEEnable,
+                    gpuName: result.gpuName ?? s.gpuName,
+                    gpuNames: result.gpuNames ?? (result.gpuName ? [result.gpuName] : s.gpuNames),
                     ...(result.status === 'offline' && { CPEEnable: undefined }),
                   }
                 : s,
@@ -165,6 +164,62 @@ export const useServersStore = create<ServersState>()(
         } catch (error) {
           // Silently handle error
         }
+      },
+
+      observeServer: (id, signal) => {
+        const connection = get().servers.find((server) => server.id === id);
+        if (!connection) return Promise.resolve();
+        const key = JSON.stringify([id, connection.host, connection.port, connection.useSSL, connection.token]);
+        const existing = inFlightObservations.get(key);
+        if (existing) return existing;
+        const current = () => {
+          const server = get().servers.find((item) => item.id === id);
+          return (
+            !signal?.aborted &&
+            server?.host === connection.host &&
+            server?.port === connection.port &&
+            server?.useSSL === connection.useSSL &&
+            server?.token === connection.token
+          );
+        };
+        const task = fetchServerMetrics(connection, signal)
+          .then(
+            (metrics) => {
+              if (!current()) return;
+              set((state) => ({
+                servers: state.servers.map((server) =>
+                  server.id === id
+                    ? {
+                        ...server,
+                        status: 'online',
+                        latency: metrics.latencyMs,
+                        metrics,
+                        gpuName: metrics.gpuNames?.[0] ?? server.gpuName,
+                        gpuNames: metrics.gpuNames ?? server.gpuNames,
+                      }
+                    : server,
+                ),
+              }));
+            },
+            () => {
+              if (!current()) return;
+              set((state) => ({
+                servers: state.servers.map((server) =>
+                  server.id === id
+                    ? {
+                        ...server,
+                        status: 'offline',
+                        latency: undefined,
+                        metrics: undefined,
+                      }
+                    : server,
+                ),
+              }));
+            },
+          )
+          .finally(() => inFlightObservations.delete(key));
+        inFlightObservations.set(key, task);
+        return task;
       },
 
       syncModels: async (id, options = {}) => {
@@ -183,9 +238,7 @@ export const useServersStore = create<ServersState>()(
           if (!models) return;
 
           set((state) => ({
-            servers: state.servers.map((s) =>
-              s.id === id ? { ...s, models, lastModelSync: Date.now() } : s,
-            ),
+            servers: state.servers.map((s) => (s.id === id ? { ...s, models, lastModelSync: Date.now() } : s)),
           }));
         })().finally(() => {
           inFlightModelSyncs.delete(key);
@@ -205,6 +258,27 @@ export const useServersStore = create<ServersState>()(
     {
       name: 'servers-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        servers: state.servers.map(
+          ({ status, latency, metrics, models, lastModelSync, CPEEnable, ...connection }) => connection,
+        ),
+      }),
+      merge: (saved, current) => {
+        const connections = (saved as { servers?: Server[] } | undefined)?.servers ?? [];
+        return {
+          ...current,
+          loading: false,
+          servers: connections.map((server) => ({
+            ...server,
+            status: 'offline' as const,
+            latency: undefined,
+            metrics: undefined,
+            models: undefined,
+            lastModelSync: undefined,
+            CPEEnable: undefined,
+          })),
+        };
+      },
     },
   ),
 );

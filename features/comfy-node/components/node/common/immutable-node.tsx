@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text';
+import { Copy } from '@/components/ui/design-system/primitives';
 import { Node } from '@/features/workflow/types';
 import BaseNode from './base-node';
 
@@ -11,9 +11,9 @@ interface ImmutableNodeProps {
 export default function ImmutableNode({ node, serverId, workflowId }: ImmutableNodeProps) {
   return (
     <BaseNode node={node}>
-      <Text size="sm" className="text-content-secondary">
+      <Copy size="metadata" muted>
         This node does not include any adjustable parameters.
-      </Text>
+      </Copy>
     </BaseNode>
   );
 }

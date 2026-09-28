@@ -1,6 +1,6 @@
 import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { NumberSlider } from '@/components/self-ui/slider';
-import Switch from '@/components/self-ui/switch';
+import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Input, InputField } from '@/components/ui/input';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
@@ -47,7 +47,6 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
           maxValue={120}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'frame_rate', Number(value))}
-          space={12}
         />
       </SubItem>
       <SubItem title="Loop Count">
@@ -92,36 +91,35 @@ export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineP
           maxValue={51}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'crf', Number(value))}
-          space={12}
         />
       </SubItem>
       <SubItem title="Save Output" rightComponent={
-        <Switch
-          size="sm"
+        <NativeSwitch
+          label="Save Output"
           value={node.inputs.save_output}
           onValueChange={(value) => updateNodeInput(workflowId, node.id, 'save_output', value)}
         />
       }>
       </SubItem>
       <SubItem title="Ping Pong" rightComponent={
-        <Switch
-          size="sm"
+        <NativeSwitch
+          label="Ping Pong"
           value={node.inputs.pingpong}
           onValueChange={(value) => updateNodeInput(workflowId, node.id, 'pingpong', value)}
         />
       }>
       </SubItem>
       <SubItem title="Save Metadata" rightComponent={
-        <Switch
-          size="sm"
+        <NativeSwitch
+          label="Save Metadata"
           value={node.inputs.save_metadata}
           onValueChange={(value) => updateNodeInput(workflowId, node.id, 'save_metadata', value)}
         />
       }>
       </SubItem>
       <SubItem title="Trim to Audio" rightComponent={
-        <Switch
-          size="sm"
+        <NativeSwitch
+          label="Trim to Audio"
           value={node.inputs.trim_to_audio}
           onValueChange={(value) => updateNodeInput(workflowId, node.id, 'trim_to_audio', value)}
         />

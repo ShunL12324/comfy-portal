@@ -1,0 +1,285 @@
+import { supportsRunPod } from './runtime';
+import { useLaunchRequestStore, launchRequestStorage } from '../stores/launch-request-store';
+import { createRunPodInstance, listRunPodInstances } from '@/services/runpod';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { getStatus } from '@/services/ssh-supervisor';
+import { createInstance, getInstance, listInstances } from '@/services/vast';
+import { useProvisioningStore } from '../stores/provisioning-store';
+import type { Environment, HardwareSelection } from '../types';
+import { advanceLaunch, createLaunch, discardLaunchRequest } from './provision';
+
+jest.mock('../stores/provisioning-store', () => {
+  const records: any[] = [];
+  const store = {
+    launches: records,
+    start: jest.fn((record: any) => records.push(record)),
+    get: (id: number) => records.find((r) => r.id === (String(id).includes(':') ? String(id) : 'vast:' + id)),
+    update: jest.fn((id: number, changes: any) =>
+      Object.assign(
+        records.find((r) => r.id === (String(id).includes(':') ? String(id) : 'vast:' + id)),
+        changes,
+      ),
+    ),
+  };
+  return {
+    waitForProvisioning: jest.fn().mockResolvedValue(undefined),
+    provisioningStorage: { flush: jest.fn().mockResolvedValue(undefined) },
+    useProvisioningStore: { getState: () => store },
+    launchKey: (r: any) => (r.provider ?? 'vast') + ':' + r.instanceId,
+  };
+});
+jest.mock('@/features/workflow/stores/workflow-store', () => {
+  const workflow: any[] = [];
+  const store = { workflow, addWorkflow: jest.fn((record: any) => workflow.push(record)) };
+  return { useWorkflowStore: { getState: () => store } };
+});
+jest.mock('@/features/server/stores/server-store', () => ({
+  useServersStore: { getState: () => ({ addServer: () => 'server-1' }) },
+}));
+jest.mock('@/services/comfy-api', () => ({ saveWorkflowToServer: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('@/services/cloud-supervisor', () => ({ SUPERVISOR_PORT: 8189 }));
+jest.mock('@/services/ssh-keys', () => ({
+  ensureSshKeyPair: jest.fn().mockResolvedValue({ publicKeyOpenSsh: 'test-public-key' }),
+  isSshKeyRegistered: jest.fn().mockResolvedValue(true),
+  markSshKeyRegistered: jest.fn(),
+}));
+jest.mock('@/services/ssh-supervisor', () => ({
+  isReachable: jest.fn().mockResolvedValue(true),
+  getStatus: jest.fn(),
+}));
+jest.mock('./runtime', () => ({ supportsRunPod: jest.fn().mockReturnValue(true), imageFor: () => 'test-runtime' }));
+jest.mock('@/services/runpod', () => ({
+  createRunPodInstance: jest.fn(),
+  listRunPodInstances: jest.fn(),
+  getRunPodInstance: jest.fn(),
+}));
+jest.mock('expo-crypto', () => ({
+  CryptoDigestAlgorithm: { SHA256: 'SHA256' },
+  digestStringAsync: jest.fn(async (_algorithm: string, input: string) => 'hash-' + input),
+}));
+jest.mock('../stores/launch-request-store', () => {
+  const store = {
+    requests: [] as any[],
+    put: (r: any) => {
+      store.requests = [...store.requests.filter((item: any) => item.id !== r.id), r];
+    },
+    remove: (id: string) => {
+      store.requests = store.requests.filter((r: any) => r.id !== id);
+    },
+  };
+  return {
+    useLaunchRequestStore: { getState: () => store },
+    waitForLaunchRequests: jest.fn().mockResolvedValue(undefined),
+    launchRequestStorage: { flush: jest.fn().mockResolvedValue(undefined) },
+  };
+});
+jest.mock('@/services/vast', () => ({
+  listInstances: jest.fn(),
+  createInstance: jest.fn(),
+  getInstance: jest.fn(),
+  hasVastGivenUp: () => false,
+  isTerminalStatus: () => false,
+  ONSTART_LIMIT: 10000,
+  registerSshKey: jest.fn(),
+}));
+jest.mock('@/utils/uuid', () => ({ generateUUID: () => 'test-token' }));
+
+const hardware = (diskGb = 80): HardwareSelection => ({
+  provider: 'vast',
+  offerId: '5',
+  diskGb,
+  gpuName: 'Test GPU',
+  gpuCount: 1,
+  memoryGb: 24,
+  pricePerHour: 0.1,
+  quotedAt: 1,
+  priceScope: 'instance',
+});
+const credentials = { vastApiKey: 'test-only', runpodApiKey: '', civitaiApiKey: '', huggingFaceToken: '' };
+const environment = (): Environment => ({
+  id: 'recipe',
+  name: 'Original',
+  description: '',
+  models: [],
+  extensions: [],
+  workflows: [{ name: 'Original workflow', data: {} }],
+  createdAt: '',
+  updatedAt: '',
+});
+beforeEach(() => {
+  jest.clearAllMocks();
+  useLaunchRequestStore.getState().requests.splice(0);
+  (listInstances as jest.Mock).mockResolvedValue([]);
+  useProvisioningStore.getState().launches.splice(0);
+  useWorkflowStore.getState().workflow.splice(0);
+  (createInstance as jest.Mock).mockResolvedValue(123);
+  (getInstance as jest.Mock).mockResolvedValue({
+    status: 'running',
+    statusMessage: '',
+    publicIp: '127.0.0.1',
+    ports: { '8188': 8188 },
+    sshHost: 'localhost',
+    sshPort: 22,
+  });
+  (getStatus as jest.Mock).mockResolvedValue({ phase: 'ready' });
+});
+test('renting captures the recipe before async work and uses the reviewed disk', async () => {
+  const draft = environment();
+  const pending = createLaunch({ environment: draft, hardware: hardware(), credentials });
+  draft.name = 'Edited while renting';
+  draft.workflows[0].name = 'Changed';
+  await pending;
+  expect(createInstance).toHaveBeenCalledWith('test-only', expect.objectContaining({ diskGb: 80 }));
+  expect(useProvisioningStore.getState().get(123)?.environmentSnapshot?.workflows[0].name).toBe('Original workflow');
+});
+test('installation resumes from the snapshot and imports workflows only once', async () => {
+  await createLaunch({ environment: environment(), hardware: hardware(), credentials });
+  await advanceLaunch(123, credentials);
+  expect(useWorkflowStore.getState().workflow[0].name).toBe('Original workflow');
+  expect(useProvisioningStore.getState().get(123)?.stage).toBe('ready');
+  useProvisioningStore.getState().update(123, { stage: 'installing' });
+  await advanceLaunch(123, credentials);
+  expect(useWorkflowStore.getState().workflow).toHaveLength(1);
+});
+test('invalid disk and absent credentials fail before renting', async () => {
+  await expect(createLaunch({ environment: environment(), hardware: hardware(NaN), credentials })).rejects.toThrow(
+    'disk',
+  );
+  await expect(
+    createLaunch({
+      environment: environment(),
+      hardware: hardware(),
+      credentials: { ...credentials, vastApiKey: '' },
+    }),
+  ).rejects.toThrow('API key');
+  expect(createInstance).not.toHaveBeenCalled();
+});
+
+test('concurrent confirmation shares a single rental', async () => {
+  const options = { environment: environment(), hardware: hardware(), credentials };
+  await Promise.all([createLaunch(options), createLaunch(options)]);
+  expect(createInstance).toHaveBeenCalledTimes(1);
+  expect(useProvisioningStore.getState().launches).toHaveLength(1);
+});
+test('concurrent recovery shares one server registration and import', async () => {
+  await createLaunch({ environment: environment(), hardware: hardware(), credentials });
+  await Promise.all([advanceLaunch(123, credentials), advanceLaunch(123, credentials)]);
+  expect(useWorkflowStore.getState().workflow).toHaveLength(1);
+});
+
+test('reviewed hardware is snapshotted before asynchronous account setup', async () => {
+  const quote = hardware();
+  const pending = createLaunch({ environment: environment(), hardware: quote, credentials });
+  quote.diskGb = 999;
+  quote.gpuName = 'Different GPU';
+  await pending;
+  expect(useProvisioningStore.getState().get(123)?.hardware).toMatchObject({ diskGb: 80, gpuName: 'Test GPU' });
+});
+
+test('an uncertain response reconciles the labeled instance instead of renting again', async () => {
+  (createInstance as jest.Mock).mockRejectedValueOnce(new Error('Connection lost'));
+  const options = { environment: environment(), hardware: hardware(), credentials };
+  await expect(createLaunch(options)).rejects.toThrow('Connection lost');
+  const request = useLaunchRequestStore.getState().requests[0];
+  expect(request.state).toBe('uncertain');
+  expect(request).not.toHaveProperty('credentials');
+  (listInstances as jest.Mock).mockResolvedValue([{ id: 456, label: request.label, pricePerHour: 0.1 }]);
+  expect(await createLaunch(options)).toBe('vast:456');
+  expect(createInstance).toHaveBeenCalledTimes(1);
+  expect(useLaunchRequestStore.getState().requests).toHaveLength(0);
+});
+test('an unconfirmed order cannot silently turn into a second rental', async () => {
+  (createInstance as jest.Mock).mockRejectedValueOnce(new Error('Timeout'));
+  const options = { environment: environment(), hardware: hardware(), credentials };
+  await expect(createLaunch(options)).rejects.toThrow('Timeout');
+  await expect(createLaunch(options)).rejects.toThrow('No new order was sent');
+  expect(createInstance).toHaveBeenCalledTimes(1);
+});
+test('failed intent persistence prevents a paid provider request', async () => {
+  (launchRequestStorage.flush as jest.Mock).mockRejectedValueOnce(new Error('Disk full'));
+  await expect(createLaunch({ environment: environment(), hardware: hardware(), credentials })).rejects.toThrow(
+    'Disk full',
+  );
+  expect(createInstance).not.toHaveBeenCalled();
+});
+test('RunPod keeps opaque instance ids and provider billing scope', async () => {
+  (createRunPodInstance as jest.Mock).mockResolvedValue({ id: 'abc123', costPerHr: 0.45 });
+  const id = await createLaunch({
+    environment: environment(),
+    hardware: { ...hardware(), provider: 'runpod', offerId: 'NVIDIA Test GPU', priceScope: 'gpu-starting' },
+    credentials: { ...credentials, runpodApiKey: 'runpod-test' },
+  });
+  expect(id).toBe('runpod:abc123');
+  expect(useProvisioningStore.getState().get(id)).toMatchObject({
+    provider: 'runpod',
+    instanceId: 'abc123',
+    pricePerHour: 0.45,
+  });
+  expect(createInstance).not.toHaveBeenCalled();
+  expect(listRunPodInstances).not.toHaveBeenCalled();
+});
+
+test('an old runtime cannot start an unreachable RunPod rental', async () => {
+  (supportsRunPod as jest.Mock).mockReturnValueOnce(false);
+  await expect(
+    createLaunch({
+      environment: environment(),
+      hardware: { ...hardware(), provider: 'runpod', offerId: 'GPU' },
+      credentials: { ...credentials, runpodApiKey: 'runpod-test' },
+    }),
+  ).rejects.toThrow('updated runtime image');
+  expect(createRunPodInstance).not.toHaveBeenCalled();
+});
+test('different simultaneous orders cannot bypass the creation lock', async () => {
+  const first = createLaunch({ environment: environment(), hardware: hardware(), credentials });
+  await expect(createLaunch({ environment: environment(), hardware: hardware(120), credentials })).rejects.toThrow(
+    'already in progress',
+  );
+  await first;
+  expect(createInstance).toHaveBeenCalledTimes(1);
+});
+
+function pendingOrder() {
+  const request = {
+    id: 'uncertain-order',
+    accountHash: 'hash-test-only',
+    label: 'comfy-portal:uncertain-order',
+    environment: environment(),
+    hardware: hardware(),
+    token: 'test-token',
+    requestedAt: 1,
+    state: 'uncertain' as const,
+  };
+  useLaunchRequestStore.getState().put(request);
+  return request;
+}
+test('clearing an order rejects a different credential without checking unrelated inventory', async () => {
+  const request = pendingOrder();
+  await expect(discardLaunchRequest(request.id, { ...credentials, vastApiKey: 'other-account' })).rejects.toThrow(
+    'Restore',
+  );
+  expect(listInstances).not.toHaveBeenCalled();
+  expect(useLaunchRequestStore.getState().requests).toHaveLength(1);
+});
+test('clearing an order retains a receipt recovered during the inventory request', async () => {
+  const request = pendingOrder();
+  (listInstances as jest.Mock).mockImplementationOnce(async () => {
+    useLaunchRequestStore.getState().put({ ...request, receipt: { instanceId: '123' } });
+    return [];
+  });
+  await expect(discardLaunchRequest(request.id, credentials)).rejects.toThrow('recovered');
+  expect(useLaunchRequestStore.getState().requests[0].receipt?.instanceId).toBe('123');
+});
+test('clearing an order keeps recovery data when inventory is unavailable', async () => {
+  const request = pendingOrder();
+  (listInstances as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
+  await expect(discardLaunchRequest(request.id, credentials)).rejects.toThrow('Offline');
+  expect(useLaunchRequestStore.getState().requests).toHaveLength(1);
+});
+test('clearing an absent order flushes its removal after checking inventory', async () => {
+  const request = pendingOrder();
+  await discardLaunchRequest(request.id, credentials);
+  expect(listInstances).toHaveBeenCalledWith('test-only');
+  expect(useLaunchRequestStore.getState().requests).toHaveLength(0);
+  expect(launchRequestStorage.flush).toHaveBeenCalled();
+});

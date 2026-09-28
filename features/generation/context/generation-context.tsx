@@ -8,7 +8,7 @@ import { GenerationAbortedError, PromptRejectedError, QueueResponse } from '@/se
 import { showToast } from '@/utils/toast';
 import { generateUUID } from '@/utils/uuid';
 
-import { usePendingJobsStore } from '../stores/pending-jobs-store';
+import { pendingJobStorage, usePendingJobsStore } from '../stores/pending-jobs-store';
 import {
   finalizeJob,
   getClient,
@@ -264,7 +264,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     async (workflow: Record<string, Node>, workflowId: string, serverId: string) => {
       const client = attachClient(serverId);
       if (!client) {
-        showToast.error('Error', 'Server not found', insets.top + 8);
+        showToast.error('Error', 'Server not found');
         return;
       }
 
@@ -306,7 +306,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           serverId,
           workflowId,
           queuedAt: Date.now(),
+          workflowSnapshot: workflowForExecution,
         });
+
+        await pendingJobStorage.flush();
 
         try {
           promptId = await client.queuePrompt(workflowForExecution, localPromptId);
@@ -315,13 +318,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           // error may have been delivered anyway, so keep that job pending and
           // let reconciliation find out.
           if (error instanceof PromptRejectedError) {
-            usePendingJobsStore.getState().removeJob(localPromptId);
+            usePendingJobsStore.getState().removeJob(serverId, localPromptId);
           }
           throw error;
         }
         // Older servers ignore the requested id and assign their own.
         if (promptId !== localPromptId) {
-          usePendingJobsStore.getState().replaceJobId(localPromptId, promptId);
+          usePendingJobsStore.getState().replaceJobId(serverId, localPromptId, promptId);
+          await pendingJobStorage.flush();
         }
 
         // A server-reported failure still has to go through finalize: nodes
@@ -368,7 +372,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         // null means the run isn't committed yet or another pass owns it —
         // reconciliation will finish the job, so don't report failure.
         if (savedPaths && savedPaths.length === 0) {
-          showToast.error('Generation Failed', 'No media were generated.', insets.top + 8);
+          showToast.error('Generation Failed', 'No media were generated.');
         }
 
         // Call onPost hooks
@@ -384,7 +388,6 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           showToast.error(
             'Generation Failed',
             error instanceof Error ? error.message : 'An unexpected error occurred.',
-            insets.top + 8,
           );
         }
         // Aborts (dropped socket, interrupt) and download failures leave the

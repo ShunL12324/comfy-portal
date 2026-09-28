@@ -24,7 +24,8 @@ import {
   ActionsheetSectionList,
   ActionsheetSectionHeaderText,
 } from './select-actionsheet';
-import { Pressable, View, TextInput } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { SheetAwareTextInput as TextInput } from '@/components/self-ui/adaptive-sheet-components';
 
 const SelectTriggerWrapper = React.forwardRef<
   React.ComponentRef<typeof Pressable>,
@@ -37,12 +38,12 @@ const selectIconStyle = tva({
   base: 'text-background-500 fill-none',
   parentVariants: {
     size: {
-      '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      '2xs': 'size-icon-micro',
+      'xs': 'size-icon-small',
+      'sm': 'size-icon-control',
+      'md': 'size-icon-medium',
+      'lg': 'size-icon-large',
+      'xl': 'size-icon-hero',
     },
   },
 });
@@ -52,7 +53,7 @@ const selectStyle = tva({
 });
 
 const selectTriggerStyle = tva({
-  base: 'border border-background-300 rounded flex-row items-center overflow-hidden data-[hover=true]:border-outline-400 data-[focus=true]:border-primary-700 data-[disabled=true]:opacity-40 data-[disabled=true]:data-[hover=true]:border-background-300',
+  base: 'border border-background-300 rounded flex-row items-center overflow-hidden data-[hover=true]:border-outline-400 data-[focus=true]:border-primary-700 data-[disabled=true]:opacity-disabled data-[disabled=true]:data-[hover=true]:border-background-300',
   variants: {
     size: {
       xl: 'h-12',
@@ -72,7 +73,7 @@ const selectTriggerStyle = tva({
 });
 
 const selectInputStyle = tva({
-  base: 'px-3 placeholder:text-typography-500 web:w-full h-full text-typography-900 pointer-events-none web:outline-none ios:leading-[0px] py-0',
+  base: 'font-body px-3 placeholder:text-typography-500 web:w-full h-full text-typography-900 pointer-events-none web:outline-none ios:leading-0 py-0',
   parentVariants: {
     size: {
       xl: 'text-xl',

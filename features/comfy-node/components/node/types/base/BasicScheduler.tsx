@@ -30,7 +30,6 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
           maxValue={100}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-          space={12}
           decimalPlaces={0}
         />
       </SubItem>
@@ -41,7 +40,6 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
           maxValue={1}
           step={0.01}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'denoise', Number(value))}
-          space={12}
           decimalPlaces={2}
         />
       </SubItem>

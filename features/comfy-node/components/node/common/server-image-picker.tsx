@@ -1,17 +1,19 @@
 import { SearchableBottomSheet } from '@/components/common/selectors/bottom-sheet';
+import { getOptionSurfaceStyle } from '@/components/common/selectors/bottom-sheet/item';
+import { designTokens as t } from '@/constants/design-tokens';
 import { SelectorOption } from '@/components/common/selectors/types';
-import { Box } from '@/components/ui/box';
+import { View as Box } from '@/components/ui/view';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Spinner } from '@/components/ui/spinner';
-import { Text } from '@/components/ui/text';
+import { Copy, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { buildServerUrl } from '@/services/network';
 import { clearNodeSchemaCache, getNodeSchema } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { Check, ImageOff, WifiOff } from 'lucide-react-native';
+import { Check, ImageOff, WifiOff } from '@/constants/icons';
 import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface ServerImagePickerProps {
@@ -27,6 +29,29 @@ interface ServerImagePickerProps {
   onSelect: (filename: string) => void;
 }
 
+function ImagePreview({ uri, label }: { uri?: string; label: string }) {
+  const c = useDesign();
+  const [failedImage, setFailedImage] = useState<string>();
+  if (!uri || failedImage === uri) {
+    return (
+      <Box className="h-full w-full items-center justify-center" style={{ backgroundColor: c.well }}>
+        <StateIcon icon={ImageOff} size={t.icon.control} />
+      </Box>
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      alt={label}
+      style={{ height: '100%', width: '100%' }}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      transition={150}
+      onError={() => setFailedImage(uri)}
+    />
+  );
+}
+
 /**
  * Picks an image that is already in ComfyUI's `input/` directory.
  *
@@ -40,156 +65,152 @@ interface ServerImagePickerProps {
  * Thumbnails go through `/view`'s `preview` parameter, which re-encodes
  * server-side: a 2.6 MB source comes back as a ~40 KB webp.
  */
-export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerProps>(
-  function ServerImagePicker(
-    { serverId, classType, inputName, value, isVisible, onClose, onSelect },
-    ref,
-  ) {
-    const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
-    // null while we haven't got an answer yet — an empty array is a real answer
-    // ("this server has no images") and has to read differently.
-    const [files, setFiles] = useState<string[] | null>(null);
-    const [failed, setFailed] = useState(false);
-    const [viewBase, setViewBase] = useState<string | null>(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
+export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerProps>(function ServerImagePicker(
+  { serverId, classType, inputName, value, isVisible, onClose, onSelect },
+  ref,
+) {
+  const c = useDesign();
+  const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
+  // null while we haven't got an answer yet — an empty array is a real answer
+  // ("this server has no images") and has to read differently.
+  const [files, setFiles] = useState<string[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [viewBase, setViewBase] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-    useEffect(() => {
-      if (!server) return;
-      let cancelled = false;
-      buildServerUrl(server.useSSL, server.host, server.port, '/view').then((url) => {
-        if (!cancelled) setViewBase(url);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [server]);
+  useEffect(() => {
+    if (!server) return;
+    let cancelled = false;
+    buildServerUrl(server.useSSL, server.host, server.port, '/view').then((url) => {
+      if (!cancelled) setViewBase(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [server]);
 
-    const load = useCallback(async () => {
-      try {
-        const schema = await getNodeSchema(serverId, classType);
-        const spec = schema?.inputs[inputName];
-        setFiles(spec?.kind === 'combo' ? spec.options : []);
-        setFailed(false);
-      } catch {
-        // Kept apart from the empty case: "the server has no images" and "we
-        // couldn't ask the server" send the user looking in different places.
-        setFiles([]);
-        setFailed(true);
-      }
-    }, [serverId, classType, inputName]);
-
-    // Only when the sheet opens: this is a network call, and the node renders
-    // in a long list where most inputs are never touched.
-    useEffect(() => {
-      if (isVisible) void load();
-    }, [isVisible, load]);
-
-    const handleRefresh = useCallback(async () => {
-      setIsRefreshing(true);
-      try {
-        clearNodeSchemaCache(serverId);
-        await load();
-      } finally {
-        setIsRefreshing(false);
-      }
-    }, [serverId, load]);
-
-    const options = useMemo<SelectorOption[]>(() => {
-      if (!files || !viewBase) return [];
-      return files.map((filename) => {
-        const params = new URLSearchParams({
-          filename,
-          type: 'input',
-          subfolder: '',
-          preview: 'webp;70',
-        });
-        if (server?.token) params.append('token', server.token);
-        return {
-          value: filename,
-          label: filename,
-          image: `${viewBase}?${params.toString()}`,
-        };
-      });
-    }, [files, viewBase, server?.token]);
-
-    const renderItem = useCallback(
-      (item: SelectorOption, isSelected: boolean) => (
-        <Pressable
-          onPress={() => {
-            onSelect(item.value);
-            onClose();
-          }}
-          className="w-[48.5%] active:opacity-80"
-        >
-          <Box
-            className={`relative overflow-hidden rounded-xl ${
-              isSelected ? 'border-[3px] border-outline-400' : 'bg-surface-muted'
-            }`}
-          >
-            {isSelected && (
-              <Box className="absolute right-2 top-2 z-10 rounded-full bg-surface-raised p-1">
-                <Icon as={Check} size="sm" className="text-content-primary" />
-              </Box>
-            )}
-            <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-stroke-subtle">
-              <Image
-                source={{ uri: item.image }}
-                alt={item.label}
-                style={{ height: '100%', width: '100%' }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={150}
-              />
-            </Box>
-            <VStack className="p-3">
-              <Text
-                className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-content-primary'}`}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-              >
-                {item.label}
-              </Text>
-            </VStack>
-          </Box>
-        </Pressable>
+  const load = useCallback(
+    () =>
+      getNodeSchema(serverId, classType).then(
+        (schema) => {
+          const spec = schema?.inputs[inputName];
+          setFiles(spec?.kind === 'combo' ? spec.options : []);
+          setFailed(false);
+        },
+        () => {
+          // Offline and an empty inventory need different recovery guidance.
+          setFiles([]);
+          setFailed(true);
+        },
       ),
-      [onSelect, onClose],
+    [serverId, classType, inputName],
+  );
+
+  // Only when the sheet opens: this is a network call, and the node renders
+  // in a long list where most inputs are never touched.
+  useEffect(() => {
+    if (isVisible) void load();
+  }, [isVisible, load]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      clearNodeSchemaCache(serverId);
+      await load();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [serverId, load]);
+
+  const token = server?.token;
+  const options = useMemo<SelectorOption[]>(() => {
+    if (!files || !viewBase) return [];
+    return files.map((filename) => {
+      const params = new URLSearchParams({
+        filename,
+        type: 'input',
+        subfolder: '',
+        preview: 'webp;70',
+      });
+      if (token) params.append('token', token);
+      return {
+        value: filename,
+        label: filename,
+        image: `${viewBase}?${params.toString()}`,
+      };
+    });
+  }, [files, viewBase, token]);
+
+  const renderItem = useCallback(
+    (item: SelectorOption, isSelected: boolean) => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={item.label}
+        accessibilityState={{ selected: isSelected }}
+        aria-pressed={isSelected}
+        onPress={() => {
+          onSelect(item.value);
+          onClose();
+        }}
+        className="active:opacity-pressed w-full"
+      >
+        <Box
+          testID={`selector-option-${item.value}`}
+          className="relative overflow-hidden"
+          style={getOptionSurfaceStyle(c, isSelected, true)}
+        >
+          {isSelected && (
+            <Box className="right-2 top-2 p-1 absolute z-10 rounded-full" style={{ backgroundColor: c.tint }}>
+              <Icon as={Check} size="sm" style={{ color: c.onTint }} />
+            </Box>
+          )}
+          <Box className="aspect-square w-full overflow-hidden border-b" style={{ borderColor: c.line }}>
+            <ImagePreview uri={item.image} label={item.label} />
+          </Box>
+          <VStack className="p-3">
+            <Copy size="body" style={{ fontWeight: '500' }} numberOfLines={2} ellipsizeMode="middle">
+              {item.label}
+            </Copy>
+          </VStack>
+        </Box>
+      </Pressable>
+    ),
+    [onSelect, onClose, c],
+  );
+
+  const emptyComponent =
+    files === null ? (
+      <VStack space="sm" className="py-8 flex-1 items-center justify-center">
+        <Spinner size="small" className="text-content-tertiary" />
+        <Copy muted>Reading the server&apos;s images…</Copy>
+      </VStack>
+    ) : (
+      <VStack space="sm" className="py-8 flex-1 items-center justify-center">
+        <StateIcon icon={failed ? WifiOff : ImageOff} />
+        <Copy muted className="text-center">
+          {failed
+            ? 'Could not reach the server to read its images. Check that it is online, then refresh.'
+            : 'No images in this server’s input folder yet. Anything you upload shows up here afterwards.'}
+        </Copy>
+      </VStack>
     );
 
-    const emptyComponent =
-      files === null ? (
-        <VStack space="md" className="flex-1 items-center justify-center p-8">
-          <Spinner size="small" className="text-content-tertiary" />
-          <Text className="text-sm text-content-tertiary">Reading the server&apos;s images…</Text>
-        </VStack>
-      ) : (
-        <VStack space="md" className="flex-1 items-center justify-center p-8">
-          <Icon as={failed ? WifiOff : ImageOff} className="h-8 w-8 text-typography-300" />
-          <Text className="text-center text-sm text-content-tertiary">
-            {failed
-              ? 'Could not reach the server to read its images. Check that it is online, then refresh.'
-              : 'No images in this server’s input folder yet. Anything you upload shows up here afterwards.'}
-          </Text>
-        </VStack>
-      );
-
-    return (
-      <SearchableBottomSheet
-        ref={ref}
-        isVisible={isVisible}
-        onClose={onClose}
-        onSelect={onSelect}
-        title="Server Images"
-        options={options}
-        value={value}
-        searchPlaceholder="Search images..."
-        showRefreshButton
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-        renderItem={renderItem}
-        emptyComponent={emptyComponent}
-        numColumns={2}
-      />
-    );
-  },
-);
+  return (
+    <SearchableBottomSheet
+      ref={ref}
+      isVisible={isVisible}
+      onClose={onClose}
+      onSelect={onSelect}
+      title="Server Images"
+      options={options}
+      value={value}
+      searchPlaceholder="Search images..."
+      showRefreshButton
+      onRefresh={handleRefresh}
+      isRefreshing={isRefreshing}
+      renderItem={renderItem}
+      emptyComponent={emptyComponent}
+      numColumns={2}
+    />
+  );
+});

@@ -15,7 +15,7 @@ export const hstackStyle = tva({
       'lg': 'gap-4',
       'xl': 'gap-5',
       '2xl': 'gap-6',
-      '3xl': 'gap-7',
+      '3xl': 'gap-8',
       '4xl': 'gap-8',
     },
     reversed: {

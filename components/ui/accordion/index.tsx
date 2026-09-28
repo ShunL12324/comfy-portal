@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { createAccordion } from '@gluestack-ui/core/accordion/creator';
-import { View, Pressable, Text, Platform, TextProps } from 'react-native';
+import { View, Pressable, Platform, TextProps } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import {
@@ -19,7 +20,7 @@ const accordionStyle = tva({
   base: 'w-full',
   variants: {
     variant: {
-      filled: 'bg-white shadow-hard-2',
+      filled: 'bg-background-0 shadow-hard-2',
       unfilled: '',
     },
     size: {
@@ -53,12 +54,12 @@ const accordionIconStyle = tva({
   base: 'text-typography-900 fill-none',
   parentVariants: {
     size: {
-      '2xs': 'h-3 w-3',
-      'xs': 'h-3.5 w-3.5',
-      'sm': 'h-4 w-4',
-      'md': 'h-[18px] w-[18px]',
-      'lg': 'h-5 w-5',
-      'xl': 'h-6 w-6',
+      '2xs': 'size-icon-micro',
+      'xs': 'size-icon-small',
+      'sm': 'size-icon-control',
+      'md': 'size-icon-medium',
+      'lg': 'size-icon-large',
+      'xl': 'size-icon-hero',
     },
   },
 });
@@ -79,7 +80,7 @@ const accordionContentStyle = tva({
   base: 'pt-1 pb-3 px-4',
 });
 const accordionTriggerStyle = tva({
-  base: 'w-full flex-row justify-between items-center web:outline-none focus:outline-none data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed data-[focus-visible=true]:bg-background-50 py-3 px-4',
+  base: 'w-full flex-row justify-between items-center web:outline-none focus:outline-none data-[disabled=true]:opacity-disabled data-[disabled=true]:cursor-not-allowed data-[focus-visible=true]:bg-background-50 py-3 px-4',
 });
 
 const Root = withStyleContext(View, SCOPE);

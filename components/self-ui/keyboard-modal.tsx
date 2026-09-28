@@ -1,12 +1,13 @@
+import { FieldLabel, useDesign } from '@/components/ui/design-system/primitives';
 import {
   FormControl,
   FormControlError,
   FormControlErrorText,
   FormControlLabel,
-  FormControlLabelText,
 } from '@/components/ui/form-control';
 import { Modal, ModalBackdrop, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import React from 'react';
+import { designTokens as t } from '@/constants/design-tokens';
 import { useWindowDimensions } from 'react-native';
 
 interface KeyboardModalProps {
@@ -45,7 +46,15 @@ const KeyboardModalHeader = ({ children }: KeyboardModalHeaderProps) => {
 };
 
 const KeyboardModalBody = ({ children, scrollEnabled }: KeyboardModalBodyProps) => {
-  return <ModalBody scrollEnabled={scrollEnabled}>{children}</ModalBody>;
+  return (
+    <ModalBody
+      scrollEnabled={scrollEnabled}
+      keyboardShouldPersistTaps="handled"
+      style={{ marginTop: t.layout.field, marginBottom: t.layout.field }}
+    >
+      {children}
+    </ModalBody>
+  );
 };
 
 const KeyboardModalFooter = ({ children }: KeyboardModalFooterProps) => {
@@ -56,12 +65,12 @@ const KeyboardModalItem = ({ children, title, error, className }: KeyboardModalI
   return (
     <FormControl isInvalid={!!error} size="md" className={className}>
       <FormControlLabel>
-        <FormControlLabelText className="text-sm font-medium text-content-body">{title}</FormControlLabelText>
+        <FieldLabel>{title}</FieldLabel>
       </FormControlLabel>
       {children}
       {error && (
         <FormControlError>
-          <FormControlErrorText className="mt-1 text-xs text-status-danger-pressed">{error}</FormControlErrorText>
+          <FormControlErrorText className="mt-1 text-status-danger-pressed" style={{ fontSize: t.type.metadata, lineHeight: t.leading.metadata }}>{error}</FormControlErrorText>
         </FormControlError>
       )}
     </FormControl>
@@ -70,13 +79,24 @@ const KeyboardModalItem = ({ children, title, error, className }: KeyboardModalI
 
 const KeyboardModalRoot = ({ isOpen, onClose, children, closeOnOverlayClick = true }: KeyboardModalProps) => {
   const { width: windowWidth } = useWindowDimensions();
+  const c = useDesign();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} closeOnOverlayClick={closeOnOverlayClick} avoidKeyboard>
       <ModalBackdrop />
       <ModalContent
-        style={{ width: windowWidth * 0.8 }}
-        className="overflow-hidden rounded-xl border-0 bg-surface-muted"
+        style={[
+          {
+            width: Math.min(windowWidth - 32, 480),
+            maxHeight: '90%',
+            backgroundColor: c.overlay,
+            borderRadius: t.radius.panel,
+            padding: t.layout.inset,
+            shadowOpacity: 0,
+            elevation: 0,
+          },
+        ]}
+        className="overflow-hidden border-0"
       >
         {children}
       </ModalContent>

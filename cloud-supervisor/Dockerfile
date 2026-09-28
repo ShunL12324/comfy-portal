@@ -35,9 +35,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update -qq && \
     apt-get install -y -qq --no-install-recommends \
         python3 python3-venv python3-pip \
-        git curl ca-certificates aria2 \
+        git curl ca-certificates aria2 openssh-server \
         libgl1 libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
+
+RUN rm -f /etc/ssh/ssh_host_*
 
 RUN python3 -m venv /opt/comfyui/venv
 ENV PATH=/opt/comfyui/venv/bin:$PATH
@@ -72,5 +74,5 @@ COPY supervisor.py /opt/cp/supervisor.py
 RUN python -c "import torch, sys; print('torch', torch.__version__)" && \
     python -c "import ast, sys; ast.parse(open('/opt/cp/supervisor.py').read())"
 
-EXPOSE 8188 8189
+EXPOSE 22 8188 8189
 ENTRYPOINT ["python", "/opt/cp/supervisor.py"]

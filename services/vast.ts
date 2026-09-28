@@ -26,13 +26,7 @@ export interface VastOffer {
 
 export type VastInstanceStatus =
   /** vast hasn't placed the instance on a host yet — every launch starts here. */
-  | 'pending'
-  | 'loading'
-  | 'running'
-  | 'stopped'
-  | 'exited'
-  | 'offline'
-  | 'unknown';
+  'pending' | 'loading' | 'running' | 'stopped' | 'exited' | 'offline' | 'unknown';
 
 export interface VastInstance {
   id: number;
@@ -97,6 +91,7 @@ async function request(apiKey: string, path: string, init?: { method?: string; b
   // fails on iOS with NSURLErrorNetworkConnectionLost. Nothing here streams.
   const response = await fetch(`${API}${path}`, {
     method: init?.method ?? 'GET',
+    signal: AbortSignal.timeout(30_000),
     headers,
     body: init?.body ? JSON.stringify(init.body) : undefined,
   });
@@ -135,9 +130,35 @@ export async function registerSshKey(apiKey: string, publicKeyOpenSsh: string): 
 }
 
 const EU_COUNTRY_HINTS = [
-  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU',
-  'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES',
-  'SE', 'CH', 'NO',
+  'AT',
+  'BE',
+  'BG',
+  'HR',
+  'CY',
+  'CZ',
+  'DK',
+  'EE',
+  'FI',
+  'FR',
+  'DE',
+  'GR',
+  'HU',
+  'IE',
+  'IT',
+  'LV',
+  'LT',
+  'LU',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SK',
+  'SI',
+  'ES',
+  'SE',
+  'CH',
+  'NO',
 ];
 
 export interface SearchOptions {
@@ -154,10 +175,10 @@ export interface SearchOptions {
 
 export async function searchOffers(apiKey: string, options: SearchOptions): Promise<VastOffer[]> {
   const body: Record<string, unknown> = {
-    gpu_name: { in: [options.gpuName] },
     rentable: { eq: true },
     type: 'on-demand',
   };
+  if (options.gpuName) body.gpu_name = { in: [options.gpuName] };
   if (options.minDiskGb) body.disk_space = { gte: options.minDiskGb };
 
   const data = await request(apiKey, '/bundles/', { method: 'POST', body });
@@ -218,9 +239,7 @@ const KNOWN_STATUSES: VastInstanceStatus[] = [
 function normalizeStatus(raw: unknown): VastInstanceStatus {
   const value = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
   if (!value) return 'pending';
-  return KNOWN_STATUSES.includes(value as VastInstanceStatus)
-    ? (value as VastInstanceStatus)
-    : 'unknown';
+  return KNOWN_STATUSES.includes(value as VastInstanceStatus) ? (value as VastInstanceStatus) : 'unknown';
 }
 
 function toInstance(i: any): VastInstance {
@@ -248,7 +267,9 @@ function toInstance(i: any): VastInstance {
 
 export async function listInstances(apiKey: string): Promise<VastInstance[]> {
   const data = await request(apiKey, '/instances/');
-  return (data?.instances ?? []).map(toInstance);
+  if (!Array.isArray(data?.instances) || data.instances.some((item: any) => !Number.isInteger(item?.id)))
+    throw new VastError('vast.ai returned an invalid instance list.');
+  return data.instances.map(toInstance);
 }
 
 export async function getInstance(apiKey: string, instanceId: number): Promise<VastInstance> {
@@ -259,7 +280,8 @@ export async function getInstance(apiKey: string, instanceId: number): Promise<V
 }
 
 export async function destroyInstance(apiKey: string, instanceId: number): Promise<void> {
-  await request(apiKey, `/instances/${instanceId}/`, { method: 'DELETE' });
+  const data = await request(apiKey, `/instances/${instanceId}/`, { method: 'DELETE' });
+  if (data?.success !== true) throw new VastError(data?.msg || 'vast.ai did not confirm the destroy request.');
 }
 
 /**
@@ -306,14 +328,9 @@ export const ONSTART_LIMIT = 4048;
  * Rents the machine. **This starts billing**, so it is only ever called behind
  * an explicit confirmation.
  */
-export async function createInstance(
-  apiKey: string,
-  options: CreateInstanceOptions,
-): Promise<number> {
+export async function createInstance(apiKey: string, options: CreateInstanceOptions): Promise<number> {
   if (options.onstart.length > ONSTART_LIMIT) {
-    throw new VastError(
-      `Startup script is ${options.onstart.length} characters; vast allows ${ONSTART_LIMIT}.`,
-    );
+    throw new VastError(`Startup script is ${options.onstart.length} characters; vast allows ${ONSTART_LIMIT}.`);
   }
 
   // vast takes env vars and port mappings as one docker-flag-style string
@@ -343,47 +360,4 @@ export async function createInstance(
     throw new VastError('vast accepted the request but returned no instance id');
   }
   return Number(instanceId);
-}
-
-export interface GpuChoice {
-  name: string;
-  /** How many rentable offers exist right now. */
-  offerCount: number;
-  /** Cheapest current rate, $/hr. */
-  fromPrice: number;
-  /** Best VRAM seen across those offers, GB. */
-  maxVramGb: number;
-}
-
-/**
- * The GPUs that can actually be rented at this moment.
- *
- * Queried rather than hardcoded: vast's names are its own short strings ("RTX
- * PRO 6000 WS", not the marketing name), the catalogue shifts as cards come and
- * go, and a typo in a hand-entered name just returns nothing with no
- * explanation. Availability and price come along for free, which is most of
- * what makes the choice.
- */
-export async function listAvailableGpus(apiKey: string): Promise<GpuChoice[]> {
-  const data = await request(apiKey, '/bundles/', {
-    method: 'POST',
-    body: { rentable: { eq: true }, type: 'on-demand', limit: 1000 },
-  });
-
-  const byName = new Map<string, GpuChoice>();
-  for (const offer of data?.offers ?? []) {
-    const name = offer.gpu_name;
-    if (!name) continue;
-    const entry = byName.get(name) ?? { name, offerCount: 0, fromPrice: Infinity, maxVramGb: 0 };
-    entry.offerCount += 1;
-    entry.fromPrice = Math.min(entry.fromPrice, offer.dph_total ?? Infinity);
-    entry.maxVramGb = Math.max(entry.maxVramGb, Math.round((offer.gpu_ram ?? 0) / 1024));
-    byName.set(name, entry);
-  }
-
-  // Most available first: a card with three offers is a card whose price and
-  // location you don't get to choose.
-  return [...byName.values()]
-    .filter((g) => Number.isFinite(g.fromPrice))
-    .sort((a, b) => b.offerCount - a.offerCount);
 }

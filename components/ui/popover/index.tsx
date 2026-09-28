@@ -59,7 +59,7 @@ const popoverStyle = tva({
 });
 
 const popoverArrowStyle = tva({
-  base: 'bg-background-0 z-[1] border absolute overflow-hidden h-3.5 w-3.5 border-outline-100',
+  base: 'bg-surface-overlay z-[1] border absolute overflow-hidden h-3.5 w-3.5 border-outline-100',
   variants: {
     placement: {
       'top left':
@@ -99,12 +99,12 @@ const popoverCloseButtonStyle = tva({
 });
 
 const popoverContentStyle = tva({
-  base: 'bg-background-0 rounded-lg overflow-hidden border border-outline-100 w-full',
+  base: 'bg-surface-overlay rounded-lg overflow-hidden border border-outline-100 w-full',
   parentVariants: {
     size: {
-      xs: 'max-w-[360px] p-3.5',
+      xs: 'max-w-[360px] p-4',
       sm: 'max-w-[420px] p-4',
-      md: 'max-w-[510px] p-[18px]',
+      md: 'max-w-[510px] p-5',
       lg: 'max-w-[640px] p-5',
       full: 'p-6',
     },
@@ -241,7 +241,7 @@ const PopoverBackdrop = React.forwardRef<
         opacity: 0,
       }}
       animate={{
-        opacity: 0.1,
+        opacity: 0,
       }}
       exit={{
         opacity: 0,

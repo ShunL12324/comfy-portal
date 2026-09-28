@@ -2,7 +2,7 @@ import { SamplerSelector } from '@/components/common/selectors/sampler';
 import { SchedulerSelector } from '@/components/common/selectors/scheduler';
 import { NumberInput } from '@/components/self-ui/number-input';
 import { NumberSlider } from '@/components/self-ui/slider';
-import Switch from '@/components/self-ui/switch';
+import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
@@ -23,8 +23,8 @@ export default function KSamplerAdvanced({ node, workflowId }: KSamplerAdvancedP
       <SubItem
         title="Add noise"
         rightComponent={
-          <Switch
-            size="sm"
+          <NativeSwitch
+            label="Add noise"
             value={node.inputs.add_noise === 'enable'}
             onValueChange={(value: boolean) => {
               updateNodeInput(workflowId, node.id, 'add_noise', value ? 'enable' : 'disable');
@@ -40,7 +40,6 @@ export default function KSamplerAdvanced({ node, workflowId }: KSamplerAdvancedP
           maxValue={100}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-          space={12}
         />
       </SubItem>
       <SubItem title="CFG">
@@ -50,7 +49,6 @@ export default function KSamplerAdvanced({ node, workflowId }: KSamplerAdvancedP
           maxValue={30}
           step={0.5}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'cfg', Number(value))}
-          space={12}
           decimalPlaces={1}
         />
       </SubItem>
@@ -74,8 +72,6 @@ export default function KSamplerAdvanced({ node, workflowId }: KSamplerAdvancedP
           maxValue={100}
           step={1}
           decimalPlaces={0}
-          buttonSize={24}
-          space={12}
         />
       </SubItem>
       <SubItem title="End at step">
@@ -86,15 +82,13 @@ export default function KSamplerAdvanced({ node, workflowId }: KSamplerAdvancedP
           maxValue={10000}
           step={1}
           decimalPlaces={0}
-          buttonSize={24}
-          space={12}
         />
       </SubItem>
       <SubItem
         title="Return with leftover noise"
         rightComponent={
-          <Switch
-            size="sm"
+          <NativeSwitch
+            label="Return with leftover noise"
             value={node.inputs.return_with_leftover_noise === 'enable'}
             onValueChange={(value: boolean) =>
               updateNodeInput(workflowId, node.id, 'return_with_leftover_noise', value ? 'enable' : 'disable')

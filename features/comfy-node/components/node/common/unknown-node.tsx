@@ -3,8 +3,7 @@ import { NumberInput } from '@/components/self-ui/number-input';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Text } from '@/components/ui/text';
+import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
@@ -12,10 +11,12 @@ import { Node } from '@/features/workflow/types';
 import { useNodeSchema } from '@/hooks/useNodeSchema';
 import { WidgetSpec } from '@/services/node-schema';
 import * as Linking from 'expo-linking';
-import { AlertCircle, GitPullRequest } from 'lucide-react-native';
-import { TouchableOpacity } from 'react-native';
+import { AlertCircle, GitPullRequest } from '@/constants/icons';
 import BaseNode from './base-node';
 import SubItem from './sub-item';
+import { Copy } from '@/components/ui/design-system/primitives';
+import { designTokens as t } from '@/constants/design-tokens';
+import { Pressable } from '@/components/ui/pressable';
 
 interface UnknownNodeProps {
   node: Node;
@@ -51,8 +52,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     Linking.openURL(url);
   };
 
-  const setInput = (key: string, value: unknown) =>
-    updateNodeInput(workflowId, node.id, key, value);
+  const setInput = (key: string, value: unknown) => updateNodeInput(workflowId, node.id, key, value);
 
   /** Render from the server's definition. */
   const renderFromSpec = (key: string, value: any, spec: WidgetSpec) => {
@@ -61,12 +61,13 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         const current = value == null ? '' : String(value);
         // Keep an unrecognised current value selectable rather than dropping
         // it, so a stale workflow shows what is actually set.
-        const options = spec.options.includes(current) || current === ''
-          ? spec.options.map((option) => ({ value: option, label: option }))
-          : [
-              ...spec.options.map((option) => ({ value: option, label: option })),
-              { value: current, label: current, description: 'Not offered by this server' },
-            ];
+        const options =
+          spec.options.includes(current) || current === ''
+            ? spec.options.map((option) => ({ value: option, label: option }))
+            : [
+                ...spec.options.map((option) => ({ value: option, label: option })),
+                { value: current, label: current, description: 'Not offered by this server' },
+              ];
         return (
           <SubItem key={key} title={key}>
             <OptionSelector
@@ -85,8 +86,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         const step = spec.step ?? (spec.kind === 'int' ? 1 : 0.01);
         // NumberInput rounds to decimalPlaces, which defaults to 0 — derive it
         // from the step or a float would be truncated to an integer.
-        const decimalPlaces =
-          spec.kind === 'int' ? 0 : (String(step).split('.')[1] ?? '').length;
+        const decimalPlaces = spec.kind === 'int' ? 0 : (String(step).split('.')[1] ?? '').length;
         return (
           <SubItem key={key} title={key}>
             <NumberInput
@@ -96,8 +96,6 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
               maxValue={spec.max}
               step={step}
               decimalPlaces={decimalPlaces}
-              buttonSize={24}
-              space={12}
             />
           </SubItem>
         );
@@ -109,11 +107,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
             key={key}
             title={key}
             rightComponent={
-              <Switch
-                size="sm"
-                value={value === true}
-                onValueChange={(next) => setInput(key, next)}
-              />
+              <NativeSwitch label={key} value={value === true} onValueChange={(next) => setInput(key, next)} />
             }
           />
         );
@@ -127,17 +121,16 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
                 isReadOnly={false}
                 isInvalid={false}
                 isDisabled={false}
-                className="w-full rounded-md border-0 bg-surface-raised"
+                className="rounded-md bg-surface-raised w-full border-0"
               >
                 <TextareaInput
                   placeholder={key}
                   value={value == null ? '' : String(value)}
                   onChangeText={(next) => setInput(key, next)}
-                  className="text-sm"
                 />
               </Textarea>
             ) : (
-              <Input className="rounded-lg border-0 bg-surface-raised">
+              <Input className="rounded-lg bg-surface-raised border-0">
                 <InputField
                   placeholder={key}
                   value={value == null ? '' : String(value)}
@@ -163,8 +156,8 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       if (value === 'enable' || value === 'disable') {
         return (
           <SubItem key={key} title={key}>
-            <Switch
-              size="sm"
+            <NativeSwitch
+              label={key}
               value={value === 'enable'}
               onValueChange={(next) => setInput(key, next ? 'enable' : 'disable')}
             />
@@ -173,13 +166,8 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       }
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-surface-raised">
-            <InputField
-              placeholder={key}
-              value={value}
-              size="sm"
-              onChangeText={(next) => setInput(key, next)}
-            />
+          <Input className="rounded-lg bg-surface-raised border-0">
+            <InputField placeholder={key} value={value} size="sm" onChangeText={(next) => setInput(key, next)} />
           </Input>
         </SubItem>
       );
@@ -188,11 +176,12 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     if (typeof value === 'number') {
       return (
         <SubItem key={key} title={key}>
-          <Input className="rounded-lg border-0 bg-surface-raised">
+          <Input className="rounded-lg bg-surface-raised border-0">
             <InputField
               placeholder={key}
               value={value.toString()}
               keyboardType="numeric"
+              style={{ fontVariant: ['tabular-nums'] }}
               size="sm"
               onChangeText={(next) => {
                 const parsed = parseFloat(next);
@@ -207,14 +196,16 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
     if (typeof value === 'boolean') {
       return (
         <SubItem key={key} title={key}>
-          <Switch size="sm" value={value} onValueChange={(next) => setInput(key, next)} />
+          <NativeSwitch label={key} value={value} onValueChange={(next) => setInput(key, next)} />
         </SubItem>
       );
     }
 
     return (
       <SubItem key={key} title={key}>
-        <Text className="text-content-secondary">{JSON.stringify(value)}</Text>
+        <Copy mono muted>
+          {JSON.stringify(value)}
+        </Copy>
       </SubItem>
     );
   };
@@ -226,28 +217,29 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
         <>
           <Badge size="sm" variant="solid" action="warning">
             <BadgeIcon as={AlertCircle} className="mr-1" />
-            <BadgeText>Compat</BadgeText>
+            <BadgeText style={t.node.hint}>Compat</BadgeText>
           </Badge>
-          <TouchableOpacity
+          <Pressable
+            hitSlop={{ top: 10, bottom: 10, left: 0, right: 0 }}
             onPress={handleRequestSupport}
-            className="ml-1 flex-row items-center justify-center rounded-sm bg-surface-raised px-2 py-1 active:bg-surface-sunken"
+            className="ml-1 rounded-sm bg-surface-raised px-2 py-1 active:opacity-pressed flex-row items-center justify-center"
           >
-            <Icon as={GitPullRequest} size="sm" className="mr-1 text-blue-500" />
-            <Text className="text-xs text-blue-500">Request Support</Text>
-          </TouchableOpacity>
+            <Icon as={GitPullRequest} size="sm" className="mr-1 text-content-primary" />
+            <Copy size="metadata">Request Support</Copy>
+          </Pressable>
         </>
       }
     >
-      <VStack space="md" className="w-full">
+      <VStack className="w-full" style={{ gap: t.node.fieldGap }}>
         {displayableInputs.length > 0 ? (
           displayableInputs.map(([key, value]) => {
             const spec = schema?.inputs[key];
             return spec ? renderFromSpec(key, value, spec) : renderFromValue(key, value);
           })
         ) : (
-          <Text size="sm" className="text-content-secondary">
+          <Copy size="metadata" muted>
             This node has no adjustable parameters.
-          </Text>
+          </Copy>
         )}
       </VStack>
     </BaseNode>

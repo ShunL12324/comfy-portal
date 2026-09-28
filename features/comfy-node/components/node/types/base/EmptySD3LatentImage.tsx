@@ -1,14 +1,16 @@
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { Icon } from '@/components/ui/icon';
+import { X } from '@/constants/icons';
+import { NativeSegments } from '@/components/ui/design-system/native-controls';
 import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { showToast } from '@/utils/toast';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { designTokens as t } from '@/constants/design-tokens';
 import BaseNode from '../../common/base-node';
 import SubItem from '../../common/sub-item';
+import { Copy } from '@/components/ui/design-system/primitives';
 
 const RESOLUTION_OPTIONS = [
   { label: '1024x1024', width: 1024, height: 1024 },
@@ -26,7 +28,6 @@ interface EmptySD3LatentImageProps {
 }
 
 export default function EmptySD3LatentImage({ node, serverId, workflowId }: EmptySD3LatentImageProps) {
-  const insects = useSafeAreaInsets();
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const isWidthLinked = Array.isArray(node.inputs.width);
   const isHeightLinked = Array.isArray(node.inputs.height);
@@ -67,30 +68,39 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
     <BaseNode node={node}>
       <SubItem title="Resolution">
         {hasLinkedDimensions ? (
-          <Text size="sm" className="text-content-secondary">
+          <Copy muted>
             Width and height are linked from another node. Edit the source node to change final image size.
-          </Text>
+          </Copy>
         ) : (
-          <View className="flex-col gap-2">
-            <SegmentedControl
+          <View className="gap-2 flex-col">
+            <NativeSegments
+              label="Resolution"
               options={RESOLUTION_OPTIONS.map((option) => option.label)}
               value={selectedResolution}
               onChange={(value) => {
                 handleResolutionChange(value as ResolutionOption);
               }}
             />
-            <View className="flex-row items-center gap-2">
-              <View className="flex-1 flex-col gap-2">
-                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-content-primary">
+            <View style={{ gap: t.node.labelGap }}>
+              <View className="flex-row items-center" style={{ gap: t.node.inlineGap }}>
+                <Copy size="label" muted style={{ flex: 1, textAlign: 'center' }}>
                   Width
-                </Text>
+                </Copy>
+                <View style={{ width: t.icon.small }} />
+                <Copy size="label" muted style={{ flex: 1, textAlign: 'center' }}>
+                  Height
+                </Copy>
+              </View>
+              <View className="flex-row items-center" style={{ gap: t.node.inlineGap }}>
                 <Input
-                  className="flex-1 rounded-md border-0 bg-surface-raised"
+                  className="rounded-md bg-surface-raised flex-1 border-0"
                   variant="outline"
                   size="sm"
                   isDisabled={selectedResolution !== 'Custom'}
                 >
                   <InputField
+                    accessibilityLabel="Width"
+                    style={{ textAlign: 'center' }}
                     placeholder="Width"
                     keyboardType="numeric"
                     value={dimensions.width.toString()}
@@ -103,28 +113,21 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
                     onBlur={() => {
                       if (dimensions.width < 16 || dimensions.width > 10240) {
                         setDimensions((prev) => ({ ...prev, width: 1024 }));
-                        showToast.error(
-                          'Invalid width',
-                          `Please enter a valid integer number between 16 and 10240`,
-                          insects.top,
-                        );
+                        showToast.error('Invalid width', `Please enter a valid integer number between 16 and 10240`);
                       }
                     }}
                   />
                 </Input>
-              </View>
-              <Text className="font-medium">×</Text>
-              <View className="flex-1 flex-col gap-2">
-                <Text size="xs" allowFontScaling={false} className="pl-1 font-medium text-content-primary">
-                  Height
-                </Text>
+                <Icon as={X} size="xs" className="text-content-tertiary" />
                 <Input
-                  className="flex-1 rounded-md border-0 bg-surface-raised"
+                  className="rounded-md bg-surface-raised flex-1 border-0"
                   variant="outline"
                   size="sm"
                   isDisabled={selectedResolution !== 'Custom'}
                 >
                   <InputField
+                    accessibilityLabel="Height"
+                    style={{ textAlign: 'center' }}
                     placeholder="Height"
                     keyboardType="numeric"
                     value={dimensions.height.toString()}
@@ -137,11 +140,7 @@ export default function EmptySD3LatentImage({ node, serverId, workflowId }: Empt
                     onBlur={() => {
                       if (dimensions.height < 16 || dimensions.height > 10240) {
                         setDimensions((prev) => ({ ...prev, height: 1024 }));
-                        showToast.error(
-                          'Invalid height',
-                          `Please enter a valid integer number between 16 and 10240`,
-                          insects.top,
-                        );
+                        showToast.error('Invalid height', `Please enter a valid integer number between 16 and 10240`);
                       }
                     }}
                   />

@@ -1,16 +1,19 @@
-import { Box } from '@/components/ui/box';
+import { useCompactControls } from '@/components/ui/design-system/control-density';
+import { designTokens as t } from '@/constants/design-tokens';
+import { View as Box } from '@/components/ui/view';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
+import { Copy, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { VStack } from '@/components/ui/vstack';
 import { SearchableBottomSheet } from '@/components/common/selectors/bottom-sheet';
+import { getOptionSurfaceStyle } from '@/components/common/selectors/bottom-sheet/item';
 import { SelectorOption } from '@/components/common/selectors/types';
 import { useModelOptions } from '@/components/common/selectors/model/use-model-options';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { clearNodeSchemaCache } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { Check, ChevronDown, ImageIcon } from 'lucide-react-native';
+import { Check, ChevronDown, ImageIcon } from '@/constants/icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
 
@@ -37,20 +40,39 @@ interface OptionalModelSelectorProps {
 const NONE_SENTINELS = new Set(['none', 'None', '无']);
 
 function ModelPreview({ image, label }: { image?: string; label: string }) {
-  if (!image) {
+  const c = useDesign();
+  const [failedImage, setFailedImage] = useState<string>();
+  if (!image || failedImage === image) {
     return (
-      <Box className="h-full w-full items-center justify-center bg-surface-muted">
-        <Icon as={ImageIcon} size="sm" className="text-content-tertiary" />
+      <Box className="h-full w-full items-center justify-center" style={{ backgroundColor: c.well }}>
+        <StateIcon icon={ImageIcon} size={t.icon.control} />
       </Box>
     );
   }
-  return <Image source={{ uri: image }} alt={label} style={{ height: '100%', width: '100%' }} contentFit="cover" />;
+  return (
+    <Image
+      source={{ uri: image }}
+      alt={label}
+      style={{ height: '100%', width: '100%' }}
+      contentFit="cover"
+      onError={() => setFailedImage(image)}
+    />
+  );
 }
 
-export function OptionalModelSelector({ value, onChange, type, classType, inputName, serverId }: OptionalModelSelectorProps) {
+export function OptionalModelSelector({
+  value,
+  onChange,
+  type,
+  classType,
+  inputName,
+  serverId,
+}: OptionalModelSelectorProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const c = useDesign();
+  const compact = useCompactControls();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const syncModels = useServersStore((state) => state.syncModels);
   const folders = Array.isArray(type) ? type : [type];
@@ -82,32 +104,69 @@ export function OptionalModelSelector({ value, onChange, type, classType, inputN
 
   const handlePress = useCallback(() => {
     setIsVisible(true);
-    bottomSheetRef.current?.present();
   }, []);
   const handleClose = useCallback(() => setIsVisible(false), []);
 
   const renderTrigger = useCallback(
     () => (
-      <Pressable onPress={handlePress}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Select optional model ${inputName || type}: ${value || 'Choose'}`}
+        onPress={handlePress}
+      >
         <Box
-          className={`overflow-hidden rounded-xl ${isMissing ? 'border-[0.5px] border-error-300 bg-error-50' : 'bg-surface-raised'}`}
+          className={
+            compact
+              ? 'overflow-hidden'
+              : `rounded-xl overflow-hidden ${isMissing ? 'border-status-danger/50 bg-well border-[0.5px]' : 'bg-surface-raised'}`
+          }
         >
-          <HStack space="sm" className="items-center justify-between p-3">
+          <HStack
+            space="sm"
+            className={compact ? 'items-center justify-between' : 'p-3 items-center justify-between'}
+            style={
+              compact
+                ? {
+                    paddingHorizontal: t.node.inset,
+                    minHeight: t.height.touch,
+                    paddingVertical: isMissing ? t.node.inlineGap : 0,
+                  }
+                : undefined
+            }
+          >
+            {compact && (
+              <Box
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  left: 0,
+                  right: 0,
+                  bottom: 4,
+                  borderRadius: t.radius.control,
+                  backgroundColor: c.well,
+                }}
+              />
+            )}
             <HStack space="sm" className="flex-1 items-center">
-              <Box className="h-10 w-10 overflow-hidden rounded-lg border-[0.5px] border-stroke-subtle">
-                <ModelPreview image={currentOption?.image} label={currentOption?.label || ''} />
-              </Box>
+              {(!compact || currentOption?.image) && (
+                <Box className="h-8 w-8 rounded-md overflow-hidden">
+                  <ModelPreview image={currentOption?.image} label={currentOption?.label || ''} />
+                </Box>
+              )}
               <VStack space="xs" className="flex-1">
-                <Text
-                  className={`text-sm font-medium ${isMissing ? 'text-status-danger-pressed' : 'text-content-primary'}`}
+                <Copy
+                  style={{ fontWeight: compact ? '400' : '500', ...(isMissing ? { color: c.danger } : null) }}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {missingLabel || currentOption?.label || 'None'}
-                </Text>
-                <Text className={`text-xs ${isMissing ? 'text-status-danger' : 'text-content-tertiary'}`}>
-                  {isMissing ? 'Not installed on server' : currentOption?.description || 'Choose a model'}
-                </Text>
+                </Copy>
+                {(!compact || isMissing) && (
+                  <Copy size="metadata" muted style={isMissing ? { color: c.danger } : undefined}>
+                    {isMissing ? 'Not installed on server' : currentOption?.description || 'Choose a model'}
+                  </Copy>
+                )}
               </VStack>
             </HStack>
             <Icon as={ChevronDown} size="sm" className="text-content-tertiary" />
@@ -115,43 +174,49 @@ export function OptionalModelSelector({ value, onChange, type, classType, inputN
         </Box>
       </Pressable>
     ),
-    [handlePress, isMissing, currentOption, missingLabel],
+    [handlePress, isMissing, currentOption, missingLabel, c, compact, inputName, type, value],
   );
 
   const renderItem = useCallback(
     (item: SelectorOption, isSelected: boolean) => (
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={item.label}
+        accessibilityState={{ selected: isSelected }}
+        aria-pressed={isSelected}
         onPress={() => {
           onChange(item.value);
           handleClose();
         }}
-        className="w-[48.5%] active:opacity-80"
+        className="active:opacity-pressed w-full"
       >
         <Box
-          className={`relative overflow-hidden rounded-xl ${isSelected ? 'border-[3px] border-outline-400' : 'bg-surface-muted'}`}
+          testID={`selector-option-${item.value}`}
+          className="relative overflow-hidden"
+          style={getOptionSurfaceStyle(c, isSelected, true)}
         >
           {isSelected && (
-            <Box className="absolute right-2 top-2 z-10 rounded-full bg-surface-raised p-1">
-              <Icon as={Check} size="sm" className="text-content-primary" />
+            <Box className="right-2 top-2 p-1 absolute z-10 rounded-full" style={{ backgroundColor: c.tint }}>
+              <Icon as={Check} size="sm" style={{ color: c.onTint }} />
             </Box>
           )}
-          <Box className="aspect-square w-full overflow-hidden border-b-[0.5px] border-stroke-subtle">
+          <Box className="aspect-square w-full overflow-hidden border-b" style={{ borderColor: c.line }}>
             <ModelPreview image={item.image} label={item.label} />
           </Box>
           <VStack space="xs" className="p-3">
-            <Text
-              className={`text-sm ${isSelected ? 'font-medium text-action' : 'text-content-primary'}`}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
+            <Copy size="body" style={{ fontWeight: '500' }} numberOfLines={2} ellipsizeMode="tail">
               {item.label}
-            </Text>
-            {item.description ? <Text className="text-xs text-content-tertiary">{item.description}</Text> : null}
+            </Copy>
+            {item.description ? (
+              <Copy size="label" muted numberOfLines={2}>
+                {item.description}
+              </Copy>
+            ) : null}
           </VStack>
         </Box>
       </Pressable>
     ),
-    [onChange, handleClose],
+    [onChange, handleClose, c],
   );
 
   return (
@@ -171,8 +236,8 @@ export function OptionalModelSelector({ value, onChange, type, classType, inputN
       renderItem={renderItem}
       numColumns={2}
       emptyComponent={
-        <VStack className="items-center py-12">
-          <Text className="text-sm text-content-tertiary">No models installed for this input</Text>
+        <VStack className="py-8 items-center">
+          <Copy muted>No models installed for this input</Copy>
         </VStack>
       }
     />

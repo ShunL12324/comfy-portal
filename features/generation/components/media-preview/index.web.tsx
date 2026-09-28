@@ -1,16 +1,15 @@
+import { Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Spinner } from '@/components/ui/spinner';
 import { Icon } from '@/components/ui/icon';
 import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
-import { Text } from '@/components/ui/text';
-import { ImageIcon, X , PlayCircle } from 'lucide-react-native';
+import { ImageIcon, X, PlayCircle } from '@/constants/icons';
 import { MotiView } from 'moti';
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useRef, useState } from 'react';
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Pressable,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -21,7 +20,8 @@ import { ProgressOverlay } from './progress-overlay';
 import { ZoomableMedia } from './zoomable-media';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
-
+import { designTokens as t } from '@/constants/design-tokens';
+import { Pressable } from '@/components/ui/pressable';
 
 const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm'];
 
@@ -36,39 +36,30 @@ interface ParallaxMediaProps {
 }
 
 const VideoPreview = ({ url }: { url: string }) => {
-  return (
-    <video
-      src={url}
-      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-      muted
-      playsInline
-    />
-  );
+  return <video src={url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} muted playsInline />;
 };
 
 /**
  * Web version of MediaPreview - uses ScrollView with scroll-snap instead of PagerView
  */
-export const MediaPreview = memo(function ParallaxMedia({
-  workflowId,
-  serverId,
-}: ParallaxMediaProps) {
-  const { generatedMedia, status } = useGenerationStatus();
-  const { progress } = useGenerationProgress();
+export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
+  const { generatedMedia, status, currentNodeId } = useGenerationStatus();
+  const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const safeAreaInsets = useSafeAreaInsets();
+  const c = useDesign();
   const scrollRef = useRef<ScrollView>(null);
   const modalScrollRef = useRef<ScrollView>(null);
 
-  // Sync active index when media change (e.g. new generation)
-  useEffect(() => {
-    if (generatedMedia.length > 0) {
-      setActiveIndex(0);
-    }
-  }, [generatedMedia]);
+  const mediaKey = generatedMedia.join('|');
+  const [previousMediaKey, setPreviousMediaKey] = useState(mediaKey);
+  if (previousMediaKey !== mediaKey) {
+    setPreviousMediaKey(mediaKey);
+    setActiveIndex(0);
+  }
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -113,10 +104,10 @@ export const MediaPreview = memo(function ParallaxMedia({
               <View key={`${mediaUrl}-${index}`} style={{ width: screenWidth, flex: 1 }}>
                 <Pressable style={{ flex: 1 }} onPress={() => setIsPreviewOpen(true)}>
                   {isVideoUrl(mediaUrl) ? (
-                    <View className="flex-1 items-center justify-center bg-black">
+                    <View className="bg-media flex-1 items-center justify-center">
                       <VideoPreview url={mediaUrl} />
-                      <View className="absolute inset-0 items-center justify-center bg-black/20">
-                        <Icon as={PlayCircle} className="text-white opacity-90 h-12 w-12" />
+                      <View className="inset-0 bg-media/20 absolute items-center justify-center">
+                        <Icon size="display" as={PlayCircle} className="text-on-media" />
                       </View>
                     </View>
                   ) : (
@@ -138,30 +129,28 @@ export const MediaPreview = memo(function ParallaxMedia({
 
           {/* Page Indicator */}
           {generatedMedia.length > 1 && (
-            <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-2">
+            <View className="bottom-4 left-0 right-0 gap-2 absolute flex-row justify-center">
               {generatedMedia.map((_, index) => (
                 <View
                   key={index}
-                  className={`h-2 w-2 rounded-full ${
-                    index === activeIndex ? 'bg-action' : 'bg-border-300'
-                  }`}
+                  className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-action' : 'bg-stroke'}`}
                 />
               ))}
             </View>
           )}
 
           {/* Status Indicators */}
-          <View className="absolute top-3 right-3 flex-row gap-2">
-            <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
-              <Text className="text-center text-xs font-medium text-white">
+          <View className="top-3 right-3 gap-2 absolute flex-row">
+            <View className="bg-media/50 px-2.5 py-1 min-w-[48px] items-center justify-center rounded-full">
+              <Copy size="metadata" style={{ color: c.onMedia, fontWeight: '500', textAlign: 'center' }}>
                 {isVideoUrl(generatedMedia[activeIndex] || '') ? 'Video' : 'Image'}
-              </Text>
+              </Copy>
             </View>
             {generatedMedia.length > 1 && (
-              <View className="min-w-[48px] items-center justify-center rounded-full bg-black/50 px-2.5 py-1">
-                <Text className="text-center text-xs font-medium text-white">
+              <View className="bg-media/50 px-2.5 py-1 min-w-[48px] items-center justify-center rounded-full">
+                <Copy size="metadata" style={{ color: c.onMedia, fontWeight: '500', textAlign: 'center' }}>
                   {activeIndex + 1}/{generatedMedia.length}
-                </Text>
+                </Copy>
               </View>
             )}
           </View>
@@ -177,7 +166,7 @@ export const MediaPreview = memo(function ParallaxMedia({
           >
             <ModalBackdrop />
             <ModalContent
-              className="m-0 h-full rounded-none border-0 bg-black p-0"
+              className="m-0 bg-media p-0 h-full rounded-none border-0"
               style={{ shadowColor: 'transparent', elevation: 0 }}
               transition={{
                 type: 'timing',
@@ -185,7 +174,7 @@ export const MediaPreview = memo(function ParallaxMedia({
               }}
             >
               <ModalBody
-                className="h-full flex-1 p-0"
+                className="p-0 h-full flex-1"
                 contentContainerStyle={{
                   flex: 1,
                   alignItems: 'center',
@@ -207,10 +196,7 @@ export const MediaPreview = memo(function ParallaxMedia({
                     contentContainerStyle={styles.scrollContent}
                   >
                     {generatedMedia.map((mediaUrl, index) => (
-                      <View
-                        key={`modal-${mediaUrl}-${index}`}
-                        style={{ width: screenWidth, flex: 1 }}
-                      >
+                      <View key={`modal-${mediaUrl}-${index}`} style={{ width: screenWidth, flex: 1 }}>
                         <ZoomableMedia
                           mediaUrl={mediaUrl}
                           onClose={handleZoomableMediaClose}
@@ -225,41 +211,36 @@ export const MediaPreview = memo(function ParallaxMedia({
                   from={{ opacity: 1 }}
                   animate={{ opacity: 0 }}
                   transition={{ type: 'timing', duration: 300, delay: 2000 }}
-                  className="absolute bottom-16 left-0 right-0 items-center justify-center pointer-events-none"
+                  className="bottom-16 left-0 right-0 pointer-events-none absolute items-center justify-center"
                 >
-                  <Text className="text-sm font-medium text-white/70">
-                    Long press to open menu
-                  </Text>
+                  <Copy size="label" style={{ color: c.onMedia, fontWeight: '500' }}>Long press to open menu</Copy>
                 </MotiView>
 
                 {generatedMedia.length > 1 && (
-                  <View className="absolute bottom-8 left-0 right-0 flex-row justify-center gap-2 pointer-events-none">
+                  <View className="bottom-8 left-0 right-0 gap-2 pointer-events-none absolute flex-row justify-center">
                     {generatedMedia.map((_, index) => (
                       <View
                         key={index}
-                        className={`h-2 w-2 rounded-full ${
-                          index === activeIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
+                        className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-on-media' : 'bg-on-media/50'}`}
                       />
                     ))}
                   </View>
                 )}
 
-                <TouchableOpacity
-                  activeOpacity={0.5}
+                <Pressable
                   onPress={handleModalClose}
+                  className="active:opacity-pressed bg-media/20"
                   style={{
                     position: 'absolute',
                     top: safeAreaInsets.top + 12,
                     right: 12,
-                    backgroundColor: 'rgba(0,0,0,0.3)',
-                    borderRadius: 8,
-                    padding: 8,
+                    borderRadius: t.radius.control,
+                    padding: t.layout.related,
                     zIndex: 30,
                   }}
                 >
-                  <Icon as={X} size="sm" className="text-white" />
-                </TouchableOpacity>
+                  <Icon as={X} size="sm" className="text-on-media" />
+                </Pressable>
               </ModalBody>
               <MediaActions
                 isOpen={showActionsheet}
@@ -272,28 +253,43 @@ export const MediaPreview = memo(function ParallaxMedia({
           </Modal>
         </View>
       ) : (
-        <View className="h-full w-full items-center justify-center bg-surface-base">
-          <View className="items-center gap-4 px-6">
-            <View className="rounded-full bg-surface-raised p-3">
-              <Icon as={ImageIcon} size="xl" className="h-10 w-10 text-typography-300" />
-            </View>
-            <View className="items-center gap-1">
-              <Text className="text-base font-semibold text-typography-800">No Media Yet</Text>
-              <Text className="text-center text-sm text-content-secondary">
-                Generate an image to preview results here.
-              </Text>
-              {status === 'generating' && progress.max > 0 && (
-                <Text className="text-xs text-content-tertiary">
-                  Generating... {Math.round((progress.value / progress.max) * 100)}%
-                </Text>
-              )}
-            </View>
-          </View>
+        <View
+          className="bg-surface-base w-full items-center"
+          style={{ paddingHorizontal: t.layout.section, paddingTop: t.layout.section, gap: t.layout.related }}
+        >
+          <Row style={{ gap: t.layout.related }}>
+            {status !== 'idle' ? (
+              <Spinner size="small" />
+            ) : (
+              <Icon as={ImageIcon} size="sm" className="text-content-secondary" />
+            )}
+            <Copy>
+              {status === 'generating'
+                ? 'Generating output'
+                : status === 'downloading'
+                  ? 'Saving results'
+                  : 'Your results appear here'}
+            </Copy>
+          </Row>
+          <Copy muted size="label" style={{ textAlign: 'center' }}>
+            {status === 'generating'
+              ? nodeProgress.total > 0
+                ? `${nodeProgress.completed} / ${nodeProgress.total} nodes complete`
+                : 'Waiting for the server to begin execution.'
+              : status === 'downloading'
+                ? `${Math.round(downloadProgress)}% of output files saved`
+                : 'Adjust the workflow below, then generate.'}
+          </Copy>
+          {status === 'generating' && progress.max > 0 && (
+            <Copy mono muted size="metadata">
+              Step {progress.value} / {progress.max} · current node
+            </Copy>
+          )}
         </View>
       )}
 
-      {status === 'generating' && progress.value > 0 && progress.value < progress.max && (
-        <ProgressOverlay current={progress.value} total={progress.max} />
+      {generatedMedia.length > 0 && status === 'generating' && progress.max > 0 && (
+        <ProgressOverlay key={currentNodeId} current={progress.value} total={progress.max} />
       )}
     </View>
   );

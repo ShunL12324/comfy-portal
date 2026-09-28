@@ -23,7 +23,6 @@ export default function VAEEncodeForInpaint({ node, serverId, workflowId }: VAEE
           minValue={0}
           maxValue={64}
           step={1}
-          space={12}
         />
       </SubItem>
     </BaseNode>

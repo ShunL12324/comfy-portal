@@ -100,3 +100,10 @@ TODO.md
 /playwright-report/
 /blob-report/
 /.playwright-cli/
+
+# Local credentials and licensed agent tools remain private after rollback.
+/.codex/config.toml
+/.mcp.json
+/.agents/skills/
+/.claude/skills/
+/.csquad/

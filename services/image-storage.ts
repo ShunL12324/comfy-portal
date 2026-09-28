@@ -1,4 +1,7 @@
+import { useMediaStore, waitForMediaHydration, mediaStorage, mediaKind } from '@/features/gallery/stores/media-store';
 import { Workflow } from '@/features/workflow/types';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { resolveProvenance } from '@/services/media-provenance';
 import { generateUUID } from '@/utils/uuid';
 import { Directory, File, Paths } from 'expo-file-system';
 
@@ -13,14 +16,7 @@ interface SaveMediaOptions {
    * job's outputs are already on disk and avoid saving them twice.
    */
   promptId?: string;
-}
-
-function getGeneratedDir(serverId: string, workflowId: string) {
-  return new Directory(Paths.document, 'server', serverId, 'workflows', workflowId, 'generated');
-}
-
-function getThumbnailDir(serverId: string, workflowId: string) {
-  return new Directory(Paths.document, 'server', serverId, 'workflows', workflowId, 'thumbnail');
+  sourceId?: string;
 }
 
 function ensureDirectory(dir: Directory) {
@@ -34,95 +30,62 @@ export async function saveGeneratedMedia({
   workflow,
   delete: shouldDelete,
   promptId,
+  sourceId,
 }: SaveMediaOptions) {
-  try {
-    const generatedDir = getGeneratedDir(serverId, workflowId);
-
-    if (shouldDelete) {
-      const filename = mediaUrl.split('/').pop()?.split('?')[0];
-      if (!filename) throw new Error('Invalid media URL');
-
-      new File(generatedDir, filename).delete();
-      try {
-        new File(generatedDir, `${filename}.json`).delete();
-      } catch (error) {
-        void error;
-        // Ignore if metadata file doesn't exist
-      }
-      return;
-    }
-
-    ensureDirectory(generatedDir);
-
-    const uuid = await generateUUID();
-    const timestamp = new Date().toISOString();
-    const originalExt = mediaUrl.split('.').pop()?.split('?')[0] || 'png';
-    const filename = `${timestamp}-${uuid}.${originalExt}`;
-
-    const mediaFile = new File(generatedDir, filename);
-    if (mediaUrl.startsWith('file://')) {
-      new File(mediaUrl).copy(mediaFile);
-    } else {
-      await File.downloadFileAsync(mediaUrl, mediaFile, { idempotent: true });
-    }
-
-    const metadataFile = new File(generatedDir, `${filename}.json`);
-    metadataFile.create({ intermediates: true, overwrite: true });
-
-    const metadata = {
-      timestamp,
-      workflow,
-      originalUrl: mediaUrl,
-      ...(promptId ? { promptId } : {}),
-    };
-
-    metadataFile.write(JSON.stringify(metadata, null, 2), { encoding: 'utf8' });
-
-    return {
-      path: mediaFile.uri,
-      metadata,
-    };
-  } catch (error) {
-    console.error('Failed to save/delete generated media:', error);
-    throw error;
+  await waitForMediaHydration();
+  const store = useMediaStore.getState();
+  if (shouldDelete) {
+    const asset = store.assets.find((item) => item.path === mediaUrl);
+    if (!asset) return;
+    const file = new File(asset.path);
+    if (file.exists) file.delete();
+    store.remove(asset.path);
+    return;
   }
+  const existing =
+    promptId &&
+    store.assets.find(
+      (item) =>
+        item.serverId === serverId &&
+        item.metadata.promptId === promptId &&
+        (sourceId ? item.metadata.sourceId === sourceId : item.metadata.originalUrl === mediaUrl),
+    );
+  if (existing) {
+    store.upsert(existing);
+    await mediaStorage.flush();
+    return { path: existing.path, metadata: existing.metadata };
+  }
+
+  const directory = new Directory(Paths.document, 'media-v2');
+  ensureDirectory(directory);
+  const id = generateUUID();
+  const parsed = new URL(mediaUrl);
+  const sourceName = parsed.searchParams.get('filename') ?? parsed.pathname;
+  const extension = sourceName.match(/\.(png|jpe?g|webp|gif|mp4|mov|webm|m4v)$/i)?.[1]?.toLowerCase() ?? 'png';
+  const destination = new File(directory, id + '.' + extension);
+  if (mediaUrl.startsWith('file://')) await new File(mediaUrl).copy(destination);
+  else await File.downloadFileAsync(mediaUrl, destination, { idempotent: true });
+  const metadata = {
+    timestamp: new Date().toISOString(),
+    workflow: JSON.parse(JSON.stringify(workflow)),
+    originalUrl: sourceId ?? mediaUrl,
+    ...(sourceId ? { sourceId } : {}),
+    ...(promptId ? { promptId } : {}),
+    producedBy: resolveProvenance(serverId, workflowId),
+  };
+  store.upsert({ id, serverId, workflowId, kind: mediaKind(destination.uri), path: destination.uri, metadata });
+  await mediaStorage.flush();
+  if (mediaUrl.startsWith(new Directory(Paths.cache, 'comfy-downloads').uri.replace(/\/?$/, '/'))) {
+    const downloaded = new File(mediaUrl);
+    if (downloaded.exists) downloaded.delete();
+  }
+  return { path: destination.uri, metadata };
 }
 
 export async function getGeneratedMedia(serverId: string, workflowId: string) {
-  try {
-    const generatedDir = getGeneratedDir(serverId, workflowId);
-    const dirInfo = Paths.info(generatedDir.uri);
-
-    if (!dirInfo.exists) {
-      ensureDirectory(generatedDir);
-    } else if (dirInfo.isDirectory === false) {
-      new File(generatedDir.uri).delete();
-      ensureDirectory(generatedDir);
-    }
-
-    const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.mov'];
-    const mediaFiles = generatedDir
-      .list()
-      .filter((entry): entry is File => entry instanceof File)
-      .filter((file) => supportedExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)));
-
-    return Promise.all(
-      mediaFiles.map(async (file) => {
-        const metadataFile = new File(generatedDir, `${file.name}.json`);
-        try {
-          const metadataStr = await metadataFile.text();
-          const metadata = JSON.parse(metadataStr);
-          return { path: file.uri, metadata };
-        } catch (error) {
-          void error;
-          return { path: file.uri, metadata: null };
-        }
-      }),
-    );
-  } catch (error) {
-    console.error('failed to get generated media:', error);
-    return [];
-  }
+  await waitForMediaHydration();
+  await mediaStorage.flush();
+  return useMediaStore.getState().assets.filter((item) => item.serverId === serverId && item.workflowId === workflowId);
 }
 
 export async function loadHistoryMedia(serverId: string, workflowId: string) {
@@ -156,35 +119,17 @@ export async function saveWorkflowThumbnail({
   mimeType?: string;
 }) {
   try {
-    const thumbnailDir = getThumbnailDir(serverId, workflowId);
-
+    // Thumbnails belong to reusable assets, never to a removable connection.
+    const thumbnailDir = new Directory(Paths.document, 'workflow-thumbnails-v2');
     if (shouldDelete) {
-      try {
-        thumbnailDir.delete();
-      } catch (error) {
-        void error;
-        // Ignore if directory doesn't exist
+      const referenced = useWorkflowStore.getState().assets.some((asset) => asset.thumbnail === imageUri);
+      if (!referenced && imageUri.startsWith(thumbnailDir.uri.replace(/\/?$/, '/'))) {
+        const file = new File(imageUri);
+        if (file.exists) file.delete();
       }
       return;
     }
-
     ensureDirectory(thumbnailDir);
-
-    // Keep only one thumbnail file.
-    try {
-      const files = thumbnailDir.list().filter((entry): entry is File => entry instanceof File);
-      files.forEach((file) => {
-        try {
-          file.delete();
-        } catch (error) {
-          void error;
-          // Ignore cleanup failures
-        }
-      });
-    } catch (error) {
-      void error;
-      // Directory might not exist yet, which is fine
-    }
 
     let ext: string;
     if (mimeType) {
@@ -208,8 +153,8 @@ export async function saveWorkflowThumbnail({
       ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
     }
 
-    const thumbnailFile = new File(thumbnailDir, `thumbnail.${ext}`);
-    new File(imageUri).copy(thumbnailFile);
+    const thumbnailFile = new File(thumbnailDir, generateUUID() + '.' + ext);
+    await new File(imageUri).copy(thumbnailFile);
 
     const fileInfo = thumbnailFile.info();
     if (!fileInfo.exists) {
@@ -225,30 +170,18 @@ export async function saveWorkflowThumbnail({
   }
 }
 
-export async function cleanupServerData(serverId: string) {
-  try {
-    const serverDir = new Directory(Paths.document, 'server', serverId);
-    try {
-      serverDir.delete();
-    } catch (error) {
-      void error;
-      // Ignore if directory doesn't exist
-    }
-  } catch (error) {
-    console.error('failed to cleanup server data:', error);
-  }
-}
-
-export async function cleanupWorkflowData(serverId: string, workflowId: string) {
-  try {
-    const workflowDir = new Directory(Paths.document, 'server', serverId, 'workflows', workflowId);
-    try {
-      workflowDir.delete();
-    } catch (error) {
-      void error;
-      // Ignore if directory doesn't exist
-    }
-  } catch (error) {
-    console.error('failed to cleanup workflow data:', error);
-  }
-}
+/**
+ * Removing a connection does not delete independent gallery assets.
+ *
+ * This used to delete `server/<id>/` whole, which destroyed every generated
+ * image and video underneath it. Media is a pool now: it records which machine
+ * and workflow produced it and outlives both. Deliberately still here, and
+ * deliberately empty — it is the name someone reaches for when they next wire
+ * up server removal, and finding it doing nothing on purpose is the point. Do
+ * not give it back a deleting body, and do not add a new cleanup keyed on
+ * serverId or workflowId. The same prohibition is on `MediaAsset` itself.
+ *
+ * Its per-workflow twin was removed: nothing had called it since the pool
+ * landed, and one carrier for the rule is enough.
+ */
+export async function cleanupServerData(_serverId: string) {}

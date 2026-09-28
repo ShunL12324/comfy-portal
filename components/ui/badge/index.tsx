@@ -1,6 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import {
@@ -14,7 +15,7 @@ import { Svg } from 'react-native-svg';
 const SCOPE = 'BADGE';
 
 const badgeStyle = tva({
-  base: 'flex-row items-center rounded-sm data-[disabled=true]:opacity-50 px-2 py-1',
+  base: 'flex-row items-center rounded-sm data-[disabled=true]:opacity-disabled px-2 py-1',
   variants: {
     action: {
       error: 'bg-background-error border-error-300',
@@ -72,7 +73,7 @@ const badgeTextStyle = tva({
       true: 'italic',
     },
     highlight: {
-      true: 'bg-yellow-500',
+      true: 'bg-warning-500',
     },
   },
 });
@@ -88,9 +89,9 @@ const badgeIconStyle = tva({
       muted: 'text-background-800',
     },
     size: {
-      sm: 'h-3 w-3',
-      md: 'h-3.5 w-3.5',
-      lg: 'h-4 w-4',
+      sm: 'size-icon-micro',
+      md: 'size-icon-small',
+      lg: 'size-icon-control',
     },
   },
 });

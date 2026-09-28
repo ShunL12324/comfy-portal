@@ -1,148 +1,123 @@
+import { Sheet } from '@/components/ui/design-system/overlays';
+import { SetupContent } from '@/features/cloud/components/setup-content';
+import { designTokens as t } from '@/constants/design-tokens';
 import { AppBar } from '@/components/layout/app-bar';
-import { EmptyState } from '@/components/self-ui/empty-state';
-import { Button } from '@/components/ui/button';
-import { Center } from '@/components/ui/center';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { ScrollView } from '@/components/ui/scroll-view';
-import { Text } from '@/components/ui/text';
+import { Action, Copy, Field, useDesign } from '@/components/ui/design-system/primitives';
+import { RefreshScrollView } from '@/components/ui/design-system/pull-refresh';
 import { View } from '@/components/ui/view';
-import { VStack } from '@/components/ui/vstack';
+import { LaunchCard } from '@/features/cloud/components/launch-card';
+import { useProvisioningStore, launchKey, type LaunchRecord } from '@/features/cloud/stores/provisioning-store';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { LaunchCard } from '@/features/cloud/components/launch-card';
-import { useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
-import { CLOUD_GPU_SUPPORTED } from '@/features/cloud/utils/availability';
-import { Link, useRouter } from 'expo-router';
-import { ArrowRight, Cloud, Plus, RefreshCcw, ScanSearch } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import React, { useMemo, useRef, useState } from 'react';
+import { Plus } from '@/constants/icons';
+import { useRef, useState } from 'react';
+import { Keyboard } from 'react-native';
+import { useServerObservations } from '@/features/server/hooks/use-server-observations';
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const addServerModalRef = useRef<AddServerModalRef>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  useServerObservations();
+  const c = useDesign();
+  const refreshLock = useRef(false);
+  const addRef = useRef<AddServerModalRef>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
   const { servers, refreshServer } = useServersStore();
-  // Select the stable `launches` array itself, then derive with useMemo --
-  // filtering inside the Zustand selector returns a new array every read,
-  // which useSyncExternalStore treats as a changed snapshot on every render
-  // and loops ("Maximum update depth exceeded").
-  //
-  // Not `.active()` — a failed launch should stay visible (with its error)
-  // until the user destroys or dismisses it, not vanish the moment it fails.
   const launches = useProvisioningStore((s) => s.launches);
-  const pendingLaunches = useMemo(() => launches.filter((l) => l.stage !== 'ready'), [launches]);
-
-  const handleRefreshServers = async () => {
-    setIsRefreshing(true);
-    await Promise.all(servers.map((s) => refreshServer(s.id)));
-    setIsRefreshing(false);
+  const entries = [
+    ...launches.map((launch) => ({
+      launch,
+      server: servers.find((server) => server.cloud && launchKey(server.cloud) === launch.id),
+    })),
+    ...servers
+      .filter((server) => !launches.some((launch) => server.cloud && launch.id === launchKey(server.cloud)))
+      .map((server) => ({ server, launch: undefined })),
+  ];
+  const [setupSelection, setSetupSelection] = useState<LaunchRecord | null>(null);
+  const setup = setupSelection ? (launches.find((item) => item.id === setupSelection.id) ?? setupSelection) : null;
+  const count = entries.length;
+  const searchTerm = query.trim().toLowerCase();
+  const filtered = entries.filter(({ launch, server }) => {
+    const pending = launch && (launch.stage !== 'ready' || !server);
+    const name = pending ? launch.environmentName : server?.name;
+    const host = pending ? launch.host : server?.host;
+    const port = pending ? launch.comfyPort : server?.port;
+    return `${name ?? ''} ${host ?? ''}${port ? `:${port}` : ''}`.toLowerCase().includes(searchTerm);
+  });
+  const refresh = async () => {
+    if (refreshLock.current) return;
+    refreshLock.current = true;
+    Keyboard.dismiss();
+    setRefreshing(true);
+    setError('');
+    try {
+      await Promise.all(servers.map((s) => refreshServer(s.id)));
+    } catch {
+      setError('Some connections could not be refreshed. Try again.');
+    } finally {
+      refreshLock.current = false;
+      setRefreshing(false);
+    }
   };
-
   return (
-    <View className={`flex-1 bg-surface-base`}>
+    <View style={{ flex: 1, backgroundColor: c.paper }}>
       <AppBar
         title="Servers"
-        titleSize="xl"
-        bottomElement={
-          <HStack space="sm" className="items-center">
-            <Button
-              variant="solid"
-              action="primary"
-              size="md"
-              className="h-11 flex-1 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
-              onPress={() => addServerModalRef.current?.present()}
-            >
-              <HStack space="sm" className="items-center justify-center">
-                <Icon as={Plus} size="md" className="text-action" />
-                <Text className="text-sm font-medium text-content-heading">Add Server</Text>
-              </HStack>
-            </Button>
-            {CLOUD_GPU_SUPPORTED && (
-              <Button
-                variant="solid"
-                action="secondary"
-                size="md"
-                className="h-11 w-11 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
-                onPress={() => router.push('/cloud/launch')}
-              >
-                <Icon as={Cloud} size="md" className="text-action" />
-              </Button>
-            )}
-            <Button
-              variant="solid"
-              action="secondary"
-              size="md"
-              className="h-11 w-11 rounded-xl bg-surface-raised data-[focus=true]:bg-surface-base data-[active=true]:bg-surface-base"
-              onPress={handleRefreshServers}
-            >
-              <MotiView
-                animate={{
-                  rotate: isRefreshing ? '360deg' : '0deg',
-                }}
-                transition={{
-                  loop: isRefreshing,
-                  type: 'timing',
-                  duration: 1000,
-                  delay: 0,
-                  repeatReverse: false,
-                }}
-              >
-                <Icon as={RefreshCcw} size="sm" className="text-action" />
-              </MotiView>
-            </Button>
-          </HStack>
-        }
+        titleCount={count}
+        rightElement={<Action icon={Plus} label="Add server" onPress={() => addRef.current?.present()} />}
       />
-
-      <ScrollView className="flex-1">
-        <VStack space="md" className="px-5 pb-6 w-full">
-          {servers.length > 0 || pendingLaunches.length > 0 ? (
-            <>
-              {pendingLaunches.map((launch, index) => (
-                <LaunchCard key={launch.instanceId} launch={launch} index={index} />
-              ))}
-              {/* One hairline container around every row, so the boundary
-                  between two servers is a single line and the latencies form
-                  one column down the right edge. */}
-              {servers.length > 0 ? (
-                <View className="overflow-hidden rounded-[10px] border border-ink/10">
-                  {servers.map((server, index) => (
-                    <ServerCard
-                      key={server.id}
-                      id={server.id}
-                      index={pendingLaunches.length + index}
-                      isFirst={index === 0}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </>
-          ) : (
-            <EmptyState
-              title="Nothing here yet."
-              action={
-                <HStack space="xs" className="items-center">
-                  <Text className="text-sm text-content-tertiary">New to ComfyUI?</Text>
-                  <Link href="/guide" asChild>
-                    <Button variant="link" size="sm" className="h-7 px-0 data-[hover=true]:opacity-70">
-                      <HStack space="xs" className="items-center">
-                        <Text className="text-sm font-medium text-action">Setup Instructions</Text>
-                        <Icon as={ArrowRight} size="xs" className="text-action" />
-                      </HStack>
-                    </Button>
-                  </Link>
-                </HStack>
-              }
-            >
-              Add a server to connect to your ComfyUI instance.
-            </EmptyState>
-          )}
-        </VStack>
-      </ScrollView>
-
-      <AddServerModal ref={addServerModalRef} />
+      <View style={{ flex: 1 }}>
+        <RefreshScrollView
+          refreshing={refreshing}
+          onRefresh={refresh}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: t.layout.gutter,
+            paddingBottom: t.layout.gutter,
+            gap: t.layout.inset,
+          }}
+        >
+          <Field label="Search servers" search value={query} onChange={setQuery} placeholder="Search servers" />
+          {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
+          <View style={{ gap: t.layout.related }}>
+            {filtered.length ? (
+              <View style={{ gap: t.layout.list }}>
+                {filtered.map(({ launch, server }) => {
+                  const key = launch ? `instance-${launch.instanceId}` : server!.id;
+                  return launch && (launch.stage !== 'ready' || !server) ? (
+                    <LaunchCard key={key} launch={launch} onOpen={() => setSetupSelection(launch)} />
+                  ) : (
+                    <ServerCard key={key} id={server!.id} />
+                  );
+                })}
+              </View>
+            ) : searchTerm ? (
+              <View style={{ paddingVertical: t.layout.section, gap: t.layout.label }}>
+                <Copy>No matching servers</Copy>
+                <Copy muted>Try another name or address.</Copy>
+              </View>
+            ) : (
+              <View style={{ gap: t.layout.inset, paddingVertical: t.layout.section }}>
+                <Copy style={{ fontWeight: '500' }}>Connect your ComfyUI server</Copy>
+                <Copy muted>
+                  Already set up on your computer or cloud machine? Add its address to use its workflows from your
+                  phone.
+                </Copy>
+                <Copy muted size="metadata">
+                  Tap + above to add your first server.
+                </Copy>
+              </View>
+            )}
+          </View>
+        </RefreshScrollView>
+      </View>
+      <AddServerModal ref={addRef} />
+      <Sheet open={!!setup} onClose={() => setSetupSelection(null)} title="Setup" centerTitle>
+        {setup && <SetupContent launch={setup} onDestroyed={() => setSetupSelection(null)} />}
+      </Sheet>
     </View>
   );
 }

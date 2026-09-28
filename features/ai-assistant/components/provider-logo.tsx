@@ -1,5 +1,4 @@
-import { Colors } from '@/constants/Colors';
-import { useResolvedTheme } from '@/store/theme';
+import { useDesign } from '@/components/ui/design-system/primitives';
 import { SvgXml } from 'react-native-svg';
 
 import { PROVIDER_LOGOS } from '../provider-logos';
@@ -21,12 +20,11 @@ interface ProviderLogoProps {
  * which isn't one service), so callers should keep their own fallback.
  */
 export function ProviderLogo({ type, size = 20 }: ProviderLogoProps) {
-  const theme = useResolvedTheme();
+  const c = useDesign();
   const xml = PROVIDER_LOGOS[type];
   if (!xml) return null;
 
-  const color =
-    theme === 'dark' ? Colors.dark.typography[800] : Colors.light.typography[800];
+  const color = c.ink;
 
   return <SvgXml xml={xml} width={size} height={size} color={color} />;
 }

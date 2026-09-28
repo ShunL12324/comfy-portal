@@ -1,57 +1,66 @@
 import type { Workflow } from '@/features/workflow/types';
 import type { ModelType } from '@/services/model-url';
 
-export interface TemplateModel {
-  /** Direct download URL, already normalised by services/model-url.ts. */
+export type CloudProvider = 'vast' | 'runpod';
+
+export interface EnvironmentModel {
   url: string;
-  /** Folder under `models/` — decides whether ComfyUI can find the file. */
   type: ModelType;
-  /** Needed when the URL's basename isn't a filename (always so for Civitai). */
   filename?: string;
-  /** For the disk estimate; not every host reports it. */
   sizeBytes?: number;
-  /** Human label, e.g. the Civitai model name. Display only. */
   label?: string;
+  pageUrl?: string;
 }
 
-export interface TemplateWorkflow {
+export interface EnvironmentWorkflow {
   name: string;
-  /**
-   * The workflow itself, not a reference.
-   *
-   * WorkflowRecord is tied to a serverId, and a template is built before its
-   * server exists. Embedding also makes a template self-contained, so exporting
-   * one carries its workflows rather than a set of dangling ids.
-   */
   data: Workflow;
 }
 
-export interface GpuTemplate {
+/** Portable installation recipe. Hardware belongs to a launch, never here. */
+export interface Environment {
   id: string;
   name: string;
-  /** git URLs of custom nodes to clone into `custom_nodes/`. */
+  description: string;
   extensions: string[];
-  workflows: TemplateWorkflow[];
-  models: TemplateModel[];
-  /** Disk to request, GB. Defaults from the model total plus headroom. */
-  disk: number;
-  /** vast's short GPU name, e.g. "RTX 4090". Seeds the offer search. */
-  gpuQuery: string;
-  /**
-   * Ollama models to pull, for workflows whose custom nodes call a local LLM.
-   *
-   * Non-empty selects the Ollama image variant. Those nodes reach Ollama inside
-   * the container, so nothing is published for it.
-   */
+  workflows: EnvironmentWorkflow[];
+  models: EnvironmentModel[];
   ollamaModels?: string[];
   createdAt: string;
   updatedAt: string;
 }
 
-/** Models plus ComfyUI, torch and the image itself. */
+export interface HardwareSelection {
+  provider: CloudProvider;
+  offerId: string;
+  diskGb: number;
+  gpuName: string;
+  gpuCount: number;
+  memoryGb: number;
+  pricePerHour: number;
+  quotedAt: number;
+  /** GPU-only starting rates must never be displayed as a complete invoice. */
+  priceScope: 'instance' | 'gpu-starting';
+}
+
+export interface LaunchSpecification {
+  environment: Environment;
+  hardware: HardwareSelection;
+}
+
 export const DISK_HEADROOM_GB = 40;
 
-export function estimateDiskGb(models: TemplateModel[]): number {
-  const known = models.reduce((sum, m) => sum + (m.sizeBytes ?? 0), 0);
+/** Minimum planning estimate, not a claim that unknown model sizes are zero. */
+export function estimateDiskGb(models: EnvironmentModel[]): number {
+  const known = models.reduce(
+    (sum, model) => sum + (Number.isFinite(model.sizeBytes) && model.sizeBytes! > 0 ? model.sizeBytes! : 0),
+    0,
+  );
   return Math.max(60, Math.ceil(known / 1024 ** 3) + DISK_HEADROOM_GB);
+}
+
+export function totalModelBytes(models: EnvironmentModel[]): number | undefined {
+  if (models.some((model) => model.sizeBytes === undefined || !Number.isFinite(model.sizeBytes) || model.sizeBytes < 0))
+    return undefined;
+  return models.reduce((sum, model) => sum + model.sizeBytes!, 0);
 }

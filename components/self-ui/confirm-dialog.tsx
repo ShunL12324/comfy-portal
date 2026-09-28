@@ -1,15 +1,20 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { HStack } from '@/components/ui/hstack';
-import { Text } from '@/components/ui/text';
-import { Colors } from '@/constants/Colors';
-import { useResolvedTheme } from '@/store/theme';
-import { AnimatePresence, MotiView } from 'moti';
-import React from 'react';
-import { Modal, Pressable, View } from 'react-native';
-
+import { Check } from '@/constants/icons';
+import {
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from '@/components/ui/alert-dialog';
+import { Title, Action, Copy, useDesign } from '@/components/ui/design-system/primitives';
+import { designTokens as t } from '@/constants/design-tokens';
 interface ConfirmDialogProps {
   isOpen: boolean;
+  destructive?: boolean;
+  loading?: boolean;
+  completed?: boolean;
+  error?: string;
   onClose: () => void;
   onConfirm: () => void;
   title: string;
@@ -17,11 +22,13 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   confirmButtonVariant?: 'solid' | 'outline' | 'link';
-  confirmButtonColor?: string; // e.g., 'bg-status-danger'
 }
-
-export const ConfirmDialog = ({
+export function ConfirmDialog({
   isOpen,
+  destructive = false,
+  loading = false,
+  completed = false,
+  error,
   onClose,
   onConfirm,
   title,
@@ -29,81 +36,28 @@ export const ConfirmDialog = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   confirmButtonVariant = 'solid',
-  confirmButtonColor = 'bg-action',
-}: ConfirmDialogProps) => {
-  const theme = useResolvedTheme();
-  const activeTheme = theme ?? 'light';
-
+}: ConfirmDialogProps) {
+  const c = useDesign();
+  const handleClose = () => { if (!loading) onClose(); };
+  const confirm = <Action fill kind={confirmButtonVariant === 'solid' ? 'primary' : confirmButtonVariant === 'outline' ? 'secondary' : 'text'} icon={completed ? Check : undefined} destructive={destructive && !completed} loading={loading} disabled={loading || completed} onPress={onConfirm}>{confirmText}</Action>;
   return (
-    <Modal
-      visible={isOpen}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <View className="flex-1 items-center justify-center p-4">
-        {/* Backdrop */}
-        <AnimatePresence>
-          {isOpen && (
-            <MotiView
-              key="backdrop"
-              from={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              transition={{ type: 'timing', duration: 200 }}
-              className="absolute inset-0 bg-black"
-            >
-              <Pressable style={{ flex: 1 }} onPress={onClose} />
-            </MotiView>
-          )}
-        </AnimatePresence>
-
-        {/* Content */}
-        <AnimatePresence>
-          {isOpen && (
-            <MotiView
-              key="content"
-              from={{ opacity: 0, translateY: 8 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: 8 }}
-              transition={{ type: 'timing', duration: 180 }}
-              style={{
-                backgroundColor: Colors[activeTheme].background[200],
-                width: '100%',
-                maxWidth: 400,
-                borderRadius: 12,
-                overflow: 'hidden',
-              }}
-            >
-              <View className="p-6">
-                <Heading size="sm" className="mb-2 text-content-primary">
-                  {title}
-                </Heading>
-                <Text className="mb-6 text-sm text-content-tertiary">
-                  {description}
-                </Text>
-                <HStack space="sm">
-                  <Button
-                    variant="outline"
-                    onPress={onClose}
-                    className="flex-1 rounded-md bg-surface-sunken py-2"
-                  >
-                    <ButtonText className="text-sm text-content-body">{cancelText}</ButtonText>
-                  </Button>
-                  <Button
-                    variant={confirmButtonVariant}
-                    onPress={onConfirm}
-                    className={`flex-1 rounded-md ${confirmButtonColor} active:opacity-80 py-2`}
-                  >
-                    <ButtonText className="text-sm text-content-inverse">{confirmText}</ButtonText>
-                  </Button>
-                </HStack>
-              </View>
-            </MotiView>
-          )}
-        </AnimatePresence>
-      </View>
-    </Modal>
+    <AlertDialog isOpen={isOpen} onClose={handleClose}>
+      <AlertDialogBackdrop onPress={handleClose} />
+      <AlertDialogContent
+        style={{ padding: t.layout.inset, borderRadius: t.radius.panel, borderWidth: 1, borderColor: c.line, backgroundColor: c.overlay }}
+      >
+        <AlertDialogHeader>
+          <Title compact>{title}</Title>
+        </AlertDialogHeader>
+        <AlertDialogBody>
+          <Copy muted>{description}</Copy>
+          {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
+        </AlertDialogBody>
+        <AlertDialogFooter style={{ flexDirection: 'column', gap: t.layout.related, alignItems: 'stretch' }}>
+          {confirm}
+          <Action kind="secondary" fill disabled={loading} onPress={handleClose}>{cancelText}</Action>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
-};
+}

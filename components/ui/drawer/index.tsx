@@ -21,6 +21,7 @@ import {
 } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
+import { designTokens } from '@/constants/design-tokens';
 
 type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &
   MotionComponentProps<typeof Pressable, ViewStyle, unknown, unknown, unknown>;
@@ -81,7 +82,7 @@ const drawerBackdropStyle = tva({
 });
 
 const drawerContentStyle = tva({
-  base: 'bg-background-0 overflow-scroll border-outline-100 p-6 absolute',
+  base: 'bg-surface-overlay overflow-scroll border-outline-100 p-6 absolute',
   parentVariants: {
     size: {
       sm: 'w-1/4',
@@ -205,7 +206,7 @@ const DrawerBackdrop = React.forwardRef<
         opacity: 0,
       }}
       animate={{
-        opacity: 0.5,
+        opacity: designTokens.opacity.scrim,
       }}
       exit={{
         opacity: 0,

@@ -39,8 +39,13 @@ export function filterRNProps<T extends Record<string, any>>(
   for (const key in props) {
     if (!RN_PROPS.has(key)) {
       // Also flatten style arrays for DOM compatibility
-      if (key === 'style' && Array.isArray(props[key])) {
-        filtered[key] = Object.assign({}, ...props[key].filter(Boolean));
+      if (key === 'style') {
+        const style = Array.isArray(props[key])
+          ? Object.assign({}, ...props[key].flat(Infinity).filter(Boolean))
+          : { ...props[key] };
+        // React Native uses logical pixels; CSS interprets bare numbers as multipliers.
+        if (typeof style.lineHeight === 'number') style.lineHeight = style.lineHeight + 'px';
+        filtered[key] = style;
       } else {
         filtered[key] = props[key];
       }

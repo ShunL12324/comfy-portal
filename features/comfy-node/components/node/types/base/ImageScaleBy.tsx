@@ -39,7 +39,6 @@ export default function ImageScaleBy({ node, workflowId }: ImageScaleByProps) {
           maxValue={8}
           step={0.05}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'scale_by', Number(value))}
-          space={12}
           decimalPlaces={2}
         />
       </SubItem>

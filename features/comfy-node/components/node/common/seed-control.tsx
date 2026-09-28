@@ -1,15 +1,16 @@
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { NativeSegments } from '@/components/ui/design-system/native-controls';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
+import { Copy } from '@/components/ui/design-system/primitives';
 import { useGenerationActions } from '@/features/generation/context/generation-context';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import * as Crypto from 'expo-crypto';
-import { Dice2, Info } from 'lucide-react-native';
+import { Dice2, Info } from '@/constants/icons';
 import { useEffect, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import SubItem from './sub-item';
+import { Pressable } from '@/components/ui/pressable';
 
 /**
  * ComfyUI accepts seeds up to 2^64-1, which JS numbers can't represent
@@ -75,16 +76,7 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
     return () => {
       unregisterNodeHooks(node.id);
     };
-  }, [
-    node.id,
-    randomSeed,
-    isLinked,
-    workflowId,
-    inputKey,
-    registerNodeHooks,
-    unregisterNodeHooks,
-    updateNodeInput,
-  ]);
+  }, [node.id, randomSeed, isLinked, workflowId, inputKey, registerNodeHooks, unregisterNodeHooks, updateNodeInput]);
 
   const applySeed = (value: number) => {
     setSeed(value);
@@ -108,20 +100,21 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
 
   return (
     <SubItem title={title} node={node} dependencies={[inputKey]}>
-      <SegmentedControl
+      <NativeSegments
+        label={title}
         options={['Random', 'Fixed']}
         value={randomSeed ? 'Random' : 'Fixed'}
         onChange={handleModeChange}
       />
-      <View className="mt-2 flex-col gap-1">
-        <View className="flex-row items-center justify-between gap-2">
+      <View className="gap-1 flex-col">
+        <View className="gap-2 flex-row items-center justify-between">
           <Input
             variant="outline"
             size="md"
             isDisabled={randomSeed}
             isInvalid={false}
             isReadOnly={false}
-            className="h-10 flex-1 rounded-lg border-0 bg-surface-raised"
+            className="rounded-md bg-well flex-1 border-0"
           >
             <InputField
               placeholder="Custom Seed"
@@ -129,22 +122,27 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
               onChangeText={(text) => setDraft(text.replace(/[^0-9]/g, ''))}
               onBlur={commitDraft}
               keyboardType="numeric"
-              className="font-mono text-sm"
+              className="font-sans tabular-nums"
             />
           </Input>
-          <TouchableOpacity onPress={() => applySeed(generateRandomSeed())} disabled={randomSeed}>
+          <Pressable
+            className="h-11 w-11 active:opacity-pressed items-center justify-center"
+            accessibilityLabel="Randomize seed"
+            onPress={() => applySeed(generateRandomSeed())}
+            disabled={randomSeed}
+          >
             <View
-              className={`h-10 w-10 items-center justify-center rounded-lg bg-surface-raised ${randomSeed ? 'opacity-50' : ''}`}
+              className={`h-9 w-9 rounded-md bg-surface-raised items-center justify-center ${randomSeed ? 'opacity-disabled' : ''}`}
             >
               <Icon as={Dice2} size="sm" className="text-content-secondary" />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
-        <View className="flex-row items-start gap-2">
-          <Icon as={Info} size="xs" className="mt-[1px] text-content-secondary" />
-          <Text size="sm" className="flex-1 text-xs text-content-secondary">
+        <View className="gap-2 flex-row items-start">
+          <Icon as={Info} size="xs" className="text-content-secondary mt-0.5" />
+          <Copy size="metadata" muted className="flex-1">
             Using the same seed will not trigger image generation again.
-          </Text>
+          </Copy>
         </View>
       </View>
     </SubItem>

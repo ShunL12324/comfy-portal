@@ -1,20 +1,18 @@
-import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { AppBar } from '@/components/layout/app-bar';
-import { StyledTextarea } from '@/components/self-ui/styled-textarea';
+import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
 import { FormInput } from '@/components/self-ui/form-input';
-import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { NumberSlider } from '@/components/self-ui/slider';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
+import { Title, Action, ActionRow, Copy, FieldLabel, useDesign } from '@/components/ui/design-system/primitives';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { ScrollView } from '@/components/ui/scroll-view';
-import { Text } from '@/components/ui/text';
+import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
-import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { ProviderLogo } from '@/features/ai-assistant/components/provider-logo';
-import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import {
   PROVIDER_LABELS,
   PROVIDER_MODEL_HINTS,
@@ -22,19 +20,16 @@ import {
   createLanguageModel,
   requiresEndpoint,
 } from '@/features/ai-assistant/model';
-import {
-  getCatalogDate,
-  getCatalogModels,
-  refreshCatalog,
-} from '@/features/ai-assistant/model-catalog';
+import { getCatalogDate, getCatalogModels, refreshCatalog } from '@/features/ai-assistant/model-catalog';
+import { useAIAssistantStore } from '@/features/ai-assistant/stores/ai-assistant-store';
 import type { AIProviderType } from '@/features/ai-assistant/types';
 import { showToast } from '@/utils/toast';
-import { generateText } from 'ai';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { CircleCheck, CircleX, Pencil, RefreshCw, X } from 'lucide-react-native';
+import { generateText } from 'ai';
+import { CircleCheck, CircleX, Pencil } from '@/constants/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Keyboard } from 'react-native';
+import { designTokens as t } from '@/constants/design-tokens';
 
 /**
  * Sentinel for the trailing "Custom…" row. Prefixed so it can never collide
@@ -43,7 +38,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const CUSTOM_MODEL = '__custom__';
 
 export default function AIAssistantScreen() {
-  const insets = useSafeAreaInsets();
+  const c = useDesign();
   const { provider, setProvider, customPrompt, setCustomPrompt } = useAIAssistantStore();
   const promptSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['90%'], []);
@@ -73,23 +68,18 @@ export default function AIAssistantScreen() {
     try {
       const count = await refreshCatalog();
       setCatalogVersion((v) => v + 1);
-      showToast.success('Updated', `${count} models available`, insets.top + 8);
+      showToast.success('Updated', `${count} models available`);
     } catch (error) {
-      showToast.error(
-        'Failed',
-        error instanceof Error ? error.message : 'Could not reach models.dev',
-        insets.top + 8,
-      );
+      showToast.error('Failed', error instanceof Error ? error.message : 'Could not reach models.dev');
     } finally {
       setIsRefreshingCatalog(false);
     }
-  }, [insets.top]);
+  }, []);
 
   // A saved model id that isn't in the catalogue means the user typed it (or
   // the catalogue has moved on), so the custom field opens on its own.
   const [customModel, setCustomModel] = useState(false);
-  const isCustomModel =
-    customModel || Boolean(modelName && !catalogModels.some((m) => m.id === modelName));
+  const isCustomModel = customModel || Boolean(modelName && !catalogModels.some((m) => m.id === modelName));
 
   /** Fields required to build a working model, per provider type. */
   const isComplete = Boolean(apiKey && modelName && (!needsEndpoint || endpointUrl));
@@ -118,22 +108,22 @@ export default function AIAssistantScreen() {
   const handleSavePrompt = useCallback(() => {
     setCustomPrompt(draftPrompt);
     promptSheetRef.current?.dismiss();
-    showToast.success('Saved', 'Custom prompt saved', insets.top + 8);
-  }, [draftPrompt, setCustomPrompt, insets.top]);
+    showToast.success('Saved', 'Custom prompt saved');
+  }, [draftPrompt, setCustomPrompt]);
 
   const handleSaveProvider = () => {
     if (!isComplete) {
-      showToast.error('Error', 'Please fill in all required fields', insets.top + 8);
+      showToast.error('Error', 'Please fill in all required fields');
       return;
     }
 
     setProvider(draftProvider());
-    showToast.success('Saved', 'API configuration saved', insets.top + 8);
+    showToast.success('Saved', 'API configuration saved');
   };
 
   const handleTestConnection = async () => {
     if (!isComplete) {
-      showToast.error('Error', 'Please fill in all required fields', insets.top + 8);
+      showToast.error('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -141,58 +131,28 @@ export default function AIAssistantScreen() {
     setTestResult(null);
 
     const draft = draftProvider();
-    const started = Date.now();
-    console.log('[ai-test] start', {
-      type: draft.type,
-      model: draft.modelName,
-      endpoint: draft.endpointUrl ?? '(provider default)',
-      keyLength: draft.apiKey.length,
-    });
-
     try {
       // No output cap: a reasoning model would otherwise spend the whole budget
       // on reasoning tokens and return empty content, failing a valid config.
-      const result = await generateText({
+      await generateText({
         model: createLanguageModel({ id: 'test', ...draft }),
         prompt: 'Reply with OK.',
       });
-      console.log('[ai-test] ok', {
-        ms: Date.now() - started,
-        finishReason: result.finishReason,
-        text: result.text.slice(0, 40),
-        usage: result.usage,
-      });
       setTestResult('success');
-      showToast.success('Success', 'Connection test passed', insets.top + 8);
+      showToast.success('Success', 'Connection test passed');
     } catch (error) {
-      // The SDK wraps transport failures, so the useful detail is usually in
-      // `cause` rather than the top-level message.
-      const err = error as any;
-      console.error('[ai-test] failed', {
-        ms: Date.now() - started,
-        name: err?.name,
-        message: err?.message,
-        statusCode: err?.statusCode,
-        url: err?.url,
-        responseBody: typeof err?.responseBody === 'string' ? err.responseBody.slice(0, 300) : undefined,
-        cause: err?.cause?.message ?? err?.cause,
-      });
       setTestResult('error');
-      showToast.error(
-        'Failed',
-        error instanceof Error ? error.message : 'Connection test failed',
-        insets.top + 8,
-      );
+      showToast.error('Failed', error instanceof Error ? error.message : 'Connection test failed');
     } finally {
       setIsTesting(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-surface-base">
+    <View className="bg-surface-base flex-1">
       <AppBar title="AI Assistant" showBack />
       <ScrollView className="flex-1">
-        <VStack className="px-5 pb-8 pt-4" space="sm">
+        <VStack className="px-5 pb-8 pt-2" space="md">
           {/*
             Label sits flush with the other field labels and the control is a
             full-width box, matching FormInput's rhythm. Wrapping these in a
@@ -200,7 +160,9 @@ export default function AIAssistantScreen() {
             the text in by another 16px.
           */}
           <View className="mb-2.5">
-            <Text className="mb-1 text-sm font-medium text-typography-600">Provider</Text>
+            <View className="mb-1">
+              <FieldLabel>Provider</FieldLabel>
+            </View>
             <OptionSelector
               value={type}
               onChange={(next) => {
@@ -219,9 +181,7 @@ export default function AIAssistantScreen() {
                 label: PROVIDER_LABELS[key],
                 icon: <ProviderLogo type={key} />,
                 description:
-                  key === 'openai-compatible'
-                    ? 'Ollama, LM Studio, OpenRouter, or any custom endpoint'
-                    : undefined,
+                  key === 'openai-compatible' ? 'Ollama, LM Studio, OpenRouter, or any custom endpoint' : undefined,
               }))}
               title="Provider"
               showSearch
@@ -255,21 +215,9 @@ export default function AIAssistantScreen() {
             models that existed at build time, so typing one must stay possible.
           */}
           <View className="mb-2.5">
-            <HStack className="mb-1 items-center justify-between">
-              <Text className="text-sm font-medium text-typography-600">Model</Text>
-              {catalogModels.length > 0 && (
-                <Pressable onPress={handleRefreshCatalog} disabled={isRefreshingCatalog}>
-                  <HStack className="items-center" space="xs">
-                    {isRefreshingCatalog ? (
-                      <ActivityIndicator size="small" />
-                    ) : (
-                      <Icon as={RefreshCw} size="xs" className="text-action" />
-                    )}
-                    <Text className="text-sm text-action">Refresh</Text>
-                  </HStack>
-                </Pressable>
-              )}
-            </HStack>
+            <View className="mb-1">
+              <FieldLabel>Model</FieldLabel>
+            </View>
 
             <OptionSelector
               value={isCustomModel ? CUSTOM_MODEL : modelName}
@@ -302,6 +250,8 @@ export default function AIAssistantScreen() {
               ]}
               title="Select a model"
               showSearch={catalogModels.length > 8}
+              onRefresh={handleRefreshCatalog}
+              isRefreshing={isRefreshingCatalog}
             />
 
             {isCustomModel && (
@@ -318,16 +268,18 @@ export default function AIAssistantScreen() {
             )}
 
             {catalogModels.length > 0 && (
-              <Text className="mt-1 text-xs text-content-tertiary">
+              <Copy size="label" muted className="mt-1">
                 {catalogModels.length} tool-capable models as of {getCatalogDate()}.
-              </Text>
+              </Copy>
             )}
           </View>
 
-          <View className="rounded-xl bg-surface-raised p-3">
+          <View className="p-3 rounded-xl" style={{ backgroundColor: c.card }}>
             {/* NumberSlider renders the value itself; a second copy in the
                 header just showed 0.7 twice. */}
-            <Text className="mb-2 text-sm font-medium text-typography-600">Temperature</Text>
+            <View className="mb-1">
+              <FieldLabel>Temperature</FieldLabel>
+            </View>
             <NumberSlider
               value={temperature}
               minValue={0}
@@ -338,81 +290,71 @@ export default function AIAssistantScreen() {
             />
           </View>
 
-          <View className="rounded-xl bg-surface-raised p-3">
+          <View className="p-3 rounded-xl" style={{ backgroundColor: c.card }}>
             <HStack className="mb-2 items-center justify-between">
-              <Text className="text-sm font-medium text-typography-600">Custom Prompt</Text>
+              <FieldLabel>Custom Prompt</FieldLabel>
               <Pressable onPress={handleOpenPromptSheet}>
                 <HStack className="items-center" space="xs">
                   <Icon as={Pencil} size="xs" className="text-action" />
-                  <Text className="text-sm text-action">Edit</Text>
+                  <Copy size="label">Edit</Copy>
                 </HStack>
               </Pressable>
             </HStack>
             <Pressable onPress={handleOpenPromptSheet}>
-              <Text
-                className="text-sm text-content-secondary"
-                numberOfLines={3}
-              >
+              <Copy style={{ color: c.secondary }} numberOfLines={3}>
                 {customPrompt || 'Tap to add custom instructions that will be injected into the system prompt...'}
-              </Text>
+              </Copy>
             </Pressable>
           </View>
 
-          <HStack space="sm" className="mt-2">
-            <Button
-              variant="outline"
-              onPress={handleTestConnection}
-              disabled={isTesting}
-              className="flex-1 rounded-lg"
-            >
-              {isTesting ? (
-                <ActivityIndicator size="small" />
-              ) : testResult === 'success' ? (
-                <ButtonIcon as={CircleCheck} className="text-status-online" />
-              ) : testResult === 'error' ? (
-                <ButtonIcon as={CircleX} className="text-status-danger" />
-              ) : null}
-              <ButtonText>Test</ButtonText>
-            </Button>
-            <Button
-              variant="solid"
-              action="primary"
-              onPress={handleSaveProvider}
-              className="flex-1 rounded-lg"
-            >
-              <ButtonText>Save</ButtonText>
-            </Button>
-          </HStack>
+          <View className="mt-2">
+            <ActionRow>
+              <Action
+                fill
+                kind="secondary"
+                loading={isTesting}
+                disabled={!isComplete}
+                icon={testResult === 'success' ? CircleCheck : testResult === 'error' ? CircleX : undefined}
+                onPress={handleTestConnection}
+              >
+                Test connection
+              </Action>
+              <Action fill kind="primary" disabled={!isComplete} onPress={handleSaveProvider}>
+                Save provider
+              </Action>
+            </ActionRow>
+          </View>
         </VStack>
       </ScrollView>
 
-      <ThemedBottomSheetModal
-        ref={promptSheetRef}
-        snapPoints={snapPoints}
-        enableDynamicSizing={false}
-      >
+      <ThemedBottomSheetModal ref={promptSheetRef} snapPoints={snapPoints} enableDynamicSizing={false}>
         <AdaptiveScrollView>
           <VStack className="px-5 pb-8" space="md">
             <HStack className="items-center justify-between">
-              <Pressable onPress={() => promptSheetRef.current?.dismiss()}>
-                <Icon as={X} size="md" className="text-content-secondary" />
-              </Pressable>
-              <Text className="text-base font-semibold text-content-heading">Custom Prompt</Text>
+              <Title compact>Custom Prompt</Title>
               <Pressable onPress={handleSavePrompt}>
-                <Text className="text-sm font-medium text-action">Save</Text>
+                <Copy style={{ fontWeight: '500' }}>Save</Copy>
               </Pressable>
             </HStack>
 
-            <Text className="text-xs text-content-secondary">
-              Custom instructions injected into the AI system prompt. Use this to guide the AI&apos;s style, language, or focus.
-            </Text>
+            <Copy size="label" style={{ color: c.secondary }}>
+              Custom instructions injected into the AI system prompt. Use this to guide the AI&apos;s style, language,
+              or focus.
+            </Copy>
 
-            <StyledTextarea
-              placeholder="e.g. Always use anime style, prefer warm lighting, output in Japanese..."
-              value={draftPrompt}
-              onChangeText={setDraftPrompt}
-              minHeight={200}
-            />
+            <Textarea
+              size="sm"
+              className="bg-well w-full border-0"
+              style={{ borderRadius: t.radius.control, height: 200 }}
+            >
+              <TextareaInput
+                aria-label="Custom Prompt"
+                placeholder="e.g. Always use anime style, prefer warm lighting, output in Japanese..."
+                value={draftPrompt}
+                onChangeText={setDraftPrompt}
+                style={{ paddingHorizontal: t.layout.rowX, paddingVertical: t.layout.rowY }}
+              />
+            </Textarea>
           </VStack>
         </AdaptiveScrollView>
       </ThemedBottomSheetModal>

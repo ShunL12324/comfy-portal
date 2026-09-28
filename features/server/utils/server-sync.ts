@@ -1,6 +1,11 @@
 import { Model, Server } from '@/features/server/types';
 import { buildServerUrl, fetchWithAuth } from '@/services/network';
 import { Directory, File, Paths } from 'expo-file-system';
+import {
+  systemDeviceNames,
+  serverMetricsFromBody,
+  type ServerMetrics,
+} from '@/features/server/services/server-metrics';
 
 export interface ServerStatus {
   isOnline: boolean;
@@ -119,10 +124,11 @@ export async function scanServerModelsByFolder(
       }
 
       // Skip models in subdirectories for checkpoints folder
-      if (folderName === 'checkpoints' && (
-        model.name.includes('/') || // Unix-style path
-        (isWindowsServer && model.name.includes('\\')) // Windows-style path
-      )) {
+      if (
+        folderName === 'checkpoints' &&
+        (model.name.includes('/') || // Unix-style path
+          (isWindowsServer && model.name.includes('\\'))) // Windows-style path
+      ) {
         continue;
       }
 
@@ -183,10 +189,7 @@ export interface SyncModelsOptions {
  * that scanned cleanly are replaced. Folders outside `options.folders` are
  * carried over untouched, which is what makes a per-picker refresh safe.
  */
-export async function syncServerModels(
-  server: Server,
-  options: SyncModelsOptions = {},
-): Promise<Model[] | null> {
+export async function syncServerModels(server: Server, options: SyncModelsOptions = {}): Promise<Model[] | null> {
   const wanted = options.folders ?? TARGET_MODEL_FOLDERS;
   const cached = server.models ?? [];
 
@@ -261,7 +264,14 @@ async function detectCPE(server: Server): Promise<boolean> {
  */
 export async function checkServerStatus(
   server: Server,
-): Promise<{ status: Server['status']; latency?: number; CPEEnable?: boolean }> {
+): Promise<{
+  status: Server['status'];
+  latency?: number;
+  CPEEnable?: boolean;
+  gpuName?: string;
+  gpuNames?: string[];
+  metrics?: ServerMetrics;
+}> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -276,13 +286,32 @@ export async function checkServerStatus(
       return { status: 'offline' };
     }
 
-    return { status: 'online', latency, CPEEnable: await detectCPE(server) };
+    // Missing or malformed optional hardware data must not erase the last known
+    // device, or turn a successful reachability probe into an offline result.
+    let gpuNames: string[] | undefined;
+    let metrics: ServerMetrics | undefined;
+    try {
+      const body = await response.json();
+      gpuNames = systemDeviceNames(body);
+      metrics = serverMetricsFromBody(body, latency);
+    } catch {
+      // The connection still answered; keep its cached hardware observation.
+    }
+    return {
+      status: 'online',
+      latency,
+      CPEEnable: await detectCPE(server),
+      gpuName: gpuNames?.[0],
+      gpuNames,
+      ...(metrics ? { metrics } : {}),
+    };
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
       console.log(`[${server.name}] Server check timed out.`);
     } else {
-      console.error(`[${server.name}] Error during server check:`, error);
+      // Unreachable servers are an expected status, not an application exception.
+      if (__DEV__) console.debug(`[${server.name}] Server is unreachable.`);
     }
     return { status: 'offline' };
   }

@@ -12,4 +12,6 @@ export interface OptionSelectorProps<T extends string> {
   title?: string;
   showSearch?: boolean;
   searchPlaceholder?: string;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }

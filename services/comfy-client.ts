@@ -117,7 +117,7 @@ export class ComfyClient {
   private token?: string;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed: boolean = false;
 
   // Multi-prompt tracking: each queued prompt gets its own slot
@@ -125,7 +125,7 @@ export class ComfyClient {
   // The "active" prompt is the one currently shown in the UI (latest queued)
   private activePromptId: string | null = null;
   private readonly TIMEOUT_MS = 600_000; // 10 minutes with no activity
-  private timeoutCheckInterval: NodeJS.Timeout | null = null;
+  private timeoutCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   /** Persistent callback for queue status updates — fires on every WS 'status' message */
   onQueueUpdate?: (queueRemaining: number) => void;
@@ -650,9 +650,10 @@ export class ComfyClient {
     const ext = filename.split('.').pop() || 'png';
     const uniqueFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
+    await FileSystem.makeDirectoryAsync(FileSystem.cacheDirectory + 'comfy-downloads', { intermediates: true });
     const downloadResumable = FileSystem.createDownloadResumable(
       url,
-      FileSystem.documentDirectory + uniqueFilename,
+      FileSystem.cacheDirectory + 'comfy-downloads/' + uniqueFilename,
       {},
       (downloadProgress) => {
         if (callbacks?.onDownloadProgress) {
@@ -684,6 +685,8 @@ export class ComfyClient {
   async fetchAndDownloadResults(
     promptId: string,
     callbacks: ProgressCallback,
+    savedOutputIds: Set<string> = new Set(),
+    onOutput?: (uri: string, sourceId: string) => Promise<void>,
   ): Promise<{ found: boolean; mediaUrls: string[] }> {
     let entry: any;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -714,12 +717,16 @@ export class ComfyClient {
     const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
 
     for (const media of mediaToDownload) {
+      const sourceId = JSON.stringify([media.filename, media.subfolder ?? '', media.type ?? 'output']);
+      if (savedOutputIds.has(sourceId)) continue;
       const mediaUrl = await this.downloadMedia(
         media.filename,
         media.subfolder,
         media.type,
         callbacks,
       );
+      await onOutput?.(mediaUrl, sourceId);
+      savedOutputIds.add(sourceId);
       mediaUrls.push(mediaUrl);
     }
 

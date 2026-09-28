@@ -1,47 +1,50 @@
 import { AppBar } from '@/components/layout/app-bar';
-import { Button, ButtonText } from '@/components/ui/button';
-import { HStack } from '@/components/ui/hstack';
+import { Action, Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
-import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
+import { Spinner } from '@/components/ui/spinner';
+import { DeleteAlert } from '@/features/generation/components/history-drawer/delete-alert';
+import { HistoryItem } from '@/features/generation/components/history-drawer/history-item';
 import { MediaActions } from '@/features/generation/components/media-preview/media-actions';
+import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
 import { loadHistoryMedia } from '@/services/image-storage';
+import * as MediaLibrary from '@/services/media-library';
 import { showToast } from '@/utils/toast';
 import { File } from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
-import { Download, Share, Trash2, X } from 'lucide-react-native';
+import * as Sharing from 'expo-sharing';
+import { Download, Share, Trash2, X } from '@/constants/icons';
 import { AnimatePresence, MotiView } from 'moti';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BackHandler,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DeleteAlert } from '@/features/generation/components/history-drawer/delete-alert';
-import { HistoryItem } from '@/features/generation/components/history-drawer/history-item';
+import { designTokens as t } from '@/constants/design-tokens';
+import { Pressable } from '@/components/ui/pressable';
 
 const NUM_COLUMNS = 3;
-const GRID_GAP = 4;
-const HORIZONTAL_PADDING = 16;
+const GRID_GAP = t.layout.label;
+const HORIZONTAL_PADDING = t.layout.gutter;
 
 const listContentStyle = {
   paddingHorizontal: HORIZONTAL_PADDING - GRID_GAP / 2,
-  paddingBottom: 40,
+  paddingBottom: t.layout.section,
 };
 
 export default function HistoryGalleryPage() {
   const { serverId, workflowId } = useLocalSearchParams<{ serverId: string; workflowId: string }>();
   const insets = useSafeAreaInsets();
+  const c = useDesign();
   const { width: screenWidth } = useWindowDimensions();
 
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
   const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
@@ -52,10 +55,8 @@ export default function HistoryGalleryPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [showMediaActions, setShowMediaActions] = useState(false);
-  // Read once when the pager mounts. Kept out of state because FlatList only
-  // honours `initialScrollIndex` on mount, and feeding it a value that moves
-  // while the user swipes invites it to jump back.
-  const initialPreviewIndexRef = useRef(0);
+  // Hold the opening index while the pager is mounted; swiping updates only previewIndex.
+  const [initialPreviewIndex, setInitialPreviewIndex] = useState(0);
   const previewUrl = mediaItems[previewIndex]?.url;
 
   // The preview is an in-tree overlay rather than a Modal, so Android's back
@@ -75,40 +76,60 @@ export default function HistoryGalleryPage() {
     return () => subscription.remove();
   }, [isPreviewOpen, closePreview]);
 
-  // Stable callback refs to avoid re-renders
-  const onItemPressRef = useRef<(url: string) => void>(() => {});
-  const onItemLongPressRef = useRef<(url: string) => void>(() => {});
-
-  onItemPressRef.current = (url: string) => {
-    if (isSelectionMode) {
-      setSelectedMedia((prev) => {
-        const next = new Set(prev);
+  const onItemPress = useCallback(
+    (url: string) => {
+      if (isSelectionMode) {
+        const next = new Set(selectedMedia);
         if (next.has(url)) next.delete(url);
         else next.add(url);
-        if (next.size === 0) setIsSelectionMode(false);
-        return next;
-      });
-    } else {
-      const index = Math.max(
-        mediaItems.findIndex((item) => item.url === url),
-        0,
-      );
-      initialPreviewIndexRef.current = index;
-      setPreviewIndex(index);
-      setIsPreviewOpen(true);
-    }
-  };
-
-  onItemLongPressRef.current = (url: string) => {
+        setSelectedMedia(next);
+        if (!next.size) setIsSelectionMode(false);
+      } else {
+        const index = Math.max(
+          mediaItems.findIndex((item) => item.url === url),
+          0,
+        );
+        setInitialPreviewIndex(index);
+        setPreviewIndex(index);
+        setIsPreviewOpen(true);
+      }
+    },
+    [isSelectionMode, selectedMedia, mediaItems],
+  );
+  const onItemLongPress = useCallback((url: string) => {
     setIsSelectionMode(true);
     setSelectedMedia(new Set([url]));
-  };
+  }, []);
 
-  // Load data on mount
-  useEffect(() => {
-    if (serverId && workflowId) {
-      loadHistoryMedia(serverId, workflowId).then(setMediaItems);
+  const reload = async () => {
+    setLoaded(false);
+    try {
+      setMediaItems(await loadHistoryMedia(serverId, workflowId));
+      setLoadError('');
+    } catch {
+      setLoadError('Saved results could not be loaded.');
+    } finally {
+      setLoaded(true);
     }
+  };
+  useEffect(() => {
+    let active = true;
+    loadHistoryMedia(serverId, workflowId)
+      .then((items) => {
+        if (active) {
+          setMediaItems(items);
+          setLoadError('');
+        }
+      })
+      .catch(() => {
+        if (active) setLoadError('Saved results could not be loaded.');
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, [serverId, workflowId]);
 
   const exitSelectionMode = useCallback(() => {
@@ -120,8 +141,16 @@ export default function HistoryGalleryPage() {
     if (!workflowId || selectedMedia.size === 0) return;
     try {
       for (const url of selectedMedia) {
-        try { new File(url).delete(); } catch { /* ignore */ }
-        try { new File(`${url}.json`).delete(); } catch { /* ignore */ }
+        try {
+          new File(url).delete();
+        } catch {
+          /* ignore */
+        }
+        try {
+          new File(`${url}.json`).delete();
+        } catch {
+          /* ignore */
+        }
       }
       const updatedMedia = await loadHistoryMedia(serverId, workflowId);
       setMediaItems(updatedMedia);
@@ -129,7 +158,7 @@ export default function HistoryGalleryPage() {
       setIsSelectionMode(false);
       setIsDeleteAlertOpen(false);
     } catch {
-      showToast.error('Delete Failed', 'Failed to delete media', insets.top + 8);
+      showToast.error('Delete Failed', 'Failed to delete media');
     }
   }, [selectedMedia, serverId, workflowId, insets.top]);
 
@@ -138,18 +167,20 @@ export default function HistoryGalleryPage() {
     try {
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
-        showToast.error('Not available', 'Sharing is not supported on this device', insets.top + 8);
+        showToast.error('Not available', 'Sharing is not supported on this device');
         return;
       }
       await Sharing.shareAsync(selectedMedia.values().next().value!);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [insets.top, selectedMedia]);
 
   const handleSave = useCallback(async () => {
     if (selectedMedia.size === 0) return;
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status !== 'granted') {
-      showToast.error('Permission required', 'Please allow access to save media', insets.top + 8);
+      showToast.error('Permission required', 'Please allow access to save media');
       return;
     }
     let savedCount = 0;
@@ -158,11 +189,11 @@ export default function HistoryGalleryPage() {
         await MediaLibrary.saveToLibraryAsync(url);
         savedCount++;
       }
-      showToast.success('Saved', `Saved ${savedCount} item${savedCount > 1 ? 's' : ''} to Photos`, insets.top + 8);
+      showToast.success('Saved', `Saved ${savedCount} item${savedCount > 1 ? 's' : ''} to Photos`);
       setIsSelectionMode(false);
       setSelectedMedia(new Set());
     } catch {
-      showToast.error('Save Failed', 'Failed to save some media', insets.top + 8);
+      showToast.error('Save Failed', 'Failed to save some media');
     }
   }, [insets.top, selectedMedia]);
 
@@ -195,88 +226,64 @@ export default function HistoryGalleryPage() {
           index={index}
           isSelectionMode={isSelectionMode}
           isSelected={selectedMedia.has(item.url)}
-          onPress={onItemPressRef.current}
-          onLongPress={onItemLongPressRef.current}
+          onPress={onItemPress}
+          onLongPress={onItemLongPress}
         />
       </View>
     ),
-    [isSelectionMode, selectedMedia],
+    [isSelectionMode, selectedMedia, onItemPress, onItemLongPress],
   );
 
   const hasSelection = selectedMedia.size > 0;
 
-  const rightElement = useMemo(() => {
-    return (
-      <HStack className="items-center" space="xs">
-        <Button
-          variant="link"
-          className="h-9 w-9 rounded-xl p-0"
-          hitSlop={4}
-          onPress={handleShare}
-          disabled={!isSelectionMode || !hasSelection}
-          style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
-          pointerEvents={isSelectionMode ? 'auto' : 'none'}
-        >
-          <Icon as={Share} size="md" className="text-action" />
-        </Button>
-        <Button
-          variant="link"
-          className="h-9 w-9 rounded-xl p-0"
-          hitSlop={4}
-          onPress={handleSave}
-          disabled={!isSelectionMode || !hasSelection}
-          style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
-          pointerEvents={isSelectionMode ? 'auto' : 'none'}
-        >
-          <Icon as={Download} size="md" className="text-action" />
-        </Button>
-        <Button
-          variant="link"
-          className="h-9 w-9 rounded-xl p-0"
-          hitSlop={4}
-          onPress={() => setIsDeleteAlertOpen(true)}
-          disabled={!isSelectionMode || !hasSelection}
-          style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
-          pointerEvents={isSelectionMode ? 'auto' : 'none'}
-        >
-          <Icon as={Trash2} size="md" className="text-status-danger" />
-        </Button>
-        {isSelectionMode ? (
-          <Button
-            variant="solid"
-            size="xs"
-            onPress={exitSelectionMode}
-            className="ml-1 rounded-lg bg-action"
-            style={{ width: 60 }}
-          >
-            <ButtonText className="text-xs font-semibold">Done</ButtonText>
-          </Button>
-        ) : (
-          <Button
-            variant="solid"
-            size="xs"
-            onPress={() => setIsSelectionMode(true)}
-            className="ml-1 rounded-lg bg-surface-sunken"
-            style={{ width: 60, borderWidth: 1, borderColor: 'transparent' }}
-          >
-            <ButtonText className="text-xs font-medium text-content-body">Select</ButtonText>
-          </Button>
-        )}
-      </HStack>
-    );
-  }, [isSelectionMode, hasSelection, handleShare, handleSave, exitSelectionMode]);
+  const rightElement = (
+    <Action kind="text" small onPress={isSelectionMode ? exitSelectionMode : () => setIsSelectionMode(true)}>
+      {isSelectionMode ? 'Done' : 'Select'}
+    </Action>
+  );
 
   return (
-    <View className="flex-1 bg-surface-base">
-      <AppBar
-        title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
-        titleSize="sm"
-        rightElement={rightElement}
-      />
+    <View collapsable={false} className="bg-surface-base flex-1">
+      <View collapsable={false}>
+        <AppBar
+          title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
+          titleSize="sm"
+          rightElement={rightElement}
+          bottomElement={
+            isSelectionMode ? (
+              <Row style={{ gap: t.layout.related }}>
+                <Action kind="secondary" icon={Share} disabled={!hasSelection} onPress={handleShare}>
+                  Share
+                </Action>
+                <Action kind="secondary" icon={Download} disabled={!hasSelection} onPress={handleSave}>
+                  Save
+                </Action>
+                <Action kind="text" icon={Trash2} disabled={!hasSelection} onPress={() => setIsDeleteAlertOpen(true)}>
+                  Delete
+                </Action>
+              </Row>
+            ) : undefined
+          }
+        />
+      </View>
 
       {/* Grid */}
       <FlatList
         data={mediaItems}
+        ListEmptyComponent={
+          <View style={{ padding: t.layout.inset }}>
+            {!loaded ? (
+              <Spinner />
+            ) : loadError ? (
+              <View style={{ gap: t.layout.related }}>
+                <Copy>{loadError}</Copy>
+                <Action onPress={reload}>Try again</Action>
+              </View>
+            ) : (
+              <Copy muted>No saved results for this workflow yet.</Copy>
+            )}
+          </View>
+        }
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         numColumns={NUM_COLUMNS}
@@ -313,7 +320,7 @@ export default function HistoryGalleryPage() {
             exit={{ opacity: 0 }}
             transition={{ type: 'timing', duration: 150 }}
             exitTransition={{ type: 'timing', duration: 150, delay: 120 }}
-            style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: 'black' }]}
+            style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: c.media }]}
           >
             <MotiView
               from={{ opacity: 0, scale: 0.92 }}
@@ -335,7 +342,7 @@ export default function HistoryGalleryPage() {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={keyExtractor}
-                initialScrollIndex={initialPreviewIndexRef.current}
+                initialScrollIndex={initialPreviewIndex}
                 getItemLayout={(_, index) => ({
                   length: screenWidth,
                   offset: screenWidth * index,
@@ -355,29 +362,28 @@ export default function HistoryGalleryPage() {
                 <View
                   pointerEvents="none"
                   style={{ position: 'absolute', top: insets.top + 12, left: 12, zIndex: 30 }}
-                  className="min-w-[52px] items-center rounded-full bg-black/40 px-2.5 py-1.5"
+                  className="bg-media/40 px-2.5 py-1.5 min-w-[52px] items-center rounded-full"
                 >
-                  <Text className="text-xs font-medium text-white">
+                  <Copy size="label" style={{ fontWeight: '500', color: c.onMedia }}>
                     {previewIndex + 1}/{mediaItems.length}
-                  </Text>
+                  </Copy>
                 </View>
               )}
 
-              <TouchableOpacity
-                activeOpacity={0.5}
+              <Pressable
                 onPress={closePreview}
+                className="active:opacity-pressed bg-media/30"
                 style={{
                   position: 'absolute',
                   top: insets.top + 12,
                   right: 12,
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderRadius: 8,
-                  padding: 8,
+                  borderRadius: t.radius.control,
+                  padding: t.layout.related,
                   zIndex: 30,
                 }}
               >
-                <Icon as={X} size="sm" className="text-white" />
-              </TouchableOpacity>
+                <Icon as={X} size="sm" className="text-on-media" />
+              </Pressable>
             </MotiView>
 
             {/* Inside the overlay so it shares the stacking context: the panel

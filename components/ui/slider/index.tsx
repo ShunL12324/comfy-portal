@@ -24,7 +24,7 @@ export const UISlider = createSlider({
 cssInterop(UISlider.Track, { className: 'style' });
 
 const sliderStyle = tva({
-  base: 'justify-center items-center data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-none',
+  base: 'justify-center items-center data-[disabled=true]:opacity-disabled data-[disabled=true]:web:pointer-events-none',
   variants: {
     orientation: {
       horizontal: 'w-full',

@@ -1,3 +1,5 @@
+import { createDurableStorage } from '@/services/durable-storage';
+import type { Workflow } from '@/features/workflow/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -17,15 +19,18 @@ export interface PendingJob {
   serverId: string;
   workflowId: string;
   queuedAt: number;
+  workflowSnapshot?: Workflow;
 }
 
 interface PendingJobsState {
   jobs: PendingJob[];
   addJob: (job: PendingJob) => void;
-  removeJob: (promptId: string) => void;
+  removeJob: (serverId: string, promptId: string) => void;
   /** Correct the id in place when the server assigns one we didn't pick. */
-  replaceJobId: (oldPromptId: string, newPromptId: string) => void;
+  replaceJobId: (serverId: string, oldPromptId: string, newPromptId: string) => void;
 }
+
+export const pendingJobStorage = createDurableStorage(AsyncStorage);
 
 export const usePendingJobsStore = create<PendingJobsState>()(
   persist(
@@ -34,24 +39,34 @@ export const usePendingJobsStore = create<PendingJobsState>()(
 
       addJob: (job) =>
         set((state) => ({
-          jobs: [...state.jobs.filter((j) => j.promptId !== job.promptId), job],
+          jobs: [
+            ...state.jobs.filter((j) => j.serverId !== job.serverId || j.promptId !== job.promptId),
+            {
+              ...job,
+              workflowSnapshot: job.workflowSnapshot ? JSON.parse(JSON.stringify(job.workflowSnapshot)) : undefined,
+            },
+          ],
         })),
 
-      removeJob: (promptId) =>
+      removeJob: (serverId, promptId) =>
         set((state) => ({
-          jobs: state.jobs.filter((j) => j.promptId !== promptId),
+          jobs: state.jobs.filter((j) => j.serverId !== serverId || j.promptId !== promptId),
         })),
 
-      replaceJobId: (oldPromptId, newPromptId) =>
+      replaceJobId: (serverId, oldPromptId, newPromptId) =>
         set((state) => ({
-          jobs: state.jobs.map((j) =>
-            j.promptId === oldPromptId ? { ...j, promptId: newPromptId } : j,
-          ),
+          jobs: !state.jobs.some((j) => j.serverId === serverId && j.promptId === oldPromptId)
+            ? state.jobs
+            : state.jobs
+                .filter((j) => oldPromptId === newPromptId || j.serverId !== serverId || j.promptId !== newPromptId)
+                .map((j) =>
+                  j.serverId === serverId && j.promptId === oldPromptId ? { ...j, promptId: newPromptId } : j,
+                ),
         })),
     }),
     {
       name: 'pending-jobs-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => pendingJobStorage),
     },
   ),
 );

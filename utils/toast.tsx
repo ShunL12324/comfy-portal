@@ -1,9 +1,11 @@
+import { useDesign } from '@/components/ui/design-system/primitives';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { useResolvedTheme } from '@/store/theme';
+import { designTokens as t, type DesignColors } from '@/constants/design-tokens';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react-native';
 import { StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * Props for custom toast components
@@ -35,96 +37,83 @@ interface ThemedStyles {
   infoAccent: TextStyle;
 }
 
-/**
- * Toast configuration options
- */
-interface ToastOptions {
-  type: 'success' | 'error' | 'info';
-  text1: string;
-  text2?: string;
-  position: 'top' | 'bottom';
-  visibilityTime: number;
-  topOffset: number;
-}
 
 /**
  * Generates theme-specific styles for toast components
  */
-const getThemedStyles = (isDark: boolean): ThemedStyles =>
+const getThemedStyles = (c: DesignColors): ThemedStyles =>
   StyleSheet.create({
     container: {
-      marginHorizontal: 16,
+      marginHorizontal: t.layout.inset,
       minWidth: 320,
-      borderRadius: 10,
-      paddingVertical: 10,
-      paddingBottom: 20,
-      paddingHorizontal: 14,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.2 : 0.08,
-      shadowRadius: 4,
-      elevation: 3,
+      borderRadius: t.radius.panel,
+      paddingVertical: t.layout.rowY,
+      paddingHorizontal: t.layout.rowX,
     },
     successContainer: {
-      backgroundColor: isDark ? '#1c1c1c' : '#F0FDF4',
+      backgroundColor: c.overlay,
     },
     errorContainer: {
-      backgroundColor: isDark ? '#1c1c1c' : '#FEF2F2',
+      backgroundColor: c.overlay,
     },
     infoContainer: {
-      backgroundColor: isDark ? '#1c1c1c' : '#F0F9FF',
+      backgroundColor: c.overlay,
     },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',
     },
     icon: {
-      marginTop: 2,
-      marginRight: 10,
+      // Centres the control-size icon on the title's first line.
+      marginTop: (t.leading.body - t.icon.control) / 2,
+      marginRight: t.layout.related,
     },
     content: {
       flex: 1,
     },
     title: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontFamily: t.font.semibold,
+      fontSize: t.type.body,
+      lineHeight: t.leading.body,
+      fontWeight: '400',
       letterSpacing: 0.1,
-      marginBottom: 2,
+      marginBottom: t.layout.label,
     },
     message: {
-      fontSize: 12,
-      lineHeight: 16,
-      opacity: isDark ? 0.9 : 0.85,
+      fontFamily: t.font.sans,
+      fontSize: t.type.label,
+      lineHeight: t.leading.label,
+      color: c.secondary,
       letterSpacing: 0.1,
     },
     successText: {
-      color: isDark ? '#ffffff' : '#166534',
+      color: c.ink,
     },
     successAccent: {
-      color: isDark ? '#4ade80' : '#166534',
+      color: c.ink,
     },
     errorText: {
-      color: isDark ? '#ffffff' : '#991b1b',
+      color: c.ink,
     },
     errorAccent: {
-      color: isDark ? '#f87171' : '#991b1b',
+      color: c.danger,
     },
     infoText: {
-      color: isDark ? '#ffffff' : '#075985',
+      color: c.ink,
     },
     infoAccent: {
-      color: isDark ? '#0D9DE3' : '#075985',
+      color: c.ink,
     },
   });
 
 /**
  * Toast bodies. Declared as named components rather than inline in the config
- * object: they call useResolvedTheme, and a lowercase key made the hooks lint
+ * object: they call useDesign, and a lowercase key made the hooks lint
  * read them as plain functions calling a hook illegally.
  */
 const SuccessToast = ({ text1, text2 }: CustomToastProps) => {
-    const theme = useResolvedTheme();
-    const styles = getThemedStyles(theme === 'dark');
+    const c = useDesign();
+    const styles = getThemedStyles(c);
 
     return (
       <View style={[styles.container, styles.successContainer]}>
@@ -137,7 +126,7 @@ const SuccessToast = ({ text1, text2 }: CustomToastProps) => {
           <View style={styles.content}>
             <Text style={[styles.title, styles.successText]}>{text1}</Text>
             {text2 && (
-              <Text style={[styles.message, styles.successText]}>{text2}</Text>
+              <Text style={styles.message}>{text2}</Text>
             )}
           </View>
         </View>
@@ -146,8 +135,8 @@ const SuccessToast = ({ text1, text2 }: CustomToastProps) => {
 };
 
 const ErrorToast = ({ text1, text2 }: CustomToastProps) => {
-    const theme = useResolvedTheme();
-    const styles = getThemedStyles(theme === 'dark');
+    const c = useDesign();
+    const styles = getThemedStyles(c);
 
     return (
       <View style={[styles.container, styles.errorContainer]}>
@@ -160,7 +149,7 @@ const ErrorToast = ({ text1, text2 }: CustomToastProps) => {
           <View style={styles.content}>
             <Text style={[styles.title, styles.errorText]}>{text1}</Text>
             {text2 && (
-              <Text style={[styles.message, styles.errorText]}>{text2}</Text>
+              <Text style={styles.message}>{text2}</Text>
             )}
           </View>
         </View>
@@ -169,8 +158,8 @@ const ErrorToast = ({ text1, text2 }: CustomToastProps) => {
 };
 
 const InfoToast = ({ text1, text2 }: CustomToastProps) => {
-    const theme = useResolvedTheme();
-    const styles = getThemedStyles(theme === 'dark');
+    const c = useDesign();
+    const styles = getThemedStyles(c);
 
     return (
       <View style={[styles.container, styles.infoContainer]}>
@@ -179,7 +168,7 @@ const InfoToast = ({ text1, text2 }: CustomToastProps) => {
           <View style={styles.content}>
             <Text style={[styles.title, styles.infoText]}>{text1}</Text>
             {text2 && (
-              <Text style={[styles.message, styles.infoText]}>{text2}</Text>
+              <Text style={styles.message}>{text2}</Text>
             )}
           </View>
         </View>
@@ -201,16 +190,14 @@ export const showToast = {
    * Shows a success toast message
    * @param title - The main message to display
    * @param message - Optional secondary message
-   * @param topOffset - Optional offset from the top of the screen
    */
-  success: (title: string, message?: string, topOffset?: number): void => {
+  success: (title: string, message?: string): void => {
     Toast.show({
       type: 'success',
       text1: title,
       text2: message,
       position: 'top',
       visibilityTime: 3000,
-      topOffset: topOffset ?? 16,
     });
   },
 
@@ -218,16 +205,14 @@ export const showToast = {
    * Shows an error toast message
    * @param title - The main message to display
    * @param message - Optional secondary message
-   * @param topOffset - Optional offset from the top of the screen
    */
-  error: (title: string, message?: string, topOffset?: number): void => {
+  error: (title: string, message?: string): void => {
     Toast.show({
       type: 'error',
       text1: title,
       text2: message,
       position: 'top',
       visibilityTime: 3000,
-      topOffset: topOffset ?? 16,
     });
   },
 
@@ -235,18 +220,22 @@ export const showToast = {
    * Shows an info toast message
    * @param title - The main message to display
    * @param message - Optional secondary message
-   * @param topOffset - Optional offset from the top of the screen
    */
-  info: (title: string, message?: string, topOffset?: number): void => {
+  info: (title: string, message?: string): void => {
     Toast.show({
       type: 'info',
       text1: title,
       text2: message,
       position: 'top',
       visibilityTime: 3000,
-      topOffset: topOffset ?? 16,
     });
   },
 };
 
 export { toastConfig };
+
+/** Every native modal host shares the same safe-area positioning contract. */
+export function AppToast() {
+  const insets = useSafeAreaInsets();
+  return <Toast config={toastConfig} topOffset={insets.top + 8} bottomOffset={insets.bottom + 8} />;
+}

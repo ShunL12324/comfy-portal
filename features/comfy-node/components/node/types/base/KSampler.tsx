@@ -26,7 +26,6 @@ export default function KSampler({ node, workflowId }: KSamplerProps) {
           maxValue={100}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-          space={12}
         />
       </SubItem>
       <SubItem title="CFG">
@@ -36,7 +35,6 @@ export default function KSampler({ node, workflowId }: KSamplerProps) {
           maxValue={30}
           step={0.5}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'cfg', Number(value))}
-          space={12}
           decimalPlaces={1}
         />
       </SubItem>
@@ -59,7 +57,6 @@ export default function KSampler({ node, workflowId }: KSamplerProps) {
           maxValue={1}
           step={0.01}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'denoise', Number(value))}
-          space={12}
           decimalPlaces={2}
         />
       </SubItem>

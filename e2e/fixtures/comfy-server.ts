@@ -1,4 +1,5 @@
-import type { Page, Route } from '@playwright/test';
+import { Buffer } from 'node:buffer';
+import type { Page, Route, WebSocketRoute } from '@playwright/test';
 
 /**
  * A stand-in ComfyUI server.
@@ -49,6 +50,12 @@ interface InstallOptions {
 }
 
 export async function installMockComfyServer(page: Page, options: InstallOptions = {}) {
+  let socket: WebSocketRoute | undefined;
+  await page.routeWebSocket('ws://' + MOCK_HOST + ':' + MOCK_PORT + '/ws**', (route) => {
+    if (options.offline) { route.close(); return; }
+    socket = route;
+    route.send(JSON.stringify({ type: 'status', data: { status: { exec_info: { queue_remaining: 0 } } } }));
+  });
   const json = (route: Route, body: unknown) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
@@ -75,6 +82,14 @@ export async function installMockComfyServer(page: Page, options: InstallOptions
 
     if (path === '/object_info') return json(route, OBJECT_INFO);
 
+    // Model catalogue in ComfyUI's /experiment/models shape: the folder list,
+    // then each folder's files. A non-array here made model sync throw.
+    if (path === '/experiment/models') return json(route, [{ name: 'checkpoints', folders: [] }]);
+    if (path.startsWith('/experiment/models/')) {
+      const folder = decodeURIComponent(path.slice('/experiment/models/'.length));
+      return json(route, folder === 'checkpoints' ? CHECKPOINTS.map((name) => ({ name, pathIndex: 0 })) : []);
+    }
+
     // Model folder listings, used for preview images.
     if (path.startsWith('/models')) return json(route, path === '/models' ? ['checkpoints'] : CHECKPOINTS);
 
@@ -82,6 +97,7 @@ export async function installMockComfyServer(page: Page, options: InstallOptions
     if (path === '/queue') return json(route, { queue_running: [], queue_pending: [] });
 
     if (path === '/prompt' && route.request().method() === 'POST') {
+      socket?.send(JSON.stringify({ type: 'status', data: { status: { exec_info: { queue_remaining: 1 } } } }));
       return json(route, { prompt_id: 'e2e-prompt-1', number: 1, node_errors: {} });
     }
 

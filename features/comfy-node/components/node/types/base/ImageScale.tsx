@@ -1,6 +1,6 @@
 import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { NumberInput } from '@/components/self-ui/number-input';
-import { SegmentedControl } from '@/components/self-ui/segmented-control';
+import { NativeSegments } from '@/components/ui/design-system/native-controls';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
@@ -56,7 +56,8 @@ export default function ImageScale({ node, serverId, workflowId }: ImageScaleNod
         />
       </SubItem>
       <SubItem title="crop" node={node} dependencies={['crop']}>
-        <SegmentedControl
+        <NativeSegments
+          label="crop"
           options={['disabled', 'center']}
           value={node.inputs.crop}
           onChange={(value) => {

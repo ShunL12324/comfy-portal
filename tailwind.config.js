@@ -3,6 +3,8 @@
 // which exports the same plugin but ships ESM only — Node can't require() it
 // from a config file. This is the sole remaining reason that package is a
 // dependency; every other call site uses the utils build.
+const { radius } = require('./constants/design-shape.json');
+const { designTokens } = require('./constants/design-tokens');
 const gluestackPlugin = require('@gluestack-ui/nativewind-utils/tailwind-plugin');
 
 module.exports = {
@@ -16,7 +18,14 @@ module.exports = {
     },
   ],
   theme: {
+    // All corner utilities share the product radius; full is reserved for circular geometry.
+    borderRadius: {
+      none: '0px',
+      ...Object.fromEntries(['DEFAULT', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].map((key) => [key, `${radius}px`])),
+      full: '9999px',
+    },
     extend: {
+      spacing: Object.fromEntries(Object.entries(designTokens.icon).map(([role, size]) => [`icon-${role}`, `${size}px`])),
       colors: {
         primary: {
           0: 'rgb(var(--color-primary-0)/<alpha-value>)',
@@ -128,9 +137,9 @@ module.exports = {
           800: 'rgb(var(--color-typography-800)/<alpha-value>)',
           900: 'rgb(var(--color-typography-900)/<alpha-value>)',
           950: 'rgb(var(--color-typography-950)/<alpha-value>)',
-          white: '#FFFFFF',
-          gray: '#D4D4D4',
-          black: '#181718',
+          white: 'rgb(var(--surface-role-onMedia)/<alpha-value>)',
+          gray: 'rgb(var(--surface-role-muted)/<alpha-value>)',
+          black: 'rgb(var(--surface-role-media)/<alpha-value>)',
         },
         outline: {
           0: 'rgb(var(--color-outline-0)/<alpha-value>)',
@@ -164,8 +173,8 @@ module.exports = {
           muted: 'rgb(var(--color-background-muted)/<alpha-value>)',
           success: 'rgb(var(--color-background-success)/<alpha-value>)',
           info: 'rgb(var(--color-background-info)/<alpha-value>)',
-          light: '#FBFBFB',
-          dark: '#181719',
+          light: 'rgb(var(--surface-role-onMedia)/<alpha-value>)',
+          dark: 'rgb(var(--surface-role-media)/<alpha-value>)',
         },
         indicator: {
           primary: 'rgb(var(--color-indicator-primary)/<alpha-value>)',
@@ -199,29 +208,27 @@ module.exports = {
         // for the genuine one-offs that have no semantic role.
         // ---------------------------------------------------------------
 
-        /** Depth comes from background steps, not shadow: screen → card → chip → dialog. */
+        /** Explicit surface roles; old aliases remain compatible with recessed controls. */
         surface: {
-          base: 'rgb(var(--color-background-0)/<alpha-value>)',
-          raised: 'rgb(var(--color-background-50)/<alpha-value>)',
-          sunken: 'rgb(var(--color-background-100)/<alpha-value>)',
-          muted: 'rgb(var(--color-background-200)/<alpha-value>)',
+          base: 'rgb(var(--surface-role-paper)/<alpha-value>)',
+          card: 'rgb(var(--surface-role-card)/<alpha-value>)',
+          workspace: 'rgb(var(--surface-role-workspace)/<alpha-value>)',
+          'workspace-card': 'rgb(var(--surface-role-workspaceCard)/<alpha-value>)',
+          inset: 'rgb(var(--surface-role-well)/<alpha-value>)',
+          overlay: 'rgb(var(--surface-role-overlay)/<alpha-value>)',
+          selected: 'rgb(var(--surface-role-raised)/<alpha-value>)',
+          raised: 'rgb(var(--surface-role-well)/<alpha-value>)',
+          sunken: 'rgb(var(--surface-role-well)/<alpha-value>)',
+          muted: 'rgb(var(--surface-role-raised)/<alpha-value>)',
         },
-
-        /**
-         * Two surfaces and one accent — the design system's whole structural
-         * vocabulary. `paper` is the page, `well` is anything recessed into it
-         * (a field, a list row, a segmented track), and `ink` is the
-         * foreground: text, the filled button, the on-state of a switch.
-         *
-         * Structure comes from hairlines rather than more surfaces, so borders
-         * are written as `border-ink/10` — the accent at low opacity — instead
-         * of a separate grey. That keeps one rule for both themes: the scales
-         * invert, so ink is near-white on dark and near-black on light, and a
-         * hairline stays a hairline either way.
-         */
-        paper: 'rgb(var(--color-background-0)/<alpha-value>)',
-        well: 'rgb(var(--color-background-50)/<alpha-value>)',
-        ink: 'rgb(var(--color-typography-950)/<alpha-value>)',
+        paper: 'rgb(var(--surface-role-paper)/<alpha-value>)',
+        card: 'rgb(var(--surface-role-card)/<alpha-value>)',
+        overlay: 'rgb(var(--surface-role-overlay)/<alpha-value>)',
+        well: 'rgb(var(--surface-role-well)/<alpha-value>)',
+        ink: 'rgb(var(--surface-role-ink)/<alpha-value>)',
+        tint: 'rgb(var(--surface-role-solid)/<alpha-value>)',
+        'on-tint': 'rgb(var(--surface-role-onSolid)/<alpha-value>)',
+        'tint-surface': 'rgb(var(--surface-role-raised)/<alpha-value>)',
 
         /** Text, by role rather than by darkness. */
         content: {
@@ -241,9 +248,8 @@ module.exports = {
         },
 
         /**
-         * The interactive colour. Neutral grey on purpose — this is a
-         * monochrome product, so solid buttons, switch on-states, slider
-         * fills and actionable icons all land here rather than on a hue.
+         * The interactive colour. Reserved for primary actions, selected controls and focus.
+         * Neutral content continues to use ink and the surface roles.
          */
         action: {
           DEFAULT: 'rgb(var(--color-primary-500)/<alpha-value>)',
@@ -252,7 +258,7 @@ module.exports = {
 
         /** The only place colour is allowed to carry meaning. */
         status: {
-          online: 'rgb(var(--color-success-500)/<alpha-value>)',
+          online: 'rgb(var(--color-status-online)/<alpha-value>)',
           offline: 'rgb(var(--color-typography-400)/<alpha-value>)',
           busy: 'rgb(var(--color-warning-500)/<alpha-value>)',
           downloading: 'rgb(var(--color-info-500)/<alpha-value>)',
@@ -261,21 +267,15 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: undefined,
-        body: undefined,
-        // SpaceMono ships in assets/fonts/ and is registered in app/_layout.tsx.
-        // Reserved for machine values — seeds, host:port, latency, file paths —
-        // so they read as data rather than prose.
-        mono: ['SpaceMono'],
-        // Titles and human moments only. Never a button, never a label, never
-        // beside a numeral: the serif is an accent, not a costume.
-        serif: ['Newsreader'],
-        'serif-italic': ['NewsreaderItalic'],
-        'serif-semibold': ['NewsreaderSemiBold'],
-        roboto: ['Roboto', 'sans-serif'],
-      },
-      fontWeight: {
-        extrablack: '950',
+        heading: ['Barlow'],
+        body: ['Barlow'],
+        sans: ['Barlow'],
+        // Legacy alias shares the body family; use tabular-nums for dynamic readouts.
+        mono: ['Barlow'],
+        // Legacy title aliases use the same Barlow family.
+        serif: ['BarlowSemiBold'],
+        'serif-italic': ['BarlowItalic'],
+        'serif-semibold': ['BarlowSemiBold'],
       },
       fontSize: {
         '2xs': '10px',

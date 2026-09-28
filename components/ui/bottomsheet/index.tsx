@@ -2,7 +2,6 @@ import GorhomBottomSheet, {
   BottomSheetBackdrop as GorhomBottomSheetBackdrop,
   BottomSheetView as GorhomBottomSheetView,
   BottomSheetHandle,
-  BottomSheetTextInput as GorhomBottomSheetInput,
   BottomSheetScrollView as GorhomBottomSheetScrollView,
   BottomSheetFlatList as GorhomBottomSheetFlatList,
   BottomSheetSectionList as GorhomBottomSheetSectionList,
@@ -18,12 +17,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { cssInterop } from 'nativewind';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { SheetAwareTextInput } from '@/components/self-ui/adaptive-sheet-components';
 
 const bottomSheetBackdropStyle = tva({
-  base: 'absolute inset-0 flex-1 touch-none select-none bg-black opacity-0',
+  base: 'absolute inset-0 flex-1 touch-none select-none bg-background-dark opacity-0',
 });
 
 const bottomSheetContentStyle = tva({
@@ -38,7 +39,7 @@ const bottomSheetIndicatorStyle = tva({
 });
 
 const bottomSheetItemStyle = tva({
-  base: 'p-3 flex-row items-center rounded-sm w-full disabled:opacity-0.4 web:pointer-events-auto disabled:cursor-not-allowed hover:bg-background-50 active:bg-background-100 focus:bg-background-100 web:focus-visible:bg-background-100',
+  base: 'p-3 flex-row items-center rounded-sm w-full disabled:opacity-disabled web:pointer-events-auto disabled:cursor-not-allowed hover:bg-background-50 active:bg-background-100 focus:bg-background-100 web:focus-visible:bg-background-100',
 });
 
 const BottomSheetContext = createContext<{
@@ -289,9 +290,9 @@ export const BottomSheetItemText = ({ ...props }: TextProps) => {
 export const BottomSheetScrollView = GorhomBottomSheetScrollView;
 export const BottomSheetFlatList = GorhomBottomSheetFlatList;
 export const BottomSheetSectionList = GorhomBottomSheetSectionList;
-export const BottomSheetTextInput = GorhomBottomSheetInput;
+export const BottomSheetTextInput = SheetAwareTextInput;
 
-cssInterop(GorhomBottomSheetInput, { className: 'style' });
+cssInterop(SheetAwareTextInput, { className: 'style' });
 cssInterop(GorhomBottomSheetScrollView, { className: 'style' });
 cssInterop(GorhomBottomSheetFlatList, { className: 'style' });
 cssInterop(GorhomBottomSheetSectionList, { className: 'style' });

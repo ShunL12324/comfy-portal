@@ -1,8 +1,9 @@
-import { Text } from '@/components/ui/text';
+import { Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { MotiView } from 'moti';
 import type { ReactNode } from 'react';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface EmptyStateProps {
   /**
@@ -29,6 +30,7 @@ interface EmptyStateProps {
  * and says the same thing.
  */
 export function EmptyState({ title, children, action, align = 'top', className }: EmptyStateProps) {
+  const c = useDesign();
   return (
     <MotiView
       from={{ opacity: 0 }}
@@ -36,14 +38,18 @@ export function EmptyState({ title, children, action, align = 'top', className }
       transition={{ type: 'timing', duration: 240 }}
       className={align === 'center' ? 'flex-1 justify-center' : undefined}
     >
-      <VStack space="md" className={`w-full px-1 py-8 ${className ?? ''}`}>
-        <View className="border-t border-ink/10" />
+      <VStack space="sm" className={`px-1 py-4 w-full ${className ?? ''}`}>
         <VStack space="sm" className="py-2">
-          {title ? <Text className="font-serif-italic text-lg text-content-body">{title}</Text> : null}
-          <Text className="text-sm text-content-tertiary">{children}</Text>
+          {title ? (
+            <Copy size="section" style={{ fontFamily: t.font.titleSemibold, color: c.secondary }}>
+              {title}
+            </Copy>
+          ) : null}
+          <Copy size="label" muted>
+            {children}
+          </Copy>
         </VStack>
         {action ? <View className="pt-1">{action}</View> : null}
-        <View className="border-t border-ink/10" />
       </VStack>
     </MotiView>
   );

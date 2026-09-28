@@ -1,12 +1,16 @@
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { ServerStatus } from './generation-status-indicator';
 
 interface RunPageHeaderStatusProps {
-  serverName: string;
+  workflowId: string;
 }
 
-export function RunPageHeaderStatus({ serverName }: RunPageHeaderStatusProps) {
-  const { status } = useGenerationStatus();
+export function RunPageHeaderStatus({ workflowId }: RunPageHeaderStatusProps) {
+  const { status, currentNodeId } = useGenerationStatus();
+  const currentNodeName = useWorkflowStore((state) =>
+    currentNodeId ? state.workflow.find((item) => item.id === workflowId)?.data[currentNodeId]?.class_type : undefined,
+  );
   const { progress, downloadProgress, nodeProgress } = useGenerationProgress();
 
   return (
@@ -16,7 +20,8 @@ export function RunPageHeaderStatus({ serverName }: RunPageHeaderStatusProps) {
       downloadProgress={downloadProgress}
       generationProgress={progress}
       nodeProgress={nodeProgress}
-      name={serverName}
+      currentNodeId={currentNodeId}
+      currentNodeName={currentNodeName}
     />
   );
 }

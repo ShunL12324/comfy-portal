@@ -1,12 +1,12 @@
-import { Colors } from '@/constants/Colors';
-import { useResolvedTheme } from '@/store/theme';
+import { Action, useDesign } from '@/components/ui/design-system/primitives';
 import RNSlider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
-import { Minus, Plus } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Icon } from '../ui/icon';
-import { Text } from '../ui/text';
+import { Minus, Plus } from '@/constants/icons';
+import { useCallback, useRef, useState } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { SheetAwareTextInput } from './adaptive-sheet-components';
+import { normalizeSliderValue, parseSliderDraft, sliderPrecision } from './slider-value';
+import { designTokens as t } from '@/constants/design-tokens';
 
 /**
  * Props for the SmoothSlider component
@@ -31,10 +31,6 @@ interface CustomSliderProps {
   showButtons?: boolean;
   /** Decimal places (auto-calculated from step by default) */
   decimalPlaces?: number;
-  /** Thumb size in pixels (default: 32) */
-  thumbSize?: number;
-  /** Space between elements in pixels (default: 16) */
-  space?: number;
 }
 
 // Optimize styles with animated components
@@ -46,24 +42,15 @@ const styles = {
   // read as two objects floating either side of the track.
   button: {
     base: 'items-center justify-center rounded-md',
-    disabled: 'opacity-40',
+    disabled: 'opacity-disabled',
   },
   icon: 'text-content-tertiary',
   sliderContainer: 'flex-1',
-  // Right-aligned, no chip: the readout is one of the screen's numbers, and
-  // fixed decimals keep the digits from jittering as the thumb moves.
-  value: 'min-w-[52px] items-end justify-center ml-4',
 } as const;
 
 const sliderStyles = StyleSheet.create({
   slider: {
     flex: 1,
-  },
-  thumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#6366F1',
   },
 });
 
@@ -80,27 +67,28 @@ export function NumberSlider({
   onChangeEnd,
   showButtons = true,
   decimalPlaces,
-  thumbSize = 24,
-  space = 24,
 }: CustomSliderProps) {
-  const [localValue, setLocalValue] = useState(() => {
+  const [draftValue, setLocalValue] = useState(() => {
     const initial = controlledValue ?? defaultValue ?? 0;
     return typeof initial === 'number' && !isNaN(initial) ? initial : 0;
   });
-  const theme = useResolvedTheme();
-  const colors = Colors[theme === 'dark' ? 'dark' : 'light'];
 
-  // Sync external controlled value to internal state
-  useEffect(() => {
-    if (controlledValue !== undefined) {
-      const num = typeof controlledValue === 'number' && !isNaN(controlledValue) ? controlledValue : 0;
-      setLocalValue(num);
-    }
-  }, [controlledValue]);
+  const [inputDraft, setInputDraft] = useState('');
+  const [editing, setEditing] = useState(false);
+  const editingRef = useRef(false);
+  const c = useDesign();
+  const { fontScale } = useWindowDimensions();
+  const [dragging, setDragging] = useState(false);
+  const localValue = dragging ? draftValue : (controlledValue ?? draftValue);
 
   const precision = useCallback(() => {
-    return decimalPlaces ?? (step.toString().split('.')[1] || '').length;
-  }, [decimalPlaces, step]);
+    return Math.min(12, Math.max(decimalPlaces ?? 0, sliderPrecision(step), sliderPrecision(minValue)));
+  }, [decimalPlaces, step, minValue]);
+
+  const normalize = useCallback(
+    (value: number) => normalizeSliderValue(value, minValue, maxValue, step),
+    [minValue, maxValue, step],
+  );
 
   const formatValue = useCallback(
     (val: number) => {
@@ -110,9 +98,17 @@ export function NumberSlider({
     [precision],
   );
 
+  // Reserve the full range, including sign/decimals, rather than the current
+  // digit count. Larger text and longer ranges can grow without clipping.
+  const readoutCharacters = Math.max(formatValue(minValue).length, formatValue(maxValue).length);
+  const readoutWidth =
+    Math.max(t.slider.readoutMinWidth, readoutCharacters * t.slider.readoutCharacterWidth + t.layout.related * 2) *
+    fontScale;
+  const readoutHeight = Math.max(t.height.control, t.leading.label * fontScale + t.layout.related * 2);
+
   const adjustValue = useCallback(
     (delta: number) => {
-      const newValue = Number(Math.min(Math.max(localValue + delta, minValue), maxValue).toFixed(precision()));
+      const newValue = normalize(localValue + delta);
       setLocalValue(newValue);
       if (onChange) {
         onChange(newValue);
@@ -122,77 +118,128 @@ export function NumberSlider({
       }
       Haptics.selectionAsync();
     },
-    [localValue, minValue, maxValue, precision, onChange, onChangeEnd],
+    [localValue, normalize, onChange, onChangeEnd],
   );
 
   const handleChange = useCallback(
-    (newValue: number) => {
+    (rawValue: number) => {
+      const newValue = normalize(rawValue);
       setLocalValue(newValue);
       if (onChange) {
         onChange(newValue);
       }
     },
-    [onChange],
+    [normalize, onChange],
   );
 
   const handleComplete = useCallback(
-    (newValue: number) => {
+    (rawValue: number) => {
+      const newValue = normalize(rawValue);
+      setLocalValue(newValue);
+      setDragging(false);
       if (onChangeEnd) {
         onChangeEnd(newValue);
       }
       Haptics.selectionAsync();
     },
-    [onChangeEnd],
+    [normalize, onChangeEnd],
   );
+
+  const commitInput = () => {
+    if (!editingRef.current) return;
+    editingRef.current = false;
+    setEditing(false);
+    const parsed = parseSliderDraft(inputDraft);
+    if (parsed === null) return; // Empty/incomplete input restores the current value.
+    const next = normalize(parsed);
+    setLocalValue(next);
+    if (next !== localValue) {
+      onChange?.(next);
+      onChangeEnd?.(next);
+    }
+  };
 
   return (
     <View className="w-full">
       <View className={styles.container}>
         {showButtons && (
-          <TouchableOpacity
-            onPress={() => adjustValue(-step)}
+          <Action
+            kind="text"
+            icon={Minus}
+            label="Decrease slider"
             disabled={localValue <= minValue}
-            className={localValue <= minValue ? styles.button.disabled : undefined}
-            style={{ marginRight: space }}
-          >
-            <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>
-              <Icon as={Minus} size="sm" className={styles.icon} />
-            </View>
-          </TouchableOpacity>
+            onPress={() => adjustValue(-step)}
+          />
         )}
 
         <View className={styles.sliderContainer}>
           <RNSlider
-            style={[sliderStyles.slider]}
+            style={[sliderStyles.slider, { height: t.height.touch }]}
             value={localValue}
             minimumValue={minValue}
             maximumValue={maxValue}
             step={step}
+            onSlidingStart={() => setDragging(true)}
             onValueChange={handleChange}
             onSlidingComplete={handleComplete}
-            minimumTrackTintColor={colors.typography[950]}
-            maximumTrackTintColor={colors.background[200]}
-            thumbTintColor={colors.typography[950]}
+            minimumTrackTintColor={c.tint}
+            maximumTrackTintColor={c.boundary}
+            thumbTintColor={c.tint}
           />
         </View>
 
         {showButtons && (
-          <TouchableOpacity
-            onPress={() => adjustValue(step)}
+          <Action
+            kind="text"
+            icon={Plus}
+            label="Increase slider"
             disabled={localValue >= maxValue}
-            className={localValue >= maxValue ? styles.button.disabled : undefined}
-            style={{ marginLeft: space }}
-          >
-            <View className={styles.button.base} style={{ width: thumbSize, height: thumbSize }}>
-              <Icon as={Plus} size="sm" className={styles.icon} />
-            </View>
-          </TouchableOpacity>
+            onPress={() => adjustValue(step)}
+          />
         )}
 
-        <View className={styles.value}>
-          <Text size="sm" className="font-mono text-content-body">
-            {formatValue(localValue)}
-          </Text>
+        <View
+          testID="slider-readout"
+          style={{
+            width: readoutWidth,
+            height: readoutHeight,
+            flexShrink: 0,
+            marginLeft: t.layout.label,
+            paddingHorizontal: t.layout.related,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: t.radius.control,
+            borderWidth: 1,
+            borderColor: editing ? c.boundary : 'transparent',
+            backgroundColor: c.well,
+          }}
+        >
+          <SheetAwareTextInput
+            accessibilityLabel="Slider value"
+            testID="slider-value-input"
+            value={editing ? inputDraft : formatValue(localValue)}
+            onFocus={() => {
+              setInputDraft(formatValue(localValue));
+              editingRef.current = true;
+              setEditing(true);
+            }}
+            onChangeText={setInputDraft}
+            onBlur={commitInput}
+            onSubmitEditing={commitInput}
+            selectTextOnFocus
+            keyboardType={minValue < 0 ? 'numbers-and-punctuation' : precision() > 0 ? 'decimal-pad' : 'number-pad'}
+            returnKeyType="done"
+            style={{
+              width: '100%',
+              height: '100%',
+              color: c.ink,
+              fontFamily: t.font.medium,
+              fontSize: t.type.label,
+              fontVariant: ['tabular-nums'],
+              textAlign: 'center',
+              padding: 0,
+            }}
+          />
         </View>
       </View>
     </View>

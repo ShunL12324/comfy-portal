@@ -1,0 +1,51 @@
+{
+  "name": "NMSSH",
+  "version": "2.3.1",
+  "summary": "NMSSH is a clean, easy-to-use, unit tested framework for iOS and OSX that wraps libssh2.",
+  "homepage": "https://github.com/NMSSH/NMSSH",
+  "license": "MIT",
+  "authors": {
+    "Christoffer Lejdborg": "hello@9muses.se",
+    "Tommaso Madonia": "tommaso@madonia.me"
+  },
+  "source": {
+    "git": "https://github.com/aanah0/NMSSH.git",
+    "commit": "fdb2ee4f24ed5d6f2a6c213a3989026caf076d63"
+  },
+  "requires_arc": true,
+  "platforms": {
+    "ios": "15.1"
+  },
+  "source_files": [
+    "NMSSH",
+    "NMSSH/**/*.{h,m}"
+  ],
+  "public_header_files": [
+    "NMSSH/*.h",
+    "NMSSH/Protocols/*.h",
+    "NMSSH/Config/NMSSHLogger.h"
+  ],
+  "private_header_files": [
+    "NMSSH/Config/NMSSH+Protected.h",
+    "NMSSH/Config/socket_helper.h"
+  ],
+  "libraries": "z",
+  "frameworks": "CFNetwork",
+  "ios": {
+    "deployment_target": "15.1",
+    "source_files": [
+      "NMSSH-iOS/*.h"
+    ],
+    "public_header_files": [
+      "NMSSH-iOS/*.h"
+    ]
+  },
+  "xcconfig": {
+    "OTHER_LDFLAGS": "-ObjC"
+  },
+  "dependencies": {
+    "CSSH": [
+      "= 1.11.0"
+    ]
+  }
+}

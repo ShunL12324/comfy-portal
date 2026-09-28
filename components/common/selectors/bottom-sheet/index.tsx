@@ -1,16 +1,11 @@
+import { AdaptiveFlatList } from '@/components/self-ui/adaptive-sheet-components';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
-import { Spinner } from '@/components/ui/spinner';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useResolvedTheme } from '@/store/theme';
-import {
-  BottomSheetFlatList,
-  BottomSheetModal
-} from '@gorhom/bottom-sheet';
-import { RefreshCw } from 'lucide-react-native';
+import { Action, Copy } from '@/components/ui/design-system/primitives';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { RefreshCw } from '@/constants/icons';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Keyboard, ListRenderItem, View } from 'react-native';
+import { designTokens as t } from '@/constants/design-tokens';
 import { SearchableBottomSheetProps, SelectorOption } from '../types';
 import { Item } from './item';
 import { SearchHeader } from './search-header';
@@ -37,9 +32,24 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
     ref,
   ) {
     const [searchQuery, setSearchQuery] = useState('');
-    const theme = useResolvedTheme();
-    const colors = useThemeColor();
+    const [listWidth, setListWidth] = useState(0);
+    const columnWidth = (listWidth - t.layout.inset * 2 - t.layout.list * (numColumns - 1)) / numColumns;
     const bottomSheetRef = useRef<BottomSheetModal>(null);
+    const presented = useRef(false);
+    useEffect(() => {
+      if (isVisible) {
+        presented.current = true;
+        bottomSheetRef.current?.present();
+        setSearchQuery('');
+      } else if (presented.current) {
+        presented.current = false;
+        bottomSheetRef.current?.dismiss();
+      }
+    }, [isVisible]);
+    const handleDismiss = useCallback(() => {
+      presented.current = false;
+      onClose();
+    }, [onClose]);
 
     // Forward ref to parent
     useImperativeHandle(ref, () => bottomSheetRef.current!, []);
@@ -56,11 +66,6 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
       return () => hideSubscription.remove();
     }, [isVisible]);
 
-    // Define theme-based colors matching ThemedBottomSheetModal
-    const backgroundColor = theme === 'dark'
-      ? colors.background[100]
-      : colors.background[50];
-
     const filteredOptions = useMemo(
       () =>
         showSearch
@@ -74,18 +79,6 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
       [value, onSelect],
     );
 
-    const renderHandle = useCallback(
-      () => (
-        <View
-          className="-mb-1 h-8 items-center justify-center rounded-t-[24px]"
-          style={{ backgroundColor }}
-        >
-          <View className="h-1 w-12 rounded-full bg-background-300" />
-        </View>
-      ),
-      [backgroundColor],
-    );
-
     const selectedOption = options.find((option) => option.value === value);
 
     return (
@@ -93,16 +86,12 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
         {renderTrigger?.(selectedOption)}
         <ThemedBottomSheetModal
           ref={bottomSheetRef}
+          stackBehavior="push"
           snapPoints={['85%']}
-          index={isVisible ? 0 : -1}
+          index={0}
+          enableDynamicSizing={false}
           enablePanDownToClose
-          // `onClose` must only flip the caller's visibility state. It's wired
-          // to onDismiss, so if it also called dismiss() it would re-enter the
-          // modal's own dismissal and desync its mount state — after which
-          // present() is silently ignored and the trigger looks dead. Closing
-          // is driven by `index` above.
-          onDismiss={onClose}
-          handleComponent={renderHandle}
+          onDismiss={handleDismiss}
           keyboardBehavior="interactive"
           keyboardBlurBehavior="restore"
         >
@@ -113,37 +102,55 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
             searchPlaceholder={searchPlaceholder}
             showSearch={showSearch}
             rightElement={
-              showRefreshButton && (
-                <Button
-                  variant="outline"
-                  size="md"
+              showRefreshButton ? (
+                <Action
+                  kind="tonal"
+                  icon={RefreshCw}
+                  label="Refresh options"
+                  loading={isVisible && isRefreshing}
+                  loadingAnimation="rotate-icon"
                   onPress={onRefresh}
-                  className="aspect-square rounded-lg border-0 bg-surface-muted p-0"
-                >
-                  {isRefreshing ? (
-                    <Spinner size="small" className="text-content-tertiary" />
-                  ) : (
-                    <Icon as={RefreshCw} size="sm" className="text-content-tertiary" />
-                  )}
-                </Button>
-              )
+                />
+              ) : undefined
             }
           />
-          <BottomSheetFlatList
+          <AdaptiveFlatList
+            testID="selector-options"
+            onLayout={(event) => setListWidth(event.nativeEvent.layout.width)}
             data={filteredOptions}
             keyExtractor={(item: SelectorOption) => item.value}
             renderItem={
               renderItem
-                ? ({ item }: { item: SelectorOption }) => React.createElement(React.Fragment, null, renderItem(item, item.value === value))
+                ? ({ item }: { item: SelectorOption }) =>
+                    numColumns > 1 ? (
+                      <View style={listWidth ? { width: columnWidth } : { flex: 1 }}>
+                        {renderItem(item, item.value === value)}
+                      </View>
+                    ) : (
+                      React.createElement(React.Fragment, null, renderItem(item, item.value === value))
+                    )
                 : defaultRenderItem
             }
             numColumns={numColumns}
-            ListEmptyComponent={emptyComponent as React.ReactElement | undefined}
-            columnWrapperStyle={numColumns > 1 ? { gap: 8, paddingHorizontal: 16 } : undefined}
+            ListEmptyComponent={
+              options.length > 0 ? (
+                <View style={{ paddingVertical: t.layout.section }}>
+                  <Copy muted style={{ textAlign: 'center' }}>
+                    No matching options
+                  </Copy>
+                </View>
+              ) : emptyComponent ? (
+                // FlatList injects an RN style array into its empty root. Keep
+                // that root native even when the supplied content is a web stack.
+                <View style={{ flex: 1 }}>{emptyComponent}</View>
+              ) : undefined
+            }
+            columnWrapperStyle={numColumns > 1 ? { gap: t.layout.list } : undefined}
             contentContainerStyle={{
               flexGrow: 1,
-              paddingBottom: 34,
-              gap: numColumns > 1 ? 16 : undefined,
+              paddingBottom: t.layout.section,
+              paddingHorizontal: t.layout.inset,
+              gap: t.layout.list,
             }}
           />
         </ThemedBottomSheetModal>

@@ -46,15 +46,12 @@
         {
           "android": {
             "usesCleartextTraffic": true,
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0",
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "networkInspector": false
           },
           "ios": {
-            "deploymentTarget": "15.1",
+            "deploymentTarget": "16.4",
             "networkInspector": false
           }
         }
@@ -106,7 +103,9 @@
           "organization": "lotusfino-inc"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/with-nmssh",
+      "./plugins/with-ios-scene"
     ],
     "experiments": {
       "typedRoutes": true

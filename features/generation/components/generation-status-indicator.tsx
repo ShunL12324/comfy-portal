@@ -1,6 +1,9 @@
-import { StatusPill, type StatusTone } from '@/components/self-ui/status-pill';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
+import { RotatingSpinner } from '@/components/ui/rotating-spinner';
+import { Copy, Row, Status, useDesign } from '@/components/ui/design-system/primitives';
+import { MotiView } from 'moti';
+import { View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { designTokens as t } from '@/constants/design-tokens';
 
 /**
  * Props for the ServerStatus component
@@ -22,14 +25,13 @@ interface ServerStatusProps {
     completed: number;
     total: number;
   };
-  /** Server name to display */
-  name: string;
+  currentNodeId?: string;
+  currentNodeName?: string;
 }
 
 /**
- * Displays the current server status with visual indicators
+ * Displays active generation and saving progress
  * Shows different states:
- * - Ready (green)
  * - Generating with progress (yellow)
  * - Downloading with progress (blue)
  */
@@ -39,44 +41,67 @@ export function ServerStatus({
   downloadProgress = 0,
   generationProgress,
   nodeProgress,
-  name,
+  currentNodeId,
+  currentNodeName,
 }: ServerStatusProps) {
-  let tone: StatusTone = 'ready';
-  let status = 'Ready';
-
-  if (generating) {
-    tone = 'busy';
-    const hasProgress = generationProgress && generationProgress.max > 0;
-    const hasNodes = nodeProgress && nodeProgress.total > 0;
-    const progressPct = hasProgress
-      ? `${Math.round((generationProgress.value / generationProgress.max) * 100)}%`
-      : '';
-    const nodePart = hasNodes
-      ? `(${nodeProgress.completed}/${nodeProgress.total})`
-      : '';
-
-    if (progressPct && nodePart) {
-      status = `Generating ${progressPct} ${nodePart}`;
-    } else if (progressPct) {
-      status = `Generating ${progressPct}`;
-    } else if (nodePart) {
-      status = `Generating ${nodePart}`;
-    } else {
-      status = 'Generating';
-    }
-  } else if (downloading) {
-    tone = 'downloading';
-    status = `Downloading ${Math.round(downloadProgress)}%`;
-  }
-
+  const c = useDesign();
+  const reduced = useReducedMotion();
+  if (!generating && !downloading) return null;
+  const ratio = downloading
+    ? downloadProgress / 100
+    : generationProgress?.max
+      ? generationProgress.value / generationProgress.max
+      : undefined;
+  const percent = ratio === undefined ? undefined : Math.max(0, Math.min(100, ratio * 100));
   return (
-    <VStack space="sm" className="items-center">
-      {/* The primary scale is the interactive colour, not a text ramp. This is
-          a subordinate label, so it takes the secondary text role. */}
-      <Text className="text-xs text-content-secondary">{name}</Text>
-      <StatusPill tone={tone} pulse={generating || downloading}>
-        {status}
-      </StatusPill>
-    </VStack>
+    <View style={{ gap: t.layout.label }}>
+      <Row style={{ justifyContent: 'space-between', gap: t.layout.related }}>
+        {generating && nodeProgress && nodeProgress.total > 0 ? (
+          <Copy muted size="metadata">
+            Nodes {nodeProgress.completed} / {nodeProgress.total}
+          </Copy>
+        ) : (
+          <Status
+            state={downloading ? 'downloading' : 'busy'}
+            label={downloading ? 'Saving' : 'Generating'}
+            pulse={false}
+            size="metadata"
+          />
+        )}
+      </Row>
+      {(generating || downloading) && (
+        <Row style={{ justifyContent: 'space-between', gap: t.layout.related }}>
+          <Copy size="label" numberOfLines={1} style={{ flex: 1 }}>
+            {downloading
+              ? 'Saving outputs'
+              : currentNodeName || (currentNodeId ? 'Node ' + currentNodeId : 'Waiting for execution')}
+          </Copy>
+          {percent === undefined ? (
+            <RotatingSpinner size="sm" color={c.warning} />
+          ) : (
+            <Copy muted size="metadata">
+              {downloading
+                ? Math.round(percent) + '%'
+                : generationProgress!.value + ' / ' + generationProgress!.max + ' steps'}
+            </Copy>
+          )}
+        </Row>
+      )}
+      {(generating || downloading) && percent !== undefined && (
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel={downloading ? 'Saving output files' : 'Current node steps'}
+          accessibilityValue={{ min: 0, max: 100, now: Math.round(percent) }}
+          style={{ width: '100%', height: 3, backgroundColor: c.line, overflow: 'hidden' }}
+        >
+          <MotiView
+            key={downloading ? 'saving' : (currentNodeId ?? 'steps')}
+            animate={{ width: `${percent}%` }}
+            transition={{ type: 'timing', duration: reduced ? 0 : 240 }}
+            style={{ height: 3, backgroundColor: c.warning }}
+          />
+        </View>
+      )}
+    </View>
   );
 }

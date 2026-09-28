@@ -2,16 +2,8 @@
 
 import { H4 } from '@expo/html-elements';
 import { createActionsheet } from '@gluestack-ui/core/actionsheet/creator';
-import {
-  Pressable,
-  View,
-  Text,
-  ScrollView,
-  VirtualizedList,
-  FlatList,
-  SectionList,
-  ViewStyle,
-} from 'react-native';
+import { Pressable, View, ScrollView, VirtualizedList, FlatList, SectionList, ViewStyle } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
@@ -25,6 +17,7 @@ import {
 } from '@legendapp/motion';
 
 import React from 'react';
+import { designTokens } from '@/constants/design-tokens';
 
 type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &
   MotionComponentProps<typeof Pressable, ViewStyle, unknown, unknown, unknown>;
@@ -100,11 +93,11 @@ cssInterop(PrimitiveIcon, {
 const actionsheetStyle = tva({ base: 'w-full h-full web:pointer-events-none' });
 
 const actionsheetContentStyle = tva({
-  base: 'items-center rounded-tl-3xl rounded-tr-3xl p-2 bg-background-0 web:pointer-events-auto web:select-none shadow-lg pb-safe',
+  base: 'items-center rounded-tl-3xl rounded-tr-3xl p-2 bg-surface-overlay web:pointer-events-auto web:select-none shadow-lg pb-safe',
 });
 
 const actionsheetItemStyle = tva({
-  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-40 data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 data-[checked=true]:bg-background-100',
+  base: 'w-full flex-row items-center p-3 rounded-sm data-[disabled=true]:opacity-disabled data-[disabled=true]:web:pointer-events-auto data-[disabled=true]:web:cursor-not-allowed hover:bg-background-50 active:bg-background-100 data-[focus=true]:bg-background-100 web:data-[focus-visible=true]:bg-background-100 data-[checked=true]:bg-background-100',
 });
 
 const actionsheetItemTextStyle = tva({
@@ -403,7 +396,7 @@ const ActionsheetBackdrop = React.forwardRef<
         opacity: 0,
       }}
       animate={{
-        opacity: 0.5,
+        opacity: designTokens.opacity.scrim,
       }}
       exit={{
         opacity: 0,

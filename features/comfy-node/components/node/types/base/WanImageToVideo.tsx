@@ -53,7 +53,6 @@ export default function WanImageToVideo({ node, workflowId }: WanImageToVideoPro
           maxValue={4}
           step={1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'batch_size', Number(value))}
-          space={12}
         />
       </SubItem>
     </BaseNode>

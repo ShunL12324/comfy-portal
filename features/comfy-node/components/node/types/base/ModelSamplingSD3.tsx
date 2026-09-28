@@ -22,7 +22,6 @@ export default function ModelSamplingSD3({ node, workflowId }: ModelSamplingSD3P
           maxValue={100}
           step={0.1}
           onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'shift', Number(value))}
-          space={12}
           decimalPlaces={1}
         />
       </SubItem>

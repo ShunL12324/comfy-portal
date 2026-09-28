@@ -2,6 +2,7 @@ import React, { forwardRef, memo } from 'react';
 import { headingStyle } from './styles';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { filterRNProps } from '@/utils/web-props';
+import { resolveWebTypography } from '@/components/ui/design-system/typography';
 
 type IHeadingProps = VariantProps<typeof headingStyle> &
   React.ComponentPropsWithoutRef<'h1'> & {
@@ -10,21 +11,10 @@ type IHeadingProps = VariantProps<typeof headingStyle> &
 
 const MappedHeading = memo(
   forwardRef<HTMLHeadingElement, IHeadingProps>(function MappedHeading(
-    {
-      size,
-      className,
-      isTruncated,
-      bold,
-      underline,
-      strikeThrough,
-      sub,
-      italic,
-      highlight,
-      ...props
-    },
-    ref
+    { size, className, isTruncated, bold, underline, strikeThrough, sub, italic, highlight, ...props },
+    ref,
   ) {
-    const domProps = filterRNProps(props);
+    const domProps = filterRNProps(props) as React.ComponentPropsWithoutRef<'h1'>;
     const classes = headingStyle({
       size,
       isTruncated: isTruncated as boolean,
@@ -36,6 +26,7 @@ const MappedHeading = memo(
       highlight: highlight as boolean,
       class: className,
     });
+    domProps.style = { ...domProps.style, ...resolveWebTypography(domProps.style as any, classes) };
 
     switch (size) {
       case '5xl':
@@ -56,26 +47,30 @@ const MappedHeading = memo(
       default:
         return <h4 className={classes} {...domProps} ref={ref} />;
     }
-  })
+  }),
 );
 
 const Heading = memo(
   forwardRef<HTMLHeadingElement, IHeadingProps>(function Heading(
     { className, size = 'lg', as: AsComp, ...props },
-    ref
+    ref,
   ) {
-    const {
-      isTruncated,
-      bold,
-      underline,
-      strikeThrough,
-      sub,
-      italic,
-      highlight,
-    } = props;
+    const { isTruncated, bold, underline, strikeThrough, sub, italic, highlight } = props;
 
     if (AsComp) {
-      const domProps = filterRNProps(props);
+      const domProps = filterRNProps(props) as React.ComponentPropsWithoutRef<'h1'>;
+      const classes = headingStyle({
+        size,
+        isTruncated,
+        bold,
+        underline,
+        strikeThrough,
+        sub,
+        italic,
+        highlight,
+        class: className,
+      });
+      domProps.style = { ...domProps.style, ...resolveWebTypography(domProps.style as any, classes) };
       return (
         <AsComp
           className={headingStyle({
@@ -95,10 +90,8 @@ const Heading = memo(
       );
     }
 
-    return (
-      <MappedHeading className={className} size={size} ref={ref} {...props} />
-    );
-  })
+    return <MappedHeading className={className} size={size} ref={ref} {...props} />;
+  }),
 );
 
 Heading.displayName = 'Heading';

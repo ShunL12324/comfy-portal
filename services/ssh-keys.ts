@@ -127,10 +127,10 @@ export async function ensureSshKeyPair(): Promise<SshKeyPair> {
  * already-running instance. So this must be checked (and satisfied) before
  * every `createInstance` call, not lazily on first SSH attempt.
  */
-export async function isSshKeyRegistered(): Promise<boolean> {
-  return (await secureStorage.getItem(REGISTERED_KEY)) === '1';
+export async function isSshKeyRegistered(accountHash: string): Promise<boolean> {
+  return (await secureStorage.getItem(REGISTERED_KEY + '-' + accountHash)) === '1';
 }
 
-export async function markSshKeyRegistered(): Promise<void> {
-  await secureStorage.setItem(REGISTERED_KEY, '1');
+export async function markSshKeyRegistered(accountHash: string): Promise<void> {
+  await secureStorage.setItem(REGISTERED_KEY + '-' + accountHash, '1');
 }

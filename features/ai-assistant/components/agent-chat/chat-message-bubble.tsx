@@ -1,21 +1,37 @@
-import { Icon } from '@/components/ui/icon';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
-import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { Colors } from '@/constants/Colors';
-import { useResolvedTheme } from '@/store/theme';
-import {
-  getToolName,
-  isToolUIPart,
-  type DynamicToolUIPart,
-  type ToolUIPart,
-  type UIMessage,
-} from 'ai';
-import { AlertCircle, Bot, Check, User, Wrench } from 'lucide-react-native';
+import { Copy, Row, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
+import { designTokens as t } from '@/constants/design-tokens';
+import { resolveTypography } from '@/components/ui/design-system/typography';
+import { getToolName, isToolUIPart, type DynamicToolUIPart, type ToolUIPart, type UIMessage } from 'ai';
+import { AlertCircle, Check } from '@/constants/icons';
 import { MotiView } from 'moti';
+import { useReducedMotion } from 'react-native-reanimated';
 import React, { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { type RenderRules } from 'react-native-markdown-display';
+import { NativeText } from '@/components/ui/text/native-text';
+
+const markdownRules: RenderRules = {
+  // Nested **_emphasis_** needs a combined face: one parent's static font must
+  // not erase the other parent's bold/italic meaning when Markdown flattens it.
+  text: (node, children, parents, styles, inherited = {}) => (
+    <NativeText
+      key={node.key}
+      style={[
+        inherited,
+        styles.text,
+        resolveTypography({
+          ...inherited,
+          ...(parents.some((parent) => parent.type === 'strong') ? { fontWeight: '700' } : {}),
+          ...(parents.some((parent) => parent.type === 'em') ? { fontStyle: 'italic' } : {}),
+        }),
+      ]}
+    >
+      {node.content}
+    </NativeText>
+  ),
+};
 
 interface ChatMessageBubbleProps {
   message: UIMessage;
@@ -24,232 +40,229 @@ interface ChatMessageBubbleProps {
 
 export function ChatMessageBubble({ message, renderFooter }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
-  const theme = useResolvedTheme();
+  const c = useDesign();
+  const reduced = useReducedMotion();
 
   // StyleSheet.create required by react-native-markdown-display API — cannot use NativeWind here
   const mdStyles = useMemo(
     () =>
       StyleSheet.create({
         body: {
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
-          fontSize: 14,
-          lineHeight: 20,
+          fontFamily: t.font.sans,
+          color: c.ink,
+          fontSize: t.type.body,
+          lineHeight: t.leading.body,
         },
         heading1: {
-          fontSize: 20,
-          fontWeight: 'bold',
-          marginTop: 8,
-          marginBottom: 4,
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.section,
+          lineHeight: t.leading.section,
+          ...resolveTypography({ fontWeight: '500' }),
+          marginTop: t.layout.related,
+          marginBottom: t.layout.label,
+          color: c.ink,
         },
         heading2: {
-          fontSize: 18,
-          fontWeight: 'bold',
-          marginTop: 6,
-          marginBottom: 4,
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.section,
+          lineHeight: t.leading.section,
+          ...resolveTypography({ fontWeight: '500' }),
+          marginTop: t.layout.related,
+          marginBottom: t.layout.label,
+          color: c.ink,
         },
         heading3: {
-          fontSize: 16,
-          fontWeight: '600',
-          marginTop: 4,
-          marginBottom: 2,
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.section,
+          lineHeight: t.leading.section,
+          ...resolveTypography({ fontWeight: '500' }),
+          marginTop: t.layout.label,
+          marginBottom: t.layout.label,
+          color: c.ink,
         },
         heading4: {
-          fontSize: 14,
-          fontWeight: '600',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.body,
+          lineHeight: t.leading.body,
+          ...resolveTypography({ fontWeight: '500' }),
+          color: c.ink,
         },
         heading5: {
-          fontSize: 13,
-          fontWeight: '600',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.body,
+          lineHeight: t.leading.body,
+          ...resolveTypography({ fontWeight: '500' }),
+          color: c.ink,
         },
         heading6: {
-          fontSize: 12,
-          fontWeight: '600',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          fontSize: t.type.body,
+          lineHeight: t.leading.body,
+          ...resolveTypography({ fontWeight: '500' }),
+          color: c.ink,
         },
         paragraph: {
           marginTop: 0,
-          marginBottom: 6,
+          marginBottom: t.layout.related,
         },
         strong: {
-          fontWeight: 'bold',
+          ...resolveTypography({ fontWeight: '700' }),
         },
         em: {
-          fontStyle: 'italic',
+          ...resolveTypography({ fontStyle: 'italic' }),
         },
         s: {
           textDecorationLine: 'line-through',
         },
         link: {
-          color: theme === 'dark' ? Colors.dark.primary[400] : Colors.light.primary[500],
+          // Tint identifies links; the underline preserves a non-color cue.
+          color: c.tint,
           textDecorationLine: 'underline',
         },
         blockquote: {
-          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
-          borderColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
+          backgroundColor: c.well,
+          borderColor: c.line,
           borderLeftWidth: 3,
-          paddingHorizontal: 8,
-          paddingVertical: 4,
-          marginVertical: 4,
+          paddingHorizontal: t.layout.related,
+          paddingVertical: t.layout.label,
+          marginVertical: t.layout.label,
         },
         code_inline: {
-          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
-          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          backgroundColor: c.well,
+          borderColor: c.line,
           borderWidth: 1,
-          borderRadius: 4,
-          paddingHorizontal: 4,
-          paddingVertical: 1,
-          fontSize: 12,
-          fontFamily: 'SpaceMono',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          borderRadius: t.radius.small,
+          paddingHorizontal: t.layout.label,
+          paddingVertical: t.layout.badgeY,
+          fontSize: t.type.label,
+          ...resolveTypography({ fontFamily: t.font.sans }),
+          lineHeight: t.leading.label,
+          color: c.ink,
         },
         code_block: {
-          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
-          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          backgroundColor: c.well,
+          borderColor: c.line,
           borderWidth: 1,
-          borderRadius: 6,
-          padding: 8,
-          fontSize: 12,
-          fontFamily: 'SpaceMono',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          borderRadius: t.radius.small,
+          padding: t.layout.related,
+          fontSize: t.type.label,
+          ...resolveTypography({ fontFamily: t.font.sans }),
+          lineHeight: t.leading.label,
+          color: c.ink,
         },
         fence: {
-          backgroundColor: theme === 'dark' ? Colors.dark.background[50] : Colors.light.background[50],
-          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[100],
+          backgroundColor: c.well,
+          borderColor: c.line,
           borderWidth: 1,
-          borderRadius: 6,
-          padding: 8,
-          fontSize: 12,
-          fontFamily: 'SpaceMono',
-          color: theme === 'dark' ? Colors.dark.typography[900] : Colors.light.typography[900],
+          borderRadius: t.radius.small,
+          padding: t.layout.related,
+          fontSize: t.type.label,
+          ...resolveTypography({ fontFamily: t.font.sans }),
+          lineHeight: t.leading.label,
+          color: c.ink,
         },
         bullet_list: {
-          marginVertical: 2,
+          marginVertical: t.layout.label,
         },
         ordered_list: {
-          marginVertical: 2,
+          marginVertical: t.layout.label,
         },
         list_item: {
           flexDirection: 'row',
           justifyContent: 'flex-start',
-          marginVertical: 1,
+          marginVertical: 0,
         },
         bullet_list_icon: {
-          marginLeft: 4,
-          marginRight: 6,
-          color: theme === 'dark' ? Colors.dark.typography[500] : Colors.light.typography[500],
+          marginLeft: t.layout.label,
+          marginRight: t.layout.label,
+          color: c.secondary,
         },
         bullet_list_content: {
           flex: 1,
         },
         ordered_list_icon: {
-          marginLeft: 4,
-          marginRight: 6,
-          color: theme === 'dark' ? Colors.dark.typography[500] : Colors.light.typography[500],
+          marginLeft: t.layout.label,
+          marginRight: t.layout.label,
+          color: c.secondary,
         },
         ordered_list_content: {
           flex: 1,
         },
         hr: {
-          backgroundColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
+          backgroundColor: c.line,
           height: 1,
-          marginVertical: 8,
+          marginVertical: t.layout.related,
         },
         table: {
           borderWidth: 1,
-          borderColor: theme === 'dark' ? Colors.dark.outline[100] : Colors.light.outline[100],
-          borderRadius: 4,
-          marginVertical: 4,
+          borderColor: c.line,
+          borderRadius: t.radius.small,
+          marginVertical: t.layout.label,
         },
         tr: {
           borderBottomWidth: 1,
-          borderColor: theme === 'dark' ? Colors.dark.outline[50] : Colors.light.outline[50],
+          borderColor: c.subtle,
           flexDirection: 'row',
         },
         th: {
           flex: 1,
-          padding: 4,
-          fontWeight: 'bold',
-          fontSize: 12,
+          padding: t.layout.label,
+          ...resolveTypography({ fontWeight: '700' }),
+          fontSize: t.type.label,
         },
         td: {
           flex: 1,
-          padding: 4,
-          fontSize: 12,
+          padding: t.layout.label,
+          fontSize: t.type.label,
         },
         image: {
           flex: 1,
-          borderRadius: 6,
+          borderRadius: t.radius.small,
         },
         text: {},
         textgroup: {},
       }),
-    [theme],
+    [c],
   );
 
   return (
     <MotiView
-      from={{ opacity: 0, translateY: 6 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 200 }}
-      className={`mb-3 flex-row ${isUser ? 'justify-end' : 'justify-start'}`}
+      testID={`chat-message-${message.id}`}
+      from={{ opacity: reduced ? 1 : 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ type: 'timing', duration: reduced ? 0 : t.motion.fast }}
+      style={{ width: '100%', alignItems: isUser ? 'flex-end' : 'flex-start' }}
     >
-      {/* Avatar for assistant */}
-      {!isUser && (
-        <View className="mr-2 mt-1 h-7 w-7 items-center justify-center rounded-full bg-primary-100">
-          <Icon as={Bot} size="xs" className="text-content-body" />
-        </View>
-      )}
-
-      <View className={`max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
-        {/*
-          A message is an ordered list of parts — text interleaved with tool
-          activity — so they're rendered in sequence rather than as a single
-          body plus a summary card.
-        */}
+      <View
+        style={{
+          width: isUser ? undefined : '100%',
+          maxWidth: isUser ? '85%' : '100%',
+          minWidth: 0,
+          gap: t.layout.related,
+        }}
+      >
         {message.parts.map((part, index) => {
           if (part.type === 'text') {
             if (!part.text) return null;
             return isUser ? (
               <View
                 key={index}
-                className="rounded-2xl rounded-br-md bg-typography-900 px-3.5 py-2.5"
+                style={{
+                  backgroundColor: c.well,
+                  borderRadius: t.radius.panel,
+                  paddingHorizontal: t.layout.rowX,
+                  paddingVertical: t.layout.rowY,
+                }}
               >
-                <Text className="text-sm leading-5 text-content-inverse">{part.text}</Text>
+                <Copy>{part.text}</Copy>
               </View>
             ) : (
-              <View
-                key={index}
-                className="w-full rounded-2xl rounded-bl-md bg-surface-sunken px-3.5 py-2.5"
-              >
-                <Markdown style={mdStyles} mergeStyle={false}>
+              <View key={index} style={{ width: '100%', minWidth: 0 }}>
+                <Markdown style={mdStyles} mergeStyle={false} rules={markdownRules}>
                   {part.text}
                 </Markdown>
               </View>
             );
           }
-
-          if (isToolUIPart(part)) {
-            return <ToolPartCard key={index} part={part} />;
-          }
-
+          if (isToolUIPart(part)) return <ToolPartCard key={index} part={part} />;
           return null;
         })}
-
-        {/* Optional footer (e.g. config error action) */}
         {renderFooter}
       </View>
-
-      {/* Avatar for user */}
-      {isUser && (
-        <View className="ml-2 mt-1 h-7 w-7 items-center justify-center rounded-full bg-surface-muted">
-          <Icon as={User} size="xs" className="text-typography-600" />
-        </View>
-      )}
     </MotiView>
   );
 }
@@ -277,40 +290,47 @@ function ToolPartCard({ part }: { part: ToolUIPart | DynamicToolUIPart }) {
 
   const pending = part.state === 'input-streaming' || part.state === 'input-available';
   const failed = part.state === 'output-error';
+  const c = useDesign();
 
   return (
     <View
-      className={`mt-2 w-full rounded-xl border px-3 py-2.5 ${
-        failed ? 'border-error-200 bg-error-50' : 'border-stroke-subtle bg-surface-raised'
-      }`}
+      style={{
+        width: '100%',
+        minWidth: 0,
+        backgroundColor: c.well,
+        borderRadius: t.radius.panel,
+        paddingHorizontal: t.layout.rowX,
+        paddingVertical: t.layout.rowY,
+        borderWidth: 1,
+        borderColor: failed ? c.danger : c.line,
+        gap: t.layout.label,
+      }}
     >
-      <View className="flex-row items-center gap-1.5">
+      <Row style={{ gap: t.layout.related }}>
         {pending ? (
           <RotatingSpinner size="sm" />
         ) : (
-          <Icon
-            as={failed ? AlertCircle : Check}
-            size="2xs"
-            className={failed ? 'text-status-danger-pressed' : 'text-success-600'}
-          />
+          <StateIcon icon={failed ? AlertCircle : Check} size={t.icon.small} color={failed ? c.danger : c.muted} />
         )}
-        <Text
-          className={`text-xs font-semibold ${
-            failed ? 'text-error-700' : 'text-content-secondary'
-          }`}
+        <Copy
+          size="label"
+          muted={!failed}
+          style={{ flex: 1, fontWeight: '500', ...(failed ? { color: c.danger } : {}) }}
         >
           {label}
-        </Text>
-      </View>
+        </Copy>
+      </Row>
 
       {part.state === 'output-error' && (
-        <Text className="mt-1.5 text-xs text-error-700">{part.errorText}</Text>
+        <Copy size="metadata" style={{ color: c.danger }}>
+          {part.errorText}
+        </Copy>
       )}
 
       {part.state === 'output-available' && typeof part.output === 'string' && (
-        <Text className="mt-1.5 text-xs text-typography-600" numberOfLines={6}>
+        <Copy size="metadata" muted numberOfLines={6}>
           {part.output}
-        </Text>
+        </Copy>
       )}
     </View>
   );

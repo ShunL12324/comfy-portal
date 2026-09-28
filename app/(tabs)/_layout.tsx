@@ -1,6 +1,5 @@
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { Tabs, usePathname, useRouter } from 'expo-router';
-import React from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sidebar } from '../../components/layout/sidebar';
@@ -13,12 +12,14 @@ export default function TabLayout() {
 
   const getActiveTabFromPathname = (): TabRoute => {
     if (pathname === '/setting' || pathname.startsWith('/setting')) return 'setting';
+    if (pathname === '/gallery') return 'gallery';
     if (pathname === '/explore' || pathname.startsWith('/explore')) return 'explore';
     return 'server';
   };
 
   const getActiveTabNameByRoute = (routeName: string): TabRoute => {
     if (routeName === 'index') return 'server';
+    if (routeName === 'gallery') return 'gallery';
     if (routeName === 'explore') return 'explore';
     if (routeName === 'setting') return 'setting';
     return 'server';
@@ -50,7 +51,8 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Servers' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Templates' }} />
+      <Tabs.Screen name="gallery" options={{ title: 'Gallery' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Environments' }} />
       <Tabs.Screen name="setting" options={{ title: 'Settings' }} />
     </Tabs>
   );
@@ -58,10 +60,7 @@ export default function TabLayout() {
   if (isTabletWidth) {
     return (
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        <Sidebar
-          activeTab={getActiveTabFromPathname()}
-          onChangeTab={handleSidebarTabChange}
-        />
+        <Sidebar activeTab={getActiveTabFromPathname()} onChangeTab={handleSidebarTabChange} />
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           {tabs}
         </SafeAreaView>

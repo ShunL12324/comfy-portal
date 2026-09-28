@@ -4,9 +4,18 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "tailwind.config": ["./tailwind.config.js"]
-    }
+      "@/*": [
+        "./*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.js"
+      ]
+    },
+    "ignoreDeprecations": "6.0",
+    "types": [
+      "node",
+      "jest"
+    ]
   },
   "include": [
     "**/*.ts",

@@ -1,10 +1,9 @@
-import { Icon } from '@/components/ui/icon';
 import { AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
-import { Colors } from '@/constants/Colors';
-import { useResolvedTheme } from '@/store/theme';
-import { Send, Square } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Action, useDesign } from '@/components/ui/design-system/primitives';
+import { designTokens as t } from '@/constants/design-tokens';
+import { Send, Square } from '@/constants/icons';
+import { useCallback, useState } from 'react';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatInputProps {
@@ -22,10 +21,11 @@ export function ChatInput({
   placeholder = 'Ask AI to adjust parameters...',
 }: ChatInputProps) {
   const [text, setText] = useState('');
-  const theme = useResolvedTheme();
-  const isDark = theme === 'dark';
+  const c = useDesign();
+  const [focused, setFocused] = useState(false);
+  const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, 8);
+  const bottomPadding = Math.max(insets.bottom, t.layout.related);
 
   const canSend = text.trim().length > 0 && !isBusy;
 
@@ -36,25 +36,48 @@ export function ChatInput({
   }, [text, canSend, onSend]);
 
   return (
-    <View className="px-4 py-2" style={{ paddingBottom: bottomPadding }}>
+    <View
+      testID="agent-chat-composer"
+      style={{
+        backgroundColor: c.workspace,
+        paddingHorizontal: t.layout.inset,
+        paddingTop: t.layout.related,
+        paddingBottom: bottomPadding,
+      }}
+    >
       <View
-        className="flex-row items-end rounded-[20px] border border-stroke-subtle bg-surface-raised pl-3.5 pr-1 py-1 min-h-[44px]"
+        testID="agent-chat-input-surface"
+        style={{
+          minHeight: t.height.touch,
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          paddingLeft: t.layout.rowX,
+          borderRadius: t.radius.control,
+          borderWidth: 1,
+          borderColor: focused ? c.tint : 'transparent',
+          backgroundColor: c.workspaceCard,
+        }}
       >
         {/* Style prop required — className not supported by BottomSheetTextInput (used internally via AdaptiveTextInput) */}
         <AdaptiveTextInput
           style={{
             flex: 1,
-            fontSize: 14,
-            lineHeight: 20,
-            maxHeight: 100,
-            paddingVertical: 8,
-            paddingRight: 8,
-            color: isDark ? Colors.dark.typography[900] : Colors.light.typography[900],
+            fontSize: t.type.body,
+            lineHeight: t.leading.body,
+            minWidth: 0,
+            minHeight: t.height.touch,
+            maxHeight: t.leading.body * t.chat.inputLines * fontScale + t.layout.related * 2,
+            paddingVertical: t.layout.related,
+            paddingRight: t.layout.related,
+            color: c.ink,
+            ...Platform.select({ web: { outlineWidth: 0 } }),
           }}
           placeholder={placeholder}
-          placeholderTextColor={isDark ? Colors.dark.typography[400] : Colors.light.typography[400]}
+          placeholderTextColor={c.muted}
           value={text}
           onChangeText={setText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onSubmitEditing={handleSend}
           multiline
           maxLength={2000}
@@ -62,26 +85,9 @@ export function ChatInput({
           blurOnSubmit={false}
         />
         {isBusy && onStop ? (
-          <Pressable
-            onPress={onStop}
-            className="w-[34px] h-[34px] rounded-full items-center justify-center mb-px bg-typography-900"
-          >
-            <Icon as={Square} size="xs" className="text-content-inverse" />
-          </Pressable>
+          <Action kind="primary" small icon={Square} label="Stop response" onPress={onStop} />
         ) : (
-          <Pressable
-            onPress={handleSend}
-            disabled={!canSend}
-            className={`w-[34px] h-[34px] rounded-full items-center justify-center mb-px ${
-              canSend ? 'bg-typography-900' : 'bg-surface-muted'
-            }`}
-          >
-            <Icon
-              as={Send}
-              size="xs"
-              className={canSend ? 'text-content-inverse' : 'text-content-tertiary'}
-            />
-          </Pressable>
+          <Action kind="primary" small icon={Send} label="Send message" onPress={handleSend} disabled={!canSend} />
         )}
       </View>
     </View>

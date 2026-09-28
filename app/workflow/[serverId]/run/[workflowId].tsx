@@ -1,33 +1,55 @@
+import { PersistentSheet } from '@/components/ui/design-system/overlays';
+import { NativeIconSegments } from '@/components/ui/design-system/native-controls';
+import { Action, Copy, Field, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Images, Search, ServerCrash, Trash2 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Bot, Images, ServerCrash, Sliders, Trash2 } from '@/constants/icons';
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
 
 import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 
 import { AppBar } from '@/components/layout/app-bar';
-import { SheetTabToggle } from '@/components/self-ui/sheet-tab-toggle';
-import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 import { GenerateActionButton } from '@/features/generation/components/generate-action-button';
+import { RunPageHeaderStatus } from '@/features/generation/components/run-page-header-status';
 
-import { Colors } from '@/constants/Colors';
-import NodeComponent from '@/features/comfy-node/components/node';
-import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
-import { MediaPreview } from '@/features/generation/components/media-preview';
-import { AdaptiveKeyboardAwareScrollView, AdaptiveTextInput } from '@/components/self-ui/adaptive-sheet-components';
+import { AdaptiveKeyboardAwareScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { designTokens as t } from '@/constants/design-tokens';
 import { BottomSheetProvider } from '@/context/bottom-sheet-context';
+import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-chat-tab';
+import NodeComponent from '@/features/comfy-node/components/node';
+import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
-import { useResolvedTheme } from '@/store/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import BottomSheet from '@gorhom/bottom-sheet';
+import type BottomSheet from '@gorhom/bottom-sheet';
+import { BottomSheetFooter, useBottomSheetInternal, type BottomSheetFooterProps } from '@gorhom/bottom-sheet';
 
-import { Button } from '@/components/ui/button';
+const ChatComposerContext = createContext<ReactNode>(null);
+
+function ChatSheetFooter(props: BottomSheetFooterProps) {
+  const composer = useContext(ChatComposerContext);
+  const { animatedLayoutState } = useBottomSheetInternal();
+  useEffect(
+    () => () => {
+      animatedLayoutState.modify((state) => {
+        'worklet';
+        state.footerHeight = 0;
+        return state;
+      });
+    },
+    [animatedLayoutState],
+  );
+  return <BottomSheetFooter {...props}>{composer}</BottomSheetFooter>;
+}
+
+// Both the sheet and the split-layout panel render the same tab control.
+const RUN_TABS = [
+  { label: 'Nodes', icon: Sliders },
+  { label: 'Assistant', icon: Bot },
+];
 
 function NodesTabContent({
   nodes,
@@ -35,7 +57,6 @@ function NodesTabContent({
   setSearchQuery,
   serverId,
   workflowId,
-  theme,
   targetNodeId,
   sharedImageUri,
 }: {
@@ -44,7 +65,6 @@ function NodesTabContent({
   setSearchQuery: (q: string) => void;
   serverId: string;
   workflowId: string;
-  theme: string;
   targetNodeId?: string;
   sharedImageUri?: string;
 }) {
@@ -79,13 +99,10 @@ function NodesTabContent({
     return () => timers.forEach(clearTimeout);
   }, [targetNodeId, nodes]);
 
-  const bgColor = theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0];
+  const bgColor = useDesign().workspace;
 
   const nodeList = nodes.map((node: any) => (
-    <View
-      key={node.id}
-      onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}
-    >
+    <View key={node.id} onLayout={(e) => handleNodeLayout(node.id, e.nativeEvent.layout.y)}>
       <NodeComponent
         node={node}
         serverId={serverId}
@@ -95,35 +112,30 @@ function NodesTabContent({
     </View>
   ));
 
-  const scrollContentStyle = { padding: 16, paddingBottom: 24, backgroundColor: bgColor };
+  const scrollContentStyle = {
+    paddingHorizontal: t.layout.inset,
+    paddingTop: t.layout.related,
+    paddingBottom: t.layout.section,
+    backgroundColor: bgColor,
+  };
   const scrollStyle = { flex: 1 as const, backgroundColor: bgColor };
 
   return (
-    <View className="flex-1 bg-surface-base">
-      <View className="px-4 pt-4 pb-2 bg-surface-base">
-        <HStack
-          className="items-center rounded-lg bg-surface-base px-3 py-3"
-          style={{
-            borderWidth: 1,
-            borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
-          }}
-        >
-          <Icon as={Search} size="sm" className="text-content-tertiary mr-2" />
-          <AdaptiveTextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+    <View testID="run-node-panel" className="bg-surface-workspace flex-1">
+      <View className="px-4 pt-4 pb-2 bg-surface-workspace">
+        <View testID="run-node-search">
+          <Field
+            search
+            surface="workspace-card"
+            label="Search nodes"
             placeholder="Search nodes..."
-            placeholderTextColor={theme === 'light' ? Colors.light.typography[400] : Colors.dark.typography[400]}
-            style={{
-              flex: 1,
-              color: theme === 'light' ? Colors.light.typography[900] : Colors.dark.typography[900],
-              fontSize: 14,
-              padding: 0,
-            }}
+            value={searchQuery}
+            onChange={setSearchQuery}
           />
-        </HStack>
+        </View>
       </View>
       <AdaptiveKeyboardAwareScrollView
+        testID="run-node-list"
         ref={scrollRef}
         bottomOffset={20}
         contentContainerStyle={scrollContentStyle}
@@ -143,7 +155,7 @@ function RunWorkflowScreenContent() {
     targetNodeId?: string;
   }>();
   const router = useRouter();
-  const theme = useResolvedTheme();
+  const c = useDesign();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const ensureModelsFresh = useServersStore((state) => state.ensureModelsFresh);
   const workflowRecord = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
@@ -165,15 +177,15 @@ function RunWorkflowScreenContent() {
 
   // Tab state — simple index, no longer driven by react-native-tab-view
   const [tabIndex, setTabIndex] = useState(0);
+  const [chatState, setChatState] = useState({ hasMessages: false, isBusy: false });
+  const [chatComposer, setChatComposer] = useState<ReactNode>(null);
 
   const { generate } = useGenerationActions();
 
   const [searchQuery, setSearchQuery] = useState('');
   const { layout, isLandscape, width: screenWidth } = useDeviceLayout();
   const useSplitLayout = layout !== 'compact' && isLandscape;
-  const panelWidth = useSplitLayout
-    ? Math.min(480, Math.max(360, screenWidth * 0.35))
-    : 0;
+  const panelWidth = useSplitLayout ? Math.min(480, Math.max(360, screenWidth * 0.35)) : 0;
 
   const handleGenerate = useCallback(() => {
     if (!server || !workflowRecord) return;
@@ -214,53 +226,54 @@ function RunWorkflowScreenContent() {
       const type = node.class_type || '';
       const inputs = Object.keys(node.inputs || {}).join(' ');
 
-      return title.toLowerCase().includes(lowerQuery) ||
+      return (
+        title.toLowerCase().includes(lowerQuery) ||
         type.toLowerCase().includes(lowerQuery) ||
-        inputs.toLowerCase().includes(lowerQuery);
+        inputs.toLowerCase().includes(lowerQuery)
+      );
     });
   }, [workflowRecord, searchQuery]);
 
   // Early returns after all hooks
   if (!workflowRecord) {
-    router.back();
-    return null;
+    return (
+      <View className="bg-surface-base flex-1">
+        <AppBar title="Workflow unavailable" showBack />
+        <Copy className="px-5" style={{ color: c.secondary }}>
+          This workflow may have been removed. Return to the workspace to choose another.
+        </Copy>
+      </View>
+    );
   }
 
   if (!server) {
     return (
-      <VStack className="flex-1 items-center justify-center px-6" space="md">
-        <View className="rounded-full bg-surface-raised p-3">
-          <Icon as={ServerCrash} size="xl" className="h-10 w-10 text-typography-300" />
-        </View>
+      <VStack className="px-6 flex-1 items-center justify-center" space="md">
+        <StateIcon icon={ServerCrash} size={t.icon.hero} />
         <VStack className="items-center" space="xs">
-          <Text className="text-center text-base font-semibold text-typography-800">
+          <Copy size="section" style={{ fontWeight: '600', textAlign: 'center' }}>
             Server Not Found
-          </Text>
-          <Text className="text-center text-sm text-content-secondary">
-            Please check your server list and try again.
-          </Text>
+          </Copy>
+          <Copy style={{ color: c.secondary, textAlign: 'center' }}>Please check your server list and try again.</Copy>
         </VStack>
       </VStack>
     );
   }
 
   return (
-    <View className="z-0 flex-1 bg-surface-base">
+    <View className="bg-surface-base z-0 flex-1">
       <AppBar
         showBack
         title={workflowRecord.name}
         showBottomBorder={useSplitLayout}
-        centerElement={
-          <RunPageHeaderStatus serverName={server.name} />
-        }
+        titleSize="sm"
+        bottomElement={<RunPageHeaderStatus workflowId={workflowRecord.id} />}
         rightElement={
           <HStack className="items-center" space="xs">
-            <Button variant="link" className="h-9 w-9 rounded-xl p-0" hitSlop={4} onPress={openHistoryGallery}>
-              <Icon as={Images} size="md" className="text-action" />
-            </Button>
+            <Action kind="text" icon={Images} label="Open results gallery" onPress={openHistoryGallery} />
           </HStack>
         }
-        className="relative z-30 bg-surface-base"
+        className="bg-surface-base relative z-30"
       />
 
       {useSplitLayout ? (
@@ -271,21 +284,22 @@ function RunWorkflowScreenContent() {
           <View
             style={{
               width: panelWidth,
-              borderLeftWidth: 1,
-              borderLeftColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
+              backgroundColor: c.workspace,
             }}
           >
             {/* Panel Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 bg-surface-base">
-              <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
+            <View className="px-4 py-3 bg-surface-workspace flex-row items-center justify-between">
+              <NativeIconSegments items={RUN_TABS} index={tabIndex} onChange={handleTabChange} label="Run panel" />
               <HStack className="items-center" space="xs">
-                {tabIndex === 1 && (
-                  <Pressable
+                {tabIndex === 1 && chatState.hasMessages && (
+                  <Action
+                    kind="text"
+                    small
+                    icon={Trash2}
+                    label="Clear conversation"
+                    disabled={chatState.isBusy}
                     onPress={() => aiChatTabRef.current?.clearChat()}
-                    className="rounded-lg p-2 active:bg-surface-sunken"
-                  >
-                    <Icon as={Trash2} size="sm" className="text-content-tertiary" />
-                  </Pressable>
+                  />
                 )}
                 <GenerateActionButton onGenerate={handleGenerate} />
               </HStack>
@@ -294,22 +308,22 @@ function RunWorkflowScreenContent() {
             <BottomSheetProvider isInSheet={false}>
               <View style={{ flex: 1 }}>
                 {tabIndex === 0 ? (
-                    <NodesTabContent
-                      nodes={nodes}
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      serverId={serverId as string}
-                      workflowId={workflowId as string}
-                      theme={theme}
-                      targetNodeId={targetNodeId}
-                      sharedImageUri={sharedImageUri}
-                    />
+                  <NodesTabContent
+                    nodes={nodes}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    serverId={serverId as string}
+                    workflowId={workflowId as string}
+                    targetNodeId={targetNodeId}
+                    sharedImageUri={sharedImageUri}
+                  />
                 ) : (
                   <AIChatTab
                     ref={aiChatTabRef}
                     workflowId={workflowId as string}
                     serverId={serverId as string}
                     onRunWorkflow={handleGenerate}
+                    onConversationStateChange={setChatState}
                   />
                 )}
               </View>
@@ -320,66 +334,62 @@ function RunWorkflowScreenContent() {
         <>
           <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} />
 
-          <BottomSheet
-            ref={sheetRef}
-            index={sharedImageUri ? 2 : 1}
-            snapPoints={snapPoints}
-            enableDynamicSizing={false}
-            onChange={handleSheetChange}
-            backgroundStyle={{
-              backgroundColor: theme === 'light' ? Colors.light.background[0] : Colors.dark.background[0],
-              borderWidth: 1,
-              borderColor: theme === 'light' ? Colors.light.outline[50] : Colors.dark.outline[50],
-            }}
-            handleIndicatorStyle={{
-              backgroundColor: theme === 'light' ? Colors.light.background[300] : Colors.dark.background[300],
-              width: 48,
-            }}
-            handleStyle={{
-              height: 32,
-            }}
-            keyboardBehavior="extend"
-            keyboardBlurBehavior="restore"
-          >
-            {/* Sheet Header: toggle + contextual actions + generate button */}
-            <View className="flex-row items-center justify-between px-4 pb-2 bg-surface-base">
-              <SheetTabToggle index={tabIndex} onChange={handleTabChange} />
-              <HStack className="items-center" space="xs">
-                {tabIndex === 1 && (
-                  <Pressable
-                    onPress={() => aiChatTabRef.current?.clearChat()}
-                    className="rounded-lg p-2 active:bg-surface-sunken"
-                  >
-                    <Icon as={Trash2} size="sm" className="text-content-tertiary" />
-                  </Pressable>
-                )}
-                <GenerateActionButton onGenerate={handleGenerate} />
-              </HStack>
-            </View>
+          <ChatComposerContext.Provider value={chatComposer}>
+            <PersistentSheet
+              ref={sheetRef}
+              index={sharedImageUri ? 2 : 1}
+              snapPoints={snapPoints}
+              enableDynamicSizing={false}
+              // Content scrolls at every detent; only the handle resizes the sheet.
+              enableContentPanningGesture={false}
+              enableHandlePanningGesture
+              onChange={handleSheetChange}
+              keyboardBehavior="extend"
+              keyboardBlurBehavior="restore"
+              footerComponent={tabIndex === 1 ? ChatSheetFooter : undefined}
+            >
+              {/* Sheet Header: toggle + contextual actions + generate button */}
+              <View className="px-4 pb-2 bg-surface-workspace flex-row items-center justify-between">
+                <NativeIconSegments items={RUN_TABS} index={tabIndex} onChange={handleTabChange} label="Run panel" />
+                <HStack className="items-center" space="xs">
+                  {tabIndex === 1 && chatState.hasMessages && (
+                    <Action
+                      kind="text"
+                      small
+                      icon={Trash2}
+                      label="Clear conversation"
+                      disabled={chatState.isBusy}
+                      onPress={() => aiChatTabRef.current?.clearChat()}
+                    />
+                  )}
+                  <GenerateActionButton onGenerate={handleGenerate} />
+                </HStack>
+              </View>
 
-            {tabIndex === 0 ? (
-              <NodesTabContent
-                nodes={nodes}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                serverId={serverId as string}
-                workflowId={workflowId as string}
-                theme={theme}
-                targetNodeId={targetNodeId}
-                sharedImageUri={sharedImageUri}
-              />
-            ) : (
-              <AIChatTab
-                ref={aiChatTabRef}
-                workflowId={workflowId as string}
-                serverId={serverId as string}
-                onRunWorkflow={handleGenerate}
-              />
-            )}
-          </BottomSheet>
+              {tabIndex === 0 ? (
+                <NodesTabContent
+                  nodes={nodes}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  serverId={serverId as string}
+                  workflowId={workflowId as string}
+                  targetNodeId={targetNodeId}
+                  sharedImageUri={sharedImageUri}
+                />
+              ) : (
+                <AIChatTab
+                  ref={aiChatTabRef}
+                  workflowId={workflowId as string}
+                  serverId={serverId as string}
+                  onRunWorkflow={handleGenerate}
+                  onConversationStateChange={setChatState}
+                  onComposerChange={setChatComposer}
+                />
+              )}
+            </PersistentSheet>
+          </ChatComposerContext.Provider>
         </>
       )}
-
     </View>
   );
 }

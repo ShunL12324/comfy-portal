@@ -1,6 +1,8 @@
+import { createDurableStorage } from '@/services/durable-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { CloudProvider, Environment, HardwareSelection } from '../types';
 
 import type { SupervisorSnapshot } from '@/services/cloud-supervisor';
 
@@ -26,12 +28,20 @@ export type LaunchStage =
   | 'failed';
 
 export interface LaunchRecord {
-  instanceId: number;
-  templateId: string;
-  templateName: string;
+  id: string;
+  provider: CloudProvider;
+  instanceId: string;
+  environmentId: string;
+  environmentName: string;
+  /** Immutable recipe used by this rental, independent of later template edits. */
+  environmentSnapshot: Environment;
+  /** Missing only for rentals created before hardware quotes were recorded. */
+  hardware?: HardwareSelection;
+  workflowProgress?: Record<string, 'running' | 'done' | 'failed'>;
   /** Random per launch; the supervisor rejects anything else. */
   token: string;
   pricePerHour: number;
+  priceScope?: 'instance' | 'gpu-starting';
   /** Unix seconds — the clock the cost is computed from. */
   startedAt: number;
   stage: LaunchStage;
@@ -46,19 +56,30 @@ export interface LaunchRecord {
   /** Last snapshot, so returning to the screen renders instantly. */
   snapshot?: SupervisorSnapshot;
   /** vast's own words, the only signal before the supervisor answers. */
-  vastStatus?: string;
+  providerStatus?: string;
   error?: string;
+}
+
+export function launchKey(instance: { provider?: CloudProvider; instanceId: string | number }): string {
+  return (instance.provider ?? 'vast') + ':' + String(instance.instanceId);
+}
+function normalizeLaunchId(id: string | number): string {
+  return String(id).includes(':') ? String(id) : 'vast:' + String(id);
 }
 
 interface ProvisioningState {
   launches: LaunchRecord[];
   start: (record: LaunchRecord) => void;
-  update: (instanceId: number, updates: Partial<LaunchRecord>) => void;
-  remove: (instanceId: number) => void;
-  get: (instanceId: number) => LaunchRecord | undefined;
+  update: (instanceId: string | number, updates: Partial<LaunchRecord>) => void;
+  remove: (instanceId: string | number) => void;
+  get: (instanceId: string | number) => LaunchRecord | undefined;
   /** Anything not finished — what the app reattaches to on cold start. */
   active: () => LaunchRecord[];
 }
+
+export const provisioningStorage = createDurableStorage(AsyncStorage);
+
+let hydrationError: unknown;
 
 export const useProvisioningStore = create<ProvisioningState>()(
   persist(
@@ -67,29 +88,55 @@ export const useProvisioningStore = create<ProvisioningState>()(
 
       start: (record) =>
         set((state) => ({
-          launches: [...state.launches.filter((l) => l.instanceId !== record.instanceId), record],
+          launches: [...state.launches.filter((l) => l.id !== record.id), record],
         })),
 
       update: (instanceId, updates) =>
         set((state) => ({
-          launches: state.launches.map((l) =>
-            l.instanceId === instanceId ? { ...l, ...updates } : l,
-          ),
+          launches: state.launches.map((l) => (l.id === normalizeLaunchId(instanceId) ? { ...l, ...updates } : l)),
         })),
 
       remove: (instanceId) =>
-        set((state) => ({ launches: state.launches.filter((l) => l.instanceId !== instanceId) })),
+        set((state) => ({ launches: state.launches.filter((l) => l.id !== normalizeLaunchId(instanceId)) })),
 
-      get: (instanceId) => get().launches.find((l) => l.instanceId === instanceId),
+      get: (instanceId) => get().launches.find((l) => l.id === normalizeLaunchId(instanceId)),
 
       active: () => get().launches.filter((l) => l.stage !== 'ready' && l.stage !== 'failed'),
     }),
     {
       name: 'gpu-provisioning',
-      storage: createJSONStorage(() => AsyncStorage),
+      skipHydration: true,
+      onRehydrateStorage: () => (_state, error) => {
+        hydrationError = error;
+      },
+      storage: createJSONStorage(() => provisioningStorage),
+      merge: (saved, current) => ({
+        ...current,
+        // Retain pre-refactor rentals so their billing controls remain reachable.
+        launches: ((saved as { launches?: LaunchRecord[] } | undefined)?.launches ?? []).map((savedRecord) => {
+          const { templateId, templateName, templateSnapshot, vastStatus, ...record } = savedRecord as LaunchRecord & {
+            templateId?: string; templateName?: string; templateSnapshot?: Environment; vastStatus?: string;
+          };
+          return {
+            ...record,
+            id: record.id ?? launchKey(record), provider: record.provider ?? 'vast',
+            instanceId: String(record.instanceId),
+            environmentId: record.environmentId ?? templateId ?? '',
+            environmentName: record.environmentName ?? templateName ?? 'Cloud instance',
+            environmentSnapshot: record.environmentSnapshot ?? templateSnapshot,
+            providerStatus: record.providerStatus ?? vastStatus,
+          } as LaunchRecord;
+        }),
+      }),
       // The token is what lets anyone read this instance's logs, but it is
       // useless without the instance and dies with it, so it rides along with
       // the record rather than living in the keychain on its own.
     },
   ),
 );
+
+const hydration = useProvisioningStore.persist.rehydrate();
+export async function waitForProvisioning() {
+  await hydration;
+  if (hydrationError) throw new Error('Could not load saved cloud orders. Try reopening the app before renting.');
+}

@@ -1,321 +1,217 @@
-import { Button, ButtonText } from '@/components/ui/button';
-import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
-import { StatusDot } from '@/components/self-ui/status-pill';
+import { View } from 'react-native';
+import { Action, Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import { VStack } from '@/components/ui/vstack';
-import type { SupervisorModel, SupervisorSnapshot } from '@/services/cloud-supervisor';
-import { modelKey } from '@/services/cloud-supervisor';
-import { formatBytes } from '@/services/model-url';
-import { retryModels } from '@/services/ssh-supervisor';
-import { AlertTriangle, Check, RotateCw, X } from 'lucide-react-native';
-import React, { useState } from 'react';
-
-import { accruedCost, formatUptime, formatUsd } from '../utils/cost';
+import { Check, X } from '@/constants/icons';
 import type { LaunchRecord } from '../stores/provisioning-store';
+import type { EnvironmentModel } from '../types';
+import { formatUsd } from '../utils/cost';
+import { formatBytes } from '@/services/model-url';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
-/**
- * What the instance is doing, in the terms a person waiting on it cares about.
- *
- * Two different kinds of waiting are shown differently on purpose. Placing the
- * order and pulling the image have no measurable inside — the container does not
- * exist yet, so there is nothing to ask and a progress bar would be invented.
- * Downloads do have an inside, measured to the byte, so those get bars.
- */
+type State = 'waiting' | 'running' | 'done' | 'failed';
 
-const STAGE_LABELS: { id: string; label: string }[] = [
-  { id: 'placing', label: 'Finding the machine a host' },
-  { id: 'booting', label: 'Host is pulling the image' },
-  { id: 'installing', label: 'Setting up' },
-  { id: 'ready', label: 'Ready' },
-];
-
-const STEP_LABELS: Record<string, string> = {
-  'link-directories': 'Preparing the disk',
-  'disk-check': 'Checking there is room',
-  aria2: 'Starting the downloader',
-  extensions: 'Installing custom nodes',
-  ollama: 'Pulling Ollama models',
-  'comfyui-start': 'Starting ComfyUI',
-};
-
-export function LaunchProgress({ launch }: { launch: LaunchRecord }) {
-  const snapshot = launch.snapshot;
-  const stageIndex = STAGE_LABELS.findIndex((s) => s.id === launch.stage);
-
+// Matches the supervisor's name for a model without an explicit filename; a malformed URL falls back to itself.
+function modelFilename(model: EnvironmentModel) {
+  if (model.filename) return model.filename;
+  try {
+    return decodeURIComponent(new URL(model.url).pathname.split('/').pop() ?? '') || model.url;
+  } catch {
+    return model.url;
+  }
+}
+function Step({ label, state, ratio, detail }: { label: string; state: State; ratio?: number; detail?: string }) {
+  const c = useDesign();
+  const color = state === 'done' ? c.ink : state === 'failed' ? c.danger : c.warning;
   return (
-    <VStack space="lg">
-      <CostBanner launch={launch} />
-
-      {launch.error ? (
-        <HStack space="sm" className="rounded-xl bg-error-50 p-4 items-start">
-          <Icon as={AlertTriangle} size="sm" className="mt-0.5 text-status-danger" />
-          <Text className="text-sm text-error-700 flex-1">{launch.error}</Text>
-        </HStack>
-      ) : null}
-
-      <VStack space="sm">
-        {STAGE_LABELS.map((stage, index) => {
-          const done = launch.stage === 'ready' ? true : stageIndex > index;
-          const active = stageIndex === index && launch.stage !== 'failed';
-          return (
-            <HStack key={stage.id} space="sm" className="items-center">
-              {active ? (
-                <RotatingSpinner size="sm" />
-              ) : (
-                <Icon
-                  as={done ? Check : X}
-                  size="xs"
-                  className={done ? 'text-status-online' : 'text-typography-300'}
-                />
-              )}
-              <Text
-                className={`text-sm ${active ? 'text-content-heading' : done ? 'text-content-secondary' : 'text-typography-300'}`}
-              >
-                {stage.label}
-              </Text>
-            </HStack>
-          );
-        })}
-      </VStack>
-
-      {/* Before the supervisor answers there is genuinely nothing to report, so
-          vast's own words stand in rather than a fabricated bar. */}
-      {!snapshot && launch.vastStatus ? (
-        <Text className="text-xs text-content-tertiary" numberOfLines={2}>
-          {launch.vastStatus}
-        </Text>
-      ) : null}
-
-      {snapshot ? <SetupSteps snapshot={snapshot} /> : null}
-      {snapshot?.models.length ? <ModelList launch={launch} snapshot={snapshot} /> : null}
-      {snapshot ? <ServiceStatus snapshot={snapshot} /> : null}
-    </VStack>
+    <View style={{ gap: t.layout.label }}>
+      <Row style={{ justifyContent: 'space-between', gap: t.layout.related }}>
+        <Copy size="label" numberOfLines={1} style={{ flex: 1 }}>
+          {label}
+        </Copy>
+        {state === 'done' ? (
+          <Check size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={color} />
+        ) : state === 'failed' ? (
+          <X size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={color} />
+        ) : state === 'running' ? (
+          <RotatingSpinner size="sm" color={color} />
+        ) : (
+          <Copy muted size="micro">
+            Pending
+          </Copy>
+        )}
+      </Row>
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={label}
+        accessibilityValue={
+          state === 'done'
+            ? { min: 0, max: 100, now: 100 }
+            : ratio === undefined
+              ? { text: state }
+              : { min: 0, max: 100, now: Math.round(ratio * 100) }
+        }
+        style={{ height: 3, backgroundColor: c.line, overflow: 'hidden' }}
+      >
+        <View
+          style={{
+            height: 3,
+            width: `${state === 'done' ? 100 : Math.max(0, Math.min(100, (ratio ?? 0) * 100))}%`,
+            backgroundColor: color,
+          }}
+        />
+      </View>
+      {!!detail && (
+        <Copy muted size="micro">
+          {detail}
+        </Copy>
+      )}
+    </View>
   );
 }
-
-function CostBanner({ launch }: { launch: LaunchRecord }) {
-  // Rented hardware bills from the moment it is placed, including every minute
-  // of the install, so this is never behind a tap.
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  const c = useDesign();
   return (
-    <HStack className="rounded-xl bg-surface-raised p-4 items-center justify-between">
-      <VStack space="xs">
-        <Text className="text-xs text-content-tertiary">Running for</Text>
-        <Text className="text-base font-medium text-content-heading">
-          {formatUptime(launch.startedAt)}
-        </Text>
-      </VStack>
-      <VStack space="xs" className="items-end">
-        <Text className="text-xs text-content-tertiary">
-          {formatUsd(launch.pricePerHour)}/hr
-        </Text>
-        <Text className="text-base font-medium text-warning-600">
-          {formatUsd(accruedCost(launch.startedAt, launch.pricePerHour))}
-        </Text>
-      </VStack>
-    </HStack>
+    <View style={{ padding: t.layout.field, gap: t.layout.field, borderRadius: t.radius.panel, backgroundColor: c.card }}>
+      <Copy size="body" style={{ fontWeight: '500' }}>
+        {title}
+      </Copy>
+      {children}
+    </View>
   );
 }
-
-function SetupSteps({ snapshot }: { snapshot: SupervisorSnapshot }) {
-  const steps = snapshot.steps.filter((step) => STEP_LABELS[step.id]);
-  if (!steps.length) return null;
-
-  return (
-    <VStack space="xs">
-      <Text className="text-xs font-medium text-content-secondary">Setup</Text>
-      {steps.map((step) => (
-        <HStack key={step.id} className="items-center justify-between py-1">
-          <HStack space="sm" className="items-center flex-1">
-            {step.state === 'running' ? (
-              <RotatingSpinner size="sm" />
-            ) : (
-              <Icon
-                as={step.state === 'done' ? Check : AlertTriangle}
-                size="xs"
-                className={step.state === 'done' ? 'text-status-online' : 'text-status-danger'}
-              />
-            )}
-            <Text className="text-sm text-content-body">{STEP_LABELS[step.id]}</Text>
-          </HStack>
-          {step.ms != null ? (
-            <Text className="text-xs text-content-tertiary">{formatDuration(step.ms)}</Text>
-          ) : null}
-        </HStack>
-      ))}
-    </VStack>
-  );
-}
-
-function ModelList({
+export function LaunchProgress({
   launch,
-  snapshot,
+  retryModel,
+  retrying,
 }: {
   launch: LaunchRecord;
-  snapshot: SupervisorSnapshot;
+  retryModel?: (key: string) => void;
+  retrying?: string;
 }) {
-  const [retrying, setRetrying] = useState<string | null>(null);
-  const failed = snapshot.models.filter((m) => m.state === 'error');
-  const { totals } = snapshot;
-
-  const target =
-    launch.sshHost && launch.sshPort
-      ? { sshHost: launch.sshHost, sshPort: launch.sshPort, token: launch.token }
-      : null;
-
-  const retry = async (keys?: string[]) => {
-    if (!target) return;
-    setRetrying(keys?.[0] ?? 'all');
-    try {
-      await retryModels(target, keys);
-    } catch {
-      // The next poll shows whether it took; a failed retry request is not
-      // worth its own error state.
-    } finally {
-      setRetrying(null);
-    }
-  };
-
+  const snapshot = launch.snapshot;
+  const environment = launch.environmentSnapshot;
+  const stepState = (id: string): State => snapshot?.steps.find((step) => step.id === id)?.state ?? 'waiting';
   return (
-    <VStack space="xs">
-      <HStack className="items-center justify-between">
-        <Text className="text-xs font-medium text-content-secondary">
-          Models ({snapshot.models.filter((m) => m.state === 'done').length}/
-          {snapshot.models.length})
-        </Text>
-        <Text className="text-xs text-content-tertiary">
-          {formatBytes(totals.completed)} / {formatBytes(totals.bytes)}
-          {totals.speed > 0 ? ` · ${formatBytes(totals.speed)}/s` : ''}
-          {totals.etaSeconds ? ` · ${formatDuration(totals.etaSeconds * 1000)} left` : ''}
-        </Text>
-      </HStack>
-
-      {snapshot.stalled ? (
-        <Text className="text-xs text-warning-600">
-          No progress for a while — the host may be wedged. Destroying and trying another offer is
-          usually faster than waiting.
-        </Text>
-      ) : null}
-
-      {failed.length > 1 ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onPress={() => retry()}
-          isDisabled={retrying !== null}
-          className="rounded-lg self-start"
-        >
-          <ButtonText className="text-xs">Retry all {failed.length} failed</ButtonText>
-        </Button>
-      ) : null}
-
-      {snapshot.models.map((model) => (
-        <ModelRow
-          key={modelKey(model)}
-          model={model}
-          retrying={retrying === modelKey(model) || retrying === 'all'}
-          onRetry={() => retry([modelKey(model)])}
+    <View style={{ gap: t.layout.field }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Copy>{launch.environmentName}</Copy>
+        <Copy mono muted size="metadata">
+          {launch.priceScope === 'gpu-starting' ? 'GPU from ' : ''}
+          {formatUsd(launch.pricePerHour)}/hr
+        </Copy>
+      </Row>
+      {!!launch.error && <Copy accessibilityRole="alert">{launch.error}</Copy>}
+      <Group title="Base">
+        <Step
+          label="Allocate server"
+          state={launch.stage === 'placing' ? 'running' : launch.stage === 'failed' && !launch.host ? 'failed' : 'done'}
         />
-      ))}
-    </VStack>
-  );
-}
-
-function ModelRow({
-  model,
-  retrying,
-  onRetry,
-}: {
-  model: SupervisorModel;
-  retrying: boolean;
-  onRetry: () => void;
-}) {
-  const ratio = model.total > 0 ? Math.min(1, model.completed / model.total) : 0;
-  const failed = model.state === 'error';
-
-  return (
-    <VStack space="xs" className="rounded-xl bg-surface-raised p-3">
-      <HStack className="items-center justify-between">
-        <Text className="text-sm text-content-heading flex-1" numberOfLines={1}>
-          {model.name}
-        </Text>
-        {failed ? (
-          <Pressable onPress={onRetry} disabled={retrying} className="p-1">
-            {retrying ? (
-              <RotatingSpinner size="sm" />
-            ) : (
-              <Icon as={RotateCw} size="xs" className="text-action" />
-            )}
-          </Pressable>
-        ) : model.state === 'done' ? (
-          <Icon as={Check} size="xs" className="text-status-online" />
-        ) : (
-          <Text className="text-xs text-content-tertiary">
-            {model.speed > 0 ? `${formatBytes(model.speed)}/s` : model.state}
-          </Text>
+        <Step
+          label="Start runtime"
+          state={
+            launch.stage === 'placing'
+              ? 'waiting'
+              : launch.stage === 'booting'
+                ? 'running'
+                : launch.stage === 'failed' && !snapshot
+                  ? 'failed'
+                  : 'done'
+          }
+        />
+        <Step label="Prepare storage" state={stepState('link-directories')} />
+      </Group>
+      <Group title="Extensions">
+        {(environment?.extensions ?? []).map((url) => (
+          <Step
+            key={url}
+            label={url.replace('https://github.com/', '')}
+            state={
+              snapshot?.steps.some((step) => step.id === 'extension:' + url)
+                ? stepState('extension:' + url)
+                : stepState('extensions') === 'done'
+                  ? 'done'
+                  : 'waiting'
+            }
+            detail={snapshot?.steps.find((step) => step.id === 'extension:' + url)?.detail}
+          />
+        ))}
+        {!environment?.extensions.length && (
+          <Copy muted size="metadata">
+            No extensions required
+          </Copy>
         )}
-      </HStack>
-
-      {!failed ? (
-        <>
-          {/* A plain view rather than the Progress component: this is redrawn
-              every couple of seconds for every model in the list. */}
-          <View className="h-1 rounded-full bg-surface-muted overflow-hidden">
-            <View
-              className={`h-1 rounded-full ${model.state === 'done' ? 'bg-status-online' : 'bg-action'}`}
-              style={{ width: `${Math.round(ratio * 100)}%` }}
-            />
-          </View>
-          <Text className="text-xs text-content-tertiary">
-            {model.folder} · {formatBytes(model.completed)}
-            {model.total ? ` / ${formatBytes(model.total)}` : ''}
-          </Text>
-        </>
-      ) : (
-        <VStack space="xs">
-          <Text className="text-xs text-status-danger-pressed">{model.error}</Text>
-          {model.hint ? (
-            <Text className="text-xs text-content-tertiary">{model.hint}</Text>
-          ) : null}
-        </VStack>
+      </Group>
+      <Group title="Models">
+        {(environment?.models ?? []).map((model) => {
+          const filename = modelFilename(model);
+          const status = snapshot?.models.find((item) => item.folder === model.type && item.name === filename);
+          const state: State =
+            status?.state === 'done'
+              ? 'done'
+              : status?.state === 'active'
+                ? 'running'
+                : status?.state === 'error'
+                  ? 'failed'
+                  : 'waiting';
+          return (
+            <View key={model.url} style={{ gap: t.layout.label }}>
+              <Step
+                label={model.label || model.filename || model.url}
+                state={state}
+                ratio={status && status.total > 0 ? status.completed / status.total : undefined}
+                detail={
+                  status?.error ||
+                  (status
+                    ? `${formatBytes(status.completed)} / ${status.total ? formatBytes(status.total) : 'Size unavailable'}`
+                    : undefined)
+                }
+              />
+              {state === 'failed' && status && retryModel && (
+                <Row>
+                  <Action
+                    small
+                    kind="secondary"
+                    loading={retrying === status.folder + '/' + status.name}
+                    disabled={!!retrying}
+                    onPress={() => retryModel(status.folder + '/' + status.name)}
+                  >
+                    Retry download
+                  </Action>
+                </Row>
+              )}
+            </View>
+          );
+        })}
+        {!environment?.models.length && (
+          <Copy muted size="metadata">
+            No model downloads required
+          </Copy>
+        )}
+      </Group>
+      <Group title="Workflows">
+        {(environment?.workflows ?? []).map((workflow, index) => (
+          <Step key={index} label={workflow.name} state={launch.workflowProgress?.[String(index)] ?? 'waiting'} />
+        ))}
+        {!environment?.workflows.length && (
+          <Copy muted size="metadata">
+            No workflows included
+          </Copy>
+        )}
+      </Group>
+      {!!environment?.ollamaModels?.length && (
+        <Group title="Ollama models">
+          {environment.ollamaModels.map((model) => (
+            <Step key={model} label={model} state={stepState('ollama:' + model)} />
+          ))}
+        </Group>
       )}
-    </VStack>
+      <Group title="Startup checks">
+        <Step label="Start ComfyUI" state={stepState('comfyui-start')} />
+        <Step
+          label="Verify connection"
+          state={launch.stage === 'ready' ? 'done' : snapshot?.phase === 'ready' ? 'running' : 'waiting'}
+        />
+      </Group>
+    </View>
   );
-}
-
-function ServiceStatus({ snapshot }: { snapshot: SupervisorSnapshot }) {
-  const entries = Object.entries(snapshot.services);
-  if (!entries.length) return null;
-
-  return (
-    <VStack space="xs">
-      <Text className="text-xs font-medium text-content-secondary">Services</Text>
-      {entries.map(([name, service]) => (
-        <HStack key={name} className="items-center justify-between py-1">
-          <HStack space="sm" className="items-center">
-            <StatusDot tone={service.state === 'running' ? 'ready' : 'busy'} pulse={service.state !== 'running'} />
-            <Text className="text-sm text-content-body">
-              {name === 'comfyui' ? 'ComfyUI' : name}
-            </Text>
-          </HStack>
-          <Text className="text-xs text-content-tertiary">
-            {service.state}
-            {/* A restart count is the difference between "it crashed once at
-                boot" and "it is crash-looping", which look identical otherwise. */}
-            {service.restarts > 0 ? ` · restarted ${service.restarts}×` : ''}
-          </Text>
-        </HStack>
-      ))}
-    </VStack>
-  );
-}
-
-function formatDuration(ms: number): string {
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${seconds % 60}s`;
 }

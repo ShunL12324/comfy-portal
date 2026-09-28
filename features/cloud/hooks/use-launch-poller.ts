@@ -3,7 +3,6 @@ import { AppState } from 'react-native';
 
 import { useCloudCredentialsStore } from '../stores/credentials-store';
 import { useProvisioningStore } from '../stores/provisioning-store';
-import { useTemplateStore } from '../stores/template-store';
 import { advanceLaunch } from '../services/provision';
 
 /** Slow enough not to hammer a phone's radio, fast enough to feel live. */
@@ -35,15 +34,15 @@ export function useLaunchPoller() {
       if (active.length === 0) return;
 
       const credentials = useCloudCredentialsStore.getState();
-      if (!credentials.vastApiKey) return;
+      if (!credentials.vastApiKey && !credentials.runpodApiKey) return;
 
       busy.current = true;
       try {
         for (const launch of active) {
           if (cancelled) break;
-          const template = useTemplateStore.getState().getTemplate(launch.templateId);
+          if (!(launch.provider === 'runpod' ? credentials.runpodApiKey : credentials.vastApiKey)) continue;
           try {
-            await advanceLaunch(launch.instanceId, credentials, template);
+            await advanceLaunch(launch.id, credentials);
           } catch {
             // A dropped poll is not a failed launch — the machine carries on
             // installing, and the next tick picks it up.

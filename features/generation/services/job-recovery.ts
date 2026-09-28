@@ -3,6 +3,7 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { Workflow } from '@/features/workflow/types';
 import { ComfyClient } from '@/services/comfy-client';
 import { getGeneratedMedia, saveGeneratedMedia } from '@/services/image-storage';
+import { runStorageMigrations } from '@/services/storage-migration';
 import { showToast } from '@/utils/toast';
 import { Platform } from 'react-native';
 
@@ -152,14 +153,15 @@ export async function finalizeJob(
   options: FinalizeOptions = {},
 ): Promise<string[] | null> {
   const { promptId, serverId, workflowId } = job;
-  if (finalizing.has(promptId)) return null;
-  finalizing.add(promptId);
+  const jobKey = JSON.stringify([serverId, promptId]);
+  if (finalizing.has(jobKey)) return null;
+  finalizing.add(jobKey);
 
   try {
     const server = findServer(serverId);
     if (!server) {
       // The server record is gone, so this job can never be resolved.
-      usePendingJobsStore.getState().removeJob(promptId);
+      usePendingJobsStore.getState().removeJob(serverId, promptId);
       return null;
     }
 
@@ -170,45 +172,32 @@ export async function finalizeJob(
     const alreadySaved = new Set(
       existing
         .filter((item) => item.metadata?.promptId === promptId)
-        .map((item) => item.metadata?.originalUrl)
+        .map((item) => item.metadata?.sourceId ?? item.metadata?.originalUrl)
         .filter(Boolean),
     );
 
     const client = getClient(server);
-    const { found, mediaUrls } = await client.fetchAndDownloadResults(promptId, {
-      onDownloadProgress: options.onDownloadProgress,
-    });
-
-    // No history entry yet: the run isn't committed. Keep the job pending.
-    if (!found) return null;
-
-    const workflow = options.workflow ?? {};
+    const workflow = job.workflowSnapshot ?? options.workflow ?? {};
     const savedPaths: string[] = [];
-    for (const mediaUrl of mediaUrls) {
-      if (alreadySaved.has(mediaUrl)) continue;
+    const { found } = await client.fetchAndDownloadResults(promptId, {
+      onDownloadProgress: options.onDownloadProgress,
+    }, alreadySaved, async (mediaUrl, sourceId) => {
       const result = await saveGeneratedMedia({
-        serverId,
-        workflowId,
-        mediaUrl,
-        workflow,
-        promptId,
+        serverId, workflowId, mediaUrl, sourceId, workflow, promptId,
       });
       if (result) {
-        const localUrl =
-          Platform.OS === 'web'
-            ? result.path
-            : result.path.startsWith('file://')
-              ? result.path
-              : `file://${result.path}`;
+        const localUrl = Platform.OS === 'web' || result.path.startsWith('file://')
+          ? result.path : 'file://' + result.path;
         savedPaths.push(localUrl);
       }
-    }
+    });
+    if (!found) return null;
 
     // Everything the server had for this prompt is now on disk.
-    usePendingJobsStore.getState().removeJob(promptId);
+    usePendingJobsStore.getState().removeJob(serverId, promptId);
     return savedPaths;
   } finally {
-    finalizing.delete(promptId);
+    finalizing.delete(jobKey);
   }
 }
 
@@ -299,7 +288,7 @@ async function reconcileServer(serverId: string): Promise<boolean> {
 
   const server = findServer(serverId);
   if (!server) {
-    for (const job of jobs) usePendingJobsStore.getState().removeJob(job.promptId);
+    for (const job of jobs) usePendingJobsStore.getState().removeJob(job.serverId, job.promptId);
     return false;
   }
 
@@ -364,7 +353,7 @@ async function reconcileServer(serverId: string): Promise<boolean> {
       } else if (reachable && Date.now() - job.queuedAt > LOST_JOB_GRACE_MS) {
         // Not in history, not in the queue, and old enough that it isn't just
         // a lag between the two lookups: the server no longer knows about it.
-        usePendingJobsStore.getState().removeJob(job.promptId);
+        usePendingJobsStore.getState().removeJob(job.serverId, job.promptId);
         showToast.error('Generation Lost', 'The server no longer has this generation.');
       } else {
         needsAnotherPass = true;
@@ -397,6 +386,12 @@ export function reconcileAll(): Promise<void> {
 }
 
 async function runReconcile(): Promise<void> {
+  // Before the stores, and before anything reads the media index: recovery
+  // decides what to download by checking which of a prompt's outputs are
+  // already saved. Media still sitting in the pre-migration layout is invisible
+  // to that check, so reconciling first would download every old job's results
+  // a second time. Awaited rather than merely ordered — see the test.
+  await runStorageMigrations();
   await waitForStores();
 
   const serverIds = [...new Set(getPendingJobs().map((job) => job.serverId))];

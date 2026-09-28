@@ -1,27 +1,15 @@
-import { Button } from '@/components/ui/button';
+import { designTokens as t } from '@/constants/design-tokens';
+import { Action, AppBarActionProvider, Copy, useDesign } from '@/components/ui/design-system/primitives';
 import { Heading } from '@/components/ui/heading';
-import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
-import React, { ReactNode, useMemo } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { HStack } from '../ui/hstack';
-import { Icon } from '../ui/icon';
-import { VStack } from '../ui/vstack';
-
-// Define the allowed sizes based on the linter error
-type HeadingSize = 'lg' | 'sm' | 'md' | 'xl' | '2xl' | 'xs' | '3xl' | '4xl' | '5xl' | undefined;
-const APP_BAR_HORIZONTAL_PADDING_TOTAL = 40;
-const SIDE_SLOT_MIN_WIDTH = 50;
-const BACK_BUTTON_RESERVED_WIDTH = 40;
-const TITLE_SAFE_GAP = 8;
-const MIN_TITLE_WIDTH = 72;
-const MAX_TITLE_WIDTH = 480;
+import { ChevronLeft } from '@/constants/icons';
+import { type ReactNode } from 'react';
 
 interface AppBarProps {
   title: string;
-  titleSize?: HeadingSize; // Use the defined HeadingSize type
+  titleCount?: number;
+  titleSize?: 'lg' | 'sm' | 'md' | 'xl' | '2xl' | 'xs' | '3xl' | '4xl' | '5xl';
   subtitle?: string;
   showBack?: boolean;
   centerTitle?: boolean;
@@ -34,7 +22,8 @@ interface AppBarProps {
 
 export function AppBar({
   title,
-  titleSize = 'lg',
+  titleCount,
+  titleSize,
   subtitle,
   showBack,
   centerTitle,
@@ -45,63 +34,95 @@ export function AppBar({
   showBottomBorder,
 }: AppBarProps) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const leftTitleMaxWidth = useMemo(() => {
-    const contentWidth = Math.max(0, width - APP_BAR_HORIZONTAL_PADDING_TOTAL);
-    const backButtonWidth = showBack ? BACK_BUTTON_RESERVED_WIDTH : 0;
-    const hasCenteredContent = Boolean(centerTitle || centerElement);
-    const rawAvailableWidth = hasCenteredContent
-      ? contentWidth / 2 - backButtonWidth - TITLE_SAFE_GAP
-      : contentWidth - backButtonWidth - SIDE_SLOT_MIN_WIDTH - TITLE_SAFE_GAP;
-
-    return Math.max(MIN_TITLE_WIDTH, Math.min(MAX_TITLE_WIDTH, rawAvailableWidth));
-  }, [centerElement, centerTitle, showBack, width]);
-
+  const c = useDesign();
+  const compact = titleSize === 'sm' || titleSize === 'xs' || (!titleSize && !!showBack);
   return (
-    <View className={`w-full bg-surface-base ${showBottomBorder ? 'border-b border-stroke-subtle' : ''} ${className}`}>
-      <VStack space="sm" className="px-5 pb-4 pt-3">
-        <HStack className="relative items-center justify-between">
-          <HStack className="items-center min-w-[50px]">
-            {showBack && (
-              <Button
-                variant="link"
-                className="-ml-2 mr-1 h-9 w-9 rounded-xl p-0"
-                hitSlop={4}
+    <View
+      testID="app-bar"
+      className={className}
+      style={{
+        backgroundColor: c.paper,
+        paddingHorizontal: t.layout.gutter,
+        paddingTop: t.layout.related,
+        paddingBottom: t.layout.field,
+        gap: t.layout.label,
+        borderBottomWidth: showBottomBorder ? 1 : 0,
+        borderColor: c.line,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.field, minHeight: t.height.touch }}>
+        {showBack && (
+          <View testID="app-bar-leading" style={{ width: 20, height: t.height.touch }}>
+            <View style={{ position: 'absolute', left: -(t.height.touch - 20) / 2 }}>
+              <Action
+                kind="text"
+                icon={ChevronLeft}
+                iconSize={t.icon.large}
+                label="Go back"
                 onPress={() => router.back()}
-              >
-                <Icon as={ChevronLeft} size="xl" className="text-content-primary" />
-              </Button>
-            )}
-            {!centerTitle && (
-              <VStack className="shrink" style={{ maxWidth: leftTitleMaxWidth }}>
-                <Heading size={titleSize} className="font-serif font-normal text-content-primary" numberOfLines={1} ellipsizeMode="tail">
-                  {title}
-                </Heading>
-                {subtitle && (
-                  <Text className="text-sm text-content-secondary" numberOfLines={1} ellipsizeMode="tail">
-                    {subtitle}
-                  </Text>
-                )}
-              </VStack>
-            )}
-          </HStack>
-          {centerTitle && (
-            <View className="absolute left-0 right-0 items-center pointer-events-none">
-              <VStack className="items-center">
-                <Heading size={titleSize} className="font-serif font-normal text-content-primary">
-                  {title}
-                </Heading>
-                {subtitle && <Text className="text-sm text-content-secondary">{subtitle}</Text>}
-              </VStack>
+              />
             </View>
-          )}
-          {centerElement && <View className="absolute left-0 right-0 items-center" pointerEvents="box-none">{centerElement}</View>}
-          <View className="min-w-[50px]">
-            {rightElement}
           </View>
-        </HStack>
-        {bottomElement}
-      </VStack>
+        )}
+        <View style={{ flex: 1, minWidth: 0, alignItems: centerTitle ? 'center' : 'flex-start' }}>
+          {
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.related, maxWidth: '100%' }}>
+                <Heading
+                  numberOfLines={1}
+                  style={{
+                    flexShrink: 1,
+                    fontFamily: t.font.titleSemibold,
+                    fontWeight: '400',
+                    fontSize: compact ? t.type.heading : t.type.title,
+                    lineHeight: compact ? t.leading.heading : t.leading.title,
+                    color: c.ink,
+                  }}
+                >
+                  {title}
+                </Heading>
+                {titleCount !== undefined && (
+                  <View
+                    accessibilityLabel={`${title}: ${titleCount}`}
+                    style={{
+                      minWidth: 24,
+                      height: 20,
+                      paddingHorizontal: t.layout.badgeX,
+                      borderRadius: t.radius.small,
+                      backgroundColor: c.well,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Copy mono size="metadata" style={{ color: c.secondary }}>
+                      {titleCount}
+                    </Copy>
+                  </View>
+                )}
+              </View>
+              {centerElement}
+            </>
+          }
+        </View>
+        {rightElement && (
+          <AppBarActionProvider value={true}>
+            <View testID="app-bar-trailing" style={{ flexShrink: 0, alignItems: 'flex-end' }}>
+              {rightElement}
+            </View>
+          </AppBarActionProvider>
+        )}
+      </View>
+      {subtitle && (
+        <Copy
+          size="metadata"
+          muted
+          numberOfLines={1}
+          style={{ marginLeft: showBack ? t.icon.large + t.layout.field : 0 }}
+        >
+          {subtitle}
+        </Copy>
+      )}
+      {bottomElement}
     </View>
   );
 }

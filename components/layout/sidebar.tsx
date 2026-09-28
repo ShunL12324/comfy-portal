@@ -1,15 +1,15 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { LayoutTemplate, Server, Settings2 } from 'lucide-react-native';
+import { Images, LayoutTemplate, Server, Settings2 } from '@/constants/icons';
 import { MotiView } from 'moti';
-import React from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HStack } from '../ui/hstack';
 import { Icon } from '../ui/icon';
 import { Pressable } from '../ui/pressable';
-import { Text } from '../ui/text';
+import { Copy } from '../ui/design-system/primitives';
 import { VStack } from '../ui/vstack';
 import { type TabRoute } from './tab-bar';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface SidebarItemProps {
   icon: typeof Server;
@@ -30,26 +30,19 @@ const SIDEBAR_WIDTH_RATIO = 0.25;
 
 const SidebarItem = ({ icon, label, isActive, onPress, colors }: SidebarItemProps) => {
   return (
-    <Pressable onPress={onPress} className="rounded-xl">
+    <Pressable onPress={onPress} className="rounded-lg">
       <MotiView
         animate={{
           backgroundColor: isActive ? colors.background[100] : 'transparent',
         }}
         transition={{ type: 'timing', duration: 200 }}
-        style={{ borderRadius: 12 }}
+        style={{ borderRadius: t.radius.control }}
       >
-        <HStack space="md" className="items-center px-3 py-2.5">
-          <Icon
-            as={icon}
-            size="lg"
-            className={isActive ? 'text-content-primary' : 'text-content-tertiary'}
-          />
-          <Text
-            size="md"
-            className={isActive ? 'font-medium text-content-primary' : 'text-content-tertiary'}
-          >
+        <HStack space="md" className="px-3 py-2.5 items-center">
+          <Icon as={icon} size="sm" className={isActive ? 'text-content-primary' : 'text-content-tertiary'} />
+          <Copy muted={!isActive} style={{ fontWeight: '500' }}>
             {label}
-          </Text>
+          </Copy>
         </HStack>
       </MotiView>
     </Pressable>
@@ -64,7 +57,7 @@ export const Sidebar = ({ activeTab, onChangeTab }: SidebarProps) => {
 
   return (
     <VStack
-      className="border-r border-stroke-hairline bg-surface-base"
+      className="border-stroke-hairline bg-surface-card border-r"
       style={{ width: sidebarWidth, paddingTop: insets.top }}
     >
       {/* Navigation items */}
@@ -77,8 +70,15 @@ export const Sidebar = ({ activeTab, onChangeTab }: SidebarProps) => {
           colors={colors}
         />
         <SidebarItem
+          icon={Images}
+          label="Gallery"
+          isActive={activeTab === 'gallery'}
+          onPress={() => onChangeTab('gallery')}
+          colors={colors}
+        />
+        <SidebarItem
           icon={LayoutTemplate}
-          label="Templates"
+          label="Environments"
           isActive={activeTab === 'explore'}
           onPress={() => onChangeTab('explore')}
           colors={colors}

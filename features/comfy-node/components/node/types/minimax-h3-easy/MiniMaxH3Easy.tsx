@@ -1,17 +1,14 @@
 import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { NumberInput } from '@/components/self-ui/number-input';
 import { NumberSlider } from '@/components/self-ui/slider';
-import Switch from '@/components/self-ui/switch';
+import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
-import {
-  PromptEditorModal,
-  PromptEditorModalRef,
-} from '@/features/ai-assistant/components/prompt-editor-modal';
+import { PromptEditorModal, PromptEditorModalRef } from '@/features/ai-assistant/components/prompt-editor-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { Maximize2 } from 'lucide-react-native';
+import { Maximize2 } from '@/constants/icons';
 import { useCallback, useRef } from 'react';
 import { View } from 'react-native';
 import BaseNode from '../../common/base-node';
@@ -59,11 +56,11 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
 
   const handleOpenEditor = useCallback(() => {
     promptEditorRef.current?.present({
-      initialValue: node.inputs?.prompt || '',
+      initialValue: node.inputs.prompt || '',
       onSave: (value) => setInput('prompt', value),
       title: 'Edit Prompt',
     });
-  }, [node.inputs?.prompt, setInput]);
+  }, [node.inputs.prompt, setInput]);
 
   const isAdvanced = node.inputs.advanced === true;
   const isCustomResolution = node.inputs.resolution === 'custom';
@@ -83,8 +80,8 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
       <SubItem
         title="Prompt"
         rightComponent={
-          <View className="flex-row items-center gap-2">
-            <Pressable onPress={handleOpenEditor} className="p-1">
+          <View className="gap-2 flex-row items-center">
+            <Pressable onPress={handleOpenEditor} className="p-1" accessibilityLabel="Expand prompt" hitSlop={11}>
               <Icon as={Maximize2} size="sm" className="text-content-secondary" />
             </Pressable>
           </View>
@@ -97,13 +94,12 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
           isReadOnly={false}
           isInvalid={false}
           isDisabled={false}
-          className="w-full rounded-md border-0 bg-surface-raised"
+          className="rounded-md bg-surface-raised w-full border-0"
         >
           <TextareaInput
             placeholder="Describe the video..."
             value={node.inputs?.prompt || ''}
             onChangeText={(text) => setInput('prompt', text)}
-            className="text-sm"
           />
         </Textarea>
       </SubItem>
@@ -138,8 +134,6 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
               maxValue={DIMENSION_MAX}
               step={DIMENSION_STEP}
               decimalPlaces={0}
-              buttonSize={24}
-              space={12}
             />
           </SubItem>
           <SubItem title="Height" node={node} dependencies={['height']}>
@@ -150,8 +144,6 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
               maxValue={DIMENSION_MAX}
               step={DIMENSION_STEP}
               decimalPlaces={0}
-              buttonSize={24}
-              space={12}
             />
           </SubItem>
         </>
@@ -164,7 +156,6 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
           maxValue={SECONDS_MAX}
           step={0.1}
           onChangeEnd={(value) => setInput('seconds', Number(value))}
-          space={12}
           decimalPlaces={1}
         />
       </SubItem>
@@ -181,8 +172,8 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
       <SubItem
         title="Prompt optimizer"
         rightComponent={
-          <Switch
-            size="sm"
+          <NativeSwitch
+            label="Prompt optimizer"
             value={node.inputs.prompt_optimizer_settings === true}
             onValueChange={(value: boolean) => setInput('prompt_optimizer_settings', value)}
           />
@@ -192,8 +183,8 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
       <SubItem
         title="Advanced"
         rightComponent={
-          <Switch
-            size="sm"
+          <NativeSwitch
+            label="Advanced"
             value={isAdvanced}
             onValueChange={(value: boolean) => setInput('advanced', value)}
           />
@@ -209,7 +200,6 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
               maxValue={FPS_MAX}
               step={1}
               onChangeEnd={(value) => setInput('fps', Number(value))}
-              space={12}
               decimalPlaces={0}
             />
           </SubItem>

@@ -14,7 +14,6 @@ export const DeleteAlert = (props: DeleteAlertProps) => {
     <ConfirmDialog
       {...props}
       confirmText="Delete"
-      confirmButtonColor="bg-status-danger"
     />
   );
 };

@@ -1,13 +1,10 @@
 import { Pressable } from '@/components/ui/pressable';
 import { Icon } from '@/components/ui/icon';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
-import {
-  PromptEditorModal,
-  PromptEditorModalRef,
-} from '@/features/ai-assistant/components/prompt-editor-modal';
+import { PromptEditorModal, PromptEditorModalRef } from '@/features/ai-assistant/components/prompt-editor-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { Maximize2 } from 'lucide-react-native';
+import { Maximize2 } from '@/constants/icons';
 import { useCallback, useRef } from 'react';
 import { View } from 'react-native';
 import BaseNode from '../../common/base-node';
@@ -42,8 +39,8 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
       <SubItem
         title="Text"
         rightComponent={
-          <View className="flex-row items-center gap-2">
-            <Pressable onPress={handleOpenEditor} className="p-1">
+          <View className="gap-2 flex-row items-center">
+            <Pressable onPress={handleOpenEditor} className="p-1" accessibilityLabel="Expand prompt" hitSlop={11}>
               <Icon as={Maximize2} size="sm" className="text-content-secondary" />
             </Pressable>
           </View>
@@ -56,13 +53,12 @@ export default function CLIPTextEncode({ node, serverId, workflowId }: CLIPTextE
           isReadOnly={false}
           isInvalid={false}
           isDisabled={false}
-          className="w-full rounded-md border-0 bg-surface-raised"
+          className="rounded-md bg-surface-raised w-full border-0"
         >
           <TextareaInput
             placeholder="Enter text here..."
             value={node.inputs?.text || ''}
             onChangeText={handleTextChange}
-            className="text-sm"
           />
         </Textarea>
       </SubItem>

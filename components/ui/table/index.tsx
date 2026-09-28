@@ -18,7 +18,8 @@ import {
   tableDataStyle,
   tableCaptionStyle,
 } from './styles';
-import { Text, TextProps, View, ViewProps } from 'react-native';
+import { TextProps, View, ViewProps } from 'react-native';
+import { NativeText as Text } from '@/components/ui/text/native-text';
 
 const TableHeaderContext = createContext<{
   isHeaderRow: boolean;
@@ -128,7 +129,7 @@ const TableHead = React.forwardRef<
   } else {
     return (
       <Text
-        ref={ref as React.Ref<Text>}
+        ref={ref as React.Ref<React.ComponentRef<typeof Text>>}
         className={tableHeadStyle({ class: className })}
         {...(props as TextProps)}
       />
@@ -171,7 +172,7 @@ const TableData = React.forwardRef<
   } else {
     return (
       <Text
-        ref={ref as React.Ref<Text>}
+        ref={ref as React.Ref<React.ComponentRef<typeof Text>>}
         className={tableDataStyle({ class: className })}
         {...(props as TextProps)}
       />

@@ -1,9 +1,10 @@
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { Copy } from '@/components/ui/design-system/primitives';
 import { Node } from '@/features/workflow/types';
-import { GitBranch } from 'lucide-react-native';
+import { GitBranch } from '@/constants/icons';
 import React, { ReactNode } from 'react';
 import { Linking, View } from 'react-native';
+import { designTokens as t } from '@/constants/design-tokens';
 
 interface SubItemProps {
   title: string;
@@ -38,16 +39,19 @@ export default function SubItem({ title, children, className, rightComponent, no
         .map(({ dependency }) => dependency);
 
       return (
-        <View className={`mt-4 ${className}`}>
-          <View className="mb-1 flex-row items-center justify-between">
-            <Text size="sm" className="flex-1 truncate text-content-body">
+        <View className={className}>
+          <View
+            style={{ marginBottom: children ? t.node.labelGap : 0 }}
+            className="flex-row items-center justify-between"
+          >
+            <Copy size="label" muted numberOfLines={1} style={t.node.label} className="flex-1 truncate">
               {title}
-            </Text>
+            </Copy>
             {rightComponent}
           </View>
           {children && (
             <View>
-              <Text size="sm" className="text-content-secondary">
+              <Copy size="metadata" muted>
                 {missingDeps.length > 0 && <>The following inputs are missing: {missingDeps.join(', ')}.</>}
                 {missingDeps.length > 0 && linkedDeps.length > 0 && <>{'\n'}</>}
                 {linkedDeps.length > 0 && (
@@ -56,9 +60,9 @@ export default function SubItem({ title, children, className, rightComponent, no
                     {linkedDeps.map((dep, index) => (
                       <React.Fragment key={dep}>
                         {index > 0 && ', '}
-                        <Text size="sm" className="text-content-secondary" underline>
+                        <Copy size="metadata" muted underline>
                           {dep}
-                        </Text>
+                        </Copy>
                       </React.Fragment>
                     ))}
                     .
@@ -71,18 +75,18 @@ export default function SubItem({ title, children, className, rightComponent, no
                     ComfyUI server. If problem persists, consider reporting this issue to the developer.
                   </>
                 )}
-              </Text>
+              </Copy>
               {missingDeps.length > 0 && (
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="solid"
                   onPress={() => {
                     Linking.openURL('https://github.com/ShunL12324/comfy-portal/issues');
                   }}
                   className="mt-2"
                 >
-                  <ButtonIcon as={GitBranch} size="sm" className="text-content-inverse" />
-                  <ButtonText size="sm" className="text-content-inverse">
+                  <ButtonIcon as={GitBranch} size="xs" className="text-content-inverse" />
+                  <ButtonText size="xs" className="text-content-inverse">
                     Report Issue
                   </ButtonText>
                 </Button>
@@ -95,11 +99,11 @@ export default function SubItem({ title, children, className, rightComponent, no
   }
 
   return (
-    <View className={`mt-4 ${className}`}>
-      <View className="mb-1 flex-row items-center justify-between">
-        <Text size="sm" className="flex-1 truncate text-content-body">
+    <View className={className}>
+      <View style={{ marginBottom: children ? t.node.labelGap : 0 }} className="flex-row items-center justify-between">
+        <Copy size="label" muted numberOfLines={1} style={t.node.label} className="flex-1 truncate">
           {title}
-        </Text>
+        </Copy>
         {rightComponent}
       </View>
       {children && <View>{children}</View>}

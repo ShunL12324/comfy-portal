@@ -1,22 +1,18 @@
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
+import { Action, Copy, Title, useDesign } from '@/components/ui/design-system/primitives';
 import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { KeyboardModal } from '@/components/self-ui/keyboard-modal';
-import { Button, ButtonText } from '@/components/ui/button';
 import { HStack } from '@/components/ui/hstack';
 import { Image } from '@/components/ui/image';
 import { Input, InputField } from '@/components/ui/input';
 import { Pressable } from '@/components/ui/pressable';
-import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { Colors } from '@/constants/Colors';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
-import { useResolvedTheme } from '@/store/theme';
-import { showToast } from '@/utils/toast';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { ImagePlus, X } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ImagePlus, X } from '@/constants/icons';
+import React, { useState } from 'react';
 
 interface EditWorkflowModalProps {
   isOpen: boolean;
@@ -24,7 +20,10 @@ interface EditWorkflowModalProps {
   workflowId: string;
 }
 
+const MAX_NAME_LENGTH = 50;
+
 export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowModalProps) {
+  const c = useDesign();
   const workflow = useWorkflowStore((state) => state.workflow.find((p) => p.id === workflowId));
   const removeWorkflow = useWorkflowStore((state) => state.removeWorkflow);
   const [name, setName] = useState(workflow?.name || '');
@@ -32,26 +31,20 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
   const [error, setError] = useState('');
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
-  const theme = useResolvedTheme();
-  const activeTheme = (theme ?? 'light') as keyof typeof Colors;
-  const insets = useSafeAreaInsets();
 
-  useEffect(() => {
+  // Each opening starts from the saved workflow.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen && workflow) {
       setName(workflow.name);
       setThumbnail(workflow.thumbnail || '');
       setError('');
     }
-  }, [isOpen, workflow?.name, workflow?.thumbnail]);
-
-  useEffect(() => {
-    if (name.trim().length > 50) {
-      setName(name.slice(0, 50));
-      showToast.error('Name must be less than 50 characters', undefined, insets.top + 8);
-    }
-  }, [insets.top, name]);
+  }
 
   if (!workflow) return null;
+  const serverSource = workflow.addMethod === 'server-sync';
 
   const handleUpdate = async () => {
     if (!name.trim()) {
@@ -67,7 +60,7 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
 
       try {
         workflowDir.create({ intermediates: true, idempotent: true });
-        new File(thumbnail).copy(thumbnailFile);
+        await new File(thumbnail).copy(thumbnailFile);
         finalThumbnail = thumbnailFile.uri;
       } catch (error) {
         console.error('Failed to save thumbnail:', error);
@@ -136,63 +129,62 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
       <KeyboardModal isOpen={isOpen} onClose={handleClose}>
         <KeyboardModal.Header>
           <HStack className="w-full items-center justify-between">
-            <Text className="text-lg font-semibold text-action">Edit Workflow</Text>
-            <Pressable onPress={handleClose} className="p-1 active:opacity-60">
-              <X size={20} color={Colors[activeTheme].primary[500]} />
-            </Pressable>
+            <Title>Edit Workflow</Title>
+            <Action kind="text" icon={X} label="Close workflow editor" onPress={handleClose} />
           </HStack>
         </KeyboardModal.Header>
 
         <KeyboardModal.Body scrollEnabled={false}>
           <VStack space="md">
             <KeyboardModal.Item title="Name" error={error}>
-              <Input variant="outline" size="md" className="mt-1 overflow-hidden rounded-md border-0 bg-surface-base">
+              <Input variant="outline" size="md" className="mt-1 rounded-md bg-surface-base overflow-hidden border-0">
                 <InputField
                   onChangeText={(value) => {
                     setName(value);
                     setError('');
                   }}
                   defaultValue={name}
+                  maxLength={MAX_NAME_LENGTH}
                   placeholder="Enter workflow name"
-                  className="px-3 py-2 text-sm text-action"
+                  className="px-3 py-2 text-action"
                 />
               </Input>
             </KeyboardModal.Item>
 
-            <VStack space="xs">
-              <Text className="text-sm font-medium text-content-body">Thumbnail (Optional)</Text>
-              <Pressable onPress={handleSelectImage} className="overflow-hidden rounded-md border-0 bg-surface-base">
+            <KeyboardModal.Item title="Thumbnail (Optional)">
+              <Pressable onPress={handleSelectImage} className="rounded-md bg-surface-base overflow-hidden border-0">
                 {thumbnail ? (
                   <Image
                     source={{ uri: thumbnail }}
-                    className="h-40 w-full"
+                    className="h-20 w-full"
                     resizeMode="cover"
                     alt="Workflow thumbnail"
                   />
                 ) : (
-                  <VStack className="h-40 items-center justify-center">
-                    <ImagePlus className="text-content-secondary" />
-                    <Text className="mt-2 text-sm text-content-secondary">Add thumbnail</Text>
+                  <VStack className="h-20 items-center justify-center">
+                    <ImagePlus
+                      size={t.icon.hero}
+                      strokeWidth={iconStroke(t.icon.hero)}
+                      className="text-content-secondary"
+                    />
+                    <Copy size="label" className="mt-2" style={{ color: c.secondary }}>
+                      Add thumbnail
+                    </Copy>
                   </VStack>
                 )}
               </Pressable>
-            </VStack>
+            </KeyboardModal.Item>
           </VStack>
         </KeyboardModal.Body>
 
         <KeyboardModal.Footer>
           <HStack space="sm">
-            <Button
-              variant="outline"
-              onPress={() => setIsDeleteAlertOpen(true)}
-              className="flex-1 rounded-md bg-transparent active:bg-error-50"
-              style={{ borderColor: Colors[activeTheme].error[500] }}
-            >
-              <ButtonText style={{ color: Colors[activeTheme].error[500] }}>Delete</ButtonText>
-            </Button>
-            <Button variant="solid" onPress={handleUpdate} className="flex-1 rounded-md bg-action">
-              <ButtonText className="text-content-inverse">Save Changes</ButtonText>
-            </Button>
+            <Action kind="secondary" destructive onPress={() => setIsDeleteAlertOpen(true)}>
+              {serverSource ? 'Hide on this device' : 'Remove workflow'}
+            </Action>
+            <Action kind="primary" onPress={handleUpdate}>
+              Save changes
+            </Action>
           </HStack>
         </KeyboardModal.Footer>
       </KeyboardModal>
@@ -201,10 +193,14 @@ export function EditWorkflowModal({ isOpen, onClose, workflowId }: EditWorkflowM
         isOpen={isDeleteAlertOpen}
         onClose={() => setIsDeleteAlertOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Workflow"
-        description="Are you sure you want to delete this workflow? This action cannot be undone."
-        confirmText="Delete"
-        confirmButtonColor="bg-status-danger"
+        title={serverSource ? 'Hide workflow?' : 'Remove workflow?'}
+        description={
+          serverSource
+            ? 'It will stay hidden after syncing. The server file and generated results are kept. You can restore it from Hidden workflows.'
+            : 'Remove this workflow from this server’s list? The saved workflow content and generated results are kept.'
+        }
+        confirmText={serverSource ? 'Hide workflow' : 'Remove workflow'}
+        destructive
       />
     </>
   );
