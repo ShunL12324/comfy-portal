@@ -18,7 +18,7 @@ export default function NotFoundScreen() {
     >
       <Title>Page unavailable</Title>
       <Copy muted>This link no longer points to an available page.</Copy>
-      <Action kind="primary" onPress={() => router.replace('/')}>Open workspace</Action>
+      <Action kind="primary" onPress={() => router.dismissTo('/')}>Open workspace</Action>
     </View>
   );
 }

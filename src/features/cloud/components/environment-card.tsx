@@ -17,7 +17,7 @@ export function EnvironmentCard({ environment }: { environment: Environment }) {
       distributeFacts
       accessibilityLabel={`Open ${environment.name}`}
       accessibilityHint={spoken(summary.models.text, summary.extensions.text, summary.workflows.text)}
-      onPress={() => router.push(`/templates/${environment.id}`)}
+      onPress={() => router.navigate(`/templates/${environment.id}`)}
       facts={
         <>
           {[summary.models, summary.extensions, summary.workflows].map((item, index) => (

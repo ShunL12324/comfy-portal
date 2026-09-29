@@ -86,7 +86,7 @@ export default function EnvironmentScreen() {
             key={key}
             accessibilityRole="button"
             accessibilityLabel={title}
-            onPress={() => router.push({ pathname: '/environments/[id]/[resource]', params: { id, resource: key } })}
+            onPress={() => router.navigate({ pathname: '/environments/[id]/[resource]', params: { id, resource: key } })}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -139,7 +139,7 @@ export default function EnvironmentScreen() {
         <Action
           kind="primary"
           fill
-          onPress={() => router.push({ pathname: '/cloud/launch', params: { environmentId: id } })}
+          onPress={() => router.navigate({ pathname: '/cloud/launch', params: { environmentId: id } })}
         >
           Create instance
         </Action>

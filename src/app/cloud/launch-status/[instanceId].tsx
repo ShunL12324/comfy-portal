@@ -22,7 +22,7 @@ export default function SetupScreen() {
   const insets = useSafeAreaInsets();
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
-      router.replace('/');
+      router.dismissTo('/');
       return true;
     });
     return () => listener.remove();
@@ -32,10 +32,10 @@ export default function SetupScreen() {
       <Stack.Screen options={{ gestureEnabled: false }} />
       <AppBar title="Setup" titleSize="sm" centerTitle />
       <ScrollView contentContainerStyle={{ paddingHorizontal: t.layout.gutter, paddingBottom: t.layout.inset }}>
-        {launch ? <SetupContent launch={launch} onDestroyed={() => router.replace('/')} /> : <Copy>Installation not found.</Copy>}
+        {launch ? <SetupContent launch={launch} onDestroyed={() => router.dismissTo('/')} /> : <Copy>Installation not found.</Copy>}
       </ScrollView>
       <View style={{ paddingHorizontal: t.layout.gutter, paddingBottom: insets.bottom + t.layout.field }}>
-        <Action kind="primary" fill onPress={() => router.replace('/')}>
+        <Action kind="primary" fill onPress={() => router.dismissTo('/')}>
           Back to Servers
         </Action>
       </View>

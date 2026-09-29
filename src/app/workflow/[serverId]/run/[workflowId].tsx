@@ -193,7 +193,7 @@ function RunWorkflowScreenContent() {
   }, [server, workflowRecord, generate]);
 
   const openHistoryGallery = useCallback(() => {
-    router.push({
+    router.navigate({
       pathname: '/workflow/[serverId]/run/history',
       params: { serverId: serverId as string, workflowId: workflowId as string },
     });

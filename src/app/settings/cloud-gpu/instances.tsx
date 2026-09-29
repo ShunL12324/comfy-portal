@@ -134,7 +134,7 @@ export default function CloudInstances() {
         {!CLOUD_GPU_SUPPORTED ? (
           <Copy muted>{CLOUD_GPU_UNSUPPORTED_REASON}</Copy>
         ) : !vastApiKey && !runpodApiKey ? (
-          <Action onPress={() => router.push('/settings/cloud-gpu')}>Connect cloud account</Action>
+          <Action onPress={() => router.navigate('/settings/cloud-gpu')}>Connect cloud account</Action>
         ) : null}
         {errors.map((error) => (
           <Copy key={error} accessibilityRole="alert">
@@ -152,7 +152,7 @@ export default function CloudInstances() {
               onPress={() =>
                 act(async () => {
                   const id = await reconcileLaunchRequest(request, credentials);
-                  router.push({ pathname: '/cloud/launch-status/[instanceId]', params: { instanceId: id } });
+                  router.navigate({ pathname: '/cloud/launch-status/[instanceId]', params: { instanceId: id } });
                 })
               }
             >

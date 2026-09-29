@@ -40,7 +40,7 @@ export function WorkflowCard({ id }: { id: string }) {
           accessibilityLabel={`Open ${record.name}`}
           onLongPress={() => setEditing(true)}
           accessibilityHint={`${origin}. ${workflowUsageLabel(record.lastUsed)}. ${notice ?? ''}. Open workflow. Long press to manage.`}
-          onPress={() => router.push(`/workflow/${record.serverId}/run/${id}`)}
+          onPress={() => router.navigate(`/workflow/${record.serverId}/run/${id}`)}
           onPressIn={press.onPressIn}
           onPressOut={press.onPressOut}
           style={{

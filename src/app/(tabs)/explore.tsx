@@ -32,7 +32,7 @@ export default function EnvironmentsScreen() {
     setCreating(false);
     setName('');
     setDescription('');
-    router.push(`/templates/${id}`);
+    router.navigate(`/templates/${id}`);
   };
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>

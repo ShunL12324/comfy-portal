@@ -227,7 +227,7 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
                 kind="secondary"
                 onPress={() => {
                   handleClose();
-                  router.push({
+                  router.navigate({
                     pathname: '/cloud/launch-status/[instanceId]',
                     params: { instanceId: launchKey(cloud) },
                   });

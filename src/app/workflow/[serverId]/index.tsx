@@ -21,7 +21,11 @@ export default function ServerScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
   const router = useRouter();
   const c = useDesign();
-  const server = useServersStore((state) => state.servers.find((item) => item.id === serverId));
+  const current = useServersStore((state) => state.servers.find((item) => item.id === serverId));
+  // After removal the page slides away; keep showing what it showed rather than "not found".
+  const [lastSeen, setLastSeen] = useState(current);
+  if (current && current !== lastSeen) setLastSeen(current);
+  const server = current ?? lastSeen;
   const all = useWorkflowStore((state) => state.workflow);
   // Editing an endpoint restarts workflow discovery; cached hardware changes do not.
   const connectionIdentity = useMemo(
@@ -229,7 +233,7 @@ export default function ServerScreen() {
           </Copy>
         )}
       </Sheet>
-      <EditServerModal ref={editRef} serverId={serverId} onRemoved={() => router.replace('/')} />
+      <EditServerModal ref={editRef} serverId={serverId} onRemoved={() => router.dismissTo('/')} />
       <ImportWorkflowModal isOpen={importing} onClose={() => setImporting(false)} serverId={serverId} />
     </View>
   );

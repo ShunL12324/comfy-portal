@@ -288,7 +288,7 @@ export const AIChatTab = forwardRef<AIChatTabRef, AIChatTabProps>(
             <ErrorNotice
               error={error}
               onOpenSettings={
-                providerConfigError || isConfigError(error) ? () => router.push('/settings/ai-assistant') : undefined
+                providerConfigError || isConfigError(error) ? () => router.navigate('/settings/ai-assistant') : undefined
               }
             />
           )}
@@ -324,7 +324,7 @@ function NotConfiguredView() {
         Choose a provider and model to let the assistant help edit this workflow.
       </Copy>
       <Row>
-        <Action kind="secondary" small icon={Settings} onPress={() => router.push('/settings/ai-assistant')}>
+        <Action kind="secondary" small icon={Settings} onPress={() => router.navigate('/settings/ai-assistant')}>
           Open settings
         </Action>
       </Row>

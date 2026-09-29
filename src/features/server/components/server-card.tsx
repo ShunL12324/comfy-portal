@@ -146,7 +146,7 @@ export function ServerCard({ id }: { id: string }) {
       gpuName={gpuName}
       gpuNames={gpuNames}
       cost={cloud ? formatRentalCost(cloud) : undefined}
-      onOpen={() => router.push(`/workflow/${id}`)}
+      onOpen={() => router.navigate(`/workflow/${id}`)}
       memoryUsed={metrics?.memoryUsed}
       memoryTotal={metrics?.memoryTotal}
     />

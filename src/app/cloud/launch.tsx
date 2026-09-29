@@ -328,12 +328,12 @@ function LaunchFlow({ environment }: { environment: Environment }) {
               {CLOUD_GPU_UNSUPPORTED_REASON}
             </Copy>
           ) : hydrated && !vastApiKey && !runpodApiKey ? (
-            <Action onPress={() => router.push('/settings/cloud-gpu')}>Connect cloud account</Action>
+            <Action onPress={() => router.navigate('/settings/cloud-gpu')}>Connect cloud account</Action>
           ) : null}
           {!!error && (
             <>
               <Copy accessibilityRole="alert">{error}</Copy>
-              <Action kind="secondary" onPress={() => router.push('/settings/cloud-gpu/instances')}>
+              <Action kind="secondary" onPress={() => router.navigate('/settings/cloud-gpu/instances')}>
                 Review cloud account
               </Action>
             </>

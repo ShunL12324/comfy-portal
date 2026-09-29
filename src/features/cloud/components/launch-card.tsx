@@ -44,7 +44,7 @@ export function LaunchCard({
     const timer = setInterval(() => tick((v) => v + 1), 60_000);
     return () => clearInterval(timer);
   }, []);
-  const open = onOpen ?? (() => router.push(('/cloud/launch-status/' + launch.id) as any));
+  const open = onOpen ?? (() => router.navigate(('/cloud/launch-status/' + launch.id) as any));
   return (
     <ServerRow
       name={launch.environmentName}
