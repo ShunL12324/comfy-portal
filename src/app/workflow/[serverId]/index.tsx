@@ -1,7 +1,7 @@
 import { RefreshFlatList } from '@/components/ui/design-system/pull-refresh';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
@@ -18,6 +18,7 @@ import { designTokens as t } from '@/constants/design-tokens';
 
 export default function ServerScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
+  const router = useRouter();
   const c = useDesign();
   const server = useServersStore((state) => state.servers.find((item) => item.id === serverId));
   const all = useWorkflowStore((state) => state.workflow);
@@ -234,7 +235,7 @@ export default function ServerScreen() {
           </Copy>
         )}
       </Sheet>
-      <EditServerModal ref={editRef} serverId={serverId} />
+      <EditServerModal ref={editRef} serverId={serverId} onRemoved={() => router.replace('/')} />
       <ImportWorkflowModal isOpen={importing} onClose={() => setImporting(false)} serverId={serverId} />
     </View>
   );

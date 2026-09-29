@@ -1,4 +1,5 @@
 import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { AlertTriangle } from '@/constants/icons';
 import { router } from 'expo-router';
 import { destroyCloudInstance } from '@/features/cloud/services/provider';
 import { launchKey, useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
@@ -25,8 +26,6 @@ interface EditServerModalProps {
 
 export interface EditServerModalRef {
   present: () => void;
-  /** Opens the removal confirmation without presenting the settings sheet. */
-  confirmRemove: (kind: 'disconnect' | 'destroy') => void;
 }
 
 const MAX_NAME_LENGTH = 30;
@@ -51,8 +50,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
   const [portError, setPortError] = useState('');
 
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  // Gorhom cannot dismiss a modal that was never presented (#2669); removal can be confirmed without one.
-  const presented = useRef(false);
 
   // Load server data
   const loadServerData = useCallback(() => {
@@ -110,7 +107,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
    * ignored and the trigger looks dead.
    */
   const handleDismissed = useCallback(() => {
-    presented.current = false;
     setNameError('');
     setHostError('');
     setPortError('');
@@ -118,21 +114,22 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
 
   /** For the buttons: ask the sheet to close. onDismiss does the cleanup. */
   const handleClose = useCallback(() => {
-    if (presented.current) bottomSheetModalRef.current?.dismiss();
+    bottomSheetModalRef.current?.dismiss();
   }, []);
 
   // Expose present method
   useImperativeHandle(ref, () => ({
     present: () => {
       loadServerData();
-      presented.current = true;
       bottomSheetModalRef.current?.present();
     },
-    confirmRemove: (kind) => setConfirming(kind),
   }));
 
   const renderFooter = (footerProps: BottomSheetFooterProps) => (
-    <ThemedSheetFooter {...footerProps}>
+    <ThemedSheetFooter {...footerProps} belowActions={<>
+        <Action kind={cloud ? 'secondary' : 'primary'} destructive fill icon={AlertTriangle} onPress={() => setConfirming('disconnect')}>Remove connection</Action>
+        {cloud && <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirming('destroy')}>Destroy instance</Action>}
+      </>}>
       <Action kind="secondary" fill onPress={handleClose}>
         Cancel
       </Action>
