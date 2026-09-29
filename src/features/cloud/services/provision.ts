@@ -303,7 +303,7 @@ function registerServer(record: LaunchRecord, host: string, comfyPort: number): 
     name: record.environmentName,
     host,
     port: comfyPort,
-    useSSL: 'Never',
+    useSSL: 'Auto',
     cloud: {
       provider: record.provider,
       instanceId: record.instanceId,

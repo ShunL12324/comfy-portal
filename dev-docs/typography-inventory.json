@@ -1649,7 +1649,6 @@
       "path": "src/features/server/components/edit-server-modal.tsx",
       "textElements": [
         "BottomSheetFormInput",
-        "Copy",
         "Title"
       ],
       "fontDeclarations": 0,

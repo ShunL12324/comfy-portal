@@ -3,7 +3,9 @@ import { ChevronRight } from '@/constants/icons';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { formatRentalCost } from '@/features/cloud/utils/cost';
 import { ServerRow } from '@/features/server/components/server-card';
+import { useServerScheme } from '@/features/server/hooks/use-server-scheme';
 import { useServersStore } from '@/features/server/stores/server-store';
+import { isPrivateHost } from '@/services/server-scheme';
 import { serverStatus } from '@/features/server/utils/server-summary';
 
 /**
@@ -14,6 +16,7 @@ import { serverStatus } from '@/features/server/utils/server-summary';
 export function ConnectionCard({ id, onOpen }: { id: string; onOpen: () => void }) {
   const c = useDesign();
   const server = useServersStore((s) => s.servers.find((entry) => entry.id === id));
+  const scheme = useServerScheme(server);
   if (!server) return null;
   const { host, port, status, latency, cloud, gpuName, gpuNames } = server;
   const summary = serverStatus(status, latency);
@@ -21,7 +24,18 @@ export function ConnectionCard({ id, onOpen }: { id: string; onOpen: () => void 
   return (
     <ServerRow
       name={`${host}:${port}`}
-      endpoint={cloud ? 'Template build' : 'Manual connection'}
+      endpoint={[
+        cloud ? 'Template build' : 'Manual connection',
+        scheme === 'https'
+          ? 'HTTPS'
+          : scheme === 'http'
+            ? isPrivateHost(host)
+              ? 'HTTP'
+              : 'HTTP, not encrypted'
+            : undefined,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
       badge={<ChevronRight size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={c.muted} />}
       tone={summary.tone}
       status={summary.label}

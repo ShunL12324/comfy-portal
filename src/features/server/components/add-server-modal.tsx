@@ -2,12 +2,12 @@ import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-componen
 import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
 import { ThemedBottomSheetModal, ThemedSheetFooter } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { designTokens as t } from '@/constants/design-tokens';
-import { Action, Copy, Segments, Title } from '@/components/ui/design-system/primitives';
+import { Action, Copy, Title, useDesign } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { Server } from '@/features/server/types';
 import { parseServerUrl, validateHost, validatePort } from '@/services/network';
+import { probeScheme } from '@/services/server-scheme';
 import { BottomSheetModal, type BottomSheetFooterProps } from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
 import React, { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
@@ -25,11 +25,14 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
   const [name, setName] = React.useState('');
   const [host, setHost] = React.useState('');
   const [port, setPort] = React.useState('8188');
-  const [useSSL, setUseSSL] = React.useState<Server['useSSL']>('Auto');
   const [token, setToken] = React.useState('');
   const [nameError, setNameError] = React.useState('');
   const [hostError, setHostError] = React.useState('');
   const [portError, setPortError] = React.useState('');
+  const [checking, setChecking] = React.useState(false);
+  /** The last check failed; the next Add saves without checking again. */
+  const [unreachable, setUnreachable] = React.useState(false);
+  const c = useDesign();
 
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
@@ -49,7 +52,6 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
       if (parsed) {
         setHost(parsed.host);
         setPort(parsed.port);
-        setUseSSL(parsed.useSSL);
         const suggestedName = parsed.host.split('.')[0];
         if (suggestedName && suggestedName.length <= MAX_NAME_LENGTH) {
           setName(suggestedName);
@@ -60,7 +62,6 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
         setName('');
         setHost('');
         setPort('8188');
-        setUseSSL('Auto');
         setToken('');
       }
     } catch {
@@ -78,7 +79,8 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
     return '';
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (checking) return;
     const newNameError = validateName(name);
     const newHostError = validateHost(host);
     const newPortError = validatePort(port);
@@ -91,11 +93,21 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
       return;
     }
 
+    // A failed check is not final: a server can be added before it is started.
+    if (!unreachable) {
+      setChecking(true);
+      const scheme = await probeScheme(host, port).finally(() => setChecking(false));
+      if (!scheme) {
+        setUnreachable(true);
+        return;
+      }
+    }
+
     addServer({
       name,
       host,
       port: parseInt(port, 10),
-      useSSL,
+      useSSL: 'Auto',
       token: token || undefined,
     });
     handleClose();
@@ -111,11 +123,11 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
     setName('');
     setHost('');
     setPort('8188');
-    setUseSSL('Auto');
     setNameError('');
     setHostError('');
     setPortError('');
     setToken('');
+    setUnreachable(false);
   }, []);
 
   /** For the buttons: ask the sheet to close. onDismiss does the cleanup. */
@@ -128,8 +140,8 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
       <Action kind="secondary" fill onPress={handleClose}>
         Cancel
       </Action>
-      <Action kind="primary" fill onPress={handleSave}>
-        Add
+      <Action kind="primary" fill loading={checking} onPress={handleSave}>
+        {unreachable ? 'Add anyway' : 'Add'}
       </Action>
     </ThemedSheetFooter>
   );
@@ -174,6 +186,7 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
             defaultValue={host}
             onChangeText={(value: string) => {
               setHost(value);
+              setUnreachable(false);
               setHostError('');
             }}
             placeholder="Host or IP address"
@@ -187,6 +200,7 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
             defaultValue={port}
             onChangeText={(value: string) => {
               setPort(value);
+              setUnreachable(false);
               setPortError('');
             }}
             placeholder="Port number"
@@ -201,18 +215,13 @@ export const AddServerModal = forwardRef<AddServerModalRef>((props, ref) => {
             secureTextEntry={true}
           />
 
-          <VStack style={{ gap: t.layout.label }}>
-            <Copy size="label" muted>
-              Use SSL
+          {unreachable && (
+            <Copy size="label" accessibilityRole="alert" style={{ color: c.danger }}>
+              {
+                "Couldn't reach ComfyUI at this address over HTTPS or HTTP. Check the host, port and that ComfyUI is running, or add it anyway."
+              }
             </Copy>
-            <Segments
-              options={['Auto', 'Always', 'Never']}
-              value={useSSL}
-              onChange={(value) => {
-                setUseSSL(value as Server['useSSL']);
-              }}
-            />
-          </VStack>
+          )}
         </VStack>
       </AdaptiveScrollView>
     </ThemedBottomSheetModal>

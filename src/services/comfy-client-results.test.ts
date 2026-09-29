@@ -1,6 +1,7 @@
 import { ComfyClient } from './comfy-client';
 jest.mock('@/store/install-id', () => ({ getInstallId: () => 'test' }));
-jest.mock('./network', () => ({ buildServerUrl: jest.fn(), fetchWithAuth: jest.fn(), isLocalOrLanIP: jest.fn() }));
+jest.mock('./network', () => ({ buildServerUrl: jest.fn(), fetchWithAuth: jest.fn() }));
+jest.mock('./server-scheme', () => ({ resolveScheme: jest.fn() }));
 
 test('partial output recovery uses stable server identities, not changing download paths', async () => {
   const client = new ComfyClient({ host: 'test', port: '8188', useSSL: 'Never' });

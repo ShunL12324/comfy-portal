@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
 import { ThemedBottomSheetModal, ThemedSheetFooter } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { designTokens as t } from '@/constants/design-tokens';
-import { Action, Copy, Segments, Title } from '@/components/ui/design-system/primitives';
+import { Action, Title } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
@@ -43,7 +43,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
   const [name, setName] = useState('');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('8188');
-  const [useSSL, setUseSSL] = useState<Server['useSSL']>('Auto');
   const [token, setToken] = useState('');
   const [nameError, setNameError] = useState('');
   const [hostError, setHostError] = useState('');
@@ -58,7 +57,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
       setName(server.name);
       setHost(server.host);
       setPort(server.port.toString());
-      setUseSSL(server.useSSL);
       setToken(server.token || '');
     }
   }, [serverId]);
@@ -92,7 +90,7 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
       name,
       host,
       port: parseInt(port, 10),
-      useSSL,
+      useSSL: 'Auto',
       token: token || undefined,
     });
 
@@ -126,10 +124,27 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
   }));
 
   const renderFooter = (footerProps: BottomSheetFooterProps) => (
-    <ThemedSheetFooter {...footerProps} belowActions={<>
-        <Action kind={cloud ? 'secondary' : 'primary'} destructive fill icon={AlertTriangle} onPress={() => setConfirming('disconnect')}>Remove connection</Action>
-        {cloud && <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirming('destroy')}>Destroy instance</Action>}
-      </>}>
+    <ThemedSheetFooter
+      {...footerProps}
+      belowActions={
+        <>
+          <Action
+            kind={cloud ? 'secondary' : 'primary'}
+            destructive
+            fill
+            icon={AlertTriangle}
+            onPress={() => setConfirming('disconnect')}
+          >
+            Remove connection
+          </Action>
+          {cloud && (
+            <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirming('destroy')}>
+              Destroy instance
+            </Action>
+          )}
+        </>
+      }
+    >
       <Action kind="secondary" fill onPress={handleClose}>
         Cancel
       </Action>
@@ -206,19 +221,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
               placeholder="Enter token (without 'Bearer')"
               secureTextEntry={true}
             />
-
-            <VStack style={{ gap: t.layout.label }}>
-              <Copy size="label" muted>
-                Use SSL
-              </Copy>
-              <Segments
-                options={['Auto', 'Always', 'Never']}
-                value={useSSL}
-                onChange={(value) => {
-                  setUseSSL(value as Server['useSSL']);
-                }}
-              />
-            </VStack>
 
             {cloud && (
               <Action

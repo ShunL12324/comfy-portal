@@ -1,3 +1,4 @@
+import { schemeFailed } from '@/services/server-scheme';
 import { Model, Server } from '@/features/server/types';
 import { buildServerUrl, fetchWithAuth } from '@/services/network';
 import { Directory, File, Paths } from 'expo-file-system';
@@ -283,6 +284,8 @@ export async function checkServerStatus(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      // 400 is what a TLS port says to a plain request: the remembered scheme is wrong.
+      if (response.status === 400 && server.useSSL === 'Auto') schemeFailed(server.host, server.port);
       return { status: 'offline' };
     }
 
@@ -307,6 +310,7 @@ export async function checkServerStatus(
     };
   } catch (error: any) {
     clearTimeout(timeoutId);
+    if (server.useSSL === 'Auto') schemeFailed(server.host, server.port);
     if (error.name === 'AbortError') {
       console.log(`[${server.name}] Server check timed out.`);
     } else {

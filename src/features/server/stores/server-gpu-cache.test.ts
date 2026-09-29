@@ -72,3 +72,11 @@ test('retains all GPUs across missing observations, offline checks and restarts,
   await useServersStore.getState().refreshServer(server.id);
   expect(useServersStore.getState().servers[0].gpuNames).toEqual(['RTX 5090']);
 });
+
+test('legacy SSL settings migrate to Auto', () => {
+  const { toAutoScheme } = jest.requireActual('./server-store') as typeof import('./server-store');
+  expect(toAutoScheme({ ...server, useSSL: 'Never' }).useSSL).toBe('Auto');
+  expect(toAutoScheme({ ...server, useSSL: 'Always' }).useSSL).toBe('Auto');
+  const auto = { ...server, useSSL: 'Auto' as const };
+  expect(toAutoScheme(auto)).toBe(auto);
+});

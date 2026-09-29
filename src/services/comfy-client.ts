@@ -4,7 +4,8 @@ import { getInstallId } from '@/store/install-id';
 
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
-import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
+import { buildServerUrl, fetchWithAuth } from './network';
+import { resolveScheme } from './server-scheme';
 
 /**
  * Configuration options for the ComfyUI client
@@ -262,17 +263,7 @@ export class ComfyClient {
     this.disposed = false;
 
     try {
-      const isLocal = await isLocalOrLanIP(this.host);
-      let protocol = 'ws';
-      if (this.useSSL === 'Always') {
-        protocol = 'wss';
-      } else if (this.useSSL === 'Never') {
-        protocol = 'ws';
-      } else if (isLocal) {
-        protocol = 'ws';
-      } else {
-        protocol = 'wss';
-      }
+      const protocol = (await resolveScheme(this.useSSL, this.host, this.port)) === 'https' ? 'wss' : 'ws';
       let wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
       if (this.token) {
         wsUrl += `&token=${this.token}`;

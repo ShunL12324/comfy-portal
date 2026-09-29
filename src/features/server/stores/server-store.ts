@@ -11,6 +11,7 @@ import { generateUUID } from '@/utils/uuid';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { fetchServerMetrics } from '../services/server-metrics';
+import { schemeFailed, seedScheme } from '@/services/server-scheme';
 
 /**
  * How long a model catalogue is considered fresh. Short, because the thing that
@@ -45,6 +46,17 @@ interface ServersState {
   syncModels: (id: string, options?: SyncModelsOptions) => Promise<void>;
   /** Rescan only if the cached catalogue is older than `maxAge`. */
   ensureModelsFresh: (id: string, maxAge?: number) => Promise<void>;
+}
+
+/**
+ * Connections no longer choose a scheme; `Auto` probes for it. A legacy
+ * `Always`/`Never` choice is handed to the scheme cache first, so the
+ * migrated connection keeps connecting exactly as before.
+ */
+export function toAutoScheme<T extends Pick<Server, 'host' | 'port' | 'useSSL'>>(server: T): T {
+  if (server.useSSL === 'Auto') return server;
+  void seedScheme(server.host, server.port, server.useSSL === 'Always' ? 'https' : 'http');
+  return { ...server, useSSL: 'Auto' };
 }
 
 export const useServersStore = create<ServersState>()(
@@ -203,6 +215,7 @@ export const useServersStore = create<ServersState>()(
             },
             () => {
               if (!current()) return;
+              if (connection.useSSL === 'Auto') schemeFailed(connection.host, connection.port);
               set((state) => ({
                 servers: state.servers.map((server) =>
                   server.id === id
@@ -269,7 +282,7 @@ export const useServersStore = create<ServersState>()(
           ...current,
           loading: false,
           servers: connections.map((server) => ({
-            ...server,
+            ...toAutoScheme(server),
             status: 'offline' as const,
             latency: undefined,
             metrics: undefined,

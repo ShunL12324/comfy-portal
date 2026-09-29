@@ -77,6 +77,25 @@ export function FilterChips({
         }}
         contentContainerStyle={{ gap: t.layout.list, alignItems: 'center' }}
       >
+        {/* Resting fills sit under the sliding selection, so the chips themselves stay transparent. */}
+        {options.map((option) => {
+          const layout = layouts[option.value];
+          return layout ? (
+            <View
+              key={`fill-${option.value}`}
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: layout.x,
+                width: layout.width,
+                top: (t.height.touch - t.height.small) / 2,
+                height: t.height.small,
+                borderRadius: t.radius.choice,
+                backgroundColor: c.well,
+              }}
+            />
+          ) : null;
+        })}
         {selectedLayout && (
           <MotiView
             pointerEvents="none"
