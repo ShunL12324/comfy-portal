@@ -8,7 +8,6 @@ interface SaveMediaOptions {
   workflowId: string;
   mediaUrl: string;
   workflow: Workflow;
-  delete?: boolean;
   promptId?: string;
   sourceId?: string;
 }
@@ -19,16 +18,11 @@ export async function saveGeneratedMedia({
   workflowId,
   mediaUrl,
   workflow,
-  delete: shouldDelete,
   promptId,
   sourceId,
 }: SaveMediaOptions) {
   await waitForMediaHydration();
   const store = useMediaStore.getState();
-  if (shouldDelete) {
-    store.remove(mediaUrl);
-    return;
-  }
   const existing =
     promptId &&
     store.assets.find(
@@ -112,3 +106,14 @@ export async function saveWorkflowThumbnail({
 // native file for why this stays and why it stays empty. Its per-workflow twin
 // was removed as dead code.
 export async function cleanupServerData(_serverId: string) {}
+
+/** Web keeps references, not files: deleting an output only removes its gallery entry. */
+export async function deleteGeneratedMedia(paths: string[]) {
+  await waitForMediaHydration();
+  const store = useMediaStore.getState();
+  paths.forEach((path) => store.remove(path));
+  await mediaStorage.flush();
+}
+
+/** Web entries are server references with no local file to go missing. */
+export async function pruneMissingMedia() {}

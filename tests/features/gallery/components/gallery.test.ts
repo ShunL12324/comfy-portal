@@ -28,6 +28,7 @@ jest.mock('expo-video', () => ({ useVideoPlayer: () => ({}), VideoView: () => nu
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
 jest.mock('@/features/generation/components/media-preview/zoomable-media', () => ({ ZoomableMedia: () => null }));
 jest.mock('@/features/gallery/components/empty-gallery-art', () => ({ EmptyGalleryArt: () => null }));
+jest.mock('@/services/image-storage', () => ({ pruneMissingMedia: async () => {} }));
 
 import { Gallery } from '@/features/gallery/components/gallery';
 import { useMediaStore, type MediaAsset } from '@/features/gallery/stores/media-store';

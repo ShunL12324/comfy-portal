@@ -6,10 +6,9 @@ import { DeleteAlert } from '@/features/generation/components/history-drawer/del
 import { HistoryItem } from '@/features/generation/components/history-drawer/history-item';
 import { MediaActions } from '@/features/generation/components/media-preview/media-actions';
 import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
-import { loadHistoryMedia } from '@/services/image-storage';
+import { deleteGeneratedMedia, loadHistoryMedia } from '@/services/image-storage';
 import * as MediaLibrary from '@/services/media-library';
 import { showToast } from '@/utils/toast';
-import { File } from 'expo-file-system';
 import { useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { Download, Share, Trash2, X } from '@/constants/icons';
@@ -141,18 +140,7 @@ export default function HistoryGalleryPage() {
   const confirmDelete = useCallback(async () => {
     if (!workflowId || selectedMedia.size === 0) return;
     try {
-      for (const url of selectedMedia) {
-        try {
-          new File(url).delete();
-        } catch {
-          /* ignore */
-        }
-        try {
-          new File(`${url}.json`).delete();
-        } catch {
-          /* ignore */
-        }
-      }
+      await deleteGeneratedMedia([...selectedMedia]);
       const updatedMedia = await loadHistoryMedia(serverId, workflowId);
       setMediaItems(updatedMedia);
       setSelectedMedia(new Set());
@@ -161,7 +149,7 @@ export default function HistoryGalleryPage() {
     } catch {
       showToast.error('Delete Failed', 'Failed to delete media');
     }
-  }, [selectedMedia, serverId, workflowId, insets.top]);
+  }, [selectedMedia, serverId, workflowId]);
 
   const handleShare = useCallback(async () => {
     if (selectedMedia.size === 0) return;

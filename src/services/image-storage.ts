@@ -10,7 +10,6 @@ interface SaveMediaOptions {
   workflowId: string;
   mediaUrl: string;
   workflow: Workflow;
-  delete?: boolean;
   /**
    * Prompt that produced this media. Recorded so recovery can tell whether a
    * job's outputs are already on disk and avoid saving them twice.
@@ -28,20 +27,11 @@ export async function saveGeneratedMedia({
   workflowId,
   mediaUrl,
   workflow,
-  delete: shouldDelete,
   promptId,
   sourceId,
 }: SaveMediaOptions) {
   await waitForMediaHydration();
   const store = useMediaStore.getState();
-  if (shouldDelete) {
-    const asset = store.assets.find((item) => item.path === mediaUrl);
-    if (!asset) return;
-    const file = new File(asset.path);
-    if (file.exists) file.delete();
-    store.remove(asset.path);
-    return;
-  }
   const existing =
     promptId &&
     store.assets.find(
@@ -82,8 +72,44 @@ export async function saveGeneratedMedia({
   return { path: destination.uri, metadata };
 }
 
-export async function getGeneratedMedia(serverId: string, workflowId: string) {
+/** Deletes outputs: each file and its gallery entry, then persists the index. */
+export async function deleteGeneratedMedia(paths: string[]) {
   await waitForMediaHydration();
+  const store = useMediaStore.getState();
+  for (const path of paths) {
+    try {
+      const file = new File(path);
+      if (file.exists) file.delete();
+    } catch {
+      // A file that cannot be deleted must still leave the gallery.
+    }
+    store.remove(path);
+  }
+  await mediaStorage.flush();
+}
+
+/**
+ * Drops gallery entries whose file is gone. Files are always written before
+ * their entry, so a missing file is never a download in progress; it is debris,
+ * such as the entries History left behind when it deleted only the files.
+ */
+export async function pruneMissingMedia() {
+  await waitForMediaHydration();
+  const store = useMediaStore.getState();
+  const missing = store.assets.filter((asset) => {
+    try {
+      return !new File(asset.path).exists;
+    } catch {
+      return false;
+    }
+  });
+  if (!missing.length) return;
+  missing.forEach((asset) => store.remove(asset.path));
+  await mediaStorage.flush();
+}
+
+export async function getGeneratedMedia(serverId: string, workflowId: string) {
+  await pruneMissingMedia();
   await mediaStorage.flush();
   return useMediaStore.getState().assets.filter((item) => item.serverId === serverId && item.workflowId === workflowId);
 }

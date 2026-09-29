@@ -1,5 +1,5 @@
 import { FilterChips } from '@/components/ui/design-system/filter-chips';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Action, Copy, useDesign, DesignColorProvider } from '@/components/ui/design-system/primitives';
 import { X, PlayCircle } from '@/constants/icons';
 import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
+import { pruneMissingMedia } from '@/services/image-storage';
 import { useMediaStore, type MediaAsset } from '../stores/media-store';
 import { EmptyGalleryArt } from './empty-gallery-art';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
@@ -21,6 +22,10 @@ export function Gallery({ serverId }: { serverId?: string }) {
   const c = useDesign();
   const insets = useSafeAreaInsets();
   const all = useMediaStore((state) => state.assets);
+  // Entries whose file was deleted elsewhere would otherwise show as blank tiles.
+  useEffect(() => {
+    void pruneMissingMedia();
+  }, []);
   const [filter, setFilter] = useState('All');
   // Unset until measured. Starting from a guessed width drew one frame of
   // wrongly sized tiles that visibly jumped once onLayout arrived; an empty
