@@ -425,9 +425,9 @@
     {
       "path": "components/self-ui/slider.tsx",
       "textElements": [
-        "Copy"
+        "SheetAwareTextInput"
       ],
-      "fontDeclarations": 0,
+      "fontDeclarations": 2,
       "managedAt": "shared text / input / composed control"
     },
     {
@@ -572,15 +572,9 @@
     {
       "path": "components/ui/design-system/filter-chips.tsx",
       "textElements": [
-        "Copy"
+        "Animated.Text"
       ],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "components/ui/design-system/liquid-refresh-art.tsx",
-      "textElements": [],
-      "fontDeclarations": 0,
+      "fontDeclarations": 6,
       "managedAt": "shared text / input / composed control"
     },
     {
@@ -638,14 +632,6 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/resource-tabs.tsx",
-      "textElements": [
-        "Copy"
-      ],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
       "path": "components/ui/design-system/server-origin-badge.tsx",
       "textElements": [
         "Copy"
@@ -656,15 +642,7 @@
     {
       "path": "components/ui/design-system/typography.ts",
       "textElements": [],
-      "fontDeclarations": 2,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "components/ui/design-system/workflow-origin-badge.tsx",
-      "textElements": [
-        "Copy"
-      ],
-      "fontDeclarations": 0,
+      "fontDeclarations": 3,
       "managedAt": "shared text / input / composed control"
     },
     {

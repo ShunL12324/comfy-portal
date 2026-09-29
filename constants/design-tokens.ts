@@ -1,7 +1,7 @@
 import shape from './design-shape.json';
 
 /** Neutral surfaces are semantic roles, never independent component palettes.
- * See design/surface-system.md for assignments and measured contrast pairs.
+ * See dev-docs/surface-system.md for assignments and measured contrast pairs.
  */
 export const designColors = {
   dark: {

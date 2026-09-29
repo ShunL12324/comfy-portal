@@ -80,7 +80,7 @@ if (errors.length) {
   process.exit(1);
 }
 const result = JSON.stringify({ scope: 'all production UI and typography declarations', modules }, null, 2) + '\n';
-const target = 'design/typography-inventory.json';
+const target = 'dev-docs/typography-inventory.json';
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== result) {
     console.error('Typography inventory changed. Run node scripts/audit-typography.cjs and review the new entries.');

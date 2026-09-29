@@ -18,7 +18,7 @@
     <a href="https://github.com/ShunL12324/comfy-portal/actions/workflows/google-play.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/ShunL12324/comfy-portal/google-play.yml?style=flat-square&label=Google%20Play%20Build" alt="Google Play Build">
     </a>
-    <img src="https://img.shields.io/badge/Platform-iOS%2015.1+%20%7C%20Android-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform: iOS 15.1+ | Android">
+    <img src="https://img.shields.io/badge/Platform-iOS%2016.4+%20%7C%20Android-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform: iOS 16.4+ | Android">
     <a href="https://github.com/ShunL12324/comfy-portal/stargazers">
       <img src="https://img.shields.io/github/stars/ShunL12324/comfy-portal?style=flat-square" alt="GitHub Stars">
     </a>
@@ -67,11 +67,8 @@
 | Version | Date | Changes |
 | :--- | :--- | :--- |
 | **v1.1.0** | 2026-08-24 | • **Feature**: AI assistant rebuilt on AI SDK v7 — streaming replies, a stop button, per-tool progress, and 17 providers plus any OpenAI-compatible endpoint<br>• **Feature**: Full-screen history gallery with multi-select save/share/delete and swipe navigation<br>• **Feature**: Load Image can reuse an image already on the server instead of re-uploading<br>• **Feature**: Nodes without a built-in editor now render from the server's `/object_info`<br>• **Feature**: ComfyUI-MiniMaxH3-Easy support<br>• **Improvement**: Generations survive navigation and backgrounding, and are recovered on return<br>• **Improvement**: Model pickers source their options from the server, so custom node folders work<br>• **Fix**: Long prompts were truncated before the AI assistant saw them, so its edits overwrote the rest<br>• **Fix**: Video in the history gallery played sound over a black screen<br>• **Fix**: Very large seed values lost precision |
-| **v1.0.7** | 2026-02-18 | • **Feature**: iOS Share Extension with Quick Actions<br>• **Feature**: Custom prompt injection replaces the fixed prompt templates<br>• **Feature**: Web platform support<br>• **Improvement**: AI chat sessions persist across app launches<br>• **Fix**: iPad layout and adaptive bottom sheets<br>• **Fix**: Real ComfyUI execution errors are surfaced instead of a generic message |
-| **v1.0.6** | 2026-02-09 | • **Fix**: Slider crash on workflows with invalid parameter values<br>• **Improvement**: Removed the redundant tag mode from CLIPTextEncode |
-| **v1.0.5** | 2026-02-08 | • **Feature**: AI-powered prompt enhancement for text-to-image workflows<br>• **Feature**: GetImageSize node support<br>• **Improvement**: LoadImage node with image preview and multiple source options<br>• **Improvement**: Workflow tab UI and empty states<br>• **Fix**: Dark mode flash on app launch<br>• **Fix**: Keyboard handling in modals and text inputs<br>• **Upgrade**: Expo SDK 55 with React Native 0.83 |
 
-Older versions and Android APK downloads are on the [Releases page](https://github.com/ShunL12324/comfy-portal/releases).
+Full history, older versions and Android APK downloads are on the [Releases page](https://github.com/ShunL12324/comfy-portal/releases).
 
 ## Quick Start
 
@@ -111,7 +108,7 @@ To unlock full functionality, including **workflow synchronization** and enhance
 - macOS with the current stable Xcode, plus CocoaPods (for iOS)
 - Android Studio with JDK 17 (for Android)
 
-The app targets iOS 15.1+ and is built against Expo SDK 55 / React Native 0.83.
+The app targets iOS 16.4+ and is built against Expo SDK 57 / React Native 0.86.
 
 ### Build Steps
 

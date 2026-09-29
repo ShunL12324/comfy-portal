@@ -1,6 +1,6 @@
 # Neutral surface system
 
-Current decision, 2026-09-29. This supersedes older color/tint instructions in `design.md`.
+Current decision, 2026-09-29. This supersedes older color/tint instructions in `dev-docs/design.md`.
 
 `constants/design-tokens.ts` owns every color. `constants/Colors.ts` only adapts those roles to Gluestack's numbered API; it contains no independent palette. NativeWind surface utilities and native style props resolve to the same values. All neutral roles have equal RGB channels, so they introduce no warm/cool tint.
 

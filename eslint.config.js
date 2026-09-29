@@ -23,7 +23,6 @@ const tokenExempt = [
   'tailwind.config.js',
   '**/*.test.{ts,tsx}',
   '**/__tests__/**',
-  'e2e/**',
 ];
 // Type sizes are set only through these components' token-backed props.
 const textComponents = ['Copy', 'Status', 'Text', 'Heading'];
