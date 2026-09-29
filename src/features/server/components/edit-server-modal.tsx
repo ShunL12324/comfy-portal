@@ -1,4 +1,5 @@
 import { AdaptiveScrollView } from '@/components/self-ui/adaptive-sheet-components';
+import { AlertTriangle } from '@/constants/icons';
 import { router } from 'expo-router';
 import { destroyCloudInstance } from '@/features/cloud/services/provider';
 import { launchKey, useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
@@ -8,7 +9,7 @@ import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { BottomSheetFormInput } from '@/components/self-ui/form-input/bottom-sheet-form-input';
 import { ThemedBottomSheetModal, ThemedSheetFooter } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { designTokens as t } from '@/constants/design-tokens';
-import { Action, Copy, Segments, Title, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Copy, Segments, Title } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
@@ -36,7 +37,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
   const removeLock = useRef(false);
   const cloud = useServersStore((state) => state.servers.find((server) => server.id === serverId)?.cloud);
   const insets = useSafeAreaInsets();
-  const c = useDesign();
   const updateServer = useServersStore((state) => state.updateServer);
 
   // State management
@@ -126,7 +126,10 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
   }));
 
   const renderFooter = (footerProps: BottomSheetFooterProps) => (
-    <ThemedSheetFooter {...footerProps}>
+    <ThemedSheetFooter {...footerProps} belowActions={<>
+        <Action kind={cloud ? 'secondary' : 'primary'} destructive fill icon={AlertTriangle} onPress={() => setConfirming('disconnect')}>Remove connection</Action>
+        {cloud && <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirming('destroy')}>Destroy instance</Action>}
+      </>}>
       <Action kind="secondary" fill onPress={handleClose}>
         Cancel
       </Action>
@@ -231,18 +234,6 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
                 Installation details
               </Action>
             )}
-
-            {/* Removal stays out of the fixed footer, away from Save, and asks for confirmation. */}
-            <View style={{ borderTopWidth: 1, borderTopColor: c.line, marginTop: t.layout.related }}>
-              <Action kind="text" destructive fill onPress={() => setConfirming('disconnect')}>
-                Remove connection
-              </Action>
-              {cloud && (
-                <Action kind="text" destructive fill onPress={() => setConfirming('destroy')}>
-                  Destroy instance
-                </Action>
-              )}
-            </View>
           </VStack>
         </AdaptiveScrollView>
       </ThemedBottomSheetModal>
