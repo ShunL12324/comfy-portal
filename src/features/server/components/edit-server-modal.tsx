@@ -247,7 +247,9 @@ export const EditServerModal = forwardRef<EditServerModalRef, EditServerModalPro
         description={
           confirming === 'destroy'
             ? 'Permanently delete this rented instance and its server files. Compute billing stops after deletion; separately billed storage may remain. Downloaded gallery items stay on this device.'
-            : 'Remove this saved connection. The server and provider billing continue. Saved workflow assets and downloaded gallery items stay on this device.'
+            : cloud
+              ? 'Remove this connection from the app only. The rented instance keeps running and billing continues until you destroy it. Saved workflows and downloaded gallery items stay on this device.'
+              : 'Remove this connection from the app. Nothing changes on the server itself. Saved workflows and downloaded gallery items stay on this device.'
         }
         confirmText={confirming === 'destroy' ? 'Destroy instance' : 'Remove connection'}
         onClose={() => {

@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
 } from '@/components/ui/alert-dialog';
 import { Title, Action, Copy, useDesign } from '@/components/ui/design-system/primitives';
+import { View } from '@/components/ui/view';
 import { designTokens as t } from '@/constants/design-tokens';
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -39,23 +40,42 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const c = useDesign();
   const handleClose = () => { if (!loading) onClose(); };
-  const confirm = <Action fill kind={confirmButtonVariant === 'solid' ? 'primary' : confirmButtonVariant === 'outline' ? 'secondary' : 'text'} icon={completed ? Check : undefined} destructive={destructive && !completed} loading={loading} disabled={loading || completed} onPress={onConfirm}>{confirmText}</Action>;
+  const confirm = (
+    <Action
+      fill
+      kind={confirmButtonVariant === 'solid' ? 'primary' : confirmButtonVariant === 'outline' ? 'secondary' : 'text'}
+      icon={completed ? Check : undefined}
+      destructive={destructive && !completed}
+      loading={loading}
+      disabled={loading || completed}
+      onPress={onConfirm}
+    >
+      {confirmText}
+    </Action>
+  );
   return (
     <AlertDialog isOpen={isOpen} onClose={handleClose}>
       <AlertDialogBackdrop onPress={handleClose} />
-      <AlertDialogContent
-        style={{ padding: t.layout.inset, borderRadius: t.radius.panel, borderWidth: 1, borderColor: c.line, backgroundColor: c.overlay }}
-      >
+      <AlertDialogContent>
         <AlertDialogHeader>
           <Title compact>{title}</Title>
         </AlertDialogHeader>
-        <AlertDialogBody>
+        <AlertDialogBody style={{ marginTop: t.layout.related }} contentContainerStyle={{ gap: t.layout.related }}>
           <Copy muted>{description}</Copy>
-          {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
+          {!!error && (
+            <Copy accessibilityRole="alert" style={{ color: c.danger }}>
+              {error}
+            </Copy>
+          )}
         </AlertDialogBody>
-        <AlertDialogFooter style={{ flexDirection: 'column', gap: t.layout.related, alignItems: 'stretch' }}>
-          {confirm}
-          <Action kind="secondary" fill disabled={loading} onPress={handleClose}>{cancelText}</Action>
+        {/* Same order as sheet footers: Cancel, then the action. */}
+        <AlertDialogFooter style={{ marginTop: t.layout.section }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Action kind="secondary" fill disabled={loading} onPress={handleClose}>
+              {cancelText}
+            </Action>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>{confirm}</View>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

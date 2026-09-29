@@ -62,7 +62,8 @@ const alertDialogStyle = tva({
 });
 
 const alertDialogContentStyle = tva({
-  base: 'bg-surface-overlay rounded-lg overflow-hidden border border-outline-100 p-6',
+  // Overlays separate from the page by luminance, never an outline (dev-docs/surface-system.md).
+  base: 'bg-surface-overlay rounded-lg overflow-hidden p-5',
   parentVariants: {
     size: {
       xs: 'w-[60%] max-w-[360px]',
@@ -83,7 +84,7 @@ const alertDialogHeaderStyle = tva({
 });
 
 const alertDialogFooterStyle = tva({
-  base: 'flex-row justify-end items-center gap-3',
+  base: 'flex-row items-center gap-2',
 });
 
 const alertDialogBodyStyle = tva({ base: '' });
