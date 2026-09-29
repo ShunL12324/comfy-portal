@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 import { designTokens as t } from '@/constants/design-tokens';
 import { Platform } from 'react-native';
 import { useResolvedTheme } from '@/store/theme';

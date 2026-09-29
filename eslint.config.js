@@ -18,7 +18,7 @@ const heights = Object.values(designTokens.height);
 // are listed only to declare the exemption.
 const tokenExempt = [
   'src/constants/design-tokens.ts',
-  'src/constants/Colors.ts',
+  'src/constants/colors.ts',
   'src/components/ui/gluestack-ui-provider/**',
   'tailwind.config.js',
   '**/*.test.{ts,tsx}',

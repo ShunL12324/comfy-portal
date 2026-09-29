@@ -1,6 +1,6 @@
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Copy, FieldLabel, useDesign } from '@/components/ui/design-system/primitives';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 import { useResolvedTheme } from '@/store/theme';
 import { Eye, EyeOff } from '@/constants/icons';
 import React, { useState } from 'react';

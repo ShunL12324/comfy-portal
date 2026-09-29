@@ -3,8 +3,8 @@
 // which exports the same plugin but ships ESM only — Node can't require() it
 // from a config file. This is the sole remaining reason that package is a
 // dependency; every other call site uses the utils build.
-const { radius } = require('./src/constants/design-shape.json');
 const { designTokens } = require('./src/constants/design-tokens');
+const radius = designTokens.radius.control;
 const gluestackPlugin = require('@gluestack-ui/nativewind-utils/tailwind-plugin');
 
 module.exports = {
@@ -203,7 +203,7 @@ module.exports = {
         //
         // These are aliases, not new colours — each points at the same CSS
         // variable the numbered scale does, so light/dark still flips in
-        // one place (constants/Colors.ts) and nothing needs a `dark:`
+        // one place (constants/colors.ts) and nothing needs a `dark:`
         // prefix. The numbered scales stay available as the escape hatch
         // for the genuine one-offs that have no semantic role.
         // ---------------------------------------------------------------

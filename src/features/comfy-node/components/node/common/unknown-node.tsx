@@ -8,7 +8,7 @@ import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
-import { useNodeSchema } from '@/hooks/useNodeSchema';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 import { WidgetSpec } from '@/services/node-schema';
 import * as Linking from 'expo-linking';
 import { AlertCircle, GitPullRequest } from '@/constants/icons';

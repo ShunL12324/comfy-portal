@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Images, LayoutTemplate, Server, Settings2 } from '@/constants/icons';
 import { MotiView } from 'moti';
 import { useWindowDimensions } from 'react-native';

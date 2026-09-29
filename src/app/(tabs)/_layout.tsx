@@ -1,4 +1,4 @@
-import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { useDeviceLayout } from '@/hooks/use-device-layout';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

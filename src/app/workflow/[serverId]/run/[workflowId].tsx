@@ -23,7 +23,7 @@ import { AIChatTab, AIChatTabRef } from '@/features/ai-assistant/components/ai-c
 import NodeComponent from '@/features/comfy-node/components/node';
 import { MediaPreview } from '@/features/generation/components/media-preview';
 import { GenerationProvider, useGenerationActions } from '@/features/generation/context/generation-context';
-import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { useDeviceLayout } from '@/hooks/use-device-layout';
 import type BottomSheet from '@gorhom/bottom-sheet';
 import { BottomSheetFooter, useBottomSheetInternal, type BottomSheetFooterProps } from '@gorhom/bottom-sheet';
 

@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 import { useResolvedTheme } from '@/store/theme';
 
 export function useThemeColor() {

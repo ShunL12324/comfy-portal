@@ -1,6 +1,6 @@
 import { Model } from '@/features/server/types';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { useNodeSchema } from '@/hooks/useNodeSchema';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 
 import { SelectorOption } from '../types';
 

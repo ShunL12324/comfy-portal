@@ -9,7 +9,7 @@ import { Node } from '@/features/workflow/types';
 import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl } from '@/services/network';
 import { clearNodeSchemaCache } from '@/services/node-schema';
-import { useNodeSchema } from '@/hooks/useNodeSchema';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 import { showToast } from '@/utils/toast';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';

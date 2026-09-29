@@ -1,5 +1,5 @@
 'use client';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 import { designColors } from '@/constants/design-tokens';
 import { vars } from 'nativewind';
 

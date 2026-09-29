@@ -1,4 +1,5 @@
-import shape from './design-shape.json';
+/** The one product corner radius (pt). Every radius role below and every Tailwind `rounded-*` class reads it. */
+const cornerRadius = 4;
 
 /** Neutral surfaces are semantic roles, never independent component palettes.
  * See dev-docs/surface-system.md for assignments and measured contrast pairs.
@@ -69,13 +70,13 @@ export type DesignColors = typeof designColors.light;
 export const designTokens = {
   space: [4, 8, 12, 16, 20, 24, 32] as const,
   radius: {
-    small: shape.radius,
-    choice: shape.radius,
-    choiceThumb: shape.radius,
-    control: shape.radius,
-    panel: shape.radius,
-    sheet: shape.radius,
-    pill: shape.radius,
+    small: cornerRadius,
+    choice: cornerRadius,
+    choiceThumb: cornerRadius,
+    control: cornerRadius,
+    panel: cornerRadius,
+    sheet: cornerRadius,
+    pill: cornerRadius,
   },
   height: { small: 28, control: 36, touch: 44 },
   elevation: {
