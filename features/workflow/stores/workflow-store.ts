@@ -169,13 +169,27 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
         updateNodeInput: (workflowId, nodeId, inputKey, value) => {
           const record = get().workflow.find((item) => item.id === workflowId);
           const node = record?.data[nodeId];
-          if (!record || !node) return;
-          get().updateWorkflow(workflowId, {
-            data: {
-              ...record.data,
-              [nodeId]: { ...node, inputs: { ...node.inputs, [inputKey]: value } },
-            },
-          });
+          if (!record || !node || Object.is(node.inputs[inputKey], value)) return;
+          const state = get();
+          const binding = state.bindings.find((item) => item.id === workflowId);
+          if (!binding) return;
+          // Keep untouched node identities stable so memoized node controls do
+          // not remount/re-render for a single input edit. Own the incoming value
+          // without cloning the entire graph on every initialization/keystroke.
+          const ownedValue = value === undefined ? value : clone(value);
+          const assets = state.assets.map((asset) =>
+            asset.id !== binding.assetId
+              ? asset
+              : {
+                  ...asset,
+                  data: {
+                    ...asset.data,
+                    [nodeId]: { ...node, inputs: { ...node.inputs, [inputKey]: ownedValue } },
+                  },
+                  updatedAt: new Date().toISOString(),
+                },
+          );
+          commit(assets, state.bindings);
         },
         restoreWorkflowData: (id, data) => get().updateWorkflow(id, { data }),
         receiveServerWorkflow: (serverId, filename, snapshot) => {

@@ -60,3 +60,34 @@ test('duplicate imports receive distinct names and survive a persistence round t
   expect(records[0].createdAt).toBeInstanceOf(Date);
   expect(records[0].lastUsed).toBeInstanceOf(Date);
 });
+
+test('unchanged node initialization neither publishes state nor persists a workflow', () => {
+  const id = useWorkflowStore
+    .getState()
+    .addWorkflow({ serverId: 'a', name: 'No-op', data: graph(), addMethod: 'file' });
+  const before = useWorkflowStore.getState();
+  const listener = jest.fn();
+  const unsubscribe = useWorkflowStore.subscribe(listener);
+  const writes = jest.mocked(AsyncStorage.setItem).mock.calls.length;
+  before.updateNodeInput(id, '1', 'seed', 42);
+  expect(useWorkflowStore.getState()).toBe(before);
+  expect(listener).not.toHaveBeenCalled();
+  expect(jest.mocked(AsyncStorage.setItem).mock.calls.length).toBe(writes);
+  unsubscribe();
+});
+
+test('editing a node preserves other node references and owns the incoming value', () => {
+  const data = graph();
+  data['2'] = { id: '2', class_type: 'CLIPTextEncode', inputs: { text: 'sample' }, _meta: undefined };
+  const id = useWorkflowStore.getState().addWorkflow({ serverId: 'a', name: 'Edit', data, addMethod: 'file' });
+  const before = useWorkflowStore.getState().workflow[0].data;
+  const incoming = ['2', 0];
+  useWorkflowStore.getState().updateNodeInput(id, '1', 'model', incoming);
+  const after = useWorkflowStore.getState().workflow[0].data;
+  expect(after).not.toBe(before);
+  expect(after['1']).not.toBe(before['1']);
+  expect(after['2']).toBe(before['2']);
+  expect(before['1'].inputs.model).toBeUndefined();
+  incoming[0] = 'changed';
+  expect(after['1'].inputs.model).toEqual(['2', 0]);
+});
