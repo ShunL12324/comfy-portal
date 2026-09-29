@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit -p .",
     "lint:colors": "node scripts/check-color-tokens.cjs",
     "lint:icons": "node scripts/check-icon-tokens.cjs",
-    "lint:src": "eslint src/app src/features src/hooks src/services src/store src/utils src/shims src/components/self-ui src/components/common src/components/layout",
+    "lint:src": "eslint tests src/app src/features src/hooks src/services src/store src/utils src/shims src/components/self-ui src/components/common src/components/layout",
     "test": "jest",
     "test:watch": "jest --watchAll",
     "docs:dev": "vitepress dev docs",
