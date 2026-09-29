@@ -62,7 +62,7 @@ module.exports = defineConfig([
     ignores: [
       ...tokenExempt,
       'src/components/ui/text/native-text.tsx',
-      'src/components/self-ui/adaptive-sheet-components.tsx',
+      'src/components/self-ui/adaptive-sheet-components/index.tsx',
     ],
     rules: { 'tokens/no-unmanaged-fonts': 'error' },
   },

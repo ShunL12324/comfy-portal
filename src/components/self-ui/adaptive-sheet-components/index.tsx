@@ -17,7 +17,7 @@ import {
   TextInputProps,
 } from 'react-native';
 import { KeyboardAwareScrollView, KeyboardAwareScrollViewProps } from 'react-native-keyboard-controller';
-import BottomSheetKeyboardAwareScrollView from './bottom-sheet-keyboard-aware-scroll-view';
+import BottomSheetKeyboardAwareScrollView from '../bottom-sheet-keyboard-aware-scroll-view';
 import { cssInterop } from 'nativewind';
 import { inputTypography } from '@/components/ui/design-system/typography';
 import { designColors } from '@/constants/design-tokens';

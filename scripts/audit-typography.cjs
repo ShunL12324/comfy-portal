@@ -12,7 +12,7 @@ function walk(directory) {
 
 const modules = [];
 const errors = [];
-const adapters = new Set(['src/components/ui/text/native-text.tsx', 'src/components/self-ui/adaptive-sheet-components.tsx']);
+const adapters = new Set(['src/components/ui/text/native-text.tsx', 'src/components/self-ui/adaptive-sheet-components/index.tsx']);
 const files = ['app', 'features', 'components', 'utils', 'hooks'].map((d) => 'src/' + d)
   .flatMap(walk)
   .filter((filename) => /\.tsx?$/.test(filename) && !/\.test\.|__tests__/.test(filename))

@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from '@/constants/icons';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import { SheetAwareTextInput } from './adaptive-sheet-components';
+import { SheetAwareTextInput } from '../adaptive-sheet-components';
 import { normalizeSliderValue, parseSliderDraft, sliderPrecision } from './slider-value';
 import { designTokens as t } from '@/constants/design-tokens';
 

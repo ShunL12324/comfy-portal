@@ -331,25 +331,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/adaptive-sheet-components.tsx",
+      "path": "src/components/self-ui/adaptive-sheet-components/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "native adapter boundary"
     },
     {
-      "path": "src/components/self-ui/bottom-action-panel.tsx",
+      "path": "src/components/self-ui/bottom-action-panel/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/bottom-sheet-keyboard-aware-scroll-view.tsx",
+      "path": "src/components/self-ui/bottom-sheet-keyboard-aware-scroll-view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/confirm-dialog.tsx",
+      "path": "src/components/self-ui/confirm-dialog/index.tsx",
       "textElements": [
         "Copy",
         "Title"
@@ -358,7 +358,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/empty-state.tsx",
+      "path": "src/components/self-ui/empty-state/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -396,7 +396,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/keyboard-modal.tsx",
+      "path": "src/components/self-ui/keyboard-modal/index.tsx",
       "textElements": [
         "FieldLabel",
         "FormControlErrorText",
@@ -406,7 +406,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/number-input.tsx",
+      "path": "src/components/self-ui/number-input/index.tsx",
       "textElements": [
         "Input",
         "InputField"
@@ -415,7 +415,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/setting-row.tsx",
+      "path": "src/components/self-ui/setting-row/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -423,7 +423,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/self-ui/slider.tsx",
+      "path": "src/components/self-ui/slider/index.tsx",
       "textElements": [
         "SheetAwareTextInput"
       ],
@@ -867,7 +867,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/components/ui/rotating-spinner.tsx",
+      "path": "src/components/ui/rotating-spinner/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
