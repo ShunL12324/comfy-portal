@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { designTokens as t } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
 
@@ -243,58 +244,60 @@ export default function HistoryGalleryPage() {
   );
 
   return (
-    <View collapsable={false} className="bg-surface-base flex-1">
-      <View collapsable={false}>
-        <AppBar
-          title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
-          titleSize="sm"
-          rightElement={rightElement}
-          bottomElement={
-            isSelectionMode ? (
-              <Row style={{ gap: t.layout.related }}>
-                <Action kind="secondary" icon={Share} disabled={!hasSelection} onPress={handleShare}>
-                  Share
-                </Action>
-                <Action kind="secondary" icon={Download} disabled={!hasSelection} onPress={handleSave}>
-                  Save
-                </Action>
-                <Action kind="text" icon={Trash2} disabled={!hasSelection} onPress={() => setIsDeleteAlertOpen(true)}>
-                  Delete
-                </Action>
-              </Row>
-            ) : undefined
+    // iOS presents this screen as a native form sheet; sheets opened from it must render inside it, not behind it.
+    <BottomSheetModalProvider>
+      <View collapsable={false} className="bg-surface-base flex-1">
+        <View collapsable={false}>
+          <AppBar
+            title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
+            titleSize="sm"
+            rightElement={rightElement}
+            bottomElement={
+              isSelectionMode ? (
+                <Row style={{ gap: t.layout.related }}>
+                  <Action kind="secondary" icon={Share} disabled={!hasSelection} onPress={handleShare}>
+                    Share
+                  </Action>
+                  <Action kind="secondary" icon={Download} disabled={!hasSelection} onPress={handleSave}>
+                    Save
+                  </Action>
+                  <Action kind="text" icon={Trash2} disabled={!hasSelection} onPress={() => setIsDeleteAlertOpen(true)}>
+                    Delete
+                  </Action>
+                </Row>
+              ) : undefined
+            }
+          />
+        </View>
+
+        {/* Grid */}
+        <FlatList
+          data={mediaItems}
+          ListEmptyComponent={
+            <View style={{ padding: t.layout.inset }}>
+              {!loaded ? (
+                <Spinner />
+              ) : loadError ? (
+                <View style={{ gap: t.layout.related }}>
+                  <Copy>{loadError}</Copy>
+                  <Action onPress={reload}>Try again</Action>
+                </View>
+              ) : (
+                <Copy muted>No saved results for this workflow yet.</Copy>
+              )}
+            </View>
           }
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          numColumns={NUM_COLUMNS}
+          removeClippedSubviews
+          contentContainerStyle={listContentStyle}
+          initialNumToRender={12}
+          maxToRenderPerBatch={9}
+          windowSize={5}
         />
-      </View>
 
-      {/* Grid */}
-      <FlatList
-        data={mediaItems}
-        ListEmptyComponent={
-          <View style={{ padding: t.layout.inset }}>
-            {!loaded ? (
-              <Spinner />
-            ) : loadError ? (
-              <View style={{ gap: t.layout.related }}>
-                <Copy>{loadError}</Copy>
-                <Action onPress={reload}>Try again</Action>
-              </View>
-            ) : (
-              <Copy muted>No saved results for this workflow yet.</Copy>
-            )}
-          </View>
-        }
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        numColumns={NUM_COLUMNS}
-        removeClippedSubviews
-        contentContainerStyle={listContentStyle}
-        initialNumToRender={12}
-        maxToRenderPerBatch={9}
-        windowSize={5}
-      />
-
-      {/* Fullscreen preview.
+        {/* Fullscreen preview.
           A plain overlay rather than a Modal. This screen is already presented
           as a native modal, and nesting an RN Modal inside it puts VideoView in
           a separate native view hierarchy where the video layer never renders —
@@ -311,108 +314,109 @@ export default function HistoryGalleryPage() {
           which holds a thumbnail of that very same media — two copies of one
           image at two sizes, i.e. a ghost. So the content leaves first against
           opaque black, and only then does the black pull back. */}
-      <AnimatePresence>
-        {isPreviewOpen && (
-          <MotiView
-            key="preview"
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ type: 'timing', duration: 150 }}
-            exitTransition={{ type: 'timing', duration: 150, delay: 120 }}
-            style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: c.media }]}
-          >
+        <AnimatePresence>
+          {isPreviewOpen && (
             <MotiView
-              from={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ type: 'timing', duration: 200 }}
-              exitTransition={{ type: 'timing', duration: 150 }}
-              style={{ flex: 1 }}
+              key="preview"
+              from={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: 'timing', duration: 150 }}
+              exitTransition={{ type: 'timing', duration: 150, delay: 120 }}
+              style={[StyleSheet.absoluteFill, { zIndex: 20, backgroundColor: c.media }]}
             >
-              {/* A paging FlatList rather than a PagerView (which the run
+              <MotiView
+                from={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ type: 'timing', duration: 200 }}
+                exitTransition={{ type: 'timing', duration: 150 }}
+                style={{ flex: 1 }}
+              >
+                {/* A paging FlatList rather than a PagerView (which the run
                   screen uses): a pager mounts every child, and a gallery can
                   hold hundreds of items — this only keeps a few pages alive.
                   Each page is exactly one screen wide, so getItemLayout is
                   arithmetic and initialScrollIndex lands on the tapped item
                   without a visible scroll. */}
-              <FlatList
-                data={mediaItems}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={keyExtractor}
-                initialScrollIndex={initialPreviewIndex}
-                getItemLayout={(_, index) => ({
-                  length: screenWidth,
-                  offset: screenWidth * index,
-                  index,
-                })}
-                onMomentumScrollEnd={handlePreviewScrollEnd}
-                initialNumToRender={1}
-                maxToRenderPerBatch={2}
-                // Three pages is already a small enough window; the extra
-                // removeClippedSubviews has a history of blanking pages on
-                // horizontal iOS lists, so it isn't worth the trade here.
-                windowSize={3}
-                renderItem={renderPreviewPage}
-              />
+                <FlatList
+                  data={mediaItems}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={keyExtractor}
+                  initialScrollIndex={initialPreviewIndex}
+                  getItemLayout={(_, index) => ({
+                    length: screenWidth,
+                    offset: screenWidth * index,
+                    index,
+                  })}
+                  onMomentumScrollEnd={handlePreviewScrollEnd}
+                  initialNumToRender={1}
+                  maxToRenderPerBatch={2}
+                  // Three pages is already a small enough window; the extra
+                  // removeClippedSubviews has a history of blanking pages on
+                  // horizontal iOS lists, so it isn't worth the trade here.
+                  windowSize={3}
+                  renderItem={renderPreviewPage}
+                />
 
-              {mediaItems.length > 1 && (
-                <View
-                  pointerEvents="none"
-                  style={{ position: 'absolute', top: insets.top + 12, left: 12, zIndex: 30 }}
-                  className="bg-media/40 px-2.5 py-1.5 min-w-[52px] items-center rounded-full"
+                {mediaItems.length > 1 && (
+                  <View
+                    pointerEvents="none"
+                    style={{ position: 'absolute', top: insets.top + 12, left: 12, zIndex: 30 }}
+                    className="bg-media/40 px-2.5 py-1.5 min-w-[52px] items-center rounded-full"
+                  >
+                    <Copy size="label" style={{ fontWeight: '500', color: c.onMedia }}>
+                      {previewIndex + 1}/{mediaItems.length}
+                    </Copy>
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={closePreview}
+                  className="active:opacity-pressed bg-media/30"
+                  style={{
+                    position: 'absolute',
+                    top: insets.top + 12,
+                    right: 12,
+                    borderRadius: t.radius.control,
+                    padding: t.layout.related,
+                    zIndex: 30,
+                  }}
                 >
-                  <Copy size="label" style={{ fontWeight: '500', color: c.onMedia }}>
-                    {previewIndex + 1}/{mediaItems.length}
-                  </Copy>
-                </View>
-              )}
+                  <Icon as={X} size="sm" className="text-on-media" />
+                </Pressable>
+              </MotiView>
 
-              <Pressable
-                onPress={closePreview}
-                className="active:opacity-pressed bg-media/30"
-                style={{
-                  position: 'absolute',
-                  top: insets.top + 12,
-                  right: 12,
-                  borderRadius: t.radius.control,
-                  padding: t.layout.related,
-                  zIndex: 30,
-                }}
-              >
-                <Icon as={X} size="sm" className="text-on-media" />
-              </Pressable>
-            </MotiView>
-
-            {/* Inside the overlay so it shares the stacking context: the panel
+              {/* Inside the overlay so it shares the stacking context: the panel
                 positions itself absolutely with no z-index of its own, so as a
                 sibling it would sit under the overlay on Android. Outside the
                 animated content so dismissing it doesn't ride the scale. */}
-            <MediaActions
-              isOpen={showMediaActions}
-              onClose={() => setShowMediaActions(false)}
-              mediaUrl={previewUrl}
-              workflowId={workflowId}
-              serverId={serverId}
-            />
-          </MotiView>
-        )}
-      </AnimatePresence>
+              <MediaActions
+                isOpen={showMediaActions}
+                onClose={() => setShowMediaActions(false)}
+                mediaUrl={previewUrl}
+                workflowId={workflowId}
+                serverId={serverId}
+              />
+            </MotiView>
+          )}
+        </AnimatePresence>
 
-      <DeleteAlert
-        isOpen={isDeleteAlertOpen}
-        onClose={() => setIsDeleteAlertOpen(false)}
-        onConfirm={confirmDelete}
-        title={selectedMedia.size > 1 ? 'Delete Selected Media' : 'Delete Media'}
-        description={
-          selectedMedia.size > 1
-            ? `Are you sure you want to delete ${selectedMedia.size} items? This action cannot be undone.`
-            : 'Are you sure you want to delete this item? This action cannot be undone.'
-        }
-      />
-    </View>
+        <DeleteAlert
+          isOpen={isDeleteAlertOpen}
+          onClose={() => setIsDeleteAlertOpen(false)}
+          onConfirm={confirmDelete}
+          title={selectedMedia.size > 1 ? 'Delete Selected Media' : 'Delete Media'}
+          description={
+            selectedMedia.size > 1
+              ? `Are you sure you want to delete ${selectedMedia.size} items? This action cannot be undone.`
+              : 'Are you sure you want to delete this item? This action cannot be undone.'
+          }
+        />
+      </View>
+    </BottomSheetModalProvider>
   );
 }
 

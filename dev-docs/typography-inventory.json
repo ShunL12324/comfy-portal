@@ -351,8 +351,7 @@
     {
       "path": "src/components/self-ui/confirm-dialog/index.tsx",
       "textElements": [
-        "Copy",
-        "Title"
+        "Copy"
       ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
