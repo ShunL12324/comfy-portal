@@ -1650,6 +1650,12 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/server/components/server-actions-sheet.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/server/components/server-card.tsx",
       "textElements": [
         "Copy"

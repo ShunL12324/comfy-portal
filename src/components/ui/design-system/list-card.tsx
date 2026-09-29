@@ -43,6 +43,7 @@ export function ListCard({
   distributeFacts = false,
   factsAlignment = 'flex-start',
   onPress,
+  onLongPress,
   accessibilityLabel,
   accessibilityHint,
   testID,
@@ -69,6 +70,8 @@ export function ListCard({
   /** Server status stays against the bottom edge beside taller hardware details. */
   factsAlignment?: ViewStyle['alignItems'];
   onPress: () => void;
+  /** Accelerator for the same actions the card's `action` offers; never the only way to reach them. */
+  onLongPress?: () => void;
   accessibilityLabel: string;
   /** Facts worth speaking; the subtitle is prepended automatically. */
   accessibilityHint?: string;
@@ -92,6 +95,7 @@ export function ListCard({
         accessibilityHint={hint}
         aria-describedby={Platform.OS === 'web' && hint ? hintId : undefined}
         onPress={onPress}
+        onLongPress={onLongPress}
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}
         style={[StyleSheet.absoluteFill, { borderRadius: t.radius.panel }]}

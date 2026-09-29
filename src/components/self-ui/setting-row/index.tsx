@@ -12,6 +12,7 @@ interface SettingRowProps {
   onPress?: () => void;
   right?: ReactNode;
   expanded?: boolean;
+  destructive?: boolean;
 }
 /**
  * A Settings entry: icon, label and trailing affordance on bare paper.
@@ -19,7 +20,7 @@ interface SettingRowProps {
  * The row carries no fill, radius or rule of its own: Settings is one
  * continuous list, so the rows themselves are the structure.
  */
-export function SettingRow({ icon: Icon, label, href, onPress, right, expanded }: SettingRowProps) {
+export function SettingRow({ icon: Icon, label, href, onPress, right, expanded, destructive }: SettingRowProps) {
   const c = useDesign();
   const body = (
     <Pressable
@@ -32,8 +33,8 @@ export function SettingRow({ icon: Icon, label, href, onPress, right, expanded }
       }}
     >
       <Row style={{ gap: t.layout.field }}>
-        <Icon size={t.icon.control} strokeWidth={iconStroke(t.icon.control)} color={c.secondary} />
-        <Copy style={{ flex: 1, fontWeight: '500' }}>{label}</Copy>
+        <Icon size={t.icon.control} strokeWidth={iconStroke(t.icon.control)} color={destructive ? c.danger : c.secondary} />
+        <Copy style={[{ flex: 1, fontWeight: '500' }, destructive && { color: c.danger }]}>{label}</Copy>
         {right ?? (
           <MotiView animate={{ rotate: expanded ? '90deg' : '0deg' }} transition={{ type: 'timing', duration: 160 }}>
             <ChevronRight strokeWidth={iconStroke(t.icon.small)} size={t.icon.small} color={c.muted} />
