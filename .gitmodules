@@ -1,0 +1,3 @@
+[submodule "comfy-portal-cloud-server"]
+	path = comfy-portal-cloud-server
+	url = https://github.com/ShunL12324/comfy-portal-cloud-server.git
