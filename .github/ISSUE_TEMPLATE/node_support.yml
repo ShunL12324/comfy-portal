@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for taking the time to request node support!
 
-        ![Export Workflow](https://github.com/ShunL12324/comfy-portal/raw/workflow-exp/repo-assets/issue-template/export-workflow.png)
+        ![Export Workflow](https://github.com/ShunL12324/comfy-portal/raw/main/repo-assets/issue-template/export-workflow.png)
 
         To help us better understand your request, please provide your workflow JSON file:
         1. Open ComfyUI in your web browser
