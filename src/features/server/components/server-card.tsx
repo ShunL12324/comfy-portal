@@ -9,11 +9,14 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { serverGpuSummary, serverHint, serverStatus, type ServerTone } from '@/features/server/utils/server-summary';
 import { spoken } from '@/utils/spoken';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 interface ServerRowProps {
   name: string;
-  origin: ServerOrigin;
+  /** Shown as the trailing badge unless `badge` replaces it. */
+  origin?: ServerOrigin;
+  /** Trailing decoration; taps pass through to the card. */
+  badge?: ReactNode;
   endpoint: string;
   status: string;
   tone: ServerTone;
@@ -35,6 +38,7 @@ interface ServerRowProps {
 export function ServerRow({
   name,
   origin,
+  badge,
   endpoint,
   status,
   tone,
@@ -59,7 +63,7 @@ export function ServerRow({
       wrapFacts={!gpu && !memory}
       metaMaxWidth={gpu || memory ? '55%' : undefined}
       metaWidth={gpu || memory ? '55%' : undefined}
-      badge={<ServerOriginBadge origin={origin} />}
+      badge={badge ?? (origin ? <ServerOriginBadge origin={origin} /> : undefined)}
       accessibilityLabel={openLabel ?? `Open ${name}`}
       accessibilityHint={spoken(
         origin,

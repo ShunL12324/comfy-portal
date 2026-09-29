@@ -1640,6 +1640,12 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/server/components/connection-card.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/server/components/edit-server-modal.tsx",
       "textElements": [
         "BottomSheetFormInput",

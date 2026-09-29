@@ -5,8 +5,9 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
-import { Settings2, Plus } from '@/constants/icons';
+import { Plus } from '@/constants/icons';
 import { useServersStore } from '@/features/server/stores/server-store';
+import { ConnectionCard } from '@/features/server/components/connection-card';
 import { EditServerModal, type EditServerModalRef } from '@/features/server/components/edit-server-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { compareWorkflowUsage } from '@/features/workflow/utils/workflow-usage';
@@ -115,20 +116,10 @@ export default function ServerScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
       <AppBar
-        title="Workflows"
+        title={server.name}
         titleSize="sm"
         showBack
-        rightElement={
-          <Row style={{ gap: t.layout.related }}>
-            <Action kind="text" icon={Plus} label="Add workflow" onPress={() => setImporting(true)} />
-            <Action
-              kind="text"
-              icon={Settings2}
-              label={`Server settings: ${server.name}`}
-              onPress={() => editRef.current?.present()}
-            />
-          </Row>
-        }
+        rightElement={<Action kind="text" icon={Plus} label="Add workflow" onPress={() => setImporting(true)} />}
       />
       <RefreshFlatList
         testID="server-workflow-list"
@@ -136,7 +127,16 @@ export default function ServerScreen() {
         keyboardDismissMode="on-drag"
         ListHeaderComponent={
           <View style={{ gap: 0 }}>
-            <View style={{ gap: t.layout.field, paddingTop: t.layout.inset, paddingBottom: t.layout.field }}>
+            <View style={{ paddingTop: t.layout.inset, paddingBottom: t.layout.section }}>
+              <ConnectionCard id={serverId} onOpen={() => editRef.current?.present()} />
+            </View>
+            <View style={{ gap: t.layout.field, paddingBottom: t.layout.field }}>
+              <Row style={{ gap: t.layout.related }}>
+                <Copy size="section">Workflows</Copy>
+                <Copy mono muted size="label">
+                  {serverWorkflows.length}
+                </Copy>
+              </Row>
               <Field label="Search workflows" search value={query} onChange={setQuery} placeholder="Search workflows" />
               <FilterChips
                 label="Workflow sources"
