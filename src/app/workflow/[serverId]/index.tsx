@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
-import { Action, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Copy, Field, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
 import { Plus } from '@/constants/icons';
 import { useServersStore } from '@/features/server/stores/server-store';
@@ -127,16 +127,10 @@ export default function ServerScreen() {
         keyboardDismissMode="on-drag"
         ListHeaderComponent={
           <View style={{ gap: 0 }}>
-            <View style={{ paddingTop: t.layout.inset, paddingBottom: t.layout.section }}>
+            <View style={{ paddingTop: t.layout.inset, paddingBottom: t.layout.inset }}>
               <ConnectionCard id={serverId} onOpen={() => editRef.current?.present()} />
             </View>
             <View style={{ gap: t.layout.field, paddingBottom: t.layout.field }}>
-              <Row style={{ gap: t.layout.related }}>
-                <Copy size="section">Workflows</Copy>
-                <Copy mono muted size="label">
-                  {serverWorkflows.length}
-                </Copy>
-              </Row>
               <Field label="Search workflows" search value={query} onChange={setQuery} placeholder="Search workflows" />
               <FilterChips
                 label="Workflow sources"
