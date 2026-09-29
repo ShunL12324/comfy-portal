@@ -1,6 +1,6 @@
 import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
-import { REFRESH_ARTWORKS, type ArtworkDotGroup } from '@/assets/illustrations/refresh-artworks';
+import { REFRESH_ARTWORKS, type ArtworkDotGroup } from '../../../../assets/illustrations/refresh-artworks';
 import { useDesign } from './primitives';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);

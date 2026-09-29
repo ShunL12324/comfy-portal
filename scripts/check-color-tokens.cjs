@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const load = require('tailwindcss/loadConfig');
-const { designColors } = load(path.resolve(__dirname, '../constants/design-tokens.ts'));
+const { designColors } = load(path.resolve(__dirname, '../src/constants/design-tokens.ts'));
 
 function luminance(hex) {
   const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);

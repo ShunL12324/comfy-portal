@@ -1,4 +1,4 @@
-import { REFRESH_ARTWORKS } from '@/assets/illustrations/refresh-artworks';
+import { REFRESH_ARTWORKS } from '../../../../assets/illustrations/refresh-artworks';
 
 // One shuffle bag is shared by every refresh surface, including across navigation.
 export function createArtworkCycle(count: number, random: () => number = Math.random) {

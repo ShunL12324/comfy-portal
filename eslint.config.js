@@ -9,7 +9,7 @@ const tokens = require('./eslint-rules');
 // way Tailwind loads its own config (which requires the TypeScript token file).
 const spacingKeys = Object.keys(resolveConfig(loadConfig(path.join(__dirname, 'tailwind.config.js'))).theme.padding);
 // The same loader reads the TypeScript token module that config requires.
-const { designTokens } = loadConfig(path.join(__dirname, 'constants/design-tokens.ts'));
+const { designTokens } = loadConfig(path.join(__dirname, 'src/constants/design-tokens.ts'));
 const heights = Object.values(designTokens.height);
 
 // Design values come from designTokens, useDesign() and the semantic Tailwind
@@ -17,9 +17,9 @@ const heights = Object.values(designTokens.height);
 // allowed to spell values out. Some entries sit outside the linted `files` and
 // are listed only to declare the exemption.
 const tokenExempt = [
-  'constants/design-tokens.ts',
-  'constants/Colors.ts',
-  'components/ui/gluestack-ui-provider/**',
+  'src/constants/design-tokens.ts',
+  'src/constants/Colors.ts',
+  'src/components/ui/gluestack-ui-provider/**',
   'tailwind.config.js',
   '**/*.test.{ts,tsx}',
   '**/__tests__/**',
@@ -36,7 +36,7 @@ module.exports = defineConfig([
     ignores: ["dist/*", "tools/**", "ios/**", "android/**", ".expo/**"],
   },
   {
-    files: ['{app,components,features,hooks,utils}/**/*.{ts,tsx}'],
+    files: ['src/{app,components,features,hooks,utils}/**/*.{ts,tsx}'],
     ignores: tokenExempt,
     plugins: { tokens },
     rules: {
@@ -50,19 +50,19 @@ module.exports = defineConfig([
   {
     // Gluestack's generated components: numbered colour steps are the token
     // layer itself, and Tailwind's size scale will be generated from designTokens (T62).
-    files: ['components/ui/*/**/*.{ts,tsx}', 'components/ui/*.tsx'],
-    ignores: [...tokenExempt, 'components/ui/design-system/**'],
+    files: ['src/components/ui/*/**/*.{ts,tsx}', 'src/components/ui/*.tsx'],
+    ignores: [...tokenExempt, 'src/components/ui/design-system/**'],
     rules: {
       'tokens/no-raw-classes': ['error', { allowScaleSteps: true, spacingKeys }],
       'tokens/no-raw-font-size': ['error', { textComponents, allowSizeClasses: true }],
     },
   },
   {
-    files: ['{app,components,features,hooks,utils}/**/*.{ts,tsx}'],
+    files: ['src/{app,components,features,hooks,utils}/**/*.{ts,tsx}'],
     ignores: [
       ...tokenExempt,
-      'components/ui/text/native-text.tsx',
-      'components/self-ui/adaptive-sheet-components.tsx',
+      'src/components/ui/text/native-text.tsx',
+      'src/components/self-ui/adaptive-sheet-components.tsx',
     ],
     rules: { 'tokens/no-unmanaged-fonts': 'error' },
   },

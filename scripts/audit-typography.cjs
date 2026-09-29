@@ -12,8 +12,8 @@ function walk(directory) {
 
 const modules = [];
 const errors = [];
-const adapters = new Set(['components/ui/text/native-text.tsx', 'components/self-ui/adaptive-sheet-components.tsx']);
-const files = ['app', 'features', 'components', 'utils', 'hooks']
+const adapters = new Set(['src/components/ui/text/native-text.tsx', 'src/components/self-ui/adaptive-sheet-components.tsx']);
+const files = ['app', 'features', 'components', 'utils', 'hooks'].map((d) => 'src/' + d)
   .flatMap(walk)
   .filter((filename) => /\.tsx?$/.test(filename) && !/\.test\.|__tests__/.test(filename))
   .sort();
@@ -65,14 +65,14 @@ for (const filename of files) {
 }
 
 // Check the actual loaded aliases, including static italic/weight variants.
-const tokens = fs.readFileSync('constants/design-tokens.ts', 'utf8');
-const registry = fs.readFileSync('constants/font-assets.ts', 'utf8');
+const tokens = fs.readFileSync('src/constants/design-tokens.ts', 'utf8');
+const registry = fs.readFileSync('src/constants/font-assets.ts', 'utf8');
 const fontBlock = tokens.match(/  font: \{([\s\S]*?)\n  \},/)[1];
 for (const [, face] of fontBlock.matchAll(/: '([^']+)'/g)) {
   if (!registry.includes(`${face}: require(`)) errors.push(`font face has no startup asset: ${face}`);
 }
 for (const [, asset] of registry.matchAll(/require\('([^']+)'\)/g)) {
-  if (!fs.existsSync(path.resolve('constants', asset))) errors.push(`font asset missing: ${asset}`);
+  if (!fs.existsSync(path.resolve('src/constants', asset))) errors.push(`font asset missing: ${asset}`);
 }
 
 if (errors.length) {

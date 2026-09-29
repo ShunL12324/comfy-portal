@@ -3,13 +3,13 @@
 // which exports the same plugin but ships ESM only — Node can't require() it
 // from a config file. This is the sole remaining reason that package is a
 // dependency; every other call site uses the utils build.
-const { radius } = require('./constants/design-shape.json');
-const { designTokens } = require('./constants/design-tokens');
+const { radius } = require('./src/constants/design-shape.json');
+const { designTokens } = require('./src/constants/design-tokens');
 const gluestackPlugin = require('@gluestack-ui/nativewind-utils/tailwind-plugin');
 
 module.exports = {
   darkMode: 'class',
-  content: ['app/**/*.{tsx,jsx,ts,js}', 'components/**/*.{tsx,jsx,ts,js}', 'features/**/*.{tsx,jsx,ts,js}'],
+  content: ['src/app/**/*.{tsx,jsx,ts,js}', 'src/components/**/*.{tsx,jsx,ts,js}', 'src/features/**/*.{tsx,jsx,ts,js}'],
   presets: [require('nativewind/preset')],
   safelist: [
     {

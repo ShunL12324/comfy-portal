@@ -7,7 +7,7 @@ import { useQuickActionStore } from '@/features/quick-action/stores/quick-action
 import { useServersStore } from '@/features/server/stores/server-store';
 import { runStorageMigrations } from '@/services/storage-migration';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import '@/global.css';
+import '../../global.css';
 import { useIncomingShare } from '@/hooks/use-incoming-share';
 import '@/shims/ai-sdk-streams';
 import '@/shims/crypto-random-uuid';

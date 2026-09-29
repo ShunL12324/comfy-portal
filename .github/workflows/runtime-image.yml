@@ -165,7 +165,7 @@ jobs:
           {
             echo "### Runtime image"
             echo ''
-            echo 'Point `IMAGE_*` in features/cloud/services/provision.ts at:'
+            echo 'Point `IMAGE_*` in src/features/cloud/services/provision.ts at:'
             echo ''
             echo '```'
             echo "${{ steps.tags.outputs.primary }}"

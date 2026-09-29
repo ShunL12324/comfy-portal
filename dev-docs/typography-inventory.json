@@ -2,13 +2,13 @@
   "scope": "all production UI and typography declarations",
   "modules": [
     {
-      "path": "app/(tabs)/_layout.tsx",
+      "path": "src/app/(tabs)/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/(tabs)/explore.tsx",
+      "path": "src/app/(tabs)/explore.tsx",
       "textElements": [
         "Copy"
       ],
@@ -16,13 +16,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/(tabs)/gallery.tsx",
+      "path": "src/app/(tabs)/gallery.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/(tabs)/index.tsx",
+      "path": "src/app/(tabs)/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -30,7 +30,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/(tabs)/setting.tsx",
+      "path": "src/app/(tabs)/setting.tsx",
       "textElements": [
         "Copy"
       ],
@@ -38,7 +38,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/+not-found.tsx",
+      "path": "src/app/+not-found.tsx",
       "textElements": [
         "Copy",
         "Title"
@@ -47,19 +47,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/_layout.tsx",
+      "path": "src/app/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/cloud/_layout.tsx",
+      "path": "src/app/cloud/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/cloud/launch-status/[instanceId].tsx",
+      "path": "src/app/cloud/launch-status/[instanceId].tsx",
       "textElements": [
         "Copy"
       ],
@@ -67,7 +67,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/cloud/launch.tsx",
+      "path": "src/app/cloud/launch.tsx",
       "textElements": [
         "Copy"
       ],
@@ -75,7 +75,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/environments/[id]/[resource].tsx",
+      "path": "src/app/environments/[id]/[resource].tsx",
       "textElements": [
         "Copy"
       ],
@@ -83,55 +83,55 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/expo-sharing.tsx",
+      "path": "src/app/expo-sharing.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/guide/_layout.tsx",
+      "path": "src/app/guide/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/guide/index.tsx",
+      "path": "src/app/guide/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/legal/_layout.tsx",
+      "path": "src/app/legal/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/legal/privacy.tsx",
+      "path": "src/app/legal/privacy.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/legal/terms.tsx",
+      "path": "src/app/legal/terms.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/_layout.tsx",
+      "path": "src/app/settings/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/ai-assistant/_layout.tsx",
+      "path": "src/app/settings/ai-assistant/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/ai-assistant/index.tsx",
+      "path": "src/app/settings/ai-assistant/index.tsx",
       "textElements": [
         "Copy",
         "FieldLabel",
@@ -144,19 +144,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/ai-assistant/provider.tsx",
+      "path": "src/app/settings/ai-assistant/provider.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/cloud-gpu/_layout.tsx",
+      "path": "src/app/settings/cloud-gpu/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/cloud-gpu/index.tsx",
+      "path": "src/app/settings/cloud-gpu/index.tsx",
       "textElements": [
         "Copy",
         "FieldLabel"
@@ -165,7 +165,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/settings/cloud-gpu/instances.tsx",
+      "path": "src/app/settings/cloud-gpu/instances.tsx",
       "textElements": [
         "Copy"
       ],
@@ -173,7 +173,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/templates/[id].tsx",
+      "path": "src/app/templates/[id].tsx",
       "textElements": [
         "Copy"
       ],
@@ -181,19 +181,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/templates/_layout.tsx",
+      "path": "src/app/templates/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/workflow/[serverId]/_layout.tsx",
+      "path": "src/app/workflow/[serverId]/_layout.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/workflow/[serverId]/index.tsx",
+      "path": "src/app/workflow/[serverId]/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -201,7 +201,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/workflow/[serverId]/run/[workflowId].tsx",
+      "path": "src/app/workflow/[serverId]/run/[workflowId].tsx",
       "textElements": [
         "Copy"
       ],
@@ -209,7 +209,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "app/workflow/[serverId]/run/history.tsx",
+      "path": "src/app/workflow/[serverId]/run/history.tsx",
       "textElements": [
         "Copy"
       ],
@@ -217,7 +217,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/bottom-sheet/index.tsx",
+      "path": "src/components/common/selectors/bottom-sheet/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -225,7 +225,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/bottom-sheet/item.tsx",
+      "path": "src/components/common/selectors/bottom-sheet/item.tsx",
       "textElements": [
         "Copy"
       ],
@@ -233,7 +233,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/bottom-sheet/search-header.tsx",
+      "path": "src/components/common/selectors/bottom-sheet/search-header.tsx",
       "textElements": [
         "Title"
       ],
@@ -241,13 +241,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/model/index.tsx",
+      "path": "src/components/common/selectors/model/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/model/selector.tsx",
+      "path": "src/components/common/selectors/model/selector.tsx",
       "textElements": [
         "Copy",
         "FieldLabel"
@@ -256,13 +256,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/option-selector/index.tsx",
+      "path": "src/components/common/selectors/option-selector/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/option-selector/selector.tsx",
+      "path": "src/components/common/selectors/option-selector/selector.tsx",
       "textElements": [
         "Copy"
       ],
@@ -270,13 +270,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/sampler/index.tsx",
+      "path": "src/components/common/selectors/sampler/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/sampler/selector.tsx",
+      "path": "src/components/common/selectors/sampler/selector.tsx",
       "textElements": [
         "Copy"
       ],
@@ -284,13 +284,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/scheduler/index.tsx",
+      "path": "src/components/common/selectors/scheduler/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/selectors/scheduler/selector.tsx",
+      "path": "src/components/common/selectors/scheduler/selector.tsx",
       "textElements": [
         "Copy"
       ],
@@ -298,7 +298,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/common/webview-page.tsx",
+      "path": "src/components/common/webview-page.tsx",
       "textElements": [
         "Copy"
       ],
@@ -306,7 +306,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/layout/app-bar.tsx",
+      "path": "src/components/layout/app-bar.tsx",
       "textElements": [
         "Copy",
         "Heading"
@@ -315,7 +315,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/layout/sidebar.tsx",
+      "path": "src/components/layout/sidebar.tsx",
       "textElements": [
         "Copy"
       ],
@@ -323,7 +323,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/layout/tab-bar.tsx",
+      "path": "src/components/layout/tab-bar.tsx",
       "textElements": [
         "Copy"
       ],
@@ -331,25 +331,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/adaptive-sheet-components.tsx",
+      "path": "src/components/self-ui/adaptive-sheet-components.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "native adapter boundary"
     },
     {
-      "path": "components/self-ui/bottom-action-panel.tsx",
+      "path": "src/components/self-ui/bottom-action-panel.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/bottom-sheet-keyboard-aware-scroll-view.tsx",
+      "path": "src/components/self-ui/bottom-sheet-keyboard-aware-scroll-view.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/confirm-dialog.tsx",
+      "path": "src/components/self-ui/confirm-dialog.tsx",
       "textElements": [
         "Copy",
         "Title"
@@ -358,7 +358,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/empty-state.tsx",
+      "path": "src/components/self-ui/empty-state.tsx",
       "textElements": [
         "Copy"
       ],
@@ -366,7 +366,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/form-input/bottom-sheet-form-input-shared.tsx",
+      "path": "src/components/self-ui/form-input/bottom-sheet-form-input-shared.tsx",
       "textElements": [
         "AdaptiveTextInput",
         "Copy",
@@ -376,19 +376,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/form-input/bottom-sheet-form-input.tsx",
+      "path": "src/components/self-ui/form-input/bottom-sheet-form-input.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/form-input/bottom-sheet-form-input.web.tsx",
+      "path": "src/components/self-ui/form-input/bottom-sheet-form-input.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/form-input/index.tsx",
+      "path": "src/components/self-ui/form-input/index.tsx",
       "textElements": [
         "BottomSheetFormInput"
       ],
@@ -396,7 +396,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/keyboard-modal.tsx",
+      "path": "src/components/self-ui/keyboard-modal.tsx",
       "textElements": [
         "FieldLabel",
         "FormControlErrorText",
@@ -406,7 +406,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/number-input.tsx",
+      "path": "src/components/self-ui/number-input.tsx",
       "textElements": [
         "Input",
         "InputField"
@@ -415,7 +415,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/setting-row.tsx",
+      "path": "src/components/self-ui/setting-row.tsx",
       "textElements": [
         "Copy"
       ],
@@ -423,7 +423,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/slider.tsx",
+      "path": "src/components/self-ui/slider.tsx",
       "textElements": [
         "SheetAwareTextInput"
       ],
@@ -431,13 +431,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/self-ui/themed-bottom-sheet-modal/index.tsx",
+      "path": "src/components/self-ui/themed-bottom-sheet-modal/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/accordion/index.tsx",
+      "path": "src/components/ui/accordion/index.tsx",
       "textElements": [
         "UIAccordion.ContentText",
         "UIAccordion.TitleText"
@@ -446,7 +446,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/actionsheet/index.tsx",
+      "path": "src/components/ui/actionsheet/index.tsx",
       "textElements": [
         "UIActionsheet.ItemText",
         "UIActionsheet.SectionHeaderText"
@@ -455,13 +455,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/alert-dialog/index.tsx",
+      "path": "src/components/ui/alert-dialog/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/alert/index.tsx",
+      "path": "src/components/ui/alert/index.tsx",
       "textElements": [
         "UIAlert.Text"
       ],
@@ -469,7 +469,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/avatar/index.tsx",
+      "path": "src/components/ui/avatar/index.tsx",
       "textElements": [
         "UIAvatar.FallbackText"
       ],
@@ -477,7 +477,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/badge/index.tsx",
+      "path": "src/components/ui/badge/index.tsx",
       "textElements": [
         "Text"
       ],
@@ -485,7 +485,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/bottomsheet/index.tsx",
+      "path": "src/components/ui/bottomsheet/index.tsx",
       "textElements": [
         "Text"
       ],
@@ -493,25 +493,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/box/index.tsx",
+      "path": "src/components/ui/box/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/box/index.web.tsx",
+      "path": "src/components/ui/box/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/box/styles.tsx",
+      "path": "src/components/ui/box/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/button/index.tsx",
+      "path": "src/components/ui/button/index.tsx",
       "textElements": [
         "UIButton.Text"
       ],
@@ -519,43 +519,43 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/card/index.tsx",
+      "path": "src/components/ui/card/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/card/index.web.tsx",
+      "path": "src/components/ui/card/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/card/styles.tsx",
+      "path": "src/components/ui/card/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/center/index.tsx",
+      "path": "src/components/ui/center/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/center/index.web.tsx",
+      "path": "src/components/ui/center/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/center/styles.tsx",
+      "path": "src/components/ui/center/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/checkbox/index.tsx",
+      "path": "src/components/ui/checkbox/index.tsx",
       "textElements": [
         "Text",
         "UICheckbox.Label"
@@ -564,13 +564,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/control-density.tsx",
+      "path": "src/components/ui/design-system/control-density.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/filter-chips.tsx",
+      "path": "src/components/ui/design-system/filter-chips.tsx",
       "textElements": [
         "Animated.Text"
       ],
@@ -578,7 +578,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/list-card.tsx",
+      "path": "src/components/ui/design-system/list-card.tsx",
       "textElements": [
         "Copy",
         "Text"
@@ -587,13 +587,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/native-controls.tsx",
+      "path": "src/components/ui/design-system/native-controls.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/overlays.tsx",
+      "path": "src/components/ui/design-system/overlays.tsx",
       "textElements": [
         "Title"
       ],
@@ -601,13 +601,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/portrait-refresh-art.tsx",
+      "path": "src/components/ui/design-system/portrait-refresh-art.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/primitives.tsx",
+      "path": "src/components/ui/design-system/primitives.tsx",
       "textElements": [
         "ButtonText",
         "CheckboxLabel",
@@ -626,13 +626,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/pull-refresh.tsx",
+      "path": "src/components/ui/design-system/pull-refresh.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/server-origin-badge.tsx",
+      "path": "src/components/ui/design-system/server-origin-badge.tsx",
       "textElements": [
         "Copy"
       ],
@@ -640,25 +640,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/design-system/typography.ts",
+      "path": "src/components/ui/design-system/typography.ts",
       "textElements": [],
       "fontDeclarations": 3,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/divider/index.tsx",
+      "path": "src/components/ui/divider/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/drawer/index.tsx",
+      "path": "src/components/ui/drawer/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/fab/index.tsx",
+      "path": "src/components/ui/fab/index.tsx",
       "textElements": [
         "UIFab.Label"
       ],
@@ -666,13 +666,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/flat-list/index.tsx",
+      "path": "src/components/ui/flat-list/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/form-control/index.tsx",
+      "path": "src/components/ui/form-control/index.tsx",
       "textElements": [
         "Text",
         "UIFormControl.Error.Text",
@@ -684,37 +684,37 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/gluestack-ui-provider/index.tsx",
+      "path": "src/components/ui/gluestack-ui-provider/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/gluestack-ui-provider/index.web.tsx",
+      "path": "src/components/ui/gluestack-ui-provider/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/grid/index.tsx",
+      "path": "src/components/ui/grid/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/grid/index.web.tsx",
+      "path": "src/components/ui/grid/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/grid/styles.tsx",
+      "path": "src/components/ui/grid/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/heading/index.tsx",
+      "path": "src/components/ui/heading/index.tsx",
       "textElements": [
         "MappedHeading"
       ],
@@ -722,7 +722,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/heading/index.web.tsx",
+      "path": "src/components/ui/heading/index.web.tsx",
       "textElements": [
         "MappedHeading"
       ],
@@ -730,67 +730,67 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/heading/styles.tsx",
+      "path": "src/components/ui/heading/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/hstack/index.tsx",
+      "path": "src/components/ui/hstack/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/hstack/index.web.tsx",
+      "path": "src/components/ui/hstack/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/hstack/styles.tsx",
+      "path": "src/components/ui/hstack/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/icon/index.tsx",
+      "path": "src/components/ui/icon/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/icon/index.web.tsx",
+      "path": "src/components/ui/icon/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/icon/styles.tsx",
+      "path": "src/components/ui/icon/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/image-background/index.tsx",
+      "path": "src/components/ui/image-background/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/image/index.tsx",
+      "path": "src/components/ui/image/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/input-accessory-view/index.tsx",
+      "path": "src/components/ui/input-accessory-view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/input/index.tsx",
+      "path": "src/components/ui/input/index.tsx",
       "textElements": [
         "UIInput",
         "UIInput.Icon",
@@ -801,13 +801,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/keyboard-avoiding-view/index.tsx",
+      "path": "src/components/ui/keyboard-avoiding-view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/link/index.tsx",
+      "path": "src/components/ui/link/index.tsx",
       "textElements": [
         "UILink.Text"
       ],
@@ -815,7 +815,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/menu/index.tsx",
+      "path": "src/components/ui/menu/index.tsx",
       "textElements": [
         "UIMenu.ItemLabel"
       ],
@@ -823,37 +823,37 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/modal/index.tsx",
+      "path": "src/components/ui/modal/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/popover/index.tsx",
+      "path": "src/components/ui/popover/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/portal/index.tsx",
+      "path": "src/components/ui/portal/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/pressable/index.tsx",
+      "path": "src/components/ui/pressable/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/progress/index.tsx",
+      "path": "src/components/ui/progress/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/radio/index.tsx",
+      "path": "src/components/ui/radio/index.tsx",
       "textElements": [
         "UIRadio.Label"
       ],
@@ -861,37 +861,37 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/refresh-control/index.tsx",
+      "path": "src/components/ui/refresh-control/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/rotating-spinner.tsx",
+      "path": "src/components/ui/rotating-spinner.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/safe-area-view/index.tsx",
+      "path": "src/components/ui/safe-area-view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/scroll-view/index.tsx",
+      "path": "src/components/ui/scroll-view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/section-list/index.tsx",
+      "path": "src/components/ui/section-list/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/select/index.tsx",
+      "path": "src/components/ui/select/index.tsx",
       "textElements": [
         "UISelect.Input"
       ],
@@ -899,7 +899,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/select/select-actionsheet.tsx",
+      "path": "src/components/ui/select/select-actionsheet.tsx",
       "textElements": [
         "UIActionsheet.ItemText",
         "UIActionsheet.SectionHeaderText"
@@ -908,49 +908,49 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/skeleton/index.tsx",
+      "path": "src/components/ui/skeleton/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/skeleton/index.web.tsx",
+      "path": "src/components/ui/skeleton/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/skeleton/styles.tsx",
+      "path": "src/components/ui/skeleton/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/slider/index.tsx",
+      "path": "src/components/ui/slider/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/spinner/index.tsx",
+      "path": "src/components/ui/spinner/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/status-bar/index.tsx",
+      "path": "src/components/ui/status-bar/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/switch/index.tsx",
+      "path": "src/components/ui/switch/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/table/index.tsx",
+      "path": "src/components/ui/table/index.tsx",
       "textElements": [
         "Text"
       ],
@@ -958,19 +958,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/table/index.web.tsx",
+      "path": "src/components/ui/table/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/table/styles.tsx",
+      "path": "src/components/ui/table/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/text/index.tsx",
+      "path": "src/components/ui/text/index.tsx",
       "textElements": [
         "RNText"
       ],
@@ -978,13 +978,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/text/index.web.tsx",
+      "path": "src/components/ui/text/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/text/native-text.tsx",
+      "path": "src/components/ui/text/native-text.tsx",
       "textElements": [
         "RNText"
       ],
@@ -992,13 +992,13 @@
       "managedAt": "native adapter boundary"
     },
     {
-      "path": "components/ui/text/styles.tsx",
+      "path": "src/components/ui/text/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/textarea/index.tsx",
+      "path": "src/components/ui/textarea/index.tsx",
       "textElements": [
         "UITextarea",
         "UITextarea.Input"
@@ -1007,7 +1007,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/toast/index.tsx",
+      "path": "src/components/ui/toast/index.tsx",
       "textElements": [
         "Text"
       ],
@@ -1015,7 +1015,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/tooltip/index.tsx",
+      "path": "src/components/ui/tooltip/index.tsx",
       "textElements": [
         "UITooltip.Text"
       ],
@@ -1023,37 +1023,37 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/view/index.tsx",
+      "path": "src/components/ui/view/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/virtualized-list/index.tsx",
+      "path": "src/components/ui/virtualized-list/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/vstack/index.tsx",
+      "path": "src/components/ui/vstack/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/vstack/index.web.tsx",
+      "path": "src/components/ui/vstack/index.web.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "components/ui/vstack/styles.tsx",
+      "path": "src/components/ui/vstack/styles.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/agent-chat/chat-input.tsx",
+      "path": "src/features/ai-assistant/components/agent-chat/chat-input.tsx",
       "textElements": [
         "AdaptiveTextInput"
       ],
@@ -1061,7 +1061,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/agent-chat/chat-message-bubble.tsx",
+      "path": "src/features/ai-assistant/components/agent-chat/chat-message-bubble.tsx",
       "textElements": [
         "Copy",
         "NativeText"
@@ -1070,7 +1070,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/ai-chat-tab.tsx",
+      "path": "src/features/ai-assistant/components/ai-chat-tab.tsx",
       "textElements": [
         "ChatInput",
         "Copy"
@@ -1079,7 +1079,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/prompt-editor-modal/index.tsx",
+      "path": "src/features/ai-assistant/components/prompt-editor-modal/index.tsx",
       "textElements": [
         "TextMode",
         "Title"
@@ -1088,7 +1088,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/prompt-editor-modal/tag-mode.tsx",
+      "path": "src/features/ai-assistant/components/prompt-editor-modal/tag-mode.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1098,7 +1098,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/prompt-editor-modal/text-mode.tsx",
+      "path": "src/features/ai-assistant/components/prompt-editor-modal/text-mode.tsx",
       "textElements": [
         "Copy",
         "Textarea",
@@ -1108,13 +1108,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/ai-assistant/components/provider-logo.tsx",
+      "path": "src/features/ai-assistant/components/provider-logo.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/cloud/components/credential-field.tsx",
+      "path": "src/features/cloud/components/credential-field.tsx",
       "textElements": [
         "Copy",
         "FormInput"
@@ -1123,19 +1123,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/cloud/components/environment-card.tsx",
+      "path": "src/features/cloud/components/environment-card.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/cloud/components/launch-card.tsx",
+      "path": "src/features/cloud/components/launch-card.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/cloud/components/launch-progress.tsx",
+      "path": "src/features/cloud/components/launch-progress.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1143,7 +1143,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/cloud/components/setup-content.tsx",
+      "path": "src/features/cloud/components/setup-content.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1151,7 +1151,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/base-node.tsx",
+      "path": "src/features/comfy-node/components/node/common/base-node.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1159,7 +1159,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/immutable-node.tsx",
+      "path": "src/features/comfy-node/components/node/common/immutable-node.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1167,7 +1167,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/seed-control.tsx",
+      "path": "src/features/comfy-node/components/node/common/seed-control.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1177,7 +1177,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/server-image-picker.tsx",
+      "path": "src/features/comfy-node/components/node/common/server-image-picker.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1185,7 +1185,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/sub-item.tsx",
+      "path": "src/features/comfy-node/components/node/common/sub-item.tsx",
       "textElements": [
         "ButtonText",
         "Copy"
@@ -1194,7 +1194,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/common/unknown-node.tsx",
+      "path": "src/features/comfy-node/components/node/common/unknown-node.tsx",
       "textElements": [
         "BadgeText",
         "Copy",
@@ -1208,31 +1208,31 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/index.tsx",
+      "path": "src/features/comfy-node/components/node/index.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/BasicGuider.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/BasicGuider.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/BasicScheduler.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/BasicScheduler.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPSetLastLayer.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPSetLastLayer.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1240,7 +1240,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPTextEncode.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPTextEncode.tsx",
       "textElements": [
         "Textarea",
         "TextareaInput"
@@ -1249,7 +1249,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPTextEncodeSDXL.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPTextEncodeSDXL.tsx",
       "textElements": [
         "NumberInput",
         "Textarea",
@@ -1259,31 +1259,31 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPVisionEncode.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPVisionEncode.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CLIPVisionLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CLIPVisionLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/CheckpointLoaderSimple.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/CheckpointLoaderSimple.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/DualCLIPLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/DualCLIPLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/EmptyLatentImage.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/EmptyLatentImage.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1293,7 +1293,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/EmptySD3LatentImage.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/EmptySD3LatentImage.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1303,7 +1303,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/FluxGuidance.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/FluxGuidance.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1311,7 +1311,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/ImagePadForOutpaint.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/ImagePadForOutpaint.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1319,7 +1319,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/ImageScale.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/ImageScale.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1327,19 +1327,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/ImageScaleBy.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/ImageScaleBy.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/KSampler.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/KSampler.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/KSamplerAdvanced.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/KSamplerAdvanced.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1347,13 +1347,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/KSamplerSelect.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/KSamplerSelect.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/LoadImage.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/LoadImage.tsx",
       "textElements": [
         "Copy",
         "Title"
@@ -1362,19 +1362,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/LoraLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/LoraLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/LoraLoaderModelOnly.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/LoraLoaderModelOnly.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/ModelSamplingFlux.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/ModelSamplingFlux.tsx",
       "textElements": [
         "NumberInput"
       ],
@@ -1382,19 +1382,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/ModelSamplingSD3.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/ModelSamplingSD3.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/PreviewImage.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/PreviewImage.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/PrimitiveStringMultiline.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/PrimitiveStringMultiline.tsx",
       "textElements": [
         "Textarea",
         "TextareaInput"
@@ -1403,19 +1403,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/RandomNoise.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/RandomNoise.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/SamplerCustomAdvanced.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/SamplerCustomAdvanced.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/SaveImage.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/SaveImage.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1425,7 +1425,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/TextEncodeQwenImageEditPlus.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/TextEncodeQwenImageEditPlus.tsx",
       "textElements": [
         "Textarea",
         "TextareaInput"
@@ -1434,37 +1434,37 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/UNETLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/UNETLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/VAEDecode.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/VAEDecode.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/VAEEncode.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/VAEEncode.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/VAEEncodeForInpaint.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/VAEEncodeForInpaint.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/VAELoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/VAELoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/base/WanImageToVideo.tsx",
+      "path": "src/features/comfy-node/components/node/types/base/WanImageToVideo.tsx",
       "textElements": [
         "Input",
         "InputField"
@@ -1473,7 +1473,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/kj-nodes/ImageResizeKJv2.tsx",
+      "path": "src/features/comfy-node/components/node/types/kj-nodes/ImageResizeKJv2.tsx",
       "textElements": [
         "Input",
         "InputField"
@@ -1482,7 +1482,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3Easy.tsx",
+      "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3Easy.tsx",
       "textElements": [
         "NumberInput",
         "Textarea",
@@ -1492,13 +1492,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3EasyLoader.tsx",
+      "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3EasyLoader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3EasyMediaBridge.tsx",
+      "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/MiniMaxH3EasyMediaBridge.tsx",
       "textElements": [
         "Copy",
         "NumberInput"
@@ -1507,7 +1507,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/minimax-h3-easy/optional-model-selector.tsx",
+      "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/optional-model-selector.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1515,7 +1515,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/comfy-node/components/node/types/video-helper-suite/VHS_VideoCombine.tsx",
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/VHS_VideoCombine.tsx",
       "textElements": [
         "Input",
         "InputField"
@@ -1524,13 +1524,13 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/gallery/components/empty-gallery-art.tsx",
+      "path": "src/features/gallery/components/empty-gallery-art.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/gallery/components/gallery.tsx",
+      "path": "src/features/gallery/components/gallery.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1538,7 +1538,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/generate-action-button.tsx",
+      "path": "src/features/generation/components/generate-action-button.tsx",
       "textElements": [
         "ButtonText"
       ],
@@ -1546,7 +1546,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/generation-status-indicator.tsx",
+      "path": "src/features/generation/components/generation-status-indicator.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1554,19 +1554,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/history-drawer/delete-alert.tsx",
+      "path": "src/features/generation/components/history-drawer/delete-alert.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/history-drawer/history-item.tsx",
+      "path": "src/features/generation/components/history-drawer/history-item.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/index.tsx",
+      "path": "src/features/generation/components/media-preview/index.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1574,7 +1574,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/index.web.tsx",
+      "path": "src/features/generation/components/media-preview/index.web.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1582,7 +1582,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/media-actions.tsx",
+      "path": "src/features/generation/components/media-preview/media-actions.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1590,7 +1590,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/media-actions.web.tsx",
+      "path": "src/features/generation/components/media-preview/media-actions.web.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1598,19 +1598,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/progress-overlay.tsx",
+      "path": "src/features/generation/components/media-preview/progress-overlay.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/media-preview/zoomable-media.tsx",
+      "path": "src/features/generation/components/media-preview/zoomable-media.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/queue-badge.tsx",
+      "path": "src/features/generation/components/queue-badge.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1618,19 +1618,19 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/components/run-page-header-status.tsx",
+      "path": "src/features/generation/components/run-page-header-status.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/generation/context/generation-context.tsx",
+      "path": "src/features/generation/context/generation-context.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/server/components/add-server-modal.tsx",
+      "path": "src/features/server/components/add-server-modal.tsx",
       "textElements": [
         "BottomSheetFormInput",
         "Copy",
@@ -1640,7 +1640,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/server/components/edit-server-modal.tsx",
+      "path": "src/features/server/components/edit-server-modal.tsx",
       "textElements": [
         "BottomSheetFormInput",
         "Copy",
@@ -1650,7 +1650,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/server/components/server-card.tsx",
+      "path": "src/features/server/components/server-card.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1658,7 +1658,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/workflow/components/edit-workflow-modal.tsx",
+      "path": "src/features/workflow/components/edit-workflow-modal.tsx",
       "textElements": [
         "Copy",
         "Input",
@@ -1669,7 +1669,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/workflow/components/import-workflow-modal.tsx",
+      "path": "src/features/workflow/components/import-workflow-modal.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1677,7 +1677,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/workflow/components/workflow-card.tsx",
+      "path": "src/features/workflow/components/workflow-card.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1685,7 +1685,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "features/workflow/components/workflow-source-sheet.tsx",
+      "path": "src/features/workflow/components/workflow-source-sheet.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1693,7 +1693,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "utils/toast.tsx",
+      "path": "src/utils/toast.tsx",
       "textElements": [
         "Text"
       ],

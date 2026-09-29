@@ -5,7 +5,7 @@ const tailwind = require('tailwindcss');
 const load = require('tailwindcss/loadConfig');
 (async () => {
   const config = load(path.resolve('tailwind.config.js'));
-  const { designTokens } = load(path.resolve('constants/design-tokens.ts'));
+  const { designTokens } = load(path.resolve('src/constants/design-tokens.ts'));
   config.content = [
     {
       raw: Object.keys(designTokens.icon)
