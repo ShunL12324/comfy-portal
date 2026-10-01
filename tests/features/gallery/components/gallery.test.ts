@@ -27,8 +27,13 @@ jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => ({}), VideoView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
 jest.mock('@/features/gallery/components/media-viewer', () => ({ MediaViewer: () => null }));
+jest.mock('@/features/gallery/components/media-selection-app-bar', () => ({ MediaSelectionAppBar: () => null }));
+jest.mock('expo-haptics', () => ({ selectionAsync: async () => {} }));
 jest.mock('@/features/gallery/components/empty-gallery-art', () => ({ EmptyGalleryArt: () => null }));
-jest.mock('@/services/image-storage', () => ({ pruneMissingMedia: async () => {} }));
+jest.mock('@/services/image-storage', () => ({
+  pruneMissingMedia: async () => {},
+  deleteGeneratedMedia: async () => {},
+}));
 
 import { Gallery } from '@/features/gallery/components/gallery';
 import { useMediaStore, type MediaAsset } from '@/features/gallery/stores/media-store';
@@ -141,4 +146,24 @@ test('scoping to a server still shows only that server, and assets outlive nothi
   measure(renderer, 353);
 
   expect(tiles(renderer)).toHaveLength(1);
+});
+
+test('a long-press starts selecting; then taps toggle instead of opening the viewer', async () => {
+  useMediaStore.setState({ assets: [asset('a', 'image'), asset('b', 'video')] });
+  await render();
+  measure(renderer, 353);
+  const tile = (index: number) =>
+    renderer.root.findAll((node) => node.props?.selecting !== undefined && node.props?.uri, { deep: false })[index];
+
+  act(() => tile(0).props.onLongPress(tile(0).props.uri));
+  expect(tiles(renderer).map((node) => node.props.accessibilityLabel)).toEqual(['Select image', 'Select video']);
+  expect(tile(0).props.selected).toBe(true);
+
+  act(() => tile(1).props.onPress(tile(1).props.uri));
+  act(() => tile(0).props.onPress(tile(0).props.uri));
+  expect(tile(0).props.selected).toBe(false);
+  expect(tile(1).props.selected).toBe(true);
+  expect(renderer.root.find((node) => node.props?.initialIndex !== undefined && node.props?.items).props.visible).toBe(
+    false,
+  );
 });

@@ -1543,6 +1543,18 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/gallery/components/media-selection-app-bar.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/gallery/components/media-tile.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/gallery/components/media-viewer/index.tsx",
       "textElements": [
         "Copy"
@@ -1553,6 +1565,14 @@
     {
       "path": "src/features/gallery/components/media-viewer/media-viewer-page.tsx",
       "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/gallery/components/media-viewer/viewer-overflow-menu.tsx",
+      "textElements": [
+        "Copy"
+      ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
@@ -1569,18 +1589,6 @@
       "textElements": [
         "Copy"
       ],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "src/features/generation/components/history-drawer/delete-alert.tsx",
-      "textElements": [],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "src/features/generation/components/history-drawer/history-item.tsx",
-      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

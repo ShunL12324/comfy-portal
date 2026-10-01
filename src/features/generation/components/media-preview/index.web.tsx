@@ -13,9 +13,14 @@ import {
 } from 'react-native';
 
 import { ProgressOverlay } from './progress-overlay';
-import { MediaViewer, toViewerItem } from '@/features/gallery/components/media-viewer';
+import { MediaViewer, toViewerItem, type MediaViewerItem } from '@/features/gallery/components/media-viewer';
+import { deleteGeneratedMedia } from '@/services/image-storage';
 
-import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
+import {
+  useGenerationActions,
+  useGenerationProgress,
+  useGenerationStatus,
+} from '@/features/generation/context/generation-context';
 import { designTokens as t } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
 
@@ -41,6 +46,7 @@ const VideoPreview = ({ url }: { url: string }) => {
 export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
   const { generatedMedia, status, currentNodeId } = useGenerationStatus();
   const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
+  const { setGeneratedMedia } = useGenerationActions();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -48,6 +54,11 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
   const scrollRef = useRef<ScrollView>(null);
 
   const viewerItems = useMemo(() => generatedMedia.map((uri) => toViewerItem(uri)), [generatedMedia]);
+  // Results are already saved to the gallery; deleting one removes it there and from this run.
+  const deleteResult = async (item: MediaViewerItem) => {
+    await deleteGeneratedMedia([item.uri]);
+    setGeneratedMedia(generatedMedia.filter((uri) => uri !== item.uri));
+  };
   const mediaKey = generatedMedia.join('|');
   const [previousMediaKey, setPreviousMediaKey] = useState(mediaKey);
   if (previousMediaKey !== mediaKey) {
@@ -71,7 +82,6 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
     scrollRef.current?.scrollTo({ x: activeIndex * screenWidth, animated: false });
     setIsPreviewOpen(false);
   };
-
 
   return (
     <View className="relative w-full flex-1 flex-col items-start justify-start">
@@ -150,6 +160,7 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
             onIndexChange={setActiveIndex}
             workflowId={workflowId}
             serverId={serverId}
+            onDelete={deleteResult}
           />
         </View>
       ) : (

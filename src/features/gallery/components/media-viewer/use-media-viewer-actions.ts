@@ -10,18 +10,11 @@ import type { MediaViewerItem } from './media-viewer-utils';
 
 type Busy = 'save' | 'share' | 'thumbnail' | null;
 
-/**
- * Save, share and set-as-thumbnail for the item on screen. Saving goes through
- * `@/services/media-library`, whose web build turns it into a browser download,
- * so only the wording differs per platform.
- */
-export function useMediaViewerActions({ workflowId, serverId }: { workflowId?: string; serverId?: string }) {
+/** Whether a share sheet exists here. Web only shares where the browser has one. */
+export function useCanShare() {
   const [canShare, setCanShare] = useState(false);
-  const [busy, setBusy] = useState<Busy>(null);
-
   useEffect(() => {
     let active = true;
-    // Web only shares where the browser has a share sheet; hide the action otherwise.
     Sharing.isAvailableAsync()
       .then((available) => active && setCanShare(available))
       .catch(() => active && setCanShare(false));
@@ -29,20 +22,35 @@ export function useMediaViewerActions({ workflowId, serverId }: { workflowId?: s
       active = false;
     };
   }, []);
+  return canShare;
+}
+
+/** Asks for Photos access, explaining a refusal in a toast; true when saving may go ahead. */
+export async function ensureSavePermission(): Promise<boolean> {
+  const permission = await MediaLibrary.requestPermissionsAsync();
+  if (permission.granted) return true;
+  showToast.error(
+    'Photos access needed',
+    permission.canAskAgain
+      ? 'Allow access to save media to your library.'
+      : 'Turn on Photos access for Comfy Portal in Settings.',
+  );
+  return false;
+}
+
+/**
+ * Save, share and set-as-thumbnail for the item on screen. Saving goes through
+ * `@/services/media-library`, whose web build turns it into a browser download,
+ * so only the wording differs per platform.
+ */
+export function useMediaViewerActions({ workflowId, serverId }: { workflowId?: string; serverId?: string }) {
+  const canShare = useCanShare();
+  const [busy, setBusy] = useState<Busy>(null);
 
   const save = useCallback(async (item: MediaViewerItem) => {
     setBusy('save');
     try {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) {
-        showToast.error(
-          'Photos access needed',
-          permission.canAskAgain
-            ? 'Allow access to save media to your library.'
-            : 'Turn on Photos access for Comfy Portal in Settings.',
-        );
-        return;
-      }
+      if (!(await ensureSavePermission())) return;
       await MediaLibrary.saveToLibraryAsync(item.uri);
       showToast.success(Platform.OS === 'web' ? 'Download started' : 'Saved to Photos');
     } catch (error) {

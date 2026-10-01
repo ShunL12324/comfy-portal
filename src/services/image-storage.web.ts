@@ -1,5 +1,6 @@
 import type { Workflow } from '@/features/workflow/types';
 import { useMediaStore, waitForMediaHydration, mediaStorage, mediaKind } from '@/features/gallery/stores/media-store';
+import { mediaTime } from '@/features/gallery/utils/media-time';
 import { resolveProvenance } from '@/services/media-provenance';
 import { generateUUID } from '@/utils/uuid';
 
@@ -71,7 +72,7 @@ export async function loadHistoryMedia(serverId: string, workflowId: string) {
       .filter((item) => item.metadata)
       .map((item) => ({
         url: item.path,
-        timestamp: new Date(item.metadata.timestamp).getTime(),
+        timestamp: mediaTime(item.metadata.timestamp) ?? 0,
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {

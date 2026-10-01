@@ -1,9 +1,11 @@
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
 import { Action, Copy, DesignColorProvider, useDesign } from '@/components/ui/design-system/primitives';
 import { designColors, designTokens as t } from '@/constants/design-tokens';
 import { Download, ImageIcon, Share, Trash2, X, type LucideIcon } from '@/constants/icons';
 import { AppToast } from '@/utils/toast';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { StatusBar } from 'expo-status-bar';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
   Modal,
@@ -28,29 +30,29 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { ImagePage, VideoPage } from './media-viewer-page';
 import {
-  buildReadout,
   clampIndex,
   dismissProgress,
+  formatCounter,
   getViewerActions,
+  indexAfterDelete,
   pageFromOffset,
   shouldDismiss,
-  type MediaViewerAction,
-  type MediaViewerInfo,
+  type MediaViewerBarAction,
   type MediaViewerItem,
 } from './media-viewer-utils';
 import { useMediaViewerActions } from './use-media-viewer-actions';
+import { ViewerOverflowMenu, type OverflowEntry } from './viewer-overflow-menu';
 
 export { toViewerItem, type MediaViewerItem } from './media-viewer-utils';
 
 /** The viewer is always on black, whatever the app theme. */
 const chrome = designColors.dark;
 /**
- * A 44-point target around a 20-point glyph leaves 12 points of slack, and
- * around a 36-point plate 4 points. Chrome edges subtract it so the painted
- * glyph or plate, not the invisible target, sits on the gutter.
+ * A 44-point target around a 20-point glyph leaves 12 points of slack. The
+ * bar's edges subtract it so the painted glyph, not the invisible target, sits
+ * on the gutter.
  */
 const GLYPH_SLACK = (t.height.touch - t.icon.large) / 2;
-const PLATE_SLACK = (t.height.touch - t.height.control) / 2;
 /** The backdrop thins to this while dragging down, so the screen beneath shows through. */
 const DRAG_BACKDROP = 0.35;
 
@@ -71,8 +73,12 @@ interface MediaViewerProps {
   /** With both set, images can become the workflow's thumbnail. */
   workflowId?: string;
   serverId?: string;
-  /** Offered only where the opening screen already supports deleting. */
-  onDelete?: (item: MediaViewerItem) => void;
+  /**
+   * Deletes the item and drops it from `items`. The viewer asks for
+   * confirmation first, then shows the next item, or closes when none remain.
+   * Without it there is no Delete action.
+   */
+  onDelete?: (item: MediaViewerItem) => Promise<void> | void;
 }
 
 /** Full-screen image and video viewer shared by the Gallery tab, History and run results. */
@@ -106,23 +112,28 @@ export function MediaViewer({ visible, onClose, presentation = 'modal', ...props
   );
 }
 
-const ACTION_META: Record<MediaViewerAction, { icon: LucideIcon; label: string }> = {
+const BAR_META: Record<MediaViewerBarAction, { icon: LucideIcon; label: string }> = {
   save: { icon: Download, label: Platform.OS === 'web' ? 'Download' : 'Save to Photos' },
   share: { icon: Share, label: 'Share' },
-  thumbnail: { icon: ImageIcon, label: 'Set as workflow thumbnail' },
   delete: { icon: Trash2, label: 'Delete' },
 };
+const MENU_ENTRIES: OverflowEntry<'thumbnail'>[] = [
+  { key: 'thumbnail', icon: ImageIcon, label: 'Set as workflow thumbnail' },
+];
 
 type ViewerContentProps = Omit<MediaViewerProps, 'visible' | 'presentation'> & { handleBack?: boolean };
 
 function ViewerBody(props: ViewerContentProps) {
   return (
-    // A modal is its own native root; gestures and safe-area insets must be re-rooted inside it.
+    // A modal is its own native root; gestures, safe-area insets and the
+    // delete confirmation's sheet stack must be re-rooted inside it.
     <GestureHandlerRootView style={styles.fill}>
       <SafeAreaProvider style={styles.fill}>
         <DesignColorProvider value={chrome}>
-          <ViewerContent {...props} />
-          <AppToast />
+          <BottomSheetModalProvider>
+            <ViewerContent {...props} />
+            <AppToast />
+          </BottomSheetModalProvider>
         </DesignColorProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -148,12 +159,14 @@ function ViewerContent({
   const [rawIndex, setRawIndex] = useState(openingIndex);
   const [chromeHidden, setChromeHidden] = useState(false);
   const [zoomed, setZoomed] = useState(false);
-  const [stripHeight, setStripHeight] = useState(0);
-  const [info, setInfo] = useState<Record<string, MediaViewerInfo>>({});
+  const [barHeight, setBarHeight] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<MediaViewerItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
   const actions = useMediaViewerActions({ workflowId, serverId });
 
-  // Deleting the last item leaves the index past the end; clamping keeps it on
-  // the item that slid into place.
+  // A deletion can leave the index past the end; clamping keeps it on the item
+  // that slid into place.
   const index = clampIndex(rawIndex, items.length);
   const current = items[index];
   // Native video controls own taps on a video, so its chrome stays up.
@@ -177,7 +190,8 @@ function ViewerContent({
     return () => subscription.remove();
   }, [handleBack, onClose]);
 
-  // Rotation changes the page width; keep the same item on screen.
+  // Rotation changes the page width, and a deletion the list under the pager;
+  // either way the same item stays on screen.
   const width = size?.width ?? 0;
   const height = size?.height ?? 0;
   const indexRef = useRef(index);
@@ -186,7 +200,7 @@ function ViewerContent({
   }, [index]);
   useEffect(() => {
     if (width > 0) listRef.current?.scrollToOffset({ offset: indexRef.current * width, animated: false });
-  }, [width]);
+  }, [width, items.length]);
 
   const updateIndex = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -196,25 +210,19 @@ function ViewerContent({
   );
 
   const toggleChrome = useCallback(() => setChromeHidden((hidden) => !hidden), []);
-  const recordInfo = useCallback((uri: string, next: MediaViewerInfo) => {
-    setInfo((prev) => ({ ...prev, [uri]: { ...prev[uri], ...next } }));
-  }, []);
-
-  // A video sits between the Close row and the strip, so neither covers its native controls.
-  const closeRowBottom = insets.top + t.layout.related + t.height.touch;
 
   const renderItem = useCallback(
     ({ item, index: itemIndex }: { item: MediaViewerItem; index: number }) => {
       if (!size) return null;
       return item.kind === 'video' ? (
+        // Laid out below the bar, so the bar never covers the native controls.
         <VideoPage
           uri={item.uri}
           width={size.width}
           height={size.height}
           active={itemIndex === index}
-          insetTop={closeRowBottom}
-          insetBottom={stripHeight}
-          onInfo={recordInfo}
+          insetTop={barHeight}
+          insetBottom={insets.bottom}
         />
       ) : (
         <ImagePage
@@ -224,11 +232,10 @@ function ViewerContent({
           active={itemIndex === index}
           onTap={toggleChrome}
           onZoomChange={setZoomed}
-          onInfo={recordInfo}
         />
       );
     },
-    [size, index, closeRowBottom, stripHeight, toggleChrome, recordInfo],
+    [size, index, barHeight, insets.bottom, toggleChrome],
   );
 
   // Swipe down to dismiss: the media follows the finger while the backdrop and
@@ -271,26 +278,46 @@ function ViewerContent({
     opacity: chromeOpacity.get() * (1 - progress.get()),
   }));
 
-  // Set on the plain inner views: web does not reliably re-apply non-animated
+  // Set on the plain inner view: web does not reliably re-apply non-animated
   // style changes on an Animated.View.
   const chromePointerEvents = { pointerEvents: chromeShown ? 'auto' : 'none' } as const;
-  const readout = current
-    ? buildReadout({ item: current, index, length: items.length, info: info[current.uri] })
-    : undefined;
-  const visibleActions = getViewerActions({
+  const counter = formatCounter(index, items.length);
+  const available = getViewerActions({
     canShare: actions.canShare,
     canSetThumbnail: actions.canSetThumbnail,
     canDelete: !!onDelete,
     kind: current?.kind,
   });
+  const menuEntries = MENU_ENTRIES.filter((entry) => available.menu.includes(entry.key));
 
-  const runAction = (action: MediaViewerAction) => {
+  const runAction = (action: MediaViewerBarAction) => {
     if (!current) return;
     if (action === 'save') void actions.save(current);
     else if (action === 'share') void actions.share(current);
-    else if (action === 'thumbnail') void actions.setThumbnail(current);
-    else onDelete?.(current);
+    else {
+      setDeleteError(undefined);
+      setPendingDelete(current);
+    }
   };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || !onDelete) return;
+    const deletedIndex = items.findIndex((item) => item.uri === pendingDelete.uri);
+    setDeleting(true);
+    try {
+      await onDelete(pendingDelete);
+      // With nothing left, the emptied list closes the viewer.
+      const next = indexAfterDelete(deletedIndex, items.length - 1);
+      if (next >= 0) setRawIndex(next);
+      setPendingDelete(null);
+    } catch (error) {
+      console.error('Failed to delete media:', error);
+      setDeleteError('It could not be deleted. Try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+  const noun = pendingDelete?.kind === 'video' ? 'video' : 'image';
 
   return (
     <View
@@ -334,68 +361,67 @@ function ViewerContent({
         </GestureDetector>
       )}
 
-      {/* Close alone at the top: a flat plate keeps it legible over bright media. */}
-      <Animated.View style={[styles.closeRow, chromeStyle]}>
+      {/* The only chrome: one bar over the top of the media, on a flat scrim.
+        Close and the position on the left, the actions on the right. */}
+      <Animated.View style={[styles.bar, chromeStyle]}>
         <View
+          className="bg-media/50"
+          onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}
           style={[
+            styles.barSurface,
             chromePointerEvents,
             {
-              position: 'absolute',
-              top: insets.top + t.layout.related,
-              left: insets.left + t.layout.gutter - PLATE_SLACK,
+              borderBottomColor: c.line,
+              paddingTop: insets.top,
+              paddingLeft: insets.left + t.layout.gutter - GLYPH_SLACK,
+              paddingRight: insets.right + t.layout.gutter - GLYPH_SLACK,
             },
           ]}
         >
-          <Action kind="tonal" icon={X} iconSize={t.icon.large} label="Close viewer" onPress={onClose} />
+          <Action kind="text" icon={X} iconSize={t.icon.large} label="Close viewer" onPress={onClose} />
+          <View style={styles.counter}>
+            {counter && (
+              <Copy mono muted size="metadata" numberOfLines={1} accessibilityLabel={`${index + 1} of ${items.length}`}>
+                {counter}
+              </Copy>
+            )}
+          </View>
+          {available.bar.map((action) => (
+            <Action
+              key={action}
+              kind="text"
+              icon={BAR_META[action].icon}
+              iconSize={t.icon.large}
+              label={BAR_META[action].label}
+              destructive={action === 'delete'}
+              loading={actions.busy === action}
+              disabled={actions.busy !== null && actions.busy !== action}
+              onPress={() => runAction(action)}
+            />
+          ))}
+          {menuEntries.length > 0 && (
+            <ViewerOverflowMenu
+              entries={menuEntries}
+              disabled={actions.busy !== null}
+              onSelect={() => {
+                if (current) void actions.setThumbnail(current);
+              }}
+            />
+          )}
         </View>
       </Animated.View>
 
-      {/* The strip: a panel readout on the left, actions on the right, on one flat scrim. */}
-      {current && (
-        <Animated.View style={[styles.strip, chromeStyle]}>
-          <View
-            className="bg-media/50"
-            onLayout={(event) => setStripHeight(event.nativeEvent.layout.height)}
-            style={[
-              styles.stripSurface,
-              chromePointerEvents,
-              {
-                borderTopColor: c.line,
-                paddingBottom: Math.max(insets.bottom, t.layout.related),
-                paddingLeft: insets.left + t.layout.gutter,
-                paddingRight: insets.right + t.layout.gutter - GLYPH_SLACK,
-              },
-            ]}
-          >
-            <View style={styles.readout} accessible accessibilityLabel={readout?.accessibilityLabel}>
-              {readout?.lines.map((line, lineIndex) => (
-                <Copy key={lineIndex} mono size="metadata" muted={lineIndex > 0} numberOfLines={1}>
-                  {line}
-                </Copy>
-              ))}
-            </View>
-            <View style={styles.actions}>
-              {visibleActions.map((action) => (
-                <Fragment key={action}>
-                  {action === 'delete' && visibleActions.length > 1 && (
-                    <View style={[styles.divider, { backgroundColor: c.line }]} />
-                  )}
-                  <Action
-                    kind="text"
-                    icon={ACTION_META[action].icon}
-                    iconSize={t.icon.large}
-                    label={ACTION_META[action].label}
-                    destructive={action === 'delete'}
-                    loading={actions.busy === action}
-                    disabled={actions.busy !== null && actions.busy !== action}
-                    onPress={() => runAction(action)}
-                  />
-                </Fragment>
-              ))}
-            </View>
-          </View>
-        </Animated.View>
-      )}
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        destructive
+        loading={deleting}
+        error={deleteError}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title={`Delete this ${noun}?`}
+        description={`The ${noun} is removed from Comfy Portal. This cannot be undone.`}
+        confirmText="Delete"
+      />
     </View>
   );
 }
@@ -405,16 +431,12 @@ const keyExtractor = (item: MediaViewerItem, index: number) => `${item.uri}-${in
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   overlay: { ...StyleSheet.absoluteFill, zIndex: 20 },
-  closeRow: { ...StyleSheet.absoluteFill, pointerEvents: 'box-none' },
-  strip: { position: 'absolute', bottom: 0, left: 0, right: 0, pointerEvents: 'box-none' },
-  stripSurface: {
+  bar: { position: 'absolute', top: 0, left: 0, right: 0, pointerEvents: 'box-none' },
+  barSurface: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: t.layout.field,
-    paddingTop: t.layout.related,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    minHeight: t.height.touch,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  readout: { flex: 1, minWidth: 0 },
-  actions: { flexDirection: 'row', alignItems: 'center' },
-  divider: { width: StyleSheet.hairlineWidth, height: t.icon.large, marginHorizontal: t.layout.label },
+  counter: { flex: 1, minWidth: 0, paddingLeft: t.layout.label },
 });

@@ -8,9 +8,14 @@ import { useWindowDimensions, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 
 import { ProgressOverlay } from './progress-overlay';
-import { MediaViewer, toViewerItem } from '@/features/gallery/components/media-viewer';
+import { MediaViewer, toViewerItem, type MediaViewerItem } from '@/features/gallery/components/media-viewer';
+import { deleteGeneratedMedia } from '@/services/image-storage';
 
-import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
+import {
+  useGenerationActions,
+  useGenerationProgress,
+  useGenerationStatus,
+} from '@/features/generation/context/generation-context';
 import { isVideoUrl } from '@/features/generation/utils/media';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -40,6 +45,7 @@ const VideoPreview = ({ url }: { url: string }) => {
 export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
   const { generatedMedia, status, currentNodeId } = useGenerationStatus();
   const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
+  const { setGeneratedMedia } = useGenerationActions();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -48,6 +54,11 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
   const pagerRef = useRef<PagerView>(null);
 
   const viewerItems = useMemo(() => generatedMedia.map((uri) => toViewerItem(uri)), [generatedMedia]);
+  // Results are already saved to the gallery; deleting one removes it there and from this run.
+  const deleteResult = async (item: MediaViewerItem) => {
+    await deleteGeneratedMedia([item.uri]);
+    setGeneratedMedia(generatedMedia.filter((uri) => uri !== item.uri));
+  };
   const mediaKey = generatedMedia.join('|');
   const [previousMediaKey, setPreviousMediaKey] = useState(mediaKey);
   if (previousMediaKey !== mediaKey) {
@@ -64,7 +75,6 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
     pagerRef.current?.setPageWithoutAnimation(activeIndex);
     setIsPreviewOpen(false);
   };
-
 
   return (
     <View
@@ -147,6 +157,7 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
             onIndexChange={setActiveIndex}
             workflowId={workflowId}
             serverId={serverId}
+            onDelete={deleteResult}
           />
         </View>
       ) : (

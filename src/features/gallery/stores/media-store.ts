@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Workflow } from '@/features/workflow/types';
+import { compareMediaTimeDesc } from '@/features/gallery/utils/media-time';
 
 /**
  * Which machine and workflow produced an asset.
@@ -73,7 +74,7 @@ export const useMediaStore = create<{
           assets: [
             ...state.assets.filter((item) => item.id !== asset.id),
             JSON.parse(JSON.stringify(asset)) as MediaAsset,
-          ].sort((a, b) => b.metadata.timestamp.localeCompare(a.metadata.timestamp)),
+          ].sort((a, b) => compareMediaTimeDesc(a.metadata.timestamp, b.metadata.timestamp)),
         })),
       remove: (path) => set((state) => ({ assets: state.assets.filter((item) => item.path !== path) })),
     }),

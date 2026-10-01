@@ -2,6 +2,7 @@ import { mediaKind, mediaStorage, useMediaStore, waitForMediaHydration } from '@
 import type { MediaAsset, MediaProvenance } from '@/features/gallery/stores/media-store';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { mediaTime, resolveMediaTimestamp } from '@/features/gallery/utils/media-time';
 import { generateUUID } from '@/utils/uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File, Paths } from 'expo-file-system';
@@ -70,7 +71,16 @@ function provenanceFromPath(serverId: string, workflowId: string): MediaProvenan
   };
 }
 
-function metadataFrom(sidecarText: string | undefined, filename: string, fallbackProvenance: MediaProvenance) {
+/** When the file system says a file was made, in epoch milliseconds; nothing if it cannot tell. */
+function fileTime(file: File): number | undefined {
+  try {
+    return file.creationTime ?? file.modificationTime ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function metadataFrom(sidecarText: string | undefined, file: File, fallbackProvenance: MediaProvenance) {
   let parsed: any;
   if (sidecarText) {
     try {
@@ -79,12 +89,16 @@ function metadataFrom(sidecarText: string | undefined, filename: string, fallbac
       parsed = undefined;
     }
   }
-  // Without a sidecar the old filename still carries the generation time, so
-  // gallery ordering survives even for assets whose metadata was lost.
-  const fromName = LEGACY_NAME.exec(filename)?.[1];
-  const timestamp = parsed?.timestamp ?? (fromName && !Number.isNaN(new Date(fromName).getTime()) ? fromName : undefined);
+  // Without a sidecar the old filename still carries the generation time, and
+  // failing that the file's own date does, so ordering survives even for
+  // assets whose metadata was lost. Adoption used to stamp those with the
+  // epoch, and every orphaned pool file then read as made in 1970.
   return {
-    timestamp: timestamp ?? new Date(0).toISOString(),
+    timestamp: resolveMediaTimestamp({
+      recorded: parsed?.timestamp,
+      fromName: LEGACY_NAME.exec(file.name)?.[1],
+      fileTime: fileTime(file),
+    }),
     workflow: parsed?.workflow ?? {},
     // Left empty when unknown rather than guessed: job recovery de-duplicates
     // on this value, and a wrong one would suppress a real download.
@@ -139,7 +153,7 @@ async function adoptOrphans(pool: Directory, report: PhaseReport): Promise<void>
     if (!isMediaFile(entry.name) || indexed.has(entry.uri)) continue;
     try {
       const sidecar = new File(pool, entry.name + '.json');
-      const metadata = metadataFrom(await readIfPresent(sidecar), entry.name, {});
+      const metadata = metadataFrom(await readIfPresent(sidecar), entry, {});
       useMediaStore.getState().upsert({
         id: generateUUID(),
         serverId: metadata.producedBy?.serverId ?? '',
@@ -169,7 +183,7 @@ async function migrateOne(file: File, generated: Directory, pool: Directory, ser
   const id = generateUUID();
   const targetName = `${id}.${extensionOf(file.name)}`;
   const legacySidecar = new File(generated, file.name + '.json');
-  const metadata = metadataFrom(await readIfPresent(legacySidecar), file.name, provenanceFromPath(serverId, workflowId));
+  const metadata = metadataFrom(await readIfPresent(legacySidecar), file, provenanceFromPath(serverId, workflowId));
 
   // Metadata reaches the pool before the bytes do. The path segments are the
   // only record that this file came from a given machine and workflow, and the
@@ -196,8 +210,35 @@ async function migrateOne(file: File, generated: Directory, pool: Directory, ser
   if (legacySidecar.exists) legacySidecar.delete();
 }
 
+/**
+ * Re-date indexed assets whose time is unknown, from their file. Earlier
+ * adoption passes indexed orphaned files at the epoch; this repairs them in
+ * place. Only the timestamp changes, and only where the file can be dated.
+ */
+async function redateUndatedMedia(report: PhaseReport): Promise<void> {
+  const store = useMediaStore.getState();
+  const updates = store.assets.filter((asset) => mediaTime(asset.metadata.timestamp) === undefined);
+  if (!updates.length) return;
+  let redated = 0;
+  for (const asset of updates) {
+    let time: number | undefined;
+    try {
+      time = fileTime(new File(asset.path));
+    } catch {
+      time = undefined;
+    }
+    if (time === undefined) continue;
+    store.upsert({ ...asset, metadata: { ...asset.metadata, timestamp: resolveMediaTimestamp({ fileTime: time }) } });
+    redated += 1;
+  }
+  if (!redated) return;
+  await mediaStorage.flush();
+  note(report, `re-dated ${redated} undated asset(s) from their files`);
+}
+
 async function migrateMedia(pool: Directory, report: PhaseReport): Promise<void> {
   await adoptOrphans(pool, report);
+  await redateUndatedMedia(report);
 
   const legacyRoot = new Directory(Paths.document, LEGACY_ROOT);
   if (!legacyRoot.exists) {
