@@ -26,7 +26,7 @@ import {
   launchKey,
   type LaunchRecord,
 } from '../stores/provisioning-store';
-import type { Environment, HardwareSelection } from '../types';
+import { MIN_DISK_GB, type Environment, type HardwareSelection } from '../types';
 
 /**
  * Takes a environment from "rent this offer" to "a server in the list you can
@@ -141,7 +141,7 @@ async function performCreateLaunch(options: CreateLaunchOptions): Promise<string
   const environment: Environment = JSON.parse(JSON.stringify(options.environment));
   if (!(hardware.provider === 'vast' ? credentials.vastApiKey : credentials.runpodApiKey).trim())
     throw new Error('Add the provider API key before renting.');
-  if (!Number.isFinite(diskGb) || diskGb < 60) throw new Error('Choose at least 60 GB of disk.');
+  if (!Number.isFinite(diskGb) || diskGb < MIN_DISK_GB) throw new Error(`Choose at least ${MIN_DISK_GB} GB of disk.`);
 
   const accountHash = await digestStringAsync(
     CryptoDigestAlgorithm.SHA256,

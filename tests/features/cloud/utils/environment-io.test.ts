@@ -43,3 +43,12 @@ test('validated environment graphs do not share input references with an import 
   graph['1'].inputs.seed = 99;
   expect(validated.workflows[0].data['1'].inputs.seed).toBe(42);
 });
+
+test('existing exports import unchanged: disk size is chosen at launch, not stored in the recipe', () => {
+  const { id: _id, createdAt: _created, updatedAt: _updated, ...content } = recipe;
+  const model = { url: 'https://example.com/a.safetensors', type: 'loras' };
+  const file = { kind: 'comfy-portal-environment', version: 2, environment: { ...content, diskGb: 120, models: [model] } };
+  const parsed = parseEnvironmentFile(JSON.stringify(file));
+  expect(parsed).not.toHaveProperty('diskGb');
+  expect(parsed.models).toEqual([model]);
+});

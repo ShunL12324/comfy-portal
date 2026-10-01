@@ -48,15 +48,36 @@ export interface LaunchSpecification {
   hardware: HardwareSelection;
 }
 
+/** Smallest disk provisioning accepts; the user may always choose more. */
+export const MIN_DISK_GB = 60;
 export const DISK_HEADROOM_GB = 40;
 
-/** Minimum planning estimate, not a claim that unknown model sizes are zero. */
-export function estimateDiskGb(models: EnvironmentModel[]): number {
-  const known = models.reduce(
-    (sum, model) => sum + (Number.isFinite(model.sizeBytes) && model.sizeBytes! > 0 ? model.sizeBytes! : 0),
-    0,
-  );
-  return Math.max(60, Math.ceil(known / 1024 ** 3) + DISK_HEADROOM_GB);
+function knownSize(model: EnvironmentModel) {
+  return Number.isFinite(model.sizeBytes) && model.sizeBytes! > 0 ? model.sizeBytes! : undefined;
+}
+
+/**
+ * Launch disk planning. Only some hosts (Civitai) report file sizes, so known
+ * sizes suggest a default but never raise the floor: the user picks the size.
+ */
+export function planDisk(models: EnvironmentModel[]) {
+  const knownBytes = models.reduce((sum, model) => sum + (knownSize(model) ?? 0), 0);
+  const knownGb = Math.ceil(knownBytes / 1024 ** 3);
+  const unknownCount = models.filter((model) => knownSize(model) === undefined).length;
+  return {
+    minGb: MIN_DISK_GB,
+    defaultGb: Math.max(MIN_DISK_GB, Math.ceil((knownGb + DISK_HEADROOM_GB) / 10) * 10),
+    knownGb,
+    unknownCount,
+  };
+}
+
+export function diskHint({ knownGb, unknownCount }: ReturnType<typeof planDisk>): string {
+  const unknown = unknownCount === 1 ? '1 model has an unknown size' : `${unknownCount} models have unknown sizes`;
+  if (!knownGb && !unknownCount) return 'Choose room for extensions and outputs.';
+  if (!knownGb) return `${unknown}; choose enough disk for them and outputs.`;
+  if (!unknownCount) return `Models need about ${knownGb} GB; leave room for outputs.`;
+  return `Known models need about ${knownGb} GB; ${unknown}. Choose enough disk for all of them.`;
 }
 
 export function totalModelBytes(models: EnvironmentModel[]): number | undefined {

@@ -10,7 +10,7 @@ import { createLaunch } from '@/features/cloud/services/provision';
 import { loadHardware, type HardwareCatalog, type HardwareOffer } from '@/features/cloud/services/hardware';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
-import { estimateDiskGb, type CloudProvider, type Environment } from '@/features/cloud/types';
+import { diskHint, planDisk, type CloudProvider, type Environment } from '@/features/cloud/types';
 import { CLOUD_GPU_SUPPORTED, CLOUD_GPU_UNSUPPORTED_REASON } from '@/features/cloud/utils/availability';
 import { formatUsd } from '@/features/cloud/utils/cost';
 import { hardwareEmptyReason } from '@/features/cloud/utils/hardware-empty';
@@ -49,7 +49,8 @@ function LaunchFlow({ environment }: { environment: Environment }) {
   const [step, setStep] = useState<Step>('hardware');
   const [provider, setProvider] = useState<'all' | CloudProvider>('all');
   const [query, setQuery] = useState('');
-  const [disk, setDisk] = useState(estimateDiskGb(recipe.models));
+  const [diskPlan] = useState(() => planDisk(recipe.models));
+  const [disk, setDisk] = useState(diskPlan.defaultGb);
   const [catalog, setCatalog] = useState<HardwareCatalog>(EMPTY_CATALOG);
   const [selected, setSelected] = useState<HardwareOffer>();
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
   const [error, setError] = useState('');
   const requestId = useRef(0);
   const submitting = useRef(false);
-  const minimumDisk = estimateDiskGb(recipe.models);
+  const minimumDisk = diskPlan.minGb;
   const { hydrated, vastApiKey, runpodApiKey } = credentials;
   const load = useCallback(() => {
     const id = ++requestId.current;
@@ -387,7 +388,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
               </View>
             </Row>
             <Copy muted size="metadata">
-              Estimate: {minimumDisk} GB including room for outputs. Unknown model sizes need extra space.
+              {diskHint(diskPlan)}
               {runpodDisk ? ' 20 GB container disk · volume storage is billed separately.' : ''}
             </Copy>
           </View>
