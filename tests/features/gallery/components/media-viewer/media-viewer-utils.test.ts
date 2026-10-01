@@ -107,22 +107,22 @@ describe('getViewerActions', () => {
   });
 });
 
-describe('swipe-down dismissal', () => {
+describe('swipe-up dismissal', () => {
   test('progress grows with downward travel and ignores upward drags', () => {
     expect(dismissProgress(0, 800)).toBe(0);
-    expect(dismissProgress(-50, 800)).toBe(0);
-    expect(dismissProgress(80, 800)).toBeCloseTo(0.5);
-    expect(dismissProgress(800, 800)).toBe(1);
-    expect(dismissProgress(80, 0)).toBe(0);
+    expect(dismissProgress(50, 800)).toBe(0);
+    expect(dismissProgress(-80, 800)).toBeCloseTo(0.5);
+    expect(dismissProgress(-800, 800)).toBe(1);
+    expect(dismissProgress(-80, 0)).toBe(0);
   });
 
-  test('dismisses past the distance or on a fast downward flick', () => {
-    expect(shouldDismiss(160, 0, 800)).toBe(true);
-    expect(shouldDismiss(40, DISMISS_VELOCITY, 800)).toBe(true);
-    expect(shouldDismiss(40, 200, 800)).toBe(false);
+  test('dismisses past the distance or on a fast upward flick', () => {
+    expect(shouldDismiss(-160, 0, 800)).toBe(true);
+    expect(shouldDismiss(-40, -DISMISS_VELOCITY, 800)).toBe(true);
+    expect(shouldDismiss(-40, -200, 800)).toBe(false);
   });
 
-  test('never dismisses on an upward release', () => {
-    expect(shouldDismiss(-200, DISMISS_VELOCITY * 2, 800)).toBe(false);
+  test('never dismisses on a downward release', () => {
+    expect(shouldDismiss(200, DISMISS_VELOCITY * 2, 800)).toBe(false);
   });
 });

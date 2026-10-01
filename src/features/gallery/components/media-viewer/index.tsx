@@ -157,7 +157,6 @@ function ViewerContent({
   const [size, setSize] = useState<{ width: number; height: number }>();
   const [openingIndex] = useState(() => clampIndex(initialIndex, items.length));
   const [rawIndex, setRawIndex] = useState(openingIndex);
-  const [chromeHidden, setChromeHidden] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [barHeight, setBarHeight] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<MediaViewerItem | null>(null);
@@ -170,7 +169,6 @@ function ViewerContent({
   const index = clampIndex(rawIndex, items.length);
   const current = items[index];
   // Native video controls own taps on a video, so its chrome stays up.
-  const chromeShown = !chromeHidden || current?.kind === 'video';
 
   useEffect(() => {
     if (items.length === 0) onClose();
@@ -209,8 +207,6 @@ function ViewerContent({
     [items.length, width],
   );
 
-  const toggleChrome = useCallback(() => setChromeHidden((hidden) => !hidden), []);
-
   const renderItem = useCallback(
     ({ item, index: itemIndex }: { item: MediaViewerItem; index: number }) => {
       if (!size) return null;
@@ -230,16 +226,16 @@ function ViewerContent({
           width={size.width}
           height={size.height}
           active={itemIndex === index}
-          onTap={toggleChrome}
+          onTap={onClose}
           onZoomChange={setZoomed}
         />
       );
     },
-    [size, index, barHeight, insets.bottom, toggleChrome],
+    [size, index, barHeight, insets.bottom, onClose],
   );
 
-  // Swipe down to dismiss: the media follows the finger while the backdrop and
-  // chrome thin out; on release it either leaves downwards or settles back.
+  // Swipe up to dismiss: the media follows the finger while the backdrop and
+  // chrome thin out; on release it either leaves upwards or settles back.
   // Horizontal drags fail it and stay with the pager; a zoomed image keeps its pan.
   const dragY = useSharedValue(0);
   const dismissing = useSharedValue(false);
@@ -252,12 +248,12 @@ function ViewerContent({
         .activeOffsetY(t.layout.inset)
         .failOffsetX([-t.layout.field, t.layout.field])
         .onUpdate((event) => {
-          if (!dismissing.get()) dragY.set(Math.max(event.translationY, 0));
+          if (!dismissing.get()) dragY.set(Math.min(event.translationY, 0));
         })
         .onEnd((event) => {
           if (shouldDismiss(event.translationY, event.velocityY, height)) {
             dismissing.set(true);
-            dragY.set(withTiming(height, { duration }, () => scheduleOnRN(onClose)));
+            dragY.set(withTiming(-height, { duration }, () => scheduleOnRN(onClose)));
           } else {
             dragY.set(withTiming(0, { duration }));
           }
@@ -265,22 +261,15 @@ function ViewerContent({
     [zoomed, height, duration, dragY, dismissing, onClose],
   );
   const progress = useDerivedValue(() => dismissProgress(dragY.get(), height));
-  const chromeOpacity = useSharedValue(1);
-  useEffect(() => {
-    chromeOpacity.set(withTiming(chromeShown ? 1 : 0, { duration }));
-  }, [chromeShown, duration, chromeOpacity]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.get(), [0, 1], [1, DRAG_BACKDROP]),
   }));
   const mediaStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
   const chromeStyle = useAnimatedStyle(() => ({
-    opacity: chromeOpacity.get() * (1 - progress.get()),
+    opacity: 1 - progress.get(),
   }));
 
-  // Set on the plain inner view: web does not reliably re-apply non-animated
-  // style changes on an Animated.View.
-  const chromePointerEvents = { pointerEvents: chromeShown ? 'auto' : 'none' } as const;
   const counter = formatCounter(index, items.length);
   const available = getViewerActions({
     canShare: actions.canShare,
@@ -369,7 +358,6 @@ function ViewerContent({
           onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}
           style={[
             styles.barSurface,
-            chromePointerEvents,
             {
               paddingTop: insets.top,
               paddingLeft: insets.left + t.layout.gutter - GLYPH_SLACK,

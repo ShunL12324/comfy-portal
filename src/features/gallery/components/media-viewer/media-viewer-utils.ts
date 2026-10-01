@@ -74,21 +74,21 @@ export function getViewerActions({
   return { bar, menu };
 }
 
-/** Share of the page height a downward drag must cover to dismiss on release. */
+/** Share of the page height an upward drag must cover to dismiss on release. */
 export const DISMISS_DISTANCE = 0.2;
-/** A downward flick at least this fast (pt/s) dismisses regardless of distance. */
+/** An upward flick at least this fast (pt/s) dismisses regardless of distance. */
 export const DISMISS_VELOCITY = 900;
 
-/** How far a downward drag is towards dismissing, 0–1; upward drags count as none. */
+/** How far an upward drag is towards dismissing, 0–1; downward drags count as none. */
 export function dismissProgress(translationY: number, height: number): number {
   'worklet';
-  if (height <= 0 || translationY <= 0) return 0;
-  return Math.min(translationY / (height * DISMISS_DISTANCE), 1);
+  if (height <= 0 || translationY >= 0) return 0;
+  return Math.min(-translationY / (height * DISMISS_DISTANCE), 1);
 }
 
-/** Whether a released drag closes the viewer: far enough, or a clear downward flick. */
+/** Whether a released drag closes the viewer: far enough up, or a clear upward flick. */
 export function shouldDismiss(translationY: number, velocityY: number, height: number): boolean {
   'worklet';
-  if (translationY <= 0) return false;
-  return dismissProgress(translationY, height) >= 1 || velocityY >= DISMISS_VELOCITY;
+  if (translationY >= 0) return false;
+  return dismissProgress(translationY, height) >= 1 || -velocityY >= DISMISS_VELOCITY;
 }
