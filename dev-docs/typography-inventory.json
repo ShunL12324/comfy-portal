@@ -569,6 +569,14 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/components/ui/design-system/empty-state-art.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/components/ui/design-system/filter-chips.tsx",
       "textElements": [
         "Animated.Text"

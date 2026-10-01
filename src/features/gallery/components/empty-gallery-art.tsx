@@ -1,78 +1,56 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState, Platform, View } from 'react-native';
-import { useIsFocused } from 'expo-router/react-navigation';
-import { SvgXml } from 'react-native-svg';
-import Animated, {
-  SensorType, useAnimatedSensor, useAnimatedStyle, useFrameCallback,
-  useReducedMotion, useSharedValue, type SharedValue,
-} from 'react-native-reanimated';
+import { Line, Path, Rect } from 'react-native-svg';
+import Animated, { useAnimatedProps } from 'react-native-reanimated';
 import { useDesign } from '@/components/ui/design-system/primitives';
-import { emptyGalleryLayers } from './gallery-illustration';
-import { galleryTilt, tiltSmoothing } from './gallery-tilt';
+import { useDecorativeMotion } from '@/components/ui/design-system/decorative-motion';
+import { EMPTY_ART_STROKE as STROKE, EmptyStateArt } from '@/components/ui/design-system/empty-state-art';
+import { designTokens as t } from '@/constants/design-tokens';
 
-type Tilt = { x: number; y: number; rotation: number };
-const STILL: Tilt = { x: 0, y: 0, rotation: 0 };
-const DEPTH = [-0.35, 1, -0.55];
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 
-function Layer({ xml, index, tilt }: { xml: string; index: number; tilt: SharedValue<Tilt> }) {
-  const style = useAnimatedStyle(() => {
-    const value = tilt.get();
-    const depth = DEPTH[index];
-    return { transform: [
-      { translateX: value.x * depth }, { translateY: value.y * depth },
-      { rotateZ: `${value.rotation * depth}deg` },
-    ] };
-  });
-  return <Animated.View style={[{ position: 'absolute', width: 240, height: 180 }, style]}>
-    <SvgXml xml={xml} width={240} height={180} />
-  </Animated.View>;
-}
+/** A 4:3 viewfinder centred in the drawing area. */
+const FRAME = { x: 28, y: 8, width: 64, height: 48 };
+const CROP = 6;
+const CROP_INSET = 4;
+const CROSS = 3;
 
-function SensorArtwork({ layers }: { layers: string[] }) {
-  const { sensor } = useAnimatedSensor(SensorType.GRAVITY, { interval: 32, adjustToInterfaceOrientation: true });
-  const neutral = useSharedValue<{ x: number; z: number } | null>(null);
-  const tilt = useSharedValue<Tilt>(STILL);
-  useFrameCallback(({ timeSincePreviousFrame }) => {
-    const gravity = sensor.get();
-    // Simulators and unavailable sensors report no gravity: keep the illustration still.
-    if (!Number.isFinite(gravity.x + gravity.y + gravity.z) ||
-        gravity.x ** 2 + gravity.y ** 2 + gravity.z ** 2 < 1) return;
-    let origin = neutral.get();
-    if (origin === null) {
-      origin = { x: gravity.x, z: gravity.z };
-      neutral.set(origin);
-    }
-    const target = galleryTilt(gravity.x, gravity.z, origin.x, origin.z);
-    const current = tilt.get();
-    const alpha = tiltSmoothing(timeSincePreviousFrame ?? 16);
-    tilt.set({
-      x: current.x + (target.x - current.x) * alpha,
-      y: current.y + (target.y - current.y) * alpha,
-      rotation: current.rotation + (target.rotation - current.rotation) * alpha,
-    });
-  });
-  return <>{layers.map((xml, index) => <Layer key={index} xml={xml} index={index} tilt={tilt} />)}</>;
-}
-
-/** Decorative motion only: unmount the sensor when the illustration is not active. */
+/** An empty viewfinder: crop marks, a centre cross and a slow scan line passing through it. */
 export function EmptyGalleryArt() {
   const c = useDesign();
-  const focused = useIsFocused();
-  const initiallyReduced = useReducedMotion();
-  const [reduced, setReduced] = useState(initiallyReduced);
-  const [active, setActive] = useState(AppState.currentState === 'active');
-  useEffect(() => {
-    const app = AppState.addEventListener('change', state => setActive(state === 'active'));
-    const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
-    return () => { app.remove(); motion.remove(); };
-  }, []);
-  const layers = emptyGalleryLayers.map(svg => svg
-    .replaceAll('#EDEDEE', c.well).replaceAll('#BDBDBF', c.faint)
-    .replaceAll('#F7F7F8', c.paper).replaceAll('#E5E5E7', c.raised).replaceAll('#666669', c.muted));
-  const animated = focused && active && !reduced && Platform.OS !== 'web';
-  return <View testID="empty-gallery-art" pointerEvents="none" accessibilityElementsHidden
-    importantForAccessibility="no-hide-descendants" style={{ width: 240, height: 180 }}>
-    {animated ? <SensorArtwork layers={layers} /> : layers.map((xml, index) =>
-      <View key={index} style={{ position: 'absolute' }}><SvgXml xml={xml} width={240} height={180} /></View>)}
-  </View>;
+  const phase = useDecorativeMotion(0.35);
+  const top = FRAME.y + CROP_INSET;
+  const travel = FRAME.height - CROP_INSET * 2;
+  const scan = useAnimatedProps(() => {
+    const y = top + phase.get() * travel;
+    return { y1: y, y2: y };
+  });
+  const left = FRAME.x + CROP_INSET;
+  const right = FRAME.x + FRAME.width - CROP_INSET;
+  const bottom = FRAME.y + FRAME.height - CROP_INSET;
+  const crop = [
+    `M ${left} ${top + CROP} V ${top} H ${left + CROP}`,
+    `M ${right - CROP} ${top} H ${right} V ${top + CROP}`,
+    `M ${left} ${bottom - CROP} V ${bottom} H ${left + CROP}`,
+    `M ${right - CROP} ${bottom} H ${right} V ${bottom - CROP}`,
+  ].join(' ');
+  const cx = FRAME.x + FRAME.width / 2;
+  const cy = FRAME.y + FRAME.height / 2;
+  const dim = FRAME.y + FRAME.height + 8;
+  return (
+    <EmptyStateArt testID="empty-gallery-art" readout="0 OUTPUTS">
+      <Rect {...FRAME} rx={t.radius.control} fill={c.well} stroke={c.faint} strokeWidth={STROKE} />
+      <Path d={crop} fill="none" stroke={c.muted} strokeWidth={STROKE} />
+      <Path
+        d={`M ${cx - CROSS} ${cy} H ${cx + CROSS} M ${cx} ${cy - CROSS} V ${cy + CROSS}`}
+        stroke={c.faint}
+        strokeWidth={STROKE}
+      />
+      <AnimatedLine x1={left} x2={right} stroke={c.ink} strokeWidth={STROKE} animatedProps={scan} />
+      {/* Dimension line under the frame, with end ticks. */}
+      <Path
+        d={`M ${FRAME.x} ${dim - 2} V ${dim + 2} M ${FRAME.x} ${dim} H ${FRAME.x + FRAME.width} M ${FRAME.x + FRAME.width} ${dim - 2} V ${dim + 2}`}
+        stroke={c.faint}
+        strokeWidth={STROKE}
+      />
+    </EmptyStateArt>
+  );
 }
