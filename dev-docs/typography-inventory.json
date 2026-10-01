@@ -1538,9 +1538,21 @@
     },
     {
       "path": "src/features/gallery/components/gallery.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/gallery/components/media-viewer/index.tsx",
       "textElements": [
         "Copy"
       ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/gallery/components/media-viewer/media-viewer-page.tsx",
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
@@ -1589,29 +1601,7 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/features/generation/components/media-preview/media-actions.tsx",
-      "textElements": [
-        "Copy"
-      ],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "src/features/generation/components/media-preview/media-actions.web.tsx",
-      "textElements": [
-        "Copy"
-      ],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
       "path": "src/features/generation/components/media-preview/progress-overlay.tsx",
-      "textElements": [],
-      "fontDeclarations": 0,
-      "managedAt": "shared text / input / composed control"
-    },
-    {
-      "path": "src/features/generation/components/media-preview/zoomable-media.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"

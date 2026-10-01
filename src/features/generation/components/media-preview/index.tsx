@@ -1,18 +1,14 @@
 import { Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Spinner } from '@/components/ui/spinner';
 import { Icon } from '@/components/ui/icon';
-import { Modal, ModalBackdrop, ModalBody, ModalContent } from '@/components/ui/modal';
 import { Image } from 'expo-image';
-import { ImageIcon, X, PlayCircle } from '@/constants/icons';
-import { MotiView } from 'moti';
-import React, { memo, useRef, useState } from 'react';
+import { ImageIcon, PlayCircle } from '@/constants/icons';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MediaActions } from './media-actions';
 import { ProgressOverlay } from './progress-overlay';
-import { ZoomableMedia } from './zoomable-media';
+import { MediaViewer, toViewerItem } from '@/features/gallery/components/media-viewer';
 
 import { useGenerationProgress, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { isVideoUrl } from '@/features/generation/utils/media';
@@ -46,14 +42,12 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
   const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const safeAreaInsets = useSafeAreaInsets();
   const c = useDesign();
   const pagerRef = useRef<PagerView>(null);
-  const modalPagerRef = useRef<PagerView>(null);
 
+  const viewerItems = useMemo(() => generatedMedia.map(toViewerItem), [generatedMedia]);
   const mediaKey = generatedMedia.join('|');
   const [previousMediaKey, setPreviousMediaKey] = useState(mediaKey);
   if (previousMediaKey !== mediaKey) {
@@ -71,13 +65,6 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
     setIsPreviewOpen(false);
   };
 
-  const handleZoomableMediaClose = () => {
-    handleModalClose();
-  };
-
-  const handleZoomableMediaLongPress = () => {
-    setShowActionsheet(true);
-  };
 
   return (
     <View
@@ -152,101 +139,15 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
             )}
           </View>
 
-          <Modal
-            isOpen={isPreviewOpen}
+          <MediaViewer
+            items={viewerItems}
+            initialIndex={activeIndex}
+            visible={isPreviewOpen}
             onClose={handleModalClose}
-            useRNModal={false}
-            avoidKeyboard={false}
-            closeOnOverlayClick
-            size="full"
-            className="m-0 p-0"
-          >
-            <ModalBackdrop />
-            <ModalContent
-              className="m-0 bg-media p-0 h-full rounded-none border-0"
-              style={{ shadowColor: 'transparent', elevation: 0 }}
-              transition={{
-                type: 'timing',
-                duration: 250,
-              }}
-            >
-              <ModalBody
-                className="p-0 h-full flex-1"
-                contentContainerStyle={{
-                  flex: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 0,
-                  margin: 0,
-                }}
-              >
-                {isPreviewOpen && (
-                  <PagerView
-                    key={generatedMedia.join('-')}
-                    ref={modalPagerRef}
-                    style={{ flex: 1, width: '100%', height: '100%' }}
-                    initialPage={activeIndex}
-                    onPageSelected={handlePageSelected}
-                  >
-                    {generatedMedia.map((mediaUrl, index) => (
-                      <View key={`modal-${mediaUrl}-${index}`} className="flex-1">
-                        {/* PagerView mounts every page, so without this every
-                            video in the batch plays at once. */}
-                        <ZoomableMedia
-                          mediaUrl={mediaUrl}
-                          isActive={index === activeIndex}
-                          onClose={handleZoomableMediaClose}
-                          onLongPress={handleZoomableMediaLongPress}
-                        />
-                      </View>
-                    ))}
-                  </PagerView>
-                )}
-
-                <MotiView
-                  from={{ opacity: 1 }}
-                  animate={{ opacity: 0 }}
-                  transition={{ type: 'timing', duration: 300, delay: 2000 }}
-                  className="bottom-16 left-0 right-0 pointer-events-none absolute items-center justify-center"
-                >
-                  <Copy size="label" style={{ color: c.onMedia, fontWeight: '500' }}>Long press to open menu</Copy>
-                </MotiView>
-
-                {generatedMedia.length > 1 && (
-                  <View className="bottom-8 left-0 right-0 gap-2 pointer-events-none absolute flex-row justify-center">
-                    {generatedMedia.map((_, index) => (
-                      <View
-                        key={index}
-                        className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-on-media' : 'bg-on-media/50'}`}
-                      />
-                    ))}
-                  </View>
-                )}
-
-                <Pressable
-                  onPress={handleModalClose}
-                  className="active:opacity-pressed bg-media/20"
-                  style={{
-                    position: 'absolute',
-                    top: safeAreaInsets.top + 12,
-                    right: 12,
-                    borderRadius: t.radius.control,
-                    padding: t.layout.related,
-                    zIndex: 30,
-                  }}
-                >
-                  <Icon as={X} size="sm" className="text-on-media" />
-                </Pressable>
-              </ModalBody>
-              <MediaActions
-                isOpen={showActionsheet}
-                onClose={() => setShowActionsheet(false)}
-                mediaUrl={generatedMedia[activeIndex]}
-                workflowId={workflowId}
-                serverId={serverId}
-              />
-            </ModalContent>
-          </Modal>
+            onIndexChange={setActiveIndex}
+            workflowId={workflowId}
+            serverId={serverId}
+          />
         </View>
       ) : (
         <View

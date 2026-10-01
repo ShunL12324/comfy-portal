@@ -26,7 +26,7 @@ jest.mock('@/constants/icons', () => new Proxy({}, { get: () => () => null }));
 jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => ({}), VideoView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
-jest.mock('@/features/generation/components/media-preview/zoomable-media', () => ({ ZoomableMedia: () => null }));
+jest.mock('@/features/gallery/components/media-viewer', () => ({ MediaViewer: () => null }));
 jest.mock('@/features/gallery/components/empty-gallery-art', () => ({ EmptyGalleryArt: () => null }));
 jest.mock('@/services/image-storage', () => ({ pruneMissingMedia: async () => {} }));
 
