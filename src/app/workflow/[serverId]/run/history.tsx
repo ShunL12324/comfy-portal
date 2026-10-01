@@ -4,12 +4,15 @@ import { MediaSelectionAppBar } from '@/features/gallery/components/media-select
 import { MediaTile } from '@/features/gallery/components/media-tile';
 import { MediaViewer, toViewerItem, type MediaViewerItem } from '@/features/gallery/components/media-viewer';
 import { useMediaSelection } from '@/features/gallery/hooks/use-media-selection';
+import { useMediaTileRects } from '@/features/gallery/hooks/use-media-tile-rects';
 import { deleteGeneratedMedia, loadHistoryMedia } from '@/services/image-storage';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { designTokens as t } from '@/constants/design-tokens';
+
+type HistoryItem = { url: string; timestamp: number };
 
 const NUM_COLUMNS = 3;
 const GRID_GAP = t.layout.label;
@@ -25,7 +28,7 @@ export default function HistoryGalleryPage() {
 
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
+  const [mediaItems, setMediaItems] = useState<HistoryItem[]>([]);
 
   // The viewer pages through the whole history, so it opens at an index into `mediaItems`.
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -33,6 +36,7 @@ export default function HistoryGalleryPage() {
   const viewerItems = useMemo(() => mediaItems.map((item) => toViewerItem(item.url)), [mediaItems]);
   const ids = useMemo(() => mediaItems.map((item) => item.url), [mediaItems]);
   const selection = useMediaSelection(ids);
+  const { listRef: gridRef, registerTile, getOriginRect } = useMediaTileRects<HistoryItem>();
   const { active: selecting, toggle, begin } = selection;
   const closePreview = useCallback(() => setIsPreviewOpen(false), []);
 
@@ -96,11 +100,12 @@ export default function HistoryGalleryPage() {
           selected={selection.isSelected(item.url)}
           onPress={onItemPress}
           onLongPress={begin}
+          onTileRef={registerTile}
         />
       </View>
     ),
     // `selection.isSelected` changes identity with every selection change.
-    [viewerItems, selecting, selection, onItemPress, begin],
+    [viewerItems, selecting, selection, onItemPress, begin, registerTile],
   );
 
   return (
@@ -125,6 +130,7 @@ export default function HistoryGalleryPage() {
 
         {/* Grid */}
         <FlatList
+          ref={gridRef}
           data={mediaItems}
           ListEmptyComponent={
             <View style={{ padding: t.layout.inset }}>
@@ -158,6 +164,7 @@ export default function HistoryGalleryPage() {
           initialIndex={previewIndex}
           visible={isPreviewOpen}
           onClose={closePreview}
+          getOriginRect={getOriginRect}
           workflowId={workflowId}
           serverId={serverId}
           onDelete={deleteFromViewer}

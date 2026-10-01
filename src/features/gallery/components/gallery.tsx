@@ -4,6 +4,7 @@ import { FlatList, View } from 'react-native';
 import { deleteGeneratedMedia, pruneMissingMedia } from '@/services/image-storage';
 import { useMediaStore } from '../stores/media-store';
 import { useMediaSelection } from '../hooks/use-media-selection';
+import { useMediaTileRects } from '../hooks/use-media-tile-rects';
 import { EmptyState } from '@/components/self-ui/empty-state';
 import { EmptyGalleryArt } from './empty-gallery-art';
 import { MediaSelectionAppBar } from './media-selection-app-bar';
@@ -44,6 +45,7 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
   );
   const ids = useMemo(() => assets.map((asset) => asset.path), [assets]);
   const selection = useMediaSelection(ids);
+  const { listRef: gridRef, registerTile, getOriginRect } = useMediaTileRects<(typeof assets)[number]>();
   const { active: selecting, toggle, begin } = selection;
   const closePreview = useCallback(() => setPreviewIndex(null), []);
   const openOrToggle = useCallback(
@@ -75,6 +77,7 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
           )}
           {width !== undefined && (
             <FlatList
+              ref={gridRef}
               key={columns}
               data={assets}
               numColumns={columns}
@@ -126,6 +129,7 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
                   selected={selection.isSelected(item.path)}
                   onPress={openOrToggle}
                   onLongPress={begin}
+                  onTileRef={registerTile}
                 />
               )}
             />
@@ -137,6 +141,7 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
         initialIndex={previewIndex ?? 0}
         visible={previewIndex !== null}
         onClose={closePreview}
+        getOriginRect={getOriginRect}
         onDelete={deleteOne}
       />
     </View>

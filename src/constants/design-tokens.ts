@@ -141,7 +141,16 @@ export const designTokens = {
   },
   /** Lucide sizes on the 24-unit grid; stroke follows via iconStroke. */
   icon: { indicator: 9, micro: 12, small: 14, control: 16, medium: 18, large: 20, hero: 24, display: 40 },
-  motion: { fast: 160, base: 200, press: 180, progress: 240, spin: 1000, breathe: 2800 },
+  /** Durations (ms). `enter`/`exit` move full-screen surfaces in and out, such as the media viewer's zoom. */
+  motion: { fast: 160, base: 200, press: 180, progress: 240, enter: 280, exit: 240, spin: 1000, breathe: 2800 },
+  /**
+   * Cubic-bézier control points for `Easing.bezier`: arrivals decelerate into
+   * place, departures accelerate away. No overshoot anywhere.
+   */
+  easing: {
+    enter: [0.2, 0, 0, 1],
+    exit: [0.4, 0, 1, 1],
+  },
   opacity: { pressed: 0.84, disabled: 0.4, scrim: 0.5 },
 } as const;
 export type TypeSize = keyof typeof designTokens.type;

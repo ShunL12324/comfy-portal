@@ -3,8 +3,10 @@ import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Check, PlayCircle } from '@/constants/icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+
+import { rememberAspect } from './media-viewer/media-aspect';
 
 /** The selected tile's outline; heavy enough to read over any image. */
 const SELECTED_OUTLINE = 2;
@@ -28,6 +30,8 @@ interface MediaTileProps {
   selected: boolean;
   onPress: (uri: string) => void;
   onLongPress: (uri: string) => void;
+  /** Hands the tile's view to the grid, so the viewer can open from and close into it. */
+  onTileRef?: (uri: string, view: View | null) => void;
 }
 
 /**
@@ -44,11 +48,14 @@ export const MediaTile = memo(function MediaTile({
   selected,
   onPress,
   onLongPress,
+  onTileRef,
 }: MediaTileProps) {
   const c = useDesign();
+  const tileRef = useCallback((view: View | null) => onTileRef?.(uri, view), [onTileRef, uri]);
   const noun = kind === 'video' ? 'video' : 'image';
   return (
     <Pressable
+      ref={tileRef}
       accessibilityRole="button"
       accessibilityLabel={selecting ? `Select ${noun}` : `Preview ${noun}`}
       accessibilityState={selecting ? { selected } : undefined}
@@ -62,7 +69,14 @@ export const MediaTile = memo(function MediaTile({
       {kind === 'video' ? (
         <VideoFrame uri={uri} />
       ) : (
-        <Image source={{ uri }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={uri} style={styles.fill} />
+        <Image
+          source={{ uri }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          recyclingKey={uri}
+          style={styles.fill}
+          onLoad={(event) => rememberAspect(uri, event.source.width, event.source.height)}
+        />
       )}
       {kind === 'video' && (
         <View pointerEvents="none" style={styles.play}>

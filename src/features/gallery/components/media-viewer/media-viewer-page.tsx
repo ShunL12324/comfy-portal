@@ -11,6 +11,8 @@ import {
   type ResumableZoomRefType,
 } from 'react-native-zoom-toolkit';
 
+import { rememberAspect } from './media-aspect';
+
 const MAX_SCALE = 5;
 /** Below this the image counts as unzoomed; spring overshoot settles around 1. */
 const ZOOMED_SCALE = 1.01;
@@ -22,6 +24,8 @@ interface ImagePageProps {
   active: boolean;
   onTap: () => void;
   onZoomChange: (zoomed: boolean) => void;
+  /** The image has been drawn; the viewer's opening hands over to this page then. */
+  onDisplay?: (uri: string) => void;
 }
 
 /**
@@ -30,7 +34,15 @@ interface ImagePageProps {
  * pager and swipes to the next item; once zoomed the pager is locked by the
  * viewer and the same drag pans the image instead.
  */
-export const ImagePage = memo(function ImagePage({ uri, width, height, active, onTap, onZoomChange }: ImagePageProps) {
+export const ImagePage = memo(function ImagePage({
+  uri,
+  width,
+  height,
+  active,
+  onTap,
+  onZoomChange,
+  onDisplay,
+}: ImagePageProps) {
   const ref = useRef<ResumableZoomRefType>(null);
   const [aspectRatio, setAspectRatio] = useState<number>();
   const [zoomed, setZoomed] = useState(false);
@@ -73,8 +85,10 @@ export const ImagePage = memo(function ImagePage({ uri, width, height, active, o
           contentFit="contain"
           cachePolicy="memory-disk"
           accessibilityIgnoresInvertColors
+          onDisplay={() => onDisplay?.(uri)}
           onLoad={(event) => {
             const { width: w, height: h } = event.source;
+            rememberAspect(uri, w, h);
             if (w > 0 && h > 0) setAspectRatio(w / h);
           }}
         />
