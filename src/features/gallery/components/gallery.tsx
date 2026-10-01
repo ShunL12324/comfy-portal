@@ -34,7 +34,12 @@ export function Gallery({ serverId }: { serverId?: string }) {
   const assets = useMemo(() => all.filter((asset) =>
     (!serverId || asset.serverId === serverId) &&
     (filter === 'All' || asset.kind === (filter === 'Images' ? 'image' : 'video'))), [all, filter, serverId]);
-  const viewerItems = useMemo<MediaViewerItem[]>(() => assets.map((asset) => ({ uri: asset.path, kind: asset.kind })), [assets]);
+  const viewerItems = useMemo<MediaViewerItem[]>(() => assets.map((asset) => ({
+    uri: asset.path,
+    kind: asset.kind,
+    createdAt: asset.metadata.timestamp,
+    source: asset.metadata.producedBy?.workflowName,
+  })), [assets]);
   const closePreview = useCallback(() => setPreviewIndex(null), []);
   const hasMedia = all.some((asset) => !serverId || asset.serverId === serverId);
   const columns = width !== undefined && width >= 480 ? 4 : 3;

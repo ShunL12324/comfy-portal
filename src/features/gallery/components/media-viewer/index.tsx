@@ -3,7 +3,7 @@ import { designColors, designTokens as t } from '@/constants/design-tokens';
 import { Download, ImageIcon, Share, Trash2, X, type LucideIcon } from '@/constants/icons';
 import { AppToast } from '@/utils/toast';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
   Modal,
@@ -13,17 +13,29 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { FlatList, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
+import { FlatList, Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  interpolate,
+  useAnimatedStyle,
+  useDerivedValue,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { ImagePage, VideoPage } from './media-viewer-page';
 import {
+  buildReadout,
   clampIndex,
-  formatCounter,
+  dismissProgress,
   getViewerActions,
   pageFromOffset,
+  shouldDismiss,
   type MediaViewerAction,
+  type MediaViewerInfo,
   type MediaViewerItem,
 } from './media-viewer-utils';
 import { useMediaViewerActions } from './use-media-viewer-actions';
@@ -32,7 +44,15 @@ export { toViewerItem, type MediaViewerItem } from './media-viewer-utils';
 
 /** The viewer is always on black, whatever the app theme. */
 const chrome = designColors.dark;
-const BAR_PADDING = t.layout.related;
+/**
+ * A 44-point target around a 20-point glyph leaves 12 points of slack, and
+ * around a 36-point plate 4 points. Chrome edges subtract it so the painted
+ * glyph or plate, not the invisible target, sits on the gutter.
+ */
+const GLYPH_SLACK = (t.height.touch - t.icon.large) / 2;
+const PLATE_SLACK = (t.height.touch - t.height.control) / 2;
+/** The backdrop thins to this while dragging down, so the screen beneath shows through. */
+const DRAG_BACKDROP = 0.35;
 
 interface MediaViewerProps {
   items: MediaViewerItem[];
@@ -71,6 +91,9 @@ export function MediaViewer({ visible, onClose, presentation = 'modal', ...props
   return (
     <Modal
       visible={visible}
+      // Transparent so a downward drag reveals the screen it will return to;
+      // the viewer paints its own black backdrop.
+      transparent
       animationType={reduceMotion ? 'none' : 'fade'}
       onRequestClose={onClose}
       statusBarTranslucent
@@ -90,7 +113,9 @@ const ACTION_META: Record<MediaViewerAction, { icon: LucideIcon; label: string }
   delete: { icon: Trash2, label: 'Delete' },
 };
 
-function ViewerBody(props: Omit<MediaViewerProps, 'visible' | 'presentation'> & { handleBack?: boolean }) {
+type ViewerContentProps = Omit<MediaViewerProps, 'visible' | 'presentation'> & { handleBack?: boolean };
+
+function ViewerBody(props: ViewerContentProps) {
   return (
     // A modal is its own native root; gestures and safe-area insets must be re-rooted inside it.
     <GestureHandlerRootView style={styles.fill}>
@@ -113,7 +138,7 @@ function ViewerContent({
   serverId,
   onDelete,
   handleBack,
-}: Omit<MediaViewerProps, 'visible' | 'presentation'> & { handleBack?: boolean }) {
+}: ViewerContentProps) {
   const c = useDesign();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -123,13 +148,15 @@ function ViewerContent({
   const [rawIndex, setRawIndex] = useState(openingIndex);
   const [chromeHidden, setChromeHidden] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const [stripHeight, setStripHeight] = useState(0);
+  const [info, setInfo] = useState<Record<string, MediaViewerInfo>>({});
   const actions = useMediaViewerActions({ workflowId, serverId });
 
   // Deleting the last item leaves the index past the end; clamping keeps it on
   // the item that slid into place.
   const index = clampIndex(rawIndex, items.length);
   const current = items[index];
-  // Native video controls own taps on a video, so its bars stay up.
+  // Native video controls own taps on a video, so its chrome stays up.
   const chromeShown = !chromeHidden || current?.kind === 'video';
 
   useEffect(() => {
@@ -152,6 +179,7 @@ function ViewerContent({
 
   // Rotation changes the page width; keep the same item on screen.
   const width = size?.width ?? 0;
+  const height = size?.height ?? 0;
   const indexRef = useRef(index);
   useEffect(() => {
     indexRef.current = index;
@@ -168,9 +196,12 @@ function ViewerContent({
   );
 
   const toggleChrome = useCallback(() => setChromeHidden((hidden) => !hidden), []);
+  const recordInfo = useCallback((uri: string, next: MediaViewerInfo) => {
+    setInfo((prev) => ({ ...prev, [uri]: { ...prev[uri], ...next } }));
+  }, []);
 
-  const topBarHeight = insets.top + BAR_PADDING * 2 + t.height.touch;
-  const bottomBarHeight = insets.bottom + BAR_PADDING * 2 + t.height.touch;
+  // A video sits between the Close row and the strip, so neither covers its native controls.
+  const closeRowBottom = insets.top + t.layout.related + t.height.touch;
 
   const renderItem = useCallback(
     ({ item, index: itemIndex }: { item: MediaViewerItem; index: number }) => {
@@ -181,8 +212,9 @@ function ViewerContent({
           width={size.width}
           height={size.height}
           active={itemIndex === index}
-          insetTop={topBarHeight}
-          insetBottom={bottomBarHeight}
+          insetTop={closeRowBottom}
+          insetBottom={stripHeight}
+          onInfo={recordInfo}
         />
       ) : (
         <ImagePage
@@ -192,21 +224,59 @@ function ViewerContent({
           active={itemIndex === index}
           onTap={toggleChrome}
           onZoomChange={setZoomed}
+          onInfo={recordInfo}
         />
       );
     },
-    [size, index, topBarHeight, bottomBarHeight, toggleChrome],
+    [size, index, closeRowBottom, stripHeight, toggleChrome, recordInfo],
   );
 
-  const chromeStyle = useAnimatedStyle(
-    () => ({ opacity: withTiming(chromeShown ? 1 : 0, { duration: reduceMotion ? 0 : t.motion.fast }) }),
-    [chromeShown, reduceMotion],
+  // Swipe down to dismiss: the media follows the finger while the backdrop and
+  // chrome thin out; on release it either leaves downwards or settles back.
+  // Horizontal drags fail it and stay with the pager; a zoomed image keeps its pan.
+  const dragY = useSharedValue(0);
+  const dismissing = useSharedValue(false);
+  const duration = reduceMotion ? 0 : t.motion.fast;
+  const dismissGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!zoomed && height > 0)
+        .maxPointers(1)
+        .activeOffsetY(t.layout.inset)
+        .failOffsetX([-t.layout.field, t.layout.field])
+        .onUpdate((event) => {
+          if (!dismissing.get()) dragY.set(Math.max(event.translationY, 0));
+        })
+        .onEnd((event) => {
+          if (shouldDismiss(event.translationY, event.velocityY, height)) {
+            dismissing.set(true);
+            dragY.set(withTiming(height, { duration }, () => scheduleOnRN(onClose)));
+          } else {
+            dragY.set(withTiming(0, { duration }));
+          }
+        }),
+    [zoomed, height, duration, dragY, dismissing, onClose],
   );
+  const progress = useDerivedValue(() => dismissProgress(dragY.get(), height));
+  const chromeOpacity = useSharedValue(1);
+  useEffect(() => {
+    chromeOpacity.set(withTiming(chromeShown ? 1 : 0, { duration }));
+  }, [chromeShown, duration, chromeOpacity]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.get(), [0, 1], [1, DRAG_BACKDROP]),
+  }));
+  const mediaStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
+  const chromeStyle = useAnimatedStyle(() => ({
+    opacity: chromeOpacity.get() * (1 - progress.get()),
+  }));
 
   // Set on the plain inner views: web does not reliably re-apply non-animated
   // style changes on an Animated.View.
-  const barPointerEvents = { pointerEvents: chromeShown ? 'auto' : 'none' } as const;
-  const counter = formatCounter(index, items.length);
+  const chromePointerEvents = { pointerEvents: chromeShown ? 'auto' : 'none' } as const;
+  const readout = current
+    ? buildReadout({ item: current, index, length: items.length, info: info[current.uri] })
+    : undefined;
   const visibleActions = getViewerActions({
     canShare: actions.canShare,
     canSetThumbnail: actions.canSetThumbnail,
@@ -224,86 +294,105 @@ function ViewerContent({
 
   return (
     <View
-      style={[styles.fill, { backgroundColor: c.media }]}
+      style={styles.fill}
       onLayout={(event) => {
         const { width: w, height: h } = event.nativeEvent.layout;
         setSize((prev) => (prev?.width === w && prev?.height === h ? prev : { width: w, height: h }));
       }}
     >
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.media }, backdropStyle]} />
+
       {size && (
-        <FlatList
-          ref={listRef}
-          data={items}
-          horizontal
-          pagingEnabled
-          scrollEnabled={!zoomed}
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={keyExtractor}
-          initialScrollIndex={openingIndex}
-          getItemLayout={(_, itemIndex) => ({ length: size.width, offset: size.width * itemIndex, index: itemIndex })}
-          // Web has no momentum events; the settled scroll position is enough there.
-          onMomentumScrollEnd={Platform.OS === 'web' ? undefined : updateIndex}
-          onScroll={Platform.OS === 'web' ? updateIndex : undefined}
-          scrollEventThrottle={Platform.OS === 'web' ? 100 : undefined}
-          extraData={renderItem}
-          // A gallery can hold hundreds of items; keep only the neighbours alive.
-          initialNumToRender={1}
-          maxToRenderPerBatch={2}
-          windowSize={3}
-          renderItem={renderItem}
-        />
+        <GestureDetector gesture={dismissGesture}>
+          <Animated.View style={[styles.fill, mediaStyle]}>
+            <FlatList
+              ref={listRef}
+              data={items}
+              horizontal
+              pagingEnabled
+              scrollEnabled={!zoomed}
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={keyExtractor}
+              initialScrollIndex={openingIndex}
+              getItemLayout={(_, itemIndex) => ({
+                length: size.width,
+                offset: size.width * itemIndex,
+                index: itemIndex,
+              })}
+              // Web has no momentum events; the settled scroll position is enough there.
+              onMomentumScrollEnd={Platform.OS === 'web' ? undefined : updateIndex}
+              onScroll={Platform.OS === 'web' ? updateIndex : undefined}
+              scrollEventThrottle={Platform.OS === 'web' ? 100 : undefined}
+              extraData={renderItem}
+              // A gallery can hold hundreds of items; keep only the neighbours alive.
+              initialNumToRender={1}
+              maxToRenderPerBatch={2}
+              windowSize={3}
+              renderItem={renderItem}
+            />
+          </Animated.View>
+        </GestureDetector>
       )}
 
-      <Animated.View
-        style={[styles.topBar, chromeStyle]}
-      >
+      {/* Close alone at the top: a flat plate keeps it legible over bright media. */}
+      <Animated.View style={[styles.closeRow, chromeStyle]}>
         <View
-          className="bg-media/50"
           style={[
-            styles.topBarSurface,
-            barPointerEvents,
-            { paddingTop: insets.top + BAR_PADDING, paddingLeft: insets.left + t.layout.related, paddingRight: insets.right + t.layout.related, borderBottomColor: c.subtle },
+            chromePointerEvents,
+            {
+              position: 'absolute',
+              top: insets.top + t.layout.related,
+              left: insets.left + t.layout.gutter - PLATE_SLACK,
+            },
           ]}
         >
-          <Action kind="text" icon={X} iconSize={t.icon.large} label="Close" onPress={onClose} />
-          {counter && (
-            <Copy mono size="label" accessibilityLabel={`Item ${index + 1} of ${items.length}`} style={styles.counter}>
-              {counter}
-            </Copy>
-          )}
+          <Action kind="tonal" icon={X} iconSize={t.icon.large} label="Close viewer" onPress={onClose} />
         </View>
       </Animated.View>
 
-      {visibleActions.length > 0 && (
-        <Animated.View
-          style={[styles.bottomBar, chromeStyle]}
-        >
+      {/* The strip: a panel readout on the left, actions on the right, on one flat scrim. */}
+      {current && (
+        <Animated.View style={[styles.strip, chromeStyle]}>
           <View
             className="bg-media/50"
+            onLayout={(event) => setStripHeight(event.nativeEvent.layout.height)}
             style={[
-              styles.bottomBarSurface,
-              barPointerEvents,
+              styles.stripSurface,
+              chromePointerEvents,
               {
-                paddingBottom: insets.bottom + BAR_PADDING,
-                paddingLeft: insets.left + t.layout.related,
-                paddingRight: insets.right + t.layout.related,
-                borderTopColor: c.subtle,
+                borderTopColor: c.line,
+                paddingBottom: Math.max(insets.bottom, t.layout.related),
+                paddingLeft: insets.left + t.layout.gutter,
+                paddingRight: insets.right + t.layout.gutter - GLYPH_SLACK,
               },
             ]}
           >
-            {visibleActions.map((action) => (
-              <Action
-                key={action}
-                kind="text"
-                icon={ACTION_META[action].icon}
-                iconSize={t.icon.large}
-                label={ACTION_META[action].label}
-                destructive={action === 'delete'}
-                loading={actions.busy === action}
-                disabled={actions.busy !== null && actions.busy !== action}
-                onPress={() => runAction(action)}
-              />
-            ))}
+            <View style={styles.readout} accessible accessibilityLabel={readout?.accessibilityLabel}>
+              {readout?.lines.map((line, lineIndex) => (
+                <Copy key={lineIndex} mono size="metadata" muted={lineIndex > 0} numberOfLines={1}>
+                  {line}
+                </Copy>
+              ))}
+            </View>
+            <View style={styles.actions}>
+              {visibleActions.map((action) => (
+                <Fragment key={action}>
+                  {action === 'delete' && visibleActions.length > 1 && (
+                    <View style={[styles.divider, { backgroundColor: c.line }]} />
+                  )}
+                  <Action
+                    kind="text"
+                    icon={ACTION_META[action].icon}
+                    iconSize={t.icon.large}
+                    label={ACTION_META[action].label}
+                    destructive={action === 'delete'}
+                    loading={actions.busy === action}
+                    disabled={actions.busy !== null && actions.busy !== action}
+                    onPress={() => runAction(action)}
+                  />
+                </Fragment>
+              ))}
+            </View>
           </View>
         </Animated.View>
       )}
@@ -316,21 +405,16 @@ const keyExtractor = (item: MediaViewerItem, index: number) => `${item.uri}-${in
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   overlay: { ...StyleSheet.absoluteFill, zIndex: 20 },
-  topBar: { position: 'absolute', top: 0, left: 0, right: 0, pointerEvents: 'box-none' },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, pointerEvents: 'box-none' },
-  topBarSurface: {
+  closeRow: { ...StyleSheet.absoluteFill, pointerEvents: 'box-none' },
+  strip: { position: 'absolute', bottom: 0, left: 0, right: 0, pointerEvents: 'box-none' },
+  stripSurface: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: BAR_PADDING,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  bottomBarSurface: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    paddingTop: BAR_PADDING,
+    gap: t.layout.field,
+    paddingTop: t.layout.related,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  counter: { paddingHorizontal: t.layout.related },
+  readout: { flex: 1, minWidth: 0 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  divider: { width: StyleSheet.hairlineWidth, height: t.icon.large, marginHorizontal: t.layout.label },
 });

@@ -47,7 +47,7 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
   const c = useDesign();
   const scrollRef = useRef<ScrollView>(null);
 
-  const viewerItems = useMemo(() => generatedMedia.map(toViewerItem), [generatedMedia]);
+  const viewerItems = useMemo(() => generatedMedia.map((uri) => toViewerItem(uri)), [generatedMedia]);
   const mediaKey = generatedMedia.join('|');
   const [previousMediaKey, setPreviousMediaKey] = useState(mediaKey);
   if (previousMediaKey !== mediaKey) {

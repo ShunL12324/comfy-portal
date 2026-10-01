@@ -4,7 +4,14 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { fitContainer, ResumableZoom, type CommonZoomState, type ResumableZoomRefType } from 'react-native-zoom-toolkit';
+import {
+  fitContainer,
+  ResumableZoom,
+  type CommonZoomState,
+  type ResumableZoomRefType,
+} from 'react-native-zoom-toolkit';
+
+import type { MediaViewerInfo } from './media-viewer-utils';
 
 const MAX_SCALE = 5;
 /** Below this the image counts as unzoomed; spring overshoot settles around 1. */
@@ -17,6 +24,8 @@ interface ImagePageProps {
   active: boolean;
   onTap: () => void;
   onZoomChange: (zoomed: boolean) => void;
+  /** Reports the pixel size once the image has loaded, for the readout. */
+  onInfo: (uri: string, info: MediaViewerInfo) => void;
 }
 
 /**
@@ -25,7 +34,15 @@ interface ImagePageProps {
  * pager and swipes to the next item; once zoomed the pager is locked by the
  * viewer and the same drag pans the image instead.
  */
-export const ImagePage = memo(function ImagePage({ uri, width, height, active, onTap, onZoomChange }: ImagePageProps) {
+export const ImagePage = memo(function ImagePage({
+  uri,
+  width,
+  height,
+  active,
+  onTap,
+  onZoomChange,
+  onInfo,
+}: ImagePageProps) {
   const ref = useRef<ResumableZoomRefType>(null);
   const [aspectRatio, setAspectRatio] = useState<number>();
   const [zoomed, setZoomed] = useState(false);
@@ -70,7 +87,10 @@ export const ImagePage = memo(function ImagePage({ uri, width, height, active, o
           accessibilityIgnoresInvertColors
           onLoad={(event) => {
             const { width: w, height: h } = event.source;
-            if (w > 0 && h > 0) setAspectRatio(w / h);
+            if (w > 0 && h > 0) {
+              setAspectRatio(w / h);
+              onInfo(uri, { width: w, height: h });
+            }
           }}
         />
       </ResumableZoom>
@@ -86,13 +106,31 @@ interface VideoPageProps {
   /** Space kept clear above and below so the viewer's bars never cover the native controls. */
   insetTop: number;
   insetBottom: number;
+  /** Reports the length and frame size once the source has loaded, for the readout. */
+  onInfo: (uri: string, info: MediaViewerInfo) => void;
 }
 
 /** Inline playback with the platform's own controls. */
-export const VideoPage = memo(function VideoPage({ uri, width, height, active, insetTop, insetBottom }: VideoPageProps) {
+export const VideoPage = memo(function VideoPage({
+  uri,
+  width,
+  height,
+  active,
+  insetTop,
+  insetBottom,
+  onInfo,
+}: VideoPageProps) {
   const player = useVideoPlayer(uri, (video) => {
     video.loop = true;
   });
+
+  useEffect(() => {
+    const subscription = player.addListener('sourceLoad', ({ duration, availableVideoTracks }) => {
+      const frame = availableVideoTracks[0]?.size;
+      onInfo(uri, { duration, width: frame?.width, height: frame?.height });
+    });
+    return () => subscription.remove();
+  }, [player, uri, onInfo]);
 
   // Pages either side stay mounted for smooth swiping; only the page on screen
   // may play, or every mounted video would play over the one being watched.

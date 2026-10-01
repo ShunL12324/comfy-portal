@@ -39,7 +39,10 @@ export default function HistoryGalleryPage() {
   // The viewer pages through the whole history, so it opens at an index into `mediaItems`.
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const viewerItems = useMemo(() => mediaItems.map((item) => toViewerItem(item.url)), [mediaItems]);
+  const viewerItems = useMemo(
+    () => mediaItems.map((item) => toViewerItem(item.url, { createdAt: item.timestamp })),
+    [mediaItems],
+  );
   const closePreview = useCallback(() => setIsPreviewOpen(false), []);
 
   const onItemPress = useCallback(
