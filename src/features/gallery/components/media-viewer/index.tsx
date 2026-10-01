@@ -371,7 +371,6 @@ function ViewerContent({
             styles.barSurface,
             chromePointerEvents,
             {
-              borderBottomColor: c.line,
               paddingTop: insets.top,
               paddingLeft: insets.left + t.layout.gutter - GLYPH_SLACK,
               paddingRight: insets.right + t.layout.gutter - GLYPH_SLACK,
@@ -436,7 +435,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: t.height.touch,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   counter: { flex: 1, minWidth: 0, paddingLeft: t.layout.label },
 });
