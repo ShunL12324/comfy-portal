@@ -13,7 +13,6 @@ import { Action, Title } from '@/components/ui/design-system/primitives';
 import { View } from '@/components/ui/view';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
-import { Server } from '@/features/server/types';
 import { validateHost, validatePort } from '@/services/network';
 import { BottomSheetModal, type BottomSheetFooterProps } from '@gorhom/bottom-sheet';
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';

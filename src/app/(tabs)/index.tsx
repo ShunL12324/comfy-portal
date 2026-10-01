@@ -8,6 +8,7 @@ import { View } from '@/components/ui/view';
 import { LaunchCard } from '@/features/cloud/components/launch-card';
 import { useProvisioningStore, launchKey, type LaunchRecord } from '@/features/cloud/stores/provisioning-store';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
+import { EmptyServersArt } from '@/features/server/components/empty-servers-art';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Plus } from '@/constants/icons';
@@ -80,9 +81,11 @@ export default function HomeScreen() {
             gap: t.layout.inset,
           }}
         >
-          <Field label="Search servers" search value={query} onChange={setQuery} placeholder="Search servers" />
+          {count > 0 && (
+            <Field label="Search servers" search value={query} onChange={setQuery} placeholder="Search servers" />
+          )}
           {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
-          <View style={{ gap: t.layout.related }}>
+          <View style={{ flex: count > 0 ? undefined : 1, gap: t.layout.related }}>
             {filtered.length ? (
               <View style={{ gap: t.layout.list }}>
                 {filtered.map(({ launch, server }) => {
@@ -100,14 +103,19 @@ export default function HomeScreen() {
                 <Copy muted>Try another name or address.</Copy>
               </View>
             ) : (
-              <View style={{ gap: t.layout.inset, paddingVertical: t.layout.section }}>
-                <Copy style={{ fontWeight: '500' }}>Connect your ComfyUI server</Copy>
-                <Copy muted>
-                  Already set up on your computer or cloud machine? Add its address to use its workflows from your
-                  phone.
+              <View
+                testID="servers-empty"
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: t.layout.related }}
+              >
+                <View style={{ paddingBottom: t.layout.related }}>
+                  <EmptyServersArt />
+                </View>
+                <Copy size="section">No servers yet</Copy>
+                <Copy muted style={{ alignSelf: 'stretch', textAlign: 'center' }}>
+                  Connect ComfyUI on your computer or a cloud machine to use its workflows here.
                 </Copy>
-                <Copy muted size="metadata">
-                  Tap + above to add your first server.
+                <Copy muted size="metadata" style={{ alignSelf: 'stretch', textAlign: 'center' }}>
+                  Tap + to add a server.
                 </Copy>
               </View>
             )}
