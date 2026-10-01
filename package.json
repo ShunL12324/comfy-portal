@@ -22,7 +22,8 @@
   "jest": {
     "preset": "jest-expo",
     "testPathIgnorePatterns": [
-      "/node_modules/"
+      "/node_modules/",
+      "/\\.claude/"
     ],
     "moduleNameMapper": {
       "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock"
