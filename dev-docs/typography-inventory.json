@@ -361,7 +361,7 @@
       "textElements": [
         "Copy"
       ],
-      "fontDeclarations": 1,
+      "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
     {

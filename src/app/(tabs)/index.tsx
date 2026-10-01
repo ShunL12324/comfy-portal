@@ -8,6 +8,7 @@ import { View } from '@/components/ui/view';
 import { LaunchCard } from '@/features/cloud/components/launch-card';
 import { useProvisioningStore, launchKey, type LaunchRecord } from '@/features/cloud/stores/provisioning-store';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { EmptyServersArt } from '@/features/server/components/empty-servers-art';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
@@ -103,21 +104,15 @@ export default function HomeScreen() {
                 <Copy muted>Try another name or address.</Copy>
               </View>
             ) : (
-              <View
+              <EmptyState
                 testID="servers-empty"
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: t.layout.related }}
+                align="center"
+                art={<EmptyServersArt />}
+                title="No servers yet"
+                hint="Tap + to add a server."
               >
-                <View style={{ paddingBottom: t.layout.related }}>
-                  <EmptyServersArt />
-                </View>
-                <Copy size="section">No servers yet</Copy>
-                <Copy muted style={{ alignSelf: 'stretch', textAlign: 'center' }}>
-                  Connect ComfyUI on your computer or a cloud machine to use its workflows here.
-                </Copy>
-                <Copy muted size="metadata" style={{ alignSelf: 'stretch', textAlign: 'center' }}>
-                  Tap + to add a server.
-                </Copy>
-              </View>
+                Connect ComfyUI on your computer or a cloud machine to use its workflows here.
+              </EmptyState>
             )}
           </View>
         </RefreshScrollView>

@@ -9,6 +9,7 @@ import { X, PlayCircle } from '@/constants/icons';
 import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
 import { pruneMissingMedia } from '@/services/image-storage';
 import { useMediaStore, type MediaAsset } from '../stores/media-store';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { EmptyGalleryArt } from './empty-gallery-art';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
@@ -47,7 +48,7 @@ export function Gallery({ serverId }: { serverId?: string }) {
         options={['All', 'Images', 'Videos'].map((value) => ({ value, label: value }))} />}
       {width !== undefined && <FlatList
         key={columns} data={assets} numColumns={columns} keyExtractor={(asset) => asset.id}
-        columnWrapperStyle={{ gap: t.layout.label }} contentContainerStyle={{ gap: t.layout.label, paddingBottom: t.layout.gutter }}
+        columnWrapperStyle={{ gap: t.layout.label }} contentContainerStyle={{ flexGrow: 1, gap: t.layout.label, paddingBottom: t.layout.gutter }}
         /**
          * Bounded so the number of live video players stays proportional to
          * what is on screen. Every video tile holds its own `useVideoPlayer`,
@@ -67,12 +68,14 @@ export function Gallery({ serverId }: { serverId?: string }) {
         initialNumToRender={columns * 8}
         maxToRenderPerBatch={columns * 4}
         getItemLayout={(_, index) => ({ length: rowPitch, offset: rowPitch * Math.floor(index / columns), index })}
-        ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: t.layout.section * 4, gap: t.layout.inset }}>
-          <EmptyGalleryArt />
-          {/* This grid holds images and videos; the copy has to cover both. */}
-          <Copy size="section">No {noun} yet</Copy>
-          <Copy muted>Your generated images and videos will appear here.</Copy>
-        </View>}
+        // An empty collection gets the centred illustration, at the same height as every
+        // other tab's. A filter with no matches is not that moment: the chips stay, with a note.
+        ListEmptyComponent={hasMedia
+          ? <EmptyState title={`No ${noun} yet`}>Try another media type.</EmptyState>
+          // This grid holds images and videos; the copy has to cover both.
+          : <EmptyState align="center" art={<EmptyGalleryArt />} title="No media yet">
+            Your generated images and videos will appear here.
+          </EmptyState>}
         renderItem={({ item }) => (
           <Pressable accessibilityRole="button" accessibilityLabel={`Preview ${item.kind}`} onPress={() => setPreview(item)}
             style={{ width: size, height: size, borderRadius: t.radius.control, overflow: 'hidden', backgroundColor: c.well }}>
