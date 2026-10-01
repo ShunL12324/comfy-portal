@@ -14,6 +14,8 @@ export interface HardwareCatalog {
   offers: HardwareOffer[];
   balances: Partial<Record<CloudProvider, number>>;
   errors: string[];
+  /** Providers whose inventory request failed, as opposed to answering with no offers. */
+  unavailable: CloudProvider[];
 }
 export async function loadHardware(credentials: CloudCredentials, diskGb: number): Promise<HardwareCatalog> {
   const providers = (['vast', 'runpod'] as const).filter((provider) =>
@@ -70,6 +72,7 @@ export async function loadHardware(credentials: CloudCredentials, diskGb: number
         provider,
         offers,
         balance: account.status === 'fulfilled' ? account.value : undefined,
+        inventoryFailed: inventory.status === 'rejected',
         errors: [inventory, account].flatMap((result, index) =>
           result.status === 'rejected'
             ? [provider + ': ' + (index === 0 ? 'Availability' : 'Balance') + ' could not be loaded.']
@@ -86,5 +89,6 @@ export async function loadHardware(credentials: CloudCredentials, diskGb: number
         .map((result) => [result.provider, result.balance]),
     ),
     errors: results.flatMap((result) => result.errors),
+    unavailable: results.filter((result) => result.inventoryFailed).map((result) => result.provider),
   };
 }

@@ -21,4 +21,16 @@ test('provider-specific metrics and missing balances stay distinct', async () =>
   expect(result.offers[1]).toMatchObject({ provider: 'runpod', gpuCount: 1, priceScope: 'gpu-starting' });
   expect(result.offers[1]).not.toHaveProperty('downloadMbps');
   expect(result.errors).toEqual(['vast: Balance could not be loaded.']);
+  expect(result.unavailable).toEqual([]);
+});
+test('a failed inventory request marks the provider unavailable', async () => {
+  (searchOffers as jest.Mock).mockRejectedValue(new Error('Network'));
+  (verifyApiKey as jest.Mock).mockResolvedValue({ balance: 5 });
+  (searchRunPodOffers as jest.Mock).mockResolvedValue([]);
+  (getRunPodBalance as jest.Mock).mockResolvedValue(1);
+  const result = await loadHardware(
+    { vastApiKey: 'test-vast', runpodApiKey: 'test-runpod', civitaiApiKey: '', huggingFaceToken: '' },
+    80,
+  );
+  expect(result.unavailable).toEqual(['vast']);
 });

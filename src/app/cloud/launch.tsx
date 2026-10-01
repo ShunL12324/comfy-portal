@@ -3,6 +3,7 @@ import { supportsRunPod } from '@/features/cloud/services/runtime';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, Copy, Field, Panel, Row, Stepper, useDesign } from '@/components/ui/design-system/primitives';
 import { Pressable } from '@/components/ui/pressable';
+import { EmptyState } from '@/components/self-ui/empty-state';
 import { RefreshScrollView } from '@/components/ui/design-system/pull-refresh';
 import { View } from '@/components/ui/view';
 import { createLaunch } from '@/features/cloud/services/provision';
@@ -12,6 +13,7 @@ import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/s
 import { estimateDiskGb, type CloudProvider, type Environment } from '@/features/cloud/types';
 import { CLOUD_GPU_SUPPORTED, CLOUD_GPU_UNSUPPORTED_REASON } from '@/features/cloud/utils/availability';
 import { formatUsd } from '@/features/cloud/utils/cost';
+import { hardwareEmptyReason } from '@/features/cloud/utils/hardware-empty';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Gpu } from '@/constants/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,6 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
 type Step = 'hardware' | 'review';
+const EMPTY_CATALOG: HardwareCatalog = { offers: [], balances: {}, errors: [], unavailable: [] };
+const providerName = (provider: CloudProvider) => (provider === 'vast' ? 'Vast.ai' : 'RunPod');
 const offerKey = (offer: HardwareOffer) => offer.provider + ':' + offer.offerId;
 export default function LaunchWizard() {
   const { environmentId } = useLocalSearchParams<{ environmentId?: string }>();
@@ -46,7 +50,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
   const [provider, setProvider] = useState<'all' | CloudProvider>('all');
   const [query, setQuery] = useState('');
   const [disk, setDisk] = useState(estimateDiskGb(recipe.models));
-  const [catalog, setCatalog] = useState<HardwareCatalog>({ offers: [], balances: {}, errors: [] });
+  const [catalog, setCatalog] = useState<HardwareCatalog>(EMPTY_CATALOG);
   const [selected, setSelected] = useState<HardwareOffer>();
   const [loading, setLoading] = useState(true);
   const refreshLock = useRef(false);
@@ -60,7 +64,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
     const id = ++requestId.current;
     const pending = CLOUD_GPU_SUPPORTED
       ? loadHardware(useCloudCredentialsStore.getState(), disk)
-      : Promise.resolve({ offers: [], balances: {}, errors: [] });
+      : Promise.resolve(EMPTY_CATALOG);
     return pending
       .then((result) => {
         if (id !== requestId.current) return;
@@ -69,7 +73,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
       })
       .catch(() => {
         if (id !== requestId.current) return;
-        setError('Could not load hardware.');
+        setCatalog({ ...EMPTY_CATALOG, unavailable: ['vast', 'runpod'] });
         setLoading(false);
       });
   }, [disk]);
@@ -96,6 +100,12 @@ function LaunchFlow({ environment }: { environment: Environment }) {
       (provider === 'all' || provider === offer.provider) &&
       offer.gpuName.toLowerCase().includes(query.trim().toLowerCase()),
   );
+  const empty = hardwareEmptyReason({
+    filter: provider,
+    keys: { vast: !!vastApiKey, runpod: !!runpodApiKey },
+    unavailable: catalog.unavailable,
+  });
+  const runpodDisk = selected?.provider === 'runpod' || provider === 'runpod';
   const rent = async () => {
     if (!selected || submitting.current || !CLOUD_GPU_SUPPORTED) return;
     submitting.current = true;
@@ -128,9 +138,19 @@ function LaunchFlow({ environment }: { environment: Environment }) {
         </Copy>
         {step === 'hardware' && (
           <>
-            <FilterChips label="Hardware provider" value={provider}
-              options={[{ value: 'all', label: 'All' }, { value: 'vast', label: 'Vast.ai' }, { value: 'runpod', label: 'RunPod' }]}
-              onChange={(value) => { setProvider(value as 'all' | CloudProvider); setSelected(undefined); }} />
+            <FilterChips
+              label="Hardware provider"
+              value={provider}
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'vast', label: 'Vast.ai' },
+                { value: 'runpod', label: 'RunPod' },
+              ]}
+              onChange={(value) => {
+                setProvider(value as 'all' | CloudProvider);
+                setSelected(undefined);
+              }}
+            />
             <Row style={{ gap: t.layout.related }}>
               <View style={{ flex: 1 }}>
                 <Field search label="Search GPUs" value={query} onChange={setQuery} />
@@ -140,7 +160,9 @@ function LaunchFlow({ environment }: { environment: Environment }) {
         )}
       </View>
       <View style={{ flex: 1, minHeight: 0 }}>
-        <RefreshScrollView refreshing={step === 'hardware' && loading} onRefresh={step === 'hardware' ? refresh : undefined}
+        <RefreshScrollView
+          refreshing={step === 'hardware' && loading}
+          onRefresh={step === 'hardware' ? refresh : undefined}
           contentContainerStyle={{
             paddingHorizontal: t.layout.gutter,
             gap: t.layout.section,
@@ -206,37 +228,32 @@ function LaunchFlow({ environment }: { environment: Environment }) {
                     </Pressable>
                   );
                 })}
-                {!loading && !offers.length && (
-                  <Copy muted size="label">
-                    No matching hardware available.
-                  </Copy>
-                )}
-              </View>
-              <View style={{ gap: t.layout.label }}>
-                <Copy size="label">
-                  {selected?.provider === 'runpod' || provider === 'runpod' ? 'Volume disk · GB' : 'Disk · GB'}
-                </Copy>
-                <Stepper
-                  label="Disk capacity in GB"
-                  value={disk}
-                  min={minimumDisk}
-                  max={10000}
-                  step={10}
-                  onChange={(value) => {
-                    setSelected(undefined);
-                    setCatalog({ offers: [], balances: {}, errors: [] });
-                    setLoading(true);
-                    setDisk(value);
-                  }}
-                />
-                <Copy muted size="metadata">
-                  Estimate: {minimumDisk} GB including room for outputs. Unknown model sizes need extra space.
-                </Copy>
-                {(selected?.provider === 'runpod' || provider === 'runpod') && (
-                  <Copy muted size="metadata">
-                    20 GB container disk · volume storage is billed separately.
-                  </Copy>
-                )}
+                {!loading &&
+                  !offers.length &&
+                  CLOUD_GPU_SUPPORTED &&
+                  hydrated &&
+                  (empty.reason === 'no-key' ? (
+                    <EmptyState
+                      title={
+                        provider === 'all' ? 'No cloud account' : providerName(empty.providers[0]) + ' not connected'
+                      }
+                      action={
+                        <Action onPress={() => router.navigate('/settings/cloud-gpu')}>
+                          {provider === 'all'
+                            ? 'Connect cloud account'
+                            : 'Connect ' + providerName(provider) + ' account'}
+                        </Action>
+                      }
+                    >
+                      Add an API key to see available GPUs.
+                    </EmptyState>
+                  ) : empty.reason === 'failed' ? (
+                    <EmptyState title="Could not load hardware">
+                      {empty.providers.map(providerName).join(' and ')} did not respond. Pull down to retry.
+                    </EmptyState>
+                  ) : (
+                    <EmptyState>No matching hardware available.</EmptyState>
+                  ))}
               </View>
               {catalog.errors.map((message) => (
                 <Copy key={message} muted size="metadata">
@@ -323,13 +340,11 @@ function LaunchFlow({ environment }: { environment: Environment }) {
               </>
             )
           )}
-          {!CLOUD_GPU_SUPPORTED ? (
+          {!CLOUD_GPU_SUPPORTED && (
             <Copy muted size="label">
               {CLOUD_GPU_UNSUPPORTED_REASON}
             </Copy>
-          ) : hydrated && !vastApiKey && !runpodApiKey ? (
-            <Action onPress={() => router.navigate('/settings/cloud-gpu')}>Connect cloud account</Action>
-          ) : null}
+          )}
           {!!error && (
             <>
               <Copy accessibilityRole="alert">{error}</Copy>
@@ -347,8 +362,35 @@ function LaunchFlow({ environment }: { environment: Environment }) {
             paddingTop: t.layout.related,
             paddingBottom: Math.max(insets.bottom, t.layout.field),
             backgroundColor: c.paper,
+            gap: t.layout.field,
           }}
         >
+          <View style={{ gap: t.layout.label }}>
+            <Row style={{ gap: t.layout.related }}>
+              <Copy size="label" style={{ flex: 1 }}>
+                {runpodDisk ? 'Volume disk · GB' : 'Disk · GB'}
+              </Copy>
+              <View style={{ flex: 1 }}>
+                <Stepper
+                  label="Disk capacity in GB"
+                  value={disk}
+                  min={minimumDisk}
+                  max={10000}
+                  step={10}
+                  onChange={(value) => {
+                    setSelected(undefined);
+                    setCatalog(EMPTY_CATALOG);
+                    setLoading(true);
+                    setDisk(value);
+                  }}
+                />
+              </View>
+            </Row>
+            <Copy muted size="metadata">
+              Estimate: {minimumDisk} GB including room for outputs. Unknown model sizes need extra space.
+              {runpodDisk ? ' 20 GB container disk · volume storage is billed separately.' : ''}
+            </Copy>
+          </View>
           <Action
             kind="primary"
             fill
