@@ -27,6 +27,9 @@ module.exports = {
     extend: {
       spacing: Object.fromEntries(Object.entries(designTokens.icon).map(([role, size]) => [`icon-${role}`, `${size}px`])),
       colors: {
+        // Scrims over photos and video, and the light content on them; the same in both themes.
+        media: 'rgb(var(--surface-role-media)/<alpha-value>)',
+        'on-media': 'rgb(var(--surface-role-onMedia)/<alpha-value>)',
         primary: {
           0: 'rgb(var(--color-primary-0)/<alpha-value>)',
           50: 'rgb(var(--color-primary-50)/<alpha-value>)',
