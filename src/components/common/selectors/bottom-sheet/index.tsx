@@ -28,6 +28,8 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
       renderItem,
       emptyComponent,
       numColumns = 1,
+      onViewableItemsChanged,
+      viewabilityConfig,
     },
     ref,
   ) {
@@ -132,6 +134,8 @@ export const SearchableBottomSheet = forwardRef<BottomSheetModal, SearchableBott
                 : defaultRenderItem
             }
             numColumns={numColumns}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
             ListEmptyComponent={
               options.length > 0 ? (
                 <View style={{ paddingVertical: t.layout.section }}>

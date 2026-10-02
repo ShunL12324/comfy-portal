@@ -1,4 +1,5 @@
 import React from 'react';
+import { FlatListProps } from 'react-native';
 
 export interface SelectorOption {
   value: string;
@@ -27,4 +28,7 @@ export interface SearchableBottomSheetProps {
   /** Shown in place of the list when there is nothing to show. */
   emptyComponent?: React.ReactNode;
   numColumns?: number;
+  /** Passed to the list, for rows that only do work while on screen. Both must stay stable. */
+  onViewableItemsChanged?: FlatListProps<SelectorOption>['onViewableItemsChanged'];
+  viewabilityConfig?: FlatListProps<SelectorOption>['viewabilityConfig'];
 }

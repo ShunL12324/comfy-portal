@@ -3,6 +3,8 @@ import {
   estimateLoadedFrames,
   formatDuration,
   inputFileUrl,
+  inputFileVersion,
+  inputStillKey,
   isUploadCancelled,
   parseVideoInfo,
   previewKindFor,
@@ -46,6 +48,29 @@ describe('inputFileUrl', () => {
     expect(url.searchParams.get('filename')).toBe('x.webm');
     expect(url.searchParams.get('subfolder')).toBe('sub');
     expect(url.searchParams.get('type')).toBe('input');
+  });
+});
+
+describe('input file versions and still keys', () => {
+  const base = 'https://box.example:8188/view';
+  const headers = (values: Record<string, string>) => ({ get: (name: string) => values[name] ?? null });
+
+  it("reads size and modification time from /view's headers", () => {
+    const version = inputFileVersion(
+      headers({ 'content-length': '1048576', 'last-modified': 'Fri, 02 Oct 2026 10:00:00 GMT' }),
+    );
+    expect(version).toBe('1048576@Fri, 02 Oct 2026 10:00:00 GMT');
+    expect(inputFileVersion(headers({ 'content-length': '10' }))).toBe('10@');
+    expect(inputFileVersion(headers({}))).toBeNull();
+  });
+
+  it('keys a still by the file without its token, and by its version', () => {
+    const key = inputStillKey(base, 'clips/a.mp4', '10@x');
+    expect(key.startsWith(inputFileUrl(base, 'clips/a.mp4'))).toBe(true);
+    expect(key).not.toContain('token');
+    expect(key).toMatch(/#10@x$/);
+    expect(inputStillKey(base, 'clips/a.mp4', '11@y')).not.toBe(key);
+    expect(inputStillKey(base, 'clips/a.mp4', null)).toBe(inputFileUrl(base, 'clips/a.mp4'));
   });
 });
 

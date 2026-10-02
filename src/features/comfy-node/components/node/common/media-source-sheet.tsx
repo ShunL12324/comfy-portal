@@ -36,7 +36,7 @@ const snapPointFor = (rows: number) => `${28 + rows * 6}%`;
 
 /**
  * Where a loader node's file comes from: a file already in the server's
- * `input/` folder, or an upload. Shared by Load Image and the video loaders.
+ * `input/` folder, or an upload. Shared by Load Image and the video and audio loaders.
  */
 export const MediaSourceSheet = forwardRef<MediaSourceSheetRef, MediaSourceSheetProps>(function MediaSourceSheet(
   { title, uploads, onPick },

@@ -9,7 +9,6 @@ import {
   describeVideo,
   formatDuration,
   inputFileUrl,
-  isUploadCancelled,
   parseVideoInfo,
   previewKindFor,
   readLoadParams,
@@ -24,9 +23,8 @@ import { MediaBadge } from '@/features/generation/components/media-preview/media
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Server } from '@/features/server/types';
 import { Node } from '@/features/workflow/types';
-import { uploadImage } from '@/services/comfy-api';
 import { buildServerUrl, fetchWithAuth } from '@/services/network';
-import { NodeSchema, clearNodeSchemaCache } from '@/services/node-schema';
+import { NodeSchema } from '@/services/node-schema';
 import { showToast } from '@/utils/toast';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
@@ -34,7 +32,8 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
+import { UploadOverlay, useInputUpload } from './input-upload';
 import { MediaSource, MediaSourceSheet, MediaSourceSheetRef } from './media-source-sheet';
 import { ServerImagePicker } from './server-image-picker';
 import SubItem from './sub-item';
@@ -47,12 +46,6 @@ interface ServerVideoFieldProps {
   inputKey: string;
   title: string;
   onChange: (filename: string) => void;
-}
-
-interface PickedVideo {
-  uri: string;
-  name: string;
-  mimeType?: string;
 }
 
 /** `/view` and `/vhs/queryvideo` on this server, once its scheme is known. */
@@ -102,7 +95,7 @@ function useVideoInfo(url: string | undefined, token: string | undefined, revisi
 }
 
 /**
- * The input file of a video loader (VHS), laid out like Load Image's: a
+ * The input file of a video loader (VHS, core Load Video), laid out like Load Image's: a
  * 160-point tile, the source sheet, upload progress with cancel, and the
  * missing-file state.
  *
@@ -122,14 +115,27 @@ export default function ServerVideoField({ node, serverId, schema, inputKey, tit
   const reduceMotion = useReducedMotion();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   const endpoints = useServerEndpoints(server);
-  const [progress, setProgress] = useState<number | null>(null);
   // The picked file stands in for the server copy right after an upload: a
   // poster from local bytes is instant, and playback needs no round trip.
   const [local, setLocal] = useState<{ filename: string; uri: string } | null>(null);
   const [revision, setRevision] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [isServerPickerVisible, setIsServerPickerVisible] = useState(false);
-  const cancelRef = useRef<(() => Promise<void>) | null>(null);
+  const { progress, progressStyle, upload, cancel } = useInputUpload(
+    serverId,
+    'Error uploading video',
+    (name, video) => {
+      // An upload overwrites a same-named file, so whatever was cached for
+      // that name now describes the old bytes.
+      if (endpoints) {
+        forgetVideoStill(inputFileUrl(endpoints.view, name, server?.token));
+        videoInfoCache.delete(videoInfoUrl(endpoints.query, name));
+      }
+      setLocal({ filename: name, uri: video.uri });
+      setRevision((current) => current + 1);
+      onChange(name);
+    },
+  );
   const sourceSheetRef = useRef<MediaSourceSheetRef>(null);
   const serverPickerRef = useRef<BottomSheetModal>(null);
 
@@ -148,43 +154,9 @@ export default function ServerVideoField({ node, serverId, schema, inputKey, tit
     revision,
   );
 
-  const progressWidth = useSharedValue(0);
-  useEffect(() => {
-    progressWidth.set(withTiming((progress ?? 0) * 100, { duration: reduceMotion ? 0 : t.motion.progress }));
-  }, [progress, progressWidth, reduceMotion]);
-  const progressStyle = useAnimatedStyle(() => ({ width: `${progressWidth.value}%` }));
-
   useEffect(() => {
     if (progress !== null) sourceSheetRef.current?.dismiss();
   }, [progress]);
-
-  const upload = async (video: PickedVideo) => {
-    setProgress(0);
-    progressWidth.set(0);
-    try {
-      const { promise, cancel } = uploadImage(video.uri, video.name, serverId, video.mimeType, setProgress);
-      cancelRef.current = cancel;
-      const response = await promise;
-      // An upload overwrites a same-named file, so whatever was cached for
-      // that name now describes the old bytes.
-      if (endpoints) {
-        forgetVideoStill(inputFileUrl(endpoints.view, response.name, server?.token));
-        videoInfoCache.delete(videoInfoUrl(endpoints.query, response.name));
-      }
-      setLocal({ filename: response.name, uri: video.uri });
-      setRevision((current) => current + 1);
-      onChange(response.name);
-      // The file list is baked into the node definition; dropping it refetches.
-      clearNodeSchemaCache(serverId);
-    } catch (error) {
-      if (!isUploadCancelled(error)) {
-        showToast.error('Error uploading video', error instanceof Error ? error.message : undefined);
-      }
-    } finally {
-      setProgress(null);
-      cancelRef.current = null;
-    }
-  };
 
   const pickFromLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -347,27 +319,7 @@ export default function ServerVideoField({ node, serverId, schema, inputKey, tit
           </VStack>
         ) : null}
         {state.kind === 'uploading' ? (
-          <VStack space="sm" className="inset-0 rounded-md bg-media/50 p-4 absolute items-center justify-center">
-            <StateIcon icon={Film} color={c.onMedia} />
-            <Copy style={{ fontWeight: '400', color: c.onMedia }}>
-              Uploading... {Math.round(state.progress * 100)}%
-            </Copy>
-            <View className="h-1 bg-on-media/30 w-full overflow-hidden rounded-full">
-              <Animated.View className="bg-action h-full rounded-full" style={progressStyle} />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Cancel upload"
-              hitSlop={4}
-              onPress={(event) => {
-                event.stopPropagation();
-                void cancelRef.current?.();
-              }}
-              className="mt-2 bg-on-media/20 p-2 active:opacity-pressed rounded-full"
-            >
-              <Icon size="lg" as={X} className="text-on-media" />
-            </Pressable>
-          </VStack>
+          <UploadOverlay icon={Film} progress={state.progress} progressStyle={progressStyle} onCancel={cancel} />
         ) : null}
       </Pressable>
 

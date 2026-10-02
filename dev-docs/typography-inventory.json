@@ -1182,6 +1182,14 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/input-upload.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/media-source-sheet.tsx",
       "textElements": [
         "Copy",
@@ -1230,6 +1238,14 @@
         "Copy",
         "Input",
         "InputField"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/common/server-audio-field.tsx",
+      "textElements": [
+        "Copy"
       ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
@@ -1431,10 +1447,22 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/base/load-audio.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/base/load-image.tsx",
       "textElements": [
         "Copy"
       ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/base/load-video.tsx",
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

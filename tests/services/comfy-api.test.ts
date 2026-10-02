@@ -75,6 +75,18 @@ test('an upload posts the file as multipart with its token, reporting progress',
   expect(mockTask.release).toHaveBeenCalled();
 });
 
+test('audio keeps its type, from the picker or from the extension', async () => {
+  uploadImage('file:///picked/take.m4a', 'take.m4a', 'server', 'audio/x-m4a');
+  await flush();
+  expect(mockTask.options.mimeType).toBe('audio/x-m4a');
+  uploadImage('file:///picked/take.mp3', 'take.mp3', 'server');
+  await flush();
+  expect(mockTask.options.mimeType).toBe('audio/mpeg');
+  uploadImage('file:///picked/take.flac', 'take.flac', 'server', 'application/octet-stream');
+  await flush();
+  expect(mockTask.options.mimeType).toBe('audio/flac');
+});
+
 test('a non-200 response is an error carrying the status and the start of the body', async () => {
   const { promise } = uploadImage('file:///picked/photo.jpg', 'photo.jpg', 'server');
   await flush();

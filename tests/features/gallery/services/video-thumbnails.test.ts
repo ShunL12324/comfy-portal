@@ -117,3 +117,51 @@ test('a video that cannot give a still settles on null and frees its player', as
   expect(mockPlayers[0].released).toBe(true);
   expect(peekVideoStill(uri)).toBeNull();
 });
+
+test('a still can be cached under its own key rather than the URL it is made from', async () => {
+  const uri = 'https://box/view?filename=a.mp4&token=secret';
+  const key = 'https://box/view?filename=a.mp4#10@monday';
+  const job = requestVideoStill(uri, { key });
+  expect(mockPlayers[0].uri).toBe(uri);
+  mockPlayers[0].finish();
+  expect(await job).toBe(stillFile(key).uri);
+  expect(peekVideoStill(key)).toBe(stillFile(key).uri);
+  expect(mockDisk.has(stillFile(uri).uri)).toBe(false);
+});
+
+test('a request given up before its turn is dropped, unless another tile still wants it', async () => {
+  const busy = ['x', 'y'].map((name) => requestVideoStill(`file:///media-v2/busy-${name}.mp4`));
+  const left = new AbortController();
+  const dropped = requestVideoStill('file:///media-v2/scrolled-away.mp4', { signal: left.signal });
+  const shared = 'file:///media-v2/shared.mp4';
+  const leaving = new AbortController();
+  const sharedJob = requestVideoStill(shared, { signal: leaving.signal });
+  void requestVideoStill(shared);
+
+  left.abort();
+  leaving.abort();
+  expect(await dropped).toBeUndefined();
+  expect(peekVideoStill('file:///media-v2/scrolled-away.mp4')).toBeUndefined();
+
+  mockPlayers[0].finish();
+  mockPlayers[1].finish();
+  await Promise.all(busy);
+  await flush();
+  // The dropped video never got a player; the shared one did.
+  expect(mockPlayers.map((player) => player.uri)).toEqual([
+    'file:///media-v2/busy-x.mp4',
+    'file:///media-v2/busy-y.mp4',
+    shared,
+  ]);
+  mockPlayers[2].finish();
+  expect(await sharedJob).toBe(stillFile(shared).uri);
+});
+
+test('giving up after the still has started lets it finish', async () => {
+  const controller = new AbortController();
+  const uri = 'file:///media-v2/started.mp4';
+  const job = requestVideoStill(uri, { signal: controller.signal });
+  controller.abort();
+  mockPlayers[0].finish();
+  expect(await job).toBe(stillFile(uri).uri);
+});

@@ -25,6 +25,28 @@ export function inputFileUrl(viewBase: string, value: string, token?: string): s
   return `${viewBase}?${params.toString()}`;
 }
 
+/**
+ * A server file's version as `/view` describes it: `Content-Length` and
+ * `Last-Modified` (aiohttp's FileResponse sends both, also to `HEAD`). `null`
+ * when neither is there, e.g. behind a proxy that strips them.
+ */
+export function inputFileVersion(headers: { get(name: string): string | null }): string | null {
+  const size = headers.get('content-length');
+  const modified = headers.get('last-modified');
+  if (!size && !modified) return null;
+  return `${size ?? ''}@${modified ?? ''}`;
+}
+
+/**
+ * The cache key of an input video's still: the file's URL without the token
+ * (which can change without the file changing), plus its version, so a file
+ * overwritten under the same name gets a new still.
+ */
+export function inputStillKey(viewBase: string, value: string, version: string | null): string {
+  const url = inputFileUrl(viewBase, value);
+  return version ? `${url}#${version}` : url;
+}
+
 /** `/vhs/queryvideo`: VideoHelperSuite's own metadata probe, which its node preview uses too. */
 export function videoInfoUrl(queryBase: string, value: string): string {
   const { filename, subfolder } = splitInputPath(value);

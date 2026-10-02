@@ -20,7 +20,9 @@ import ImageScaleBy from './base/image-scale-by';
 import KSampler from './base/k-sampler';
 import KSamplerAdvanced from './base/k-sampler-advanced';
 import KSamplerSelect from './base/k-sampler-select';
+import LoadAudio from './base/load-audio';
 import LoadImage from './base/load-image';
+import LoadVideo from './base/load-video';
 import LoraLoader from './base/lora-loader';
 import LoraLoaderModelOnly from './base/lora-loader-model-only';
 import ModelSamplingFlux from './base/model-sampling-flux';
@@ -97,6 +99,8 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'ModelSamplingFlux': ModelSamplingFlux,
   'VAEEncode': VAEEncode,
   'LoadImage': LoadImage,
+  'LoadVideo': LoadVideo,
+  'LoadAudio': LoadAudio,
   'ImageScale': ImageScale,
   'CLIPTextEncodeSDXL': CLIPTextEncodeSDXL,
   'VAEEncodeForInpaint': VAEEncodeForInpaint,
