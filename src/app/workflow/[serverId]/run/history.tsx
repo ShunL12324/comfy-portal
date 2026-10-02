@@ -120,7 +120,7 @@ export default function HistoryGalleryPage() {
             onDelete={deleteMedia}
             idleRightElement={
               mediaItems.length > 0 ? (
-                <Action kind="text" small onPress={() => begin()}>
+                <Action kind="secondary" small onPress={() => begin()}>
                   Select
                 </Action>
               ) : undefined

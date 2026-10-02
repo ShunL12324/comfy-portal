@@ -238,6 +238,7 @@ export function Action({
   const onSolidColor = destructive ? c.onDanger : c.onTint;
   const foreground = solid ? onSolidColor : destructive ? c.danger : kind === 'text' && !iconOnly ? c.tint : c.ink;
   const ActionIcon = icon;
+  const flushInAppBar = inAppBar && kind === 'text';
   const press = usePressFeedback();
   const reduced = useReducedMotion();
   return (
@@ -259,8 +260,9 @@ export function Action({
         flexShrink: 0,
         height: t.height.touch,
         paddingHorizontal: 0,
-        paddingLeft: iconOnly || inAppBar ? 0 : small ? t.layout.related : t.layout.rowY,
-        paddingRight: iconOnly || inAppBar ? 0 : small ? t.layout.related : t.layout.rowY,
+        // Only a bare text action hugs the app bar's gutter; a bordered or filled one keeps its padding.
+        paddingLeft: iconOnly || flushInAppBar ? 0 : small ? t.layout.related : t.layout.rowY,
+        paddingRight: iconOnly || flushInAppBar ? 0 : small ? t.layout.related : t.layout.rowY,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: inAppBar && kind === 'text' ? 'flex-end' : 'center',

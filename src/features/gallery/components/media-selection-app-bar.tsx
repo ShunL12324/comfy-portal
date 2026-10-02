@@ -125,7 +125,7 @@ export function MediaSelectionAppBar({
           onPress={() => run(action)}
         />
       ))}
-      <Action small onPress={selection.end} disabled={busy === 'save'}>
+      <Action kind="secondary" small onPress={selection.end} disabled={busy === 'save'}>
         Cancel
       </Action>
     </Row>
