@@ -6,7 +6,6 @@ import { NumberSlider } from '@/components/self-ui/slider';
 import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Title, Action, ActionRow, Copy, FieldLabel, useDesign } from '@/components/ui/design-system/primitives';
 import { HStack } from '@/components/ui/hstack';
-import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
@@ -293,12 +292,17 @@ export default function AIAssistantScreen() {
           <View className="p-3 rounded-xl" style={{ backgroundColor: c.card }}>
             <HStack className="mb-2 items-center justify-between">
               <FieldLabel>Custom Prompt</FieldLabel>
-              <Pressable onPress={handleOpenPromptSheet}>
-                <HStack className="items-center" space="xs">
-                  <Icon as={Pencil} size="xs" className="text-action" />
-                  <Copy size="label">Edit</Copy>
-                </HStack>
-              </Pressable>
+              {/* Full touch target without growing the header row; flush with the card's right edge. */}
+              <View
+                style={{
+                  marginVertical: -(t.height.touch - t.leading.label) / 2,
+                  marginRight: -t.layout.related,
+                }}
+              >
+                <Action kind="text" small icon={Pencil} label="Edit custom prompt" onPress={handleOpenPromptSheet}>
+                  Edit
+                </Action>
+              </View>
             </HStack>
             <Pressable onPress={handleOpenPromptSheet}>
               <Copy style={{ color: c.secondary }} numberOfLines={3}>
