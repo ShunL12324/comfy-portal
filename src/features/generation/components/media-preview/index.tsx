@@ -42,7 +42,7 @@ const VideoPreview = ({ url }: { url: string }) => {
  * A component that displays media with parallax scrolling effect and preview functionality
  */
 export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
-  const { generatedMedia, status, currentNodeId } = useGenerationStatus();
+  const { generatedMedia, status } = useGenerationStatus();
   const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
   const { setGeneratedMedia } = useGenerationActions();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();

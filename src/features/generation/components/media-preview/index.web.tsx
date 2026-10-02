@@ -43,7 +43,7 @@ const VideoPreview = ({ url }: { url: string }) => {
  * Web version of MediaPreview - uses ScrollView with scroll-snap instead of PagerView
  */
 export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
-  const { generatedMedia, status, currentNodeId } = useGenerationStatus();
+  const { generatedMedia, status } = useGenerationStatus();
   const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
   const { setGeneratedMedia } = useGenerationActions();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
