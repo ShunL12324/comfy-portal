@@ -157,12 +157,70 @@ export function watchAppState(): () => void {
 // Finalizing a job
 // ---------------------------------------------------------------------------
 
-/** Guards against the live path and a reconcile pass saving the same job. */
-const finalizing = new Set<string>();
+/**
+ * Guards against the live path and a reconcile pass saving the same job. Holds
+ * the running pass so a caller that must not miss its outcome can wait for it.
+ */
+const finalizing = new Map<string, Promise<string[] | null>>();
 
 export interface FinalizeOptions {
   workflow?: Workflow;
   onDownloadProgress?: (filename: string, progress: number) => void;
+  /**
+   * If another pass is already finalizing this job, wait for it to finish
+   * (whatever its outcome) before returning `null`, instead of returning at once.
+   */
+  joinInFlight?: boolean;
+}
+
+/** Hears a job's outputs as they are saved, whichever pass saves them. */
+export interface JobOutputListener {
+  /** How many outputs a pass is about to download, before the first of them. */
+  onResultsFound?: (count: number) => void;
+  /** Overall download progress of that pass, 0-100. */
+  onDownloadProgress?: (progress: number) => void;
+  /** One output is in the gallery; called in history order. */
+  onSaved?: (localUrl: string) => void;
+}
+
+const outputListeners = new Map<string, Set<JobOutputListener>>();
+
+function jobKeyOf(serverId: string, promptId: string) {
+  return JSON.stringify([serverId, promptId]);
+}
+
+/**
+ * Follow a job's saved outputs until the returned unsubscribe is called.
+ *
+ * The run screen subscribes as soon as its prompt is queued: when the app comes
+ * back from the background, a reconcile pass may save the outputs before the
+ * live path gets to, and the screen still has to show them.
+ */
+export function watchJobOutputs(serverId: string, promptId: string, listener: JobOutputListener): () => void {
+  const key = jobKeyOf(serverId, promptId);
+  let listeners = outputListeners.get(key);
+  if (!listeners) {
+    listeners = new Set();
+    outputListeners.set(key, listeners);
+  }
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && outputListeners.get(key) === listeners) outputListeners.delete(key);
+  };
+}
+
+function notifyListeners(jobKey: string, notify: (listener: JobOutputListener) => void) {
+  const listeners = outputListeners.get(jobKey);
+  if (!listeners) return;
+  for (const listener of [...listeners]) {
+    try {
+      notify(listener);
+    } catch (error) {
+      // A listener's bug must not fail the save it is being told about.
+      diag('job', 'output listener failed', { error: String(error) });
+    }
+  }
 }
 
 /**
@@ -175,6 +233,9 @@ export interface FinalizeOptions {
  * completed before the stop, and a cancelled batch's finished images are just
  * as worth keeping.
  *
+ * Each output is reported to `watchJobOutputs` listeners as soon as it is
+ * saved, so they see results even when this rejects part-way.
+ *
  * @returns local paths of everything newly saved, or `null` if this call did
  *   no work — another pass owns the job, or the server has not committed the
  *   run yet. Callers must not read `null` as "the generation produced nothing".
@@ -183,68 +244,82 @@ export async function finalizeJob(
   job: PendingJob,
   options: FinalizeOptions = {},
 ): Promise<string[] | null> {
-  const { promptId, serverId, workflowId } = job;
-  const jobKey = JSON.stringify([serverId, promptId]);
-  if (finalizing.has(jobKey)) {
-    diag('job', 'finalize skipped: already running', { promptId });
+  const jobKey = jobKeyOf(job.serverId, job.promptId);
+  const running = finalizing.get(jobKey);
+  if (running) {
+    diag('job', 'finalize skipped: already running', { promptId: job.promptId, join: !!options.joinInFlight });
+    // The owner reports its own failure; joining only waits for it.
+    if (options.joinInFlight) await running.catch(() => {});
     return null;
   }
-  finalizing.add(jobKey);
 
+  const pass = runFinalize(job, options, jobKey);
+  finalizing.set(jobKey, pass);
   try {
-    const server = findServer(serverId);
-    if (!server) {
-      // The server record is gone, so this job can never be resolved.
-      usePendingJobsStore.getState().removeJob(serverId, promptId);
-      return null;
-    }
-
-    // Which of this job's outputs are already on disk. Populated even on the
-    // live path: a reconcile pass may have saved some of them, and a crash
-    // between saving and retiring the job would otherwise duplicate the rest.
-    const existing = await getGeneratedMedia(serverId, workflowId);
-    const alreadySaved = new Set(
-      existing
-        .filter((item) => item.metadata?.promptId === promptId)
-        .map((item) => item.metadata?.sourceId ?? item.metadata?.originalUrl)
-        .filter(Boolean),
-    );
-
-    const client = getClient(server);
-    const workflow = job.workflowSnapshot ?? options.workflow ?? {};
-    const savedPaths: string[] = [];
-    // One gallery index write for all of the job's outputs, committed before
-    // the job can leave the pending registry below.
-    const batch = beginMediaSaveBatch();
-    let found: boolean;
-    try {
-      ({ found } = await client.fetchAndDownloadResults(promptId, {
-        onDownloadProgress: options.onDownloadProgress,
-      }, alreadySaved, async (mediaUrl, sourceId) => {
-        const result = await batch.save({
-          serverId, workflowId, mediaUrl, sourceId, workflow, promptId,
-        });
-        if (result) {
-          const localUrl = Platform.OS === 'web' || result.path.startsWith('file://')
-            ? result.path : 'file://' + result.path;
-          savedPaths.push(localUrl);
-        }
-      }));
-    } finally {
-      await batch.commit();
-    }
-    diag('job', 'finalize', { promptId, found, saved: savedPaths.length, skipped: alreadySaved.size });
-    if (!found) return null;
-
-    // Everything the server had for this prompt is now on disk.
-    usePendingJobsStore.getState().removeJob(serverId, promptId);
-    // Nothing new, but an earlier pass saved it all: no work done here, and
-    // certainly not "the generation produced nothing".
-    if (savedPaths.length === 0 && alreadySaved.size > 0) return null;
-    return savedPaths;
+    return await pass;
   } finally {
     finalizing.delete(jobKey);
   }
+}
+
+async function runFinalize(job: PendingJob, options: FinalizeOptions, jobKey: string): Promise<string[] | null> {
+  const { promptId, serverId, workflowId } = job;
+  const server = findServer(serverId);
+  if (!server) {
+    // The server record is gone, so this job can never be resolved.
+    usePendingJobsStore.getState().removeJob(serverId, promptId);
+    return null;
+  }
+
+  // Which of this job's outputs are already on disk. Populated even on the
+  // live path: a reconcile pass may have saved some of them, and a crash
+  // between saving and retiring the job would otherwise duplicate the rest.
+  const existing = await getGeneratedMedia(serverId, workflowId);
+  const alreadySaved = new Set(
+    existing
+      .filter((item) => item.metadata?.promptId === promptId)
+      .map((item) => item.metadata?.sourceId ?? item.metadata?.originalUrl)
+      .filter(Boolean),
+  );
+
+  const client = getClient(server);
+  const workflow = job.workflowSnapshot ?? options.workflow ?? {};
+  const savedPaths: string[] = [];
+  // One gallery index write for all of the job's outputs, committed before
+  // the job can leave the pending registry below. Each save is visible (and
+  // announced to listeners) as soon as it lands; the commit only persists.
+  const batch = beginMediaSaveBatch();
+  let found: boolean;
+  try {
+    ({ found } = await client.fetchAndDownloadResults(promptId, {
+      onResultsFound: (count) => notifyListeners(jobKey, (listener) => listener.onResultsFound?.(count)),
+      onDownloadProgress: (filename, progress) => {
+        options.onDownloadProgress?.(filename, progress);
+        notifyListeners(jobKey, (listener) => listener.onDownloadProgress?.(progress));
+      },
+    }, alreadySaved, async (mediaUrl, sourceId) => {
+      const result = await batch.save({
+        serverId, workflowId, mediaUrl, sourceId, workflow, promptId,
+      });
+      if (result) {
+        const localUrl = Platform.OS === 'web' || result.path.startsWith('file://')
+          ? result.path : 'file://' + result.path;
+        savedPaths.push(localUrl);
+        notifyListeners(jobKey, (listener) => listener.onSaved?.(localUrl));
+      }
+    }));
+  } finally {
+    await batch.commit();
+  }
+  diag('job', 'finalize', { promptId, found, saved: savedPaths.length, skipped: alreadySaved.size });
+  if (!found) return null;
+
+  // Everything the server had for this prompt is now on disk.
+  usePendingJobsStore.getState().removeJob(serverId, promptId);
+  // Nothing new, but an earlier pass saved it all: no work done here, and
+  // certainly not "the generation produced nothing".
+  if (savedPaths.length === 0 && alreadySaved.size > 0) return null;
+  return savedPaths;
 }
 
 // ---------------------------------------------------------------------------

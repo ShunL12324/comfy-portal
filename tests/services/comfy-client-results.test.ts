@@ -206,3 +206,45 @@ test('a failed transfer rejects the batch without saving anything', async () => 
   await expect(client.fetchAndDownloadResults('prompt', {}, new Set(), save)).rejects.toThrow('HTTP 401');
   expect(save).not.toHaveBeenCalled();
 });
+
+test('reports how many outputs it will fetch before any download, leaving out saved ones', async () => {
+  const client = clientWithOutputs(['a.png', 'b.png', 'c.png']);
+  const events: string[] = [];
+  jest.spyOn(client as any, 'downloadMedia').mockImplementation((async (filename: string) => {
+    events.push(`download ${filename}`);
+    return `file:///cache/${filename}`;
+  }) as any);
+  const saved = new Set([JSON.stringify(['a.png', '', 'output'])]);
+  await client.fetchAndDownloadResults(
+    'prompt',
+    { onResultsFound: (count) => events.push(`found ${count}`) },
+    saved,
+    async () => {},
+  );
+  expect(events).toEqual(['found 2', 'download b.png', 'download c.png']);
+});
+
+test('the first result is handed over while later ones are still downloading', async () => {
+  const client = clientWithOutputs(['a.png', 'b.png', 'c.png']);
+  const gates = new Map(['a.png', 'b.png', 'c.png'].map((name) => [name, deferred<string>()]));
+  jest
+    .spyOn(client as any, 'downloadMedia')
+    .mockImplementation((async (filename: string) => gates.get(filename)!.promise) as any);
+  const saved: string[] = [];
+  let settled = false;
+  const run = client
+    .fetchAndDownloadResults('prompt', {}, new Set(), async (uri) => {
+      saved.push(uri);
+    })
+    .finally(() => {
+      settled = true;
+    });
+  gates.get('a.png')!.resolve('file:///a');
+  await flush();
+  expect(saved).toEqual(['file:///a']);
+  expect(settled).toBe(false);
+  gates.get('b.png')!.resolve('file:///b');
+  gates.get('c.png')!.resolve('file:///c');
+  await run;
+  expect(saved).toEqual(['file:///a', 'file:///b', 'file:///c']);
+});

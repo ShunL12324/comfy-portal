@@ -15,7 +15,9 @@ import {
   getClient,
   getExistingClient,
   reconcileAll,
+  watchJobOutputs,
 } from '../services/job-recovery';
+import { RunResults, resultSaved, resultsFound, resultsSettled } from '../utils/run-results';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,10 +46,9 @@ interface GenerationActions {
 // Contexts (split for render performance)
 // ---------------------------------------------------------------------------
 
-interface GenerationStatus {
+interface GenerationStatus extends RunResults {
   status: GenerationPhase;
   currentNodeId?: string;
-  generatedMedia: string[];
   queueRemaining: number;
 }
 
@@ -77,7 +78,9 @@ const PROGRESS_THRESHOLD_PERCENT = 5;
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<GenerationStatus>({
     status: 'idle',
+    resultsKey: '',
     generatedMedia: [],
+    pendingResults: 0,
     queueRemaining: 0,
   });
   const [progress, setProgress] = useState<GenerationProgress>(INITIAL_PROGRESS);
@@ -168,6 +171,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       ...prev,
       status: 'idle',
       currentNodeId: undefined,
+      // Nothing is saving any more (or a cancel stopped caring), so no page may wait.
+      pendingResults: 0,
     }));
     setProgress(INITIAL_PROGRESS);
   }, []);
@@ -229,6 +234,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     setStatus((prev) => ({ ...prev, generatedMedia: urls }));
   }, []);
 
+  /** Apply a run-results transition, keeping the state object when nothing changed. */
+  const updateResults = useCallback((transition: (prev: RunResults) => RunResults) => {
+    setStatus((prev) => {
+      const next = transition(prev);
+      return next === prev ? prev : { ...prev, ...next };
+    });
+  }, []);
+
 
   // ---------------------------------------------------------------------------
   // Client management
@@ -282,6 +295,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       // out — a lost response must not orphan a running generation.
       const localPromptId = generateUUID();
       let promptId = localPromptId;
+
+      // Set once the prompt is queued: this run's outputs reach the result
+      // list from whichever finalize pass saves them, one by one.
+      let runKey: string | undefined;
+      let unwatchOutputs: (() => void) | undefined;
 
       const submit = {};
       submittingRef.current = submit;
@@ -354,6 +372,23 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           await pendingJobStorage.flush();
         }
 
+        // Before awaiting completion: back from the background, a reconcile
+        // pass can save the outputs before this path gets to them.
+        const key = promptId;
+        runKey = key;
+        unwatchOutputs = watchJobOutputs(serverId, promptId, {
+          onResultsFound: (count) => updateResults((prev) => resultsFound(prev, key, count)),
+          onDownloadProgress: (dlProgress) => {
+            if (statusRef.current === 'idle') return;
+            if (statusRef.current !== 'downloading') {
+              statusRef.current = 'downloading';
+              setStatus((prev) => ({ ...prev, status: 'downloading' }));
+            }
+            setActiveProgress(() => ({ downloadProgress: dlProgress }));
+          },
+          onSaved: (uri) => updateResults((prev) => resultSaved(prev, key, uri)),
+        });
+
         // A server-reported failure still has to go through finalize: nodes
         // that completed before the error wrote real outputs.
         let executionError: unknown;
@@ -370,25 +405,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
         useWorkflowStore.getState().updateUsage(workflowId);
 
+        // Results already reached the list as they were saved. If a reconcile
+        // pass owns the job, wait for it so the run stays "saving" until done.
         const savedPaths = await finalizeJob(
           { promptId, serverId, workflowId, queuedAt: Date.now() },
-          {
-            workflow: workflowForExecution,
-            onDownloadProgress: (_, dlProgress) => {
-              if (statusRef.current === 'idle') return;
-              if (statusRef.current !== 'downloading') {
-                statusRef.current = 'downloading';
-                setStatus((prev) => ({ ...prev, status: 'downloading' }));
-              }
-              setActiveProgress(() => ({ downloadProgress: dlProgress }));
-            },
-          },
+          { workflow: workflowForExecution, joinInFlight: true },
         );
 
         diag('gen', 'finalized', { promptId, saved: savedPaths === null ? null : savedPaths.length });
-        if (savedPaths && savedPaths.length > 0) {
-          setGeneratedMedia(savedPaths);
-        }
         if (executionError) throw executionError;
         // null means the run isn't committed yet or another pass owns it —
         // reconciliation will finish the job, so don't report failure.
@@ -419,6 +443,13 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         // the outputs, or retire it once the server's verdict is known.
       } finally {
         endSubmit();
+        unwatchOutputs?.();
+        // Pages still waiting belong to downloads that failed: drop them, keep
+        // the results that did arrive.
+        if (runKey !== undefined) {
+          const key = runKey;
+          updateResults((prev) => resultsSettled(prev, key));
+        }
         // Other generations may still be running — resetting on the first one
         // to finish would blank the UI while they continue.
         inFlightRef.current -= 1;
@@ -434,7 +465,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       insets.top,
       reset,
       attachClient,
-      setGeneratedMedia,
+      updateResults,
       setGeneratingStatus,
       setActiveProgress,
     ],

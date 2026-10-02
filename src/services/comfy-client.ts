@@ -52,6 +52,12 @@ interface ProgressCallback {
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
 
+  /**
+   * Called once by `fetchAndDownloadResults`, before any download starts, with
+   * how many outputs it is about to fetch (already saved ones excluded). Each
+   * of them then either reaches `onOutput` or fails; nothing else follows.
+   */
+  onResultsFound?: (count: number) => void;
 }
 
 /**
@@ -1116,6 +1122,12 @@ export class ComfyClient {
    * The history entry is retried briefly because `execution_success` is
    * emitted before the server commits the entry — without this, a fast
    * workflow resolves and then reads back an empty history.
+   *
+   * `onOutput` runs once per output as soon as that output is downloaded and
+   * every earlier one has been handled, so calls arrive one at a time, in
+   * history order, while later files are still downloading. An output whose
+   * download failed is skipped (and reported by the rejection at the end), so
+   * the ones after it are still delivered.
    */
   async fetchAndDownloadResults(
     promptId: string,
@@ -1157,6 +1169,7 @@ export class ComfyClient {
         sourceId: JSON.stringify([media.filename, media.subfolder ?? '', media.type ?? 'output']),
       }))
       .filter(({ sourceId }) => !savedOutputIds.has(sourceId));
+    callbacks.onResultsFound?.(pending.length);
 
     // Several files download at once, since one stream leaves a high-latency
     // link idle between files, but they are committed one by one in history
