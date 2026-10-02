@@ -1,4 +1,7 @@
 import { useMediaStore, waitForMediaHydration, mediaStorage, mediaKind } from '@/features/gallery/stores/media-store';
+import type { MediaAsset } from '@/features/gallery/stores/media-store';
+import { findSavedOutput, removeFromIndex } from '@/features/gallery/services/media-index';
+import { storeWorkflowSnapshot, type SnapshotCache } from '@/features/gallery/services/workflow-snapshots';
 import { Workflow } from '@/features/workflow/types';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { mediaTime } from '@/features/gallery/utils/media-time';
@@ -20,68 +23,139 @@ interface SaveMediaOptions {
   sourceId?: string;
 }
 
+export interface SavedMedia {
+  path: string;
+  metadata: MediaAsset['metadata'];
+}
+
+/**
+ * Saves a job's outputs with one index write between them.
+ *
+ * `save` puts each file in the gallery and the in-memory index at once, so it
+ * shows up immediately; `commit` writes the index for all of them and must run
+ * (in a `finally`) before the job counts as saved.
+ *
+ * The durability guarantee: a file never sits in the pool without a record of
+ * it. Each file's metadata is journaled beside it (`<file>.json`) before the
+ * file arrives, and its workflow snapshot is written before that. If the app
+ * dies before `commit`, the next launch's orphan adoption indexes the file from
+ * its journal, promptId and sourceId included, so recovery recognises it and
+ * does not download it again. `commit` deletes the journals once the index is
+ * durable.
+ */
+export interface MediaSaveBatch {
+  save: (options: SaveMediaOptions) => Promise<SavedMedia>;
+  /** Writes the index once for every save so far. Idempotent; saves after it stand alone. */
+  commit: () => Promise<void>;
+}
+
 function ensureDirectory(dir: Directory) {
   dir.create({ intermediates: true, idempotent: true });
 }
 
-export async function saveGeneratedMedia({
-  serverId,
-  workflowId,
-  mediaUrl,
-  workflow,
-  promptId,
-  sourceId,
-}: SaveMediaOptions) {
-  await waitForMediaHydration();
-  const store = useMediaStore.getState();
-  // A result the client downloaded into the cache is ours to consume.
-  const downloaded = mediaUrl.startsWith(new Directory(Paths.cache, 'comfy-downloads').uri.replace(/\/?$/, '/'))
-    ? new File(mediaUrl)
-    : undefined;
-  const existing =
-    promptId &&
-    store.assets.find(
-      (item) =>
-        item.serverId === serverId &&
-        item.metadata.promptId === promptId &&
-        (sourceId ? item.metadata.sourceId === sourceId : item.metadata.originalUrl === mediaUrl),
-    );
-  if (existing) {
-    if (downloaded?.exists) downloaded.delete();
-    store.upsert(existing);
-    await mediaStorage.flush();
-    return { path: existing.path, metadata: existing.metadata };
+function removeQuietly(file: File) {
+  try {
+    if (file.exists) file.delete();
+  } catch {
+    // A stray journal is tidied by the next launch's orphan adoption.
   }
+}
 
-  const directory = new Directory(Paths.document, 'media-v2');
-  ensureDirectory(directory);
-  const id = generateUUID();
-  const parsed = new URL(mediaUrl);
-  const sourceName = parsed.searchParams.get('filename') ?? parsed.pathname;
-  const extension = sourceName.match(/\.(png|jpe?g|webp|gif|mp4|mov|webm|m4v)$/i)?.[1]?.toLowerCase() ?? 'png';
-  const destination = new File(directory, id + '.' + extension);
-  // Moving a download is a rename on the same volume; copying rewrote every
-  // video in full before deleting the original.
-  if (downloaded) await downloaded.move(destination);
-  else if (mediaUrl.startsWith('file://')) await new File(mediaUrl).copy(destination);
-  else await File.downloadFileAsync(mediaUrl, destination, { idempotent: true });
-  const metadata = {
-    timestamp: new Date().toISOString(),
-    workflow: JSON.parse(JSON.stringify(workflow)),
-    originalUrl: sourceId ?? mediaUrl,
-    ...(sourceId ? { sourceId } : {}),
-    ...(promptId ? { promptId } : {}),
-    producedBy: resolveProvenance(serverId, workflowId),
+export function beginMediaSaveBatch(): MediaSaveBatch {
+  const releaseHold = mediaStorage.hold();
+  const releases: (() => void)[] = [];
+  const snapshots: SnapshotCache = new WeakMap();
+  const journals: File[] = [];
+  let committed: Promise<void> | undefined;
+
+  const commit = () =>
+    (committed ??= (async () => {
+      releaseHold();
+      try {
+        await mediaStorage.flush();
+      } finally {
+        releases.forEach((release) => release());
+      }
+      // Only once the index is durable: until then the journals are the record.
+      journals.forEach(removeQuietly);
+    })());
+
+  const save = async ({ serverId, workflowId, mediaUrl, workflow, promptId, sourceId }: SaveMediaOptions) => {
+    if (committed) return saveGeneratedMedia({ serverId, workflowId, mediaUrl, workflow, promptId, sourceId });
+    await waitForMediaHydration();
+    // A result the client downloaded into the cache is ours to consume.
+    const downloaded = mediaUrl.startsWith(new Directory(Paths.cache, 'comfy-downloads').uri.replace(/\/?$/, '/'))
+      ? new File(mediaUrl)
+      : undefined;
+    const existing = findSavedOutput({ serverId, promptId, sourceId, mediaUrl });
+    if (existing) {
+      if (downloaded?.exists) downloaded.delete();
+      return { path: existing.path, metadata: existing.metadata };
+    }
+
+    // Written before anything refers to it. If it cannot be, the workflow
+    // stays embedded in the asset and a later launch moves it out.
+    let workflowRef: Pick<MediaAsset['metadata'], 'workflow' | 'workflowKey'>;
+    try {
+      const snapshot = await storeWorkflowSnapshot(workflow, snapshots);
+      releases.push(snapshot.release);
+      workflowRef = snapshot.key ? { workflowKey: snapshot.key } : {};
+    } catch (error) {
+      console.warn('failed to store the workflow snapshot; embedding it', error);
+      workflowRef = { workflow: JSON.parse(JSON.stringify(workflow)) };
+    }
+
+    const directory = new Directory(Paths.document, 'media-v2');
+    ensureDirectory(directory);
+    const id = generateUUID();
+    const parsed = new URL(mediaUrl);
+    const sourceName = parsed.searchParams.get('filename') ?? parsed.pathname;
+    const extension = sourceName.match(/\.(png|jpe?g|webp|gif|mp4|mov|webm|m4v)$/i)?.[1]?.toLowerCase() ?? 'png';
+    const destination = new File(directory, id + '.' + extension);
+    const metadata: MediaAsset['metadata'] = {
+      timestamp: new Date().toISOString(),
+      ...workflowRef,
+      originalUrl: sourceId ?? mediaUrl,
+      ...(sourceId ? { sourceId } : {}),
+      ...(promptId ? { promptId } : {}),
+      producedBy: resolveProvenance(serverId, workflowId),
+    };
+    const journal = new File(directory, id + '.' + extension + '.json');
+    journal.create({ intermediates: true, overwrite: true });
+    journal.write(JSON.stringify(metadata), { encoding: 'utf8' });
+    journals.push(journal);
+    try {
+      // Moving a download is a rename on the same volume; copying rewrote every
+      // video in full before deleting the original.
+      if (downloaded) await downloaded.move(destination);
+      else if (mediaUrl.startsWith('file://')) await new File(mediaUrl).copy(destination);
+      else await File.downloadFileAsync(mediaUrl, destination, { idempotent: true });
+    } catch (error) {
+      removeQuietly(journal);
+      throw error;
+    }
+    useMediaStore
+      .getState()
+      .upsert({ id, serverId, workflowId, kind: mediaKind(destination.uri), path: destination.uri, metadata });
+    return { path: destination.uri, metadata };
   };
-  store.upsert({ id, serverId, workflowId, kind: mediaKind(destination.uri), path: destination.uri, metadata });
-  await mediaStorage.flush();
-  return { path: destination.uri, metadata };
+
+  return { save, commit };
+}
+
+/** One output, durable in the gallery index when this resolves. */
+export async function saveGeneratedMedia(options: SaveMediaOptions): Promise<SavedMedia> {
+  const batch = beginMediaSaveBatch();
+  try {
+    return await batch.save(options);
+  } finally {
+    await batch.commit();
+  }
 }
 
 /** Deletes outputs: each file and its gallery entry, then persists the index. */
 export async function deleteGeneratedMedia(paths: string[]) {
   await waitForMediaHydration();
-  const store = useMediaStore.getState();
   for (const path of paths) {
     try {
       const file = new File(path);
@@ -92,9 +166,8 @@ export async function deleteGeneratedMedia(paths: string[]) {
   }
   deleteVideoStills(paths);
   // Each store update re-renders the grid and rewrites the whole persisted
-  // index, workflows included, so a batch leaves in one.
-  store.removeMany(paths);
-  await mediaStorage.flush();
+  // index, so a batch leaves in one.
+  await removeFromIndex(paths);
 }
 
 /**
@@ -113,8 +186,7 @@ export async function pruneMissingMedia() {
     }
   });
   if (!missing.length) return;
-  store.removeMany(missing.map((asset) => asset.path));
-  await mediaStorage.flush();
+  await removeFromIndex(missing.map((asset) => asset.path));
 }
 
 export async function getGeneratedMedia(serverId: string, workflowId: string) {

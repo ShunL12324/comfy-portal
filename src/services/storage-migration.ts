@@ -1,4 +1,10 @@
-import { mediaKind, mediaStorage, useMediaStore, waitForMediaHydration } from '@/features/gallery/stores/media-store';
+import {
+  compactEmbeddedWorkflows,
+  mediaKind,
+  mediaStorage,
+  useMediaStore,
+  waitForMediaHydration,
+} from '@/features/gallery/stores/media-store';
 import type { MediaAsset, MediaProvenance } from '@/features/gallery/stores/media-store';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
@@ -99,7 +105,10 @@ function metadataFrom(sidecarText: string | undefined, file: File, fallbackProve
       fromName: LEGACY_NAME.exec(file.name)?.[1],
       fileTime: fileTime(file),
     }),
-    workflow: parsed?.workflow ?? {},
+    // Save journals reference a snapshot; legacy sidecars embed the workflow,
+    // which `compactEmbeddedWorkflows` then moves out.
+    ...(typeof parsed?.workflowKey === 'string' ? { workflowKey: parsed.workflowKey } : {}),
+    ...(parsed?.workflow ? { workflow: parsed.workflow } : {}),
     // Left empty when unknown rather than guessed: job recovery de-duplicates
     // on this value, and a wrong one would suppress a real download.
     originalUrl: typeof parsed?.originalUrl === 'string' ? parsed.originalUrl : '',
@@ -129,6 +138,9 @@ async function readIfPresent(file: File): Promise<string | undefined> {
  */
 async function adoptOrphans(pool: Directory, report: PhaseReport): Promise<void> {
   if (!pool.exists) return;
+  // Whatever a save batch holds back is written first, so `indexed` is what
+  // the persisted index has and a journal is only ever dropped behind it.
+  await mediaStorage.flush();
   const entries = pool.list();
   const indexed = new Set(useMediaStore.getState().assets.map((asset) => asset.path));
   const present = new Set(entries.filter((entry) => entry instanceof File).map((entry) => entry.name));
@@ -139,8 +151,11 @@ async function adoptOrphans(pool: Directory, report: PhaseReport): Promise<void>
     if (entry.name.endsWith('.json')) {
       // Metadata with no asset beside it is debris from a move interrupted
       // before the bytes arrived. That asset is still at its legacy path with
-      // its own metadata and will migrate again under a fresh id.
-      if (!present.has(entry.name.slice(0, -'.json'.length))) {
+      // its own metadata and will migrate again under a fresh id. Metadata
+      // beside an asset the persisted index already has is a save journal
+      // whose commit was cut short; the index is the record now.
+      const media = entry.name.slice(0, -'.json'.length);
+      if (!present.has(media) || indexed.has(new File(pool, media).uri)) {
         try {
           entry.delete();
         } catch (error) {
@@ -151,6 +166,8 @@ async function adoptOrphans(pool: Directory, report: PhaseReport): Promise<void>
     }
 
     if (!isMediaFile(entry.name) || indexed.has(entry.uri)) continue;
+    // A save that landed since the listing indexed it itself.
+    if (useMediaStore.getState().assets.some((asset) => asset.path === entry.uri)) continue;
     try {
       const sidecar = new File(pool, entry.name + '.json');
       const metadata = metadataFrom(await readIfPresent(sidecar), entry, {});
@@ -239,7 +256,15 @@ async function redateUndatedMedia(report: PhaseReport): Promise<void> {
 async function migrateMedia(pool: Directory, report: PhaseReport): Promise<void> {
   await adoptOrphans(pool, report);
   await redateUndatedMedia(report);
+  try {
+    await migrateLegacyMedia(pool, report);
+  } finally {
+    const compacted = await compactEmbeddedWorkflows();
+    if (compacted) note(report, `moved ${compacted} embedded workflow(s) into snapshot storage`);
+  }
+}
 
+async function migrateLegacyMedia(pool: Directory, report: PhaseReport): Promise<void> {
   const legacyRoot = new Directory(Paths.document, LEGACY_ROOT);
   if (!legacyRoot.exists) {
     note(report, 'no legacy server/ directory on this device');

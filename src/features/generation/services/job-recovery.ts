@@ -3,7 +3,7 @@ import { Server } from '@/features/server/types';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Workflow } from '@/features/workflow/types';
 import { ComfyClient, classifyHistoryEntry, errorMessageFromEntry } from '@/services/comfy-client';
-import { getGeneratedMedia, saveGeneratedMedia } from '@/services/image-storage';
+import { beginMediaSaveBatch, getGeneratedMedia } from '@/services/image-storage';
 import { runStorageMigrations } from '@/services/storage-migration';
 import { showToast } from '@/utils/toast';
 import { AppState, Platform } from 'react-native';
@@ -213,18 +213,26 @@ export async function finalizeJob(
     const client = getClient(server);
     const workflow = job.workflowSnapshot ?? options.workflow ?? {};
     const savedPaths: string[] = [];
-    const { found } = await client.fetchAndDownloadResults(promptId, {
-      onDownloadProgress: options.onDownloadProgress,
-    }, alreadySaved, async (mediaUrl, sourceId) => {
-      const result = await saveGeneratedMedia({
-        serverId, workflowId, mediaUrl, sourceId, workflow, promptId,
-      });
-      if (result) {
-        const localUrl = Platform.OS === 'web' || result.path.startsWith('file://')
-          ? result.path : 'file://' + result.path;
-        savedPaths.push(localUrl);
-      }
-    });
+    // One gallery index write for all of the job's outputs, committed before
+    // the job can leave the pending registry below.
+    const batch = beginMediaSaveBatch();
+    let found: boolean;
+    try {
+      ({ found } = await client.fetchAndDownloadResults(promptId, {
+        onDownloadProgress: options.onDownloadProgress,
+      }, alreadySaved, async (mediaUrl, sourceId) => {
+        const result = await batch.save({
+          serverId, workflowId, mediaUrl, sourceId, workflow, promptId,
+        });
+        if (result) {
+          const localUrl = Platform.OS === 'web' || result.path.startsWith('file://')
+            ? result.path : 'file://' + result.path;
+          savedPaths.push(localUrl);
+        }
+      }));
+    } finally {
+      await batch.commit();
+    }
     diag('job', 'finalize', { promptId, found, saved: savedPaths.length, skipped: alreadySaved.size });
     if (!found) return null;
 

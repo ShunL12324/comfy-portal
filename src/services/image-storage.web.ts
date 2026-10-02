@@ -1,5 +1,8 @@
 import type { Workflow } from '@/features/workflow/types';
 import { useMediaStore, waitForMediaHydration, mediaStorage, mediaKind } from '@/features/gallery/stores/media-store';
+import type { MediaAsset } from '@/features/gallery/stores/media-store';
+import { findSavedOutput, removeFromIndex } from '@/features/gallery/services/media-index';
+import { storeWorkflowSnapshot, type SnapshotCache } from '@/features/gallery/services/workflow-snapshots';
 import { mediaTime } from '@/features/gallery/utils/media-time';
 import { resolveProvenance } from '@/services/media-provenance';
 import { generateUUID } from '@/utils/uuid';
@@ -13,49 +16,78 @@ interface SaveMediaOptions {
   sourceId?: string;
 }
 
-/** Web persists output references. Native downloads bytes into the application gallery. */
-export async function saveGeneratedMedia({
-  serverId,
-  workflowId,
-  mediaUrl,
-  workflow,
-  promptId,
-  sourceId,
-}: SaveMediaOptions) {
-  await waitForMediaHydration();
-  const store = useMediaStore.getState();
-  const existing =
-    promptId &&
-    store.assets.find(
-      (item) =>
-        item.serverId === serverId &&
-        item.metadata.promptId === promptId &&
-        (sourceId ? item.metadata.sourceId === sourceId : item.metadata.originalUrl === mediaUrl),
-    );
-  if (existing) {
-    store.upsert(existing);
-    await mediaStorage.flush();
-    return { path: existing.path, metadata: existing.metadata };
-  }
-  const metadata = {
-    timestamp: new Date().toISOString(),
-    workflow: JSON.parse(JSON.stringify(workflow)),
-    originalUrl: sourceId ?? mediaUrl,
-    ...(sourceId ? { sourceId } : {}),
-    ...(promptId ? { promptId } : {}),
-    producedBy: resolveProvenance(serverId, workflowId),
+export interface SavedMedia {
+  path: string;
+  metadata: MediaAsset['metadata'];
+}
+
+/** A job's outputs with one index write between them; see the native file. Web has no files to journal. */
+export interface MediaSaveBatch {
+  save: (options: SaveMediaOptions) => Promise<SavedMedia>;
+  commit: () => Promise<void>;
+}
+
+export function beginMediaSaveBatch(): MediaSaveBatch {
+  const releaseHold = mediaStorage.hold();
+  const releases: (() => void)[] = [];
+  const snapshots: SnapshotCache = new WeakMap();
+  let committed: Promise<void> | undefined;
+
+  const commit = () =>
+    (committed ??= (async () => {
+      releaseHold();
+      try {
+        await mediaStorage.flush();
+      } finally {
+        releases.forEach((release) => release());
+      }
+    })());
+
+  /** Web persists output references. Native downloads bytes into the application gallery. */
+  const save = async ({ serverId, workflowId, mediaUrl, workflow, promptId, sourceId }: SaveMediaOptions) => {
+    if (committed) return saveGeneratedMedia({ serverId, workflowId, mediaUrl, workflow, promptId, sourceId });
+    await waitForMediaHydration();
+    const existing = findSavedOutput({ serverId, promptId, sourceId, mediaUrl });
+    if (existing) return { path: existing.path, metadata: existing.metadata };
+    let workflowRef: Pick<MediaAsset['metadata'], 'workflow' | 'workflowKey'>;
+    try {
+      const snapshot = await storeWorkflowSnapshot(workflow, snapshots);
+      releases.push(snapshot.release);
+      workflowRef = snapshot.key ? { workflowKey: snapshot.key } : {};
+    } catch (error) {
+      console.warn('failed to store the workflow snapshot; embedding it', error);
+      workflowRef = { workflow: JSON.parse(JSON.stringify(workflow)) };
+    }
+    const metadata: MediaAsset['metadata'] = {
+      timestamp: new Date().toISOString(),
+      ...workflowRef,
+      originalUrl: sourceId ?? mediaUrl,
+      ...(sourceId ? { sourceId } : {}),
+      ...(promptId ? { promptId } : {}),
+      producedBy: resolveProvenance(serverId, workflowId),
+    };
+    const parsed = new URL(mediaUrl, 'http://localhost');
+    useMediaStore.getState().upsert({
+      id: generateUUID(),
+      serverId,
+      workflowId,
+      path: mediaUrl,
+      kind: mediaKind(parsed.searchParams.get('filename') ?? parsed.pathname),
+      metadata,
+    });
+    return { path: mediaUrl, metadata };
   };
-  const parsed = new URL(mediaUrl, 'http://localhost');
-  store.upsert({
-    id: generateUUID(),
-    serverId,
-    workflowId,
-    path: mediaUrl,
-    kind: mediaKind(parsed.searchParams.get('filename') ?? parsed.pathname),
-    metadata,
-  });
-  await mediaStorage.flush();
-  return { path: mediaUrl, metadata };
+
+  return { save, commit };
+}
+
+export async function saveGeneratedMedia(options: SaveMediaOptions): Promise<SavedMedia> {
+  const batch = beginMediaSaveBatch();
+  try {
+    return await batch.save(options);
+  } finally {
+    await batch.commit();
+  }
 }
 
 export async function getGeneratedMedia(serverId: string, workflowId: string) {
@@ -111,9 +143,7 @@ export async function cleanupServerData(_serverId: string) {}
 /** Web keeps references, not files: deleting an output only removes its gallery entry. */
 export async function deleteGeneratedMedia(paths: string[]) {
   await waitForMediaHydration();
-  const store = useMediaStore.getState();
-  store.removeMany(paths);
-  await mediaStorage.flush();
+  await removeFromIndex(paths);
 }
 
 /** Web entries are server references with no local file to go missing. */
