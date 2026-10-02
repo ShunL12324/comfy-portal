@@ -26,6 +26,8 @@ interface ServerRowProps {
   cost?: string;
   openLabel?: string;
   onOpen: () => void;
+  /** Opens the Connection sheet without entering the server page. */
+  onLongPress?: () => void;
   memoryUsed?: number;
   memoryTotal?: number;
 }
@@ -47,6 +49,7 @@ export function ServerRow({
   cost,
   openLabel,
   onOpen,
+  onLongPress,
   memoryUsed,
   memoryTotal,
 }: ServerRowProps) {
@@ -72,6 +75,8 @@ export function ServerRow({
         memoryLabel ? `VRAM${(gpuNames?.length ?? 0) > 1 ? ' GPU 1' : ''}: ${memoryLabel}` : undefined,
       )}
       onPress={onOpen}
+      onLongPress={onLongPress}
+      longPressLabel={onLongPress ? 'Connection settings' : undefined}
       facts={
         <View style={{ flexShrink: 1, minWidth: 0, gap: t.layout.label }}>
           {cost && (gpu || memory) ? <Fact value={cost} /> : null}
@@ -124,7 +129,7 @@ export function ServerRow({
   );
 }
 
-export function ServerCard({ id }: { id: string }) {
+export function ServerCard({ id, onLongPress }: { id: string; onLongPress?: (id: string) => void }) {
   const [, tick] = useState(0);
   const server = useServersStore((s) => s.servers.find((entry) => entry.id === id));
   useEffect(() => {
@@ -147,6 +152,7 @@ export function ServerCard({ id }: { id: string }) {
       gpuNames={gpuNames}
       cost={cloud ? formatRentalCost(cloud) : undefined}
       onOpen={() => router.navigate(`/workflow/${id}`)}
+      onLongPress={onLongPress ? () => onLongPress(id) : undefined}
       memoryUsed={metrics?.memoryUsed}
       memoryTotal={metrics?.memoryTotal}
     />

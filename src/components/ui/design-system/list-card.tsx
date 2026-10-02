@@ -2,6 +2,7 @@ import React, { useId, type ReactNode } from 'react';
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
 import { NativeText as Text } from '@/components/ui/text/native-text';
 import { MotiView } from 'moti';
+import * as Haptics from 'expo-haptics';
 import { type LucideIcon } from '@/constants/icons';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
@@ -43,6 +44,8 @@ export function ListCard({
   distributeFacts = false,
   factsAlignment = 'flex-start',
   onPress,
+  onLongPress,
+  longPressLabel,
   accessibilityLabel,
   accessibilityHint,
   testID,
@@ -69,6 +72,10 @@ export function ListCard({
   /** Server status stays against the bottom edge beside taller hardware details. */
   factsAlignment?: ViewStyle['alignItems'];
   onPress: () => void;
+  /** Secondary entry point, such as the connection sheet. No visible control; a light haptic marks it. */
+  onLongPress?: () => void;
+  /** Names the long-press destination for assistive tech, e.g. `Connection settings`. */
+  longPressLabel?: string;
   accessibilityLabel: string;
   /** Facts worth speaking; the subtitle is prepended automatically. */
   accessibilityHint?: string;
@@ -77,7 +84,14 @@ export function ListCard({
   const c = useDesign();
   const press = usePressFeedback();
   const hintId = useId();
-  const hint = spoken(subtitle, accessibilityHint);
+  const longPress = onLongPress
+    ? () => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        onLongPress();
+      }
+    : undefined;
+  const longPressName = onLongPress && longPressLabel ? longPressLabel : undefined;
+  const hint = spoken(subtitle, accessibilityHint, longPressName && `Long press for ${longPressName.toLowerCase()}`);
   const silent = { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const };
   return (
     <MotiView
@@ -92,6 +106,15 @@ export function ListCard({
         accessibilityHint={hint}
         aria-describedby={Platform.OS === 'web' && hint ? hintId : undefined}
         onPress={onPress}
+        onLongPress={longPress}
+        accessibilityActions={longPressName ? [{ name: 'longpress', label: longPressName }] : undefined}
+        onAccessibilityAction={
+          longPressName
+            ? (event) => {
+                if (event.nativeEvent.actionName === 'longpress') onLongPress?.();
+              }
+            : undefined
+        }
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}
         style={[StyleSheet.absoluteFill, { borderRadius: t.radius.panel }]}

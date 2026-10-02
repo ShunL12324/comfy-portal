@@ -8,12 +8,13 @@ import { View } from '@/components/ui/view';
 import { LaunchCard } from '@/features/cloud/components/launch-card';
 import { useProvisioningStore, launchKey, type LaunchRecord } from '@/features/cloud/stores/provisioning-store';
 import { AddServerModal, type AddServerModalRef } from '@/features/server/components/add-server-modal';
+import { EditServerModal, type EditServerModalRef } from '@/features/server/components/edit-server-modal';
 import { EmptyState } from '@/components/self-ui/empty-state';
 import { EmptyServersArt } from '@/features/server/components/empty-servers-art';
 import { ServerCard } from '@/features/server/components/server-card';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Plus } from '@/constants/icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useServerObservations } from '@/features/server/hooks/use-server-observations';
 
@@ -22,6 +23,13 @@ export default function HomeScreen() {
   const c = useDesign();
   const refreshLock = useRef(false);
   const addRef = useRef<AddServerModalRef>(null);
+  const editRef = useRef<EditServerModalRef>(null);
+  // One shared Connection sheet; a fresh object re-presents it for the same server.
+  const [editing, setEditing] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    // Present after the render that hands the sheet its serverId, so it loads that server.
+    if (editing) editRef.current?.present();
+  }, [editing]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -94,7 +102,7 @@ export default function HomeScreen() {
                   return launch && (launch.stage !== 'ready' || !server) ? (
                     <LaunchCard key={key} launch={launch} onOpen={() => setSetupSelection(launch)} />
                   ) : (
-                    <ServerCard key={key} id={server!.id} />
+                    <ServerCard key={key} id={server!.id} onLongPress={(id) => setEditing({ id })} />
                   );
                 })}
               </View>
@@ -118,6 +126,7 @@ export default function HomeScreen() {
         </RefreshScrollView>
       </View>
       <AddServerModal ref={addRef} />
+      <EditServerModal ref={editRef} serverId={editing?.id ?? ''} />
       <Sheet open={!!setup} onClose={() => setSetupSelection(null)} title="Setup" centerTitle>
         {setup && <SetupContent launch={setup} onDestroyed={() => setSetupSelection(null)} />}
       </Sheet>
