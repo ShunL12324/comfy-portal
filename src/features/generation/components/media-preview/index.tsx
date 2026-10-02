@@ -1,29 +1,29 @@
-import { Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
-import { Spinner } from '@/components/ui/spinner';
-import { Icon } from '@/components/ui/icon';
+import { useDesign } from '@/components/ui/design-system/primitives';
 import { Image } from 'expo-image';
-import { ImageIcon, PlayCircle } from '@/constants/icons';
+import { PlayCircle } from '@/constants/icons';
 import React, { memo, useMemo, useRef, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import PagerView from 'react-native-pager-view';
+import type { SharedValue } from 'react-native-reanimated';
 
 import { MediaViewer, toViewerItem, type MediaViewerItem } from '@/features/gallery/components/media-viewer';
 import { deleteGeneratedMedia } from '@/services/image-storage';
 
-import {
-  useGenerationActions,
-  useGenerationProgress,
-  useGenerationStatus,
-} from '@/features/generation/context/generation-context';
+import { useGenerationActions, useGenerationStatus } from '@/features/generation/context/generation-context';
 import { isVideoUrl } from '@/features/generation/utils/media';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { designTokens as t } from '@/constants/design-tokens';
+import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
+import { MediaBadge } from './media-badge';
+import { ResultPlaceholder } from './result-placeholder';
+import { VisibleRegion } from './visible-region';
 
 interface ParallaxMediaProps {
   workflowId?: string;
   serverId?: string;
+  /** Top edge of the sheet covering the area's lower part, in the parent's coordinates. */
+  coverTop?: SharedValue<number>;
 }
 
 const VideoPreview = ({ url }: { url: string }) => {
@@ -39,14 +39,12 @@ const VideoPreview = ({ url }: { url: string }) => {
 };
 
 /**
- * A component that displays media with parallax scrolling effect and preview functionality
+ * The Run page result area: pages through generated media, centred in the part
+ * the node sheet leaves visible, and opens the full-screen viewer on tap.
  */
-export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }: ParallaxMediaProps) {
-  const { generatedMedia, status } = useGenerationStatus();
-  const { progress, nodeProgress, downloadProgress } = useGenerationProgress();
+export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId, coverTop }: ParallaxMediaProps) {
+  const { generatedMedia } = useGenerationStatus();
   const { setGeneratedMedia } = useGenerationActions();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const c = useDesign();
@@ -76,15 +74,9 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
   };
 
   return (
-    <View
-      className="relative w-full flex-1 flex-col items-start justify-start"
-      onLayout={(e) => {
-        const { width, height } = e.nativeEvent.layout;
-        setContainerSize({ width, height });
-      }}
-    >
+    <VisibleRegion coverTop={coverTop}>
       {generatedMedia.length > 0 ? (
-        <View className="h-auto w-full flex-1 justify-start">
+        <>
           <PagerView
             key={generatedMedia.join('-')}
             ref={pagerRef}
@@ -96,22 +88,20 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
               <View key={`${mediaUrl}-${index}`} className="flex-1">
                 <Pressable className="flex-1" onPress={() => setIsPreviewOpen(true)}>
                   {isVideoUrl(mediaUrl) ? (
-                    <View className="bg-media flex-1 items-center justify-center">
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.media }}>
                       <VideoPreview url={mediaUrl} />
-                      <View className="inset-0 bg-media/20 absolute items-center justify-center">
-                        <Icon size="display" as={PlayCircle} className="text-on-media" />
+                      <View
+                        pointerEvents="none"
+                        style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <PlayCircle size={t.icon.display} color={c.onMedia} strokeWidth={iconStroke(t.icon.display)} />
                       </View>
                     </View>
                   ) : (
                     <Image
                       source={{ uri: mediaUrl }}
-                      style={{
-                        width: containerSize.width || screenWidth,
-                        height: containerSize.height || screenHeight,
-                        aspectRatio: undefined,
-                      }}
+                      style={{ width: '100%', height: '100%' }}
                       contentFit="contain"
-                      contentPosition="top"
                       cachePolicy="memory-disk"
                     />
                   )}
@@ -122,7 +112,11 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
 
           {/* Page Indicator */}
           {generatedMedia.length > 1 && (
-            <View className="bottom-4 left-0 right-0 gap-2 absolute flex-row justify-center">
+            <View
+              pointerEvents="none"
+              className="gap-2 absolute flex-row justify-center"
+              style={{ left: 0, right: 0, bottom: t.layout.field }}
+            >
               {generatedMedia.map((_, index) => (
                 <View
                   key={index}
@@ -132,19 +126,22 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
             </View>
           )}
 
-          {/* Status Indicators */}
-          <View className="top-3 right-3 gap-2 absolute flex-row">
-            <View className="bg-media/50 px-2.5 py-1 min-w-[48px] items-center justify-center rounded-full">
-              <Copy size="metadata" style={{ color: c.onMedia, fontWeight: '500', textAlign: 'center' }}>
-                {isVideoUrl(generatedMedia[activeIndex] || '') ? 'Video' : 'Image'}
-              </Copy>
-            </View>
+          {/* Media type and page badges */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: t.layout.field,
+              right: t.layout.field,
+              flexDirection: 'row',
+              gap: t.layout.label,
+            }}
+          >
+            <MediaBadge>{isVideoUrl(generatedMedia[activeIndex] || '') ? 'Video' : 'Image'}</MediaBadge>
             {generatedMedia.length > 1 && (
-              <View className="bg-media/50 px-2.5 py-1 min-w-[48px] items-center justify-center rounded-full">
-                <Copy size="metadata" style={{ color: c.onMedia, fontWeight: '500', textAlign: 'center' }}>
-                  {activeIndex + 1}/{generatedMedia.length}
-                </Copy>
-              </View>
+              <MediaBadge>
+                {activeIndex + 1}/{generatedMedia.length}
+              </MediaBadge>
             )}
           </View>
 
@@ -158,43 +155,10 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
             serverId={serverId}
             onDelete={deleteResult}
           />
-        </View>
+        </>
       ) : (
-        <View
-          className="bg-surface-base w-full items-center"
-          style={{ paddingHorizontal: t.layout.section, paddingTop: t.layout.section, gap: t.layout.related }}
-        >
-          <Row style={{ gap: t.layout.related }}>
-            {status !== 'idle' ? (
-              <Spinner size="small" />
-            ) : (
-              <Icon as={ImageIcon} size="sm" className="text-content-secondary" />
-            )}
-            <Copy>
-              {status === 'generating'
-                ? 'Generating output'
-                : status === 'downloading'
-                  ? 'Saving results'
-                  : 'Your results appear here'}
-            </Copy>
-          </Row>
-          <Copy muted size="label" style={{ textAlign: 'center' }}>
-            {status === 'generating'
-              ? nodeProgress.total > 0
-                ? `${nodeProgress.completed} / ${nodeProgress.total} nodes complete`
-                : 'Waiting for the server to begin execution.'
-              : status === 'downloading'
-                ? `${Math.round(downloadProgress)}% of output files saved`
-                : 'Adjust the workflow below, then generate.'}
-          </Copy>
-          {status === 'generating' && progress.max > 0 && (
-            <Copy mono muted size="metadata">
-              Step {progress.value} / {progress.max} · current node
-            </Copy>
-          )}
-        </View>
+        <ResultPlaceholder />
       )}
-
-    </View>
+    </VisibleRegion>
   );
 });

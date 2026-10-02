@@ -1594,6 +1594,18 @@
     },
     {
       "path": "src/features/generation/components/media-preview/index.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/generation/components/media-preview/index.web.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/generation/components/media-preview/media-badge.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1601,10 +1613,16 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/features/generation/components/media-preview/index.web.tsx",
+      "path": "src/features/generation/components/media-preview/result-placeholder.tsx",
       "textElements": [
         "Copy"
       ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/generation/components/media-preview/visible-region.tsx",
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

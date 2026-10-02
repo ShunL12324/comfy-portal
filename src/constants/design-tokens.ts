@@ -151,7 +151,8 @@ export const designTokens = {
     enter: [0.2, 0, 0, 1],
     exit: [0.4, 0, 1, 1],
   },
-  opacity: { pressed: 0.84, disabled: 0.4, scrim: 0.5 },
+  /** `badge` is the media scrim behind light labels; dense enough for onMedia text over a white frame. */
+  opacity: { pressed: 0.84, disabled: 0.4, scrim: 0.5, badge: 0.64 },
 } as const;
 export type TypeSize = keyof typeof designTokens.type;
 export type IconSize = (typeof designTokens.icon)[keyof typeof designTokens.icon];

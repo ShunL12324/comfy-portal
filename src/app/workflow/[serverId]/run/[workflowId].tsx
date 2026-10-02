@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Bot, Images, ServerCrash, Sliders, Trash2 } from '@/constants/icons';
 import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 
 import { HStack } from '@/components/ui/hstack';
 import { VStack } from '@/components/ui/vstack';
@@ -174,6 +175,8 @@ function RunWorkflowScreenContent() {
   const sheetRef = useRef<BottomSheet>(null);
   const aiChatTabRef = useRef<AIChatTabRef>(null);
   const sheetSnapIndexRef = useRef(1);
+  // The sheet's top edge; the result area centres its media in the space above it.
+  const sheetTop = useSharedValue(Number.POSITIVE_INFINITY);
 
   // Tab state — simple index, no longer driven by react-native-tab-view
   const [tabIndex, setTabIndex] = useState(0);
@@ -332,13 +335,14 @@ function RunWorkflowScreenContent() {
         </View>
       ) : (
         <>
-          <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} />
+          <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} coverTop={sheetTop} />
 
           <ChatComposerContext.Provider value={chatComposer}>
             <PersistentSheet
               ref={sheetRef}
               index={sharedImageUri ? 2 : 1}
               snapPoints={snapPoints}
+              animatedPosition={sheetTop}
               enableDynamicSizing={false}
               // Content scrolls at every detent; only the handle resizes the sheet.
               enableContentPanningGesture={false}
