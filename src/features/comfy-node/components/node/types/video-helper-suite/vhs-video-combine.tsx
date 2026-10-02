@@ -7,8 +7,13 @@ import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema
  * Whichever of them the workflow carries are shown; the rest render nothing.
  */
 const FIELDS: SchemaFieldDef[] = [
-  { inputKey: 'frame_rate', title: 'Frame Rate', fallback: { kind: 'float', min: 1, max: 120, step: 1 } },
-  { inputKey: 'loop_count', title: 'Loop Count', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
+  {
+    inputKey: 'frame_rate',
+    title: 'Frame Rate (fps)',
+    control: 'stepper',
+    fallback: { kind: 'float', min: 1, max: 120, step: 1 },
+  },
+  { inputKey: 'loop_count', title: 'Loop Count (0 = infinite)', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
   {
     inputKey: 'filename_prefix',
     title: 'Filename Prefix',
@@ -37,8 +42,12 @@ const FIELDS: SchemaFieldDef[] = [
       ],
     },
   },
-  { inputKey: 'pix_fmt', title: 'Pixel Format', fallback: { kind: 'combo', options: ['yuv420p', 'yuv420p10le'] } },
-  { inputKey: 'crf', title: 'CRF', fallback: { kind: 'int', min: 0, max: 51, step: 1 } },
+  {
+    inputKey: 'pix_fmt',
+    title: 'Pixel Format',
+    fallback: { kind: 'combo', options: ['yuv420p', 'yuv420p10le', 'yuva420p', 'p010le'] },
+  },
+  { inputKey: 'crf', title: 'Quality (CRF, lower = better)', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
   { inputKey: 'save_output', title: 'Save Output', fallback: { kind: 'boolean' } },
   { inputKey: 'pingpong', title: 'Ping Pong', fallback: { kind: 'boolean' } },
   { inputKey: 'save_metadata', title: 'Save Metadata', fallback: { kind: 'boolean' } },

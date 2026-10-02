@@ -44,7 +44,7 @@ const CHILD_TITLES: Record<string, string> = {
   crop_scale: 'Crop Scale',
   padding: 'Padding',
   prefer: 'Prefer',
-  pad_surplus_tol: 'Padding Surplus Tolerance',
+  pad_surplus_tol: 'Padding Surplus Tolerance (px)',
   zoom_step: 'Zoom Step',
   aspect_ratio: 'Aspect Ratio (0 = auto)',
   seamless_loop: 'Seamless Loop',
@@ -76,6 +76,7 @@ export default function MVExSubjectCropParallel({ node, serverId, workflowId }: 
         inputKey="mode"
         title="Mode"
         fallback={{ kind: 'combo', options: Object.keys(MODE_CHILDREN) }}
+        labels={{ combined: 'Combined', tracked: 'Tracked', zoomed: 'Zoomed' }}
         onChange={handleModeChange}
       />
       {Object.entries(childSpecs).map(([child, spec]) =>
@@ -93,7 +94,7 @@ export default function MVExSubjectCropParallel({ node, serverId, workflowId }: 
       <SchemaField
         {...shared}
         inputKey="divisible_by"
-        title="Divisible By"
+        title="Round to Multiple of (px)"
         control="stepper"
         fallback={{ kind: 'int', min: 1, step: 1 }}
       />

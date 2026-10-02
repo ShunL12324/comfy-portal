@@ -12,8 +12,9 @@ const FIELDS: SchemaFieldDef[] = [
   },
   {
     inputKey: 'fps',
-    title: 'Frame Rate',
+    title: 'Frame Rate (fps)',
     control: 'stepper',
+    step: 1,
     fallback: { kind: 'float', min: 1, max: 240, step: 0.01 },
   },
   {

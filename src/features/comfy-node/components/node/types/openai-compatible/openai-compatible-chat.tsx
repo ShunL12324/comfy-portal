@@ -122,8 +122,9 @@ export default function OpenAICompatibleChat({ node, serverId, workflowId }: Nod
           <SchemaField
             {...shared}
             inputKey="image_max_side"
-            title="Image Max Side (0 = full size)"
+            title="Image Max Side (px, 0 = full size)"
             control="stepper"
+            step={64}
             fallback={{ kind: 'int', min: 0, max: 8192, step: 64 }}
           />
           <SchemaField
