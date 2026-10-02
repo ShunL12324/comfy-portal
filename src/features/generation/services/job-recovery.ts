@@ -1,3 +1,4 @@
+import { diag } from '@/utils/diagnostics';
 import { Server } from '@/features/server/types';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Workflow } from '@/features/workflow/types';
@@ -154,7 +155,10 @@ export async function finalizeJob(
 ): Promise<string[] | null> {
   const { promptId, serverId, workflowId } = job;
   const jobKey = JSON.stringify([serverId, promptId]);
-  if (finalizing.has(jobKey)) return null;
+  if (finalizing.has(jobKey)) {
+    diag('job', 'finalize skipped: already running', { promptId });
+    return null;
+  }
   finalizing.add(jobKey);
 
   try {
@@ -191,6 +195,7 @@ export async function finalizeJob(
         savedPaths.push(localUrl);
       }
     });
+    diag('job', 'finalize', { promptId, found, saved: savedPaths.length, skipped: alreadySaved.size });
     if (!found) return null;
 
     // Everything the server had for this prompt is now on disk.
@@ -394,7 +399,9 @@ async function runReconcile(): Promise<void> {
   await runStorageMigrations();
   await waitForStores();
 
-  const serverIds = [...new Set(getPendingJobs().map((job) => job.serverId))];
+  const pending = getPendingJobs();
+  const serverIds = [...new Set(pending.map((job) => job.serverId))];
+  diag('job', 'reconcile', { pending: pending.map((job) => job.promptId), servers: serverIds.length });
   if (serverIds.length === 0) {
     cancelScheduledReconcile();
     return;
@@ -405,11 +412,12 @@ async function runReconcile(): Promise<void> {
     try {
       if (await reconcileServer(serverId)) keepPolling = true;
     } catch (error) {
-      console.warn('Reconcile failed for server', serverId, error);
+      diag('job', 'reconcile failed', { serverId, error: String(error) });
       keepPolling = true;
     }
   }
 
+  diag('job', 'reconcile done', { keepPolling });
   if (keepPolling) scheduleReconcile();
   else cancelScheduledReconcile();
 }

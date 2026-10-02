@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth } from './network';
 import { resolveScheme } from './server-scheme';
+import { diag, redactUrl } from '@/utils/diagnostics';
 
 /**
  * Configuration options for the ComfyUI client
@@ -206,18 +207,27 @@ export class ComfyClient {
    */
   private setupWebSocket(wsUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      diag('ws', 'connecting', { url: redactUrl(wsUrl) });
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
+        diag('ws', 'open', { attempt: this.reconnectAttempts, tracked: this.trackedPromptIds() });
         this.reconnectAttempts = 0;
         resolve();
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
+        diag('ws', 'close', {
+          code: event?.code,
+          reason: event?.reason || undefined,
+          disposed: this.disposed,
+          tracked: this.trackedPromptIds(),
+        });
         this.scheduleReconnect();
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (event) => {
+        diag('ws', 'error', { message: (event as { message?: string })?.message });
         reject(new Error(`Cannot connect to server at ${wsUrl.split('/ws')[0]}`));
       };
 
@@ -232,9 +242,13 @@ export class ComfyClient {
   private scheduleReconnect() {
     if (this.disposed) return;
     if (this.reconnectTimer) return;
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      diag('ws', 'reconnect gave up', { attempts: this.reconnectAttempts, tracked: this.trackedPromptIds() });
+      return;
+    }
 
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    diag('ws', 'reconnect scheduled', { attempt: this.reconnectAttempts + 1, delayMs: delay });
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       this.reconnectAttempts++;
@@ -278,6 +292,7 @@ export class ComfyClient {
    * Closes the WebSocket connection and stops all monitoring/reconnection attempts.
    */
   disconnect() {
+    diag('ws', 'disconnect', { tracked: this.trackedPromptIds() });
     this.disposed = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -310,6 +325,7 @@ export class ComfyClient {
   private resolveTracked(promptId: string, result: GenerationResult) {
     const tracked = this.trackedPrompts.get(promptId);
     if (!tracked) return;
+    diag('track', 'resolved', { promptId, ...result });
     this.trackedPrompts.delete(promptId);
     if (this.activePromptId === promptId) {
       this.activePromptId = null;
@@ -328,6 +344,10 @@ export class ComfyClient {
     }
   }
 
+  private trackedPromptIds() {
+    return [...this.trackedPrompts.keys()];
+  }
+
   /** Touch last-activity timestamp for a tracked prompt. */
   private touchActivity(promptId: string) {
     const tracked = this.trackedPrompts.get(promptId);
@@ -341,6 +361,7 @@ export class ComfyClient {
       const now = Date.now();
       for (const [promptId, tracked] of this.trackedPrompts) {
         if (now - tracked.lastActivity > this.TIMEOUT_MS) {
+          diag('track', 'inactivity timeout', { promptId, silentMs: now - tracked.lastActivity });
           // aborted: this is our silence, not a server verdict. The prompt may
           // well still be running, so the job must stay recoverable.
           this.resolveTracked(promptId, {
@@ -369,11 +390,25 @@ export class ComfyClient {
 
   private handleMessage = (event: MessageEvent) => {
     try {
-      if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
+      if (typeof event.data !== 'string') {
+        // Binary frames are live previews: proof the server is sampling even when text goes quiet.
+        diag('msg', 'binary', { bytes: (event.data as ArrayBuffer | Blob | null)?.['byteLength' as never] ?? (event.data as Blob | null)?.size });
+        return;
+      }
+      if (event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
         return;
       }
 
       const message = JSON.parse(event.data);
+      const msgPromptId = message.data?.prompt_id as string | undefined;
+      diag('msg', message.type, {
+        promptId: msgPromptId,
+        node: message.data?.node ?? undefined,
+        value: message.data?.value,
+        max: message.data?.max,
+        queue: message.type === 'status' ? message.data?.status?.exec_info?.queue_remaining : undefined,
+        tracked: this.trackedPrompts.size ? (msgPromptId ? this.trackedPrompts.has(msgPromptId) : 'active') : false,
+      });
 
       if (message.type === 'status') {
         this.onQueueUpdate?.(
@@ -383,8 +418,6 @@ export class ComfyClient {
       }
 
       if (this.trackedPrompts.size === 0) return;
-
-      const msgPromptId = message.data?.prompt_id as string | undefined;
 
       switch (message.type) {
         case 'execution_start': {
@@ -503,8 +536,9 @@ export class ComfyClient {
           break;
         }
       }
-    } catch {
-      // Ignore parse errors for non-JSON messages
+    } catch (error) {
+      // Non-JSON frames are ignored; anything else here is a handler bug worth seeing.
+      diag('msg', 'unhandled frame', { error: String(error) });
     }
   };
 
@@ -528,6 +562,7 @@ export class ComfyClient {
     if (!this.ws) {
       // Client-side condition, not a server verdict — report it as an abort so
       // the caller keeps the job recoverable over HTTP.
+      diag('track', 'no socket', { promptId });
       return Promise.resolve({
         success: false,
         error: 'WebSocket not connected',
@@ -546,6 +581,7 @@ export class ComfyClient {
         started: false,
       });
       this.activePromptId = promptId;
+      diag('track', 'start', { promptId, nodes: Object.keys(workflow).length, connected: this.isConnected() });
       this.startTimeoutCheck();
     });
   }

@@ -1,3 +1,4 @@
+import { diag } from '@/utils/diagnostics';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -298,7 +299,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           // established (proxy that won't upgrade /ws, flaky network) the
           // prompt still queues over HTTP and reconciliation delivers the
           // results — better than refusing to generate at all.
-          await client.connect().catch(() => {});
+          await client.connect().catch((error) => diag('gen', 'socket connect failed', { error: String(error) }));
         }
 
         usePendingJobsStore.getState().addJob({
@@ -313,7 +314,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
         try {
           promptId = await client.queuePrompt(workflowForExecution, localPromptId);
+          diag('gen', 'queued', { promptId, requested: localPromptId, socket: client.isConnected() });
         } catch (error) {
+          diag('gen', 'queue failed', { promptId: localPromptId, error: String(error) });
           // Only a explicit refusal proves nothing was queued. A transport
           // error may have been delivered anyway, so keep that job pending and
           // let reconciliation find out.
@@ -341,7 +344,9 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
               handleNodeProgress(completed, total);
             },
           });
+          diag('gen', 'completed', { promptId });
         } catch (error) {
+          diag('gen', 'await ended', { promptId, aborted: error instanceof GenerationAbortedError, error: String(error) });
           // An abort means we stopped listening, not that the run stopped —
           // hand the job to reconciliation rather than chasing it here.
           if (error instanceof GenerationAbortedError) throw error;
@@ -365,6 +370,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           },
         );
 
+        diag('gen', 'finalized', { promptId, saved: savedPaths === null ? null : savedPaths.length });
         if (savedPaths && savedPaths.length > 0) {
           setGeneratedMedia(savedPaths);
         }
