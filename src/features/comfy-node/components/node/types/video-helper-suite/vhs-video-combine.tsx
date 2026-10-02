@@ -1,59 +1,77 @@
+import { optionWidgetUpdates } from '@/features/comfy-node/utils/schema-inputs';
+import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { useNodeSchema } from '@/hooks/use-node-schema';
+import { useCallback } from 'react';
 import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
+import { VHS_FORMATS, VHS_FORMAT_WIDGETS, formatWidgetTitle } from './vhs-video-formats';
+
+/** The node's own inputs, which a format switch never touches. */
+const OWN_INPUTS = ['images', 'audio', 'meta_batch', 'vae', 'frame_rate', 'loop_count', 'filename_prefix', 'format'];
+
+/** Ranges too long for a thumb to place one value. */
+const STEPPERS = new Set(['bitrate', 'gop_size']);
 
 /**
- * `pix_fmt`, `crf`, `save_metadata` and `trim_to_audio` belong to the chosen
- * format (VHS nests them under each format's definition), so the server
- * schema has no top-level entry for them and their fallbacks are what render.
- * Whichever of them the workflow carries are shown; the rest render nothing.
+ * Each format brings its own settings (`crf`, `pix_fmt`, `bitrate`, ...),
+ * stored as plain inputs beside the node's own. They come from the server's
+ * definition of `format`, or VHS's format files while it loads, and follow
+ * the selected format: switching swaps them as the desktop UI does, keeping
+ * any shared value the new format accepts.
  */
-const FIELDS: SchemaFieldDef[] = [
-  {
-    inputKey: 'frame_rate',
-    title: 'Frame Rate (fps)',
-    control: 'stepper',
-    fallback: { kind: 'float', min: 1, max: 120, step: 1 },
-  },
-  { inputKey: 'loop_count', title: 'Loop Count (0 = infinite)', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
-  {
-    inputKey: 'filename_prefix',
-    title: 'Filename Prefix',
-    fallback: { kind: 'string', multiline: false },
-  },
-  {
-    inputKey: 'format',
-    title: 'Format',
-    fallback: {
-      kind: 'combo',
-      options: [
-        'image/gif',
-        'image/webp',
-        'video/16bit-png',
-        'video/8bit-png',
-        'video/ProRes',
-        'video/av1-webm',
-        'video/ffmpeg-gif',
-        'video/ffv1-mkv',
-        'video/h264-mp4',
-        'video/h265-mp4',
-        'video/nvenc_av1-mp4',
-        'video/nvenc_h264-mp4',
-        'video/nvenc_hevc-mp4',
-        'video/webm',
-      ],
-    },
-  },
-  {
-    inputKey: 'pix_fmt',
-    title: 'Pixel Format',
-    fallback: { kind: 'combo', options: ['yuv420p', 'yuv420p10le', 'yuva420p', 'p010le'] },
-  },
-  { inputKey: 'crf', title: 'Quality (CRF, lower = better)', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
-  { inputKey: 'save_output', title: 'Save Output', fallback: { kind: 'boolean' } },
-  { inputKey: 'pingpong', title: 'Ping Pong', fallback: { kind: 'boolean' } },
-  { inputKey: 'save_metadata', title: 'Save Metadata', fallback: { kind: 'boolean' } },
-  { inputKey: 'trim_to_audio', title: 'Trim to Audio', fallback: { kind: 'boolean' } },
-];
-
 export default function VHS_VideoCombine(props: NodeEditorProps) {
-  return <SchemaNode {...props} fields={FIELDS} />;
+  const { node, serverId, workflowId } = props;
+  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const schema = useNodeSchema(serverId, node.class_type);
+  const formatSpec = schema?.inputs.format;
+  const widgets = (formatSpec?.kind === 'combo' && formatSpec.widgets) || VHS_FORMAT_WIDGETS;
+  const format = typeof node.inputs.format === 'string' ? node.inputs.format : '';
+
+  const handleFormatChange = useCallback(
+    (next: unknown) => {
+      if (typeof next !== 'string') return;
+      const own = new Set([...OWN_INPUTS, ...Object.keys(schema?.inputs ?? {})]);
+      const updates = optionWidgetUpdates(node.inputs, 'format', next, widgets, own);
+      for (const [key, value] of Object.entries(updates)) updateNodeInput(workflowId, node.id, key, value);
+    },
+    [schema, node.inputs, widgets, updateNodeInput, workflowId, node.id],
+  );
+
+  const formatFields: SchemaFieldDef[] = Object.entries(widgets[format] ?? {}).flatMap(([key, spec]) =>
+    spec.kind === 'link'
+      ? []
+      : [
+          {
+            inputKey: key,
+            title: formatWidgetTitle(key, node.inputs),
+            fallback: spec,
+            control: STEPPERS.has(key) ? 'stepper' : undefined,
+          },
+        ],
+  );
+
+  const fields: SchemaFieldDef[] = [
+    {
+      inputKey: 'frame_rate',
+      title: 'Frame Rate (fps)',
+      control: 'stepper',
+      fallback: { kind: 'float', min: 1, max: 120, step: 1 },
+    },
+    {
+      inputKey: 'loop_count',
+      title: 'Loop Count (0 = infinite)',
+      fallback: { kind: 'int', min: 0, max: 100, step: 1 },
+    },
+    { inputKey: 'filename_prefix', title: 'Filename Prefix', fallback: { kind: 'string', multiline: false } },
+    {
+      inputKey: 'format',
+      title: 'Format',
+      fallback: { kind: 'combo', options: VHS_FORMATS },
+      onChange: handleFormatChange,
+    },
+    ...formatFields,
+    { inputKey: 'save_output', title: 'Save Output', fallback: { kind: 'boolean' } },
+    { inputKey: 'pingpong', title: 'Ping Pong', fallback: { kind: 'boolean' } },
+  ];
+
+  return <SchemaNode {...props} fields={fields} />;
 }

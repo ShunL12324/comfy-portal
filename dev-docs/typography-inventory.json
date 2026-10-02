@@ -1158,6 +1158,14 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/advanced-section.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/base-node.tsx",
       "textElements": [
         "Copy"
@@ -1179,6 +1187,21 @@
         "Copy",
         "Title"
       ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/common/paired-number-field.tsx",
+      "textElements": [
+        "Copy",
+        "NumberInput"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/common/schema-field-list.tsx",
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

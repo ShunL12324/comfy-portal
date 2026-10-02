@@ -15,15 +15,9 @@ const FIELDS: SchemaFieldDef[] = [
   },
   {
     inputKey: 'width',
-    title: 'Width',
-    control: 'stepper',
+    title: 'Width (px)',
     fallback: { kind: 'int', min: 32, max: 16384, step: 32 },
-  },
-  {
-    inputKey: 'height',
-    title: 'Height',
-    control: 'stepper',
-    fallback: { kind: 'int', min: 32, max: 16384, step: 32 },
+    pairedWith: { inputKey: 'height', title: 'Height (px)', rowTitle: 'Width × Height (px)', swappable: true },
   },
   {
     inputKey: 'length',

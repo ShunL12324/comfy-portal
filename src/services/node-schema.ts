@@ -44,6 +44,13 @@ export type WidgetSpec =
        * `mode.crop_scale`; see `resolveInputSpec`.
        */
       children?: Record<string, Record<string, WidgetSpec>>;
+      /**
+       * Extra inputs each option brings, stored as plain top-level keys.
+       * VideoHelperSuite's Video Combine declares its per-format widgets
+       * (`crf`, `pix_fmt`, `bitrate`, ...) this way, under `format`'s
+       * `formats` option; see `resolveInputSpec`.
+       */
+      widgets?: Record<string, Record<string, WidgetSpec>>;
     })
   | (WidgetMeta & {
       kind: 'int' | 'float';
@@ -76,14 +83,16 @@ export function normalizeInputSpec(spec: RawInputSpec): WidgetSpec {
 
   // Legacy combo: the option list *is* the type slot.
   if (Array.isArray(type)) {
-    return { kind: 'combo', options: type.map(String), default: options.default, ...meta };
+    const widgets = normalizeOptionWidgets(options.formats);
+    return { kind: 'combo', options: type.map(String), default: options.default, ...meta, ...(widgets && { widgets }) };
   }
 
   if (typeof type !== 'string') return { kind: 'link' };
 
   if (type === 'COMBO') {
     const list = Array.isArray(options.options) ? options.options.map(String) : [];
-    return { kind: 'combo', options: list, default: options.default, ...meta };
+    const widgets = normalizeOptionWidgets(options.formats);
+    return { kind: 'combo', options: list, default: options.default, ...meta, ...(widgets && { widgets }) };
   }
 
   if (type === 'COMFY_DYNAMICCOMBO_V3') {
@@ -117,6 +126,27 @@ export function normalizeInputSpec(spec: RawInputSpec): WidgetSpec {
   };
 }
 
+/**
+ * VHS's `formats` map: option -> `[name, type | options, config?, ...]` per
+ * widget, the same spec shape as a node input with the name in front. Extra
+ * trailing items (ffmpeg argument templates) are VHS's own business.
+ */
+function normalizeOptionWidgets(raw: unknown): Record<string, Record<string, WidgetSpec>> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const widgets: Record<string, Record<string, WidgetSpec>> = {};
+  for (const [option, defs] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(defs)) continue;
+    const specs: Record<string, WidgetSpec> = {};
+    for (const def of defs) {
+      if (!Array.isArray(def) || typeof def[0] !== 'string') continue;
+      const config = def[2] && typeof def[2] === 'object' && !Array.isArray(def[2]) ? def[2] : undefined;
+      specs[def[0]] = normalizeInputSpec([def[1], config]);
+    }
+    widgets[option] = specs;
+  }
+  return widgets;
+}
+
 function normalizeInputs(input: RawNodeSchema['input']): Record<string, WidgetSpec> {
   const inputs: Record<string, WidgetSpec> = {};
   for (const group of [input?.required, input?.optional]) {
@@ -132,10 +162,12 @@ export function normalizeSchema(raw: RawNodeSchema): NodeSchema {
 }
 
 /**
- * The spec for one workflow input, including a dynamic combo's children.
+ * The spec for one workflow input, including a dynamic combo's children and
+ * a combo's per-option widgets.
  *
  * `mode.crop_scale` resolves against whichever option `mode` currently holds,
  * since the same child can carry a different range or tooltip per option.
+ * Likewise `crf` on Video Combine resolves against the selected `format`.
  */
 export function resolveInputSpec(
   schema: NodeSchema | null | undefined,
@@ -146,11 +178,21 @@ export function resolveInputSpec(
   const direct = schema.inputs[key];
   if (direct) return direct;
   const dot = key.indexOf('.');
-  if (dot < 0) return undefined;
+  if (dot < 0) return optionWidgetSpec(schema, key, inputs);
   const parent = schema.inputs[key.slice(0, dot)];
   if (parent?.kind !== 'combo' || !parent.children) return undefined;
   const selected = inputs[key.slice(0, dot)];
   return typeof selected === 'string' ? parent.children[selected]?.[key.slice(dot + 1)] : undefined;
+}
+
+function optionWidgetSpec(schema: NodeSchema, key: string, inputs: Record<string, unknown>): WidgetSpec | undefined {
+  for (const [comboKey, spec] of Object.entries(schema.inputs)) {
+    if (spec.kind !== 'combo' || !spec.widgets) continue;
+    const selected = inputs[comboKey];
+    const found = typeof selected === 'string' ? spec.widgets[selected]?.[key] : undefined;
+    if (found) return found;
+  }
+  return undefined;
 }
 
 // serverId -> classType -> schema (null = server has no such node)
@@ -162,10 +204,7 @@ const inFlight = new Map<string, Promise<NodeSchema | null>>();
  * `/object_info` can be megabytes on a server with many custom nodes, while a
  * workflow only ever needs a handful of classes.
  */
-export async function getNodeSchema(
-  serverId: string,
-  classType: string,
-): Promise<NodeSchema | null> {
+export async function getNodeSchema(serverId: string, classType: string): Promise<NodeSchema | null> {
   const serverCache = cache.get(serverId);
   if (serverCache?.has(classType)) return serverCache.get(classType) ?? null;
 

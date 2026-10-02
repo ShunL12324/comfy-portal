@@ -96,3 +96,147 @@ export function dynamicComboUpdates(
   }
   return updates;
 }
+
+type NumberSpec = Extract<FieldSpec, { kind: 'int' | 'float' }>;
+
+export interface PairedNumbers {
+  first: { value: number; spec: NumberSpec };
+  second: { value: number; spec: NumberSpec };
+  step: number;
+  decimalPlaces: number;
+}
+
+/**
+ * The shared shape of two numbers edited as one row (Width × Height), or
+ * `null` when they can't share one: either is missing or linked, or isn't a
+ * number. Both step by the coarser of the two increments, so a tap moves
+ * each by the same amount.
+ */
+export function pairedNumberSpecs(
+  first: { value: unknown; spec: WidgetSpec | undefined },
+  second: { value: unknown; spec: WidgetSpec | undefined },
+  fallback: FieldSpec,
+  stepOverride?: number,
+): PairedNumbers | null {
+  const sides = [first, second].map(({ value, spec }) => {
+    if (value === undefined || Array.isArray(value)) return null;
+    const picked = pickFieldSpec(spec, fallback);
+    if (picked.kind !== 'int' && picked.kind !== 'float') return null;
+    return { value: toNumber(value, picked.default ?? picked.min ?? 0), spec: picked };
+  });
+  const [a, b] = sides;
+  if (!a || !b) return null;
+  const stepOf = (spec: NumberSpec) => spec.step ?? (spec.kind === 'int' ? 1 : 0.01);
+  const specStep = Math.max(stepOf(a.spec), stepOf(b.spec));
+  const kind = a.spec.kind === 'float' || b.spec.kind === 'float' ? 'float' : 'int';
+  return {
+    first: a,
+    second: b,
+    step: stepOverride ?? specStep,
+    decimalPlaces: decimalPlacesFor({ kind, step: Math.min(stepOf(a.spec), stepOf(b.spec)) }),
+  };
+}
+
+/** The pair's values exchanged, each kept within the other's range. */
+export function swappedPair({ first, second }: PairedNumbers): [number, number] {
+  const clamp = (value: number, spec: NumberSpec) =>
+    Math.min(spec.max ?? Infinity, Math.max(spec.min ?? -Infinity, value));
+  return [clamp(second.value, first.spec), clamp(first.value, second.spec)];
+}
+
+/**
+ * What the server falls back to for an input: its declared default, or for a
+ * combo without one, the first option (as ComfyUI's own widgets do).
+ */
+export function defaultValueOf(spec: FieldSpec): unknown {
+  if (spec.default !== undefined) return spec.default;
+  return spec.kind === 'combo' ? spec.options[0] : undefined;
+}
+
+/**
+ * Whether a set value differs from the input's default, so a collapsed
+ * section can say how many of its settings were touched. Linked and missing
+ * inputs, and ones without a known default, never count.
+ */
+export function isChangedFromDefault(value: unknown, spec: FieldSpec): boolean {
+  if (value === undefined || Array.isArray(value)) return false;
+  const fallback = defaultValueOf(spec);
+  if (fallback === undefined) return false;
+  switch (spec.kind) {
+    case 'int':
+    case 'float': {
+      const current = toNumber(value, NaN);
+      const base = toNumber(fallback, NaN);
+      if (!Number.isFinite(current) || !Number.isFinite(base)) return false;
+      // Within half a step is the same value written with float noise.
+      return Math.abs(current - base) > (spec.step ?? (spec.kind === 'int' ? 1 : 0.01)) / 2;
+    }
+    case 'boolean':
+      return (value === true || value === 1) !== (fallback === true || fallback === 1);
+    default:
+      return String(value ?? '') !== String(fallback ?? '');
+  }
+}
+
+/** Whether `value` is something `spec` accepts, so a switch can keep it. */
+function fitsSpec(value: unknown, spec: FieldSpec): boolean {
+  switch (spec.kind) {
+    case 'combo':
+      return typeof value === 'string' && spec.options.includes(value);
+    case 'int':
+    case 'float': {
+      const n = toNumber(value, NaN);
+      return Number.isFinite(n) && n >= (spec.min ?? -Infinity) && n <= (spec.max ?? Infinity);
+    }
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'string':
+      return typeof value === 'string';
+  }
+}
+
+/** A starting value for a widget the workflow doesn't carry yet. */
+function initialValueOf(spec: FieldSpec): unknown {
+  const fallback = defaultValueOf(spec);
+  if (fallback !== undefined) return fallback;
+  if (spec.kind === 'boolean') return false;
+  if (spec.kind === 'string') return '';
+  if (spec.kind === 'int' || spec.kind === 'float') return spec.min ?? 0;
+  return undefined;
+}
+
+/**
+ * The input writes needed to switch a combo whose options bring their own
+ * top-level widgets (VHS Video Combine's `format`).
+ *
+ * Mirrors the desktop UI, which swaps the old option's widgets for the new
+ * one's: widgets only other options have are cleared, and new ones get their
+ * defaults. A widget both share keeps the workflow's value when the new
+ * option accepts it (an h264 CRF of 19 is a fine webm CRF; `yuv420p10le` is
+ * not a webm pixel format). Linked widgets and the node's own inputs are
+ * never touched.
+ */
+export function optionWidgetUpdates(
+  inputs: Record<string, unknown>,
+  comboKey: string,
+  nextOption: string,
+  widgets: Record<string, Record<string, WidgetSpec>> | undefined,
+  ownInputs: ReadonlySet<string> = new Set(),
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = { [comboKey]: nextOption };
+  const next = widgets?.[nextOption] ?? {};
+  const known = new Set(Object.values(widgets ?? {}).flatMap((specs) => Object.keys(specs)));
+
+  for (const key of known) {
+    if (key in next || ownInputs.has(key) || key === comboKey) continue;
+    if (inputs[key] !== undefined && !Array.isArray(inputs[key])) updates[key] = undefined;
+  }
+  for (const [key, spec] of Object.entries(next)) {
+    const current = inputs[key];
+    if (spec.kind === 'link' || Array.isArray(current)) continue;
+    if (current !== undefined && fitsSpec(current, spec)) continue;
+    const initial = initialValueOf(spec);
+    if (initial !== undefined) updates[key] = initial;
+  }
+  return updates;
+}

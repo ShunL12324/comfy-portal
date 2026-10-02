@@ -3,9 +3,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { useNodeSchema } from '@/hooks/use-node-schema';
 import { WidgetSpec } from '@/services/node-schema';
 import { useCallback } from 'react';
-import BaseNode from '../../common/base-node';
-import SchemaField from '../../common/schema-field';
-import { NodeEditorProps } from '../../common/schema-node';
+import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
 
 export const RESIZE_METHODS = ['auto', 'nearest-exact', 'bilinear', 'area', 'bicubic', 'lanczos'];
 
@@ -40,6 +38,18 @@ const MODE_CHILDREN: Record<string, Record<string, WidgetSpec>> = {
   },
 };
 
+/**
+ * MVEx's `_upscale_size`: a positive value is a floor (crops already that
+ * large are left alone), a negative one an exact target reached by scaling
+ * down too. One megapixel is 1024 × 1024 px.
+ */
+const UPSCALE_MEGAPIXELS: SchemaFieldDef = {
+  inputKey: 'upscale_megapixels',
+  title: 'Upscale to Megapixels (0 = off)',
+  fallback: { kind: 'float', min: -16, max: 16, step: 0.05 },
+  hint: 'Positive only enlarges smaller crops; negative resizes every crop to that size.',
+};
+
 const CHILD_TITLES: Record<string, string> = {
   crop_scale: 'Crop Scale',
   padding: 'Padding',
@@ -50,7 +60,8 @@ const CHILD_TITLES: Record<string, string> = {
   seamless_loop: 'Seamless Loop',
 };
 
-export default function MVExSubjectCropParallel({ node, serverId, workflowId }: NodeEditorProps) {
+export default function MVExSubjectCropParallel(props: NodeEditorProps) {
+  const { node, serverId, workflowId } = props;
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const schema = useNodeSchema(serverId, node.class_type);
   const modeSpec = schema?.inputs.mode;
@@ -66,50 +77,37 @@ export default function MVExSubjectCropParallel({ node, serverId, workflowId }: 
     [node.inputs, children, updateNodeInput, workflowId, node.id],
   );
 
-  const shared = { node, serverId, workflowId, schema };
-  const childSpecs = children[mode] ?? {};
-
-  return (
-    <BaseNode node={node}>
-      <SchemaField
-        {...shared}
-        inputKey="mode"
-        title="Mode"
-        fallback={{ kind: 'combo', options: Object.keys(MODE_CHILDREN) }}
-        labels={{ combined: 'Combined', tracked: 'Tracked', zoomed: 'Zoomed' }}
-        onChange={handleModeChange}
-      />
-      {Object.entries(childSpecs).map(([child, spec]) =>
-        spec.kind === 'link' ? null : (
-          <SchemaField
-            key={child}
-            {...shared}
-            inputKey={`mode.${child}`}
-            title={CHILD_TITLES[child] ?? child}
-            fallback={spec}
-            control={child === 'pad_surplus_tol' ? 'stepper' : undefined}
-          />
-        ),
-      )}
-      <SchemaField
-        {...shared}
-        inputKey="divisible_by"
-        title="Round to Multiple of (px)"
-        control="stepper"
-        fallback={{ kind: 'int', min: 1, step: 1 }}
-      />
-      <SchemaField
-        {...shared}
-        inputKey="upscale_megapixels"
-        title="Upscale Megapixels (0 = off)"
-        fallback={{ kind: 'float', min: -16, max: 16, step: 0.05 }}
-      />
-      <SchemaField
-        {...shared}
-        inputKey="resize_method"
-        title="Resize Method"
-        fallback={{ kind: 'combo', options: RESIZE_METHODS }}
-      />
-    </BaseNode>
+  const modeFields: SchemaFieldDef[] = Object.entries(children[mode] ?? {}).flatMap(([child, spec]) =>
+    spec.kind === 'link'
+      ? []
+      : [
+          {
+            inputKey: `mode.${child}`,
+            title: CHILD_TITLES[child] ?? child,
+            fallback: spec,
+            control: child === 'pad_surplus_tol' ? 'stepper' : undefined,
+          },
+        ],
   );
+
+  const fields: SchemaFieldDef[] = [
+    {
+      inputKey: 'mode',
+      title: 'Mode',
+      fallback: { kind: 'combo', options: Object.keys(MODE_CHILDREN) },
+      labels: { combined: 'Combined', tracked: 'Tracked', zoomed: 'Zoomed' },
+      onChange: handleModeChange,
+    },
+    ...modeFields,
+    {
+      inputKey: 'divisible_by',
+      title: 'Round to Multiple of (px)',
+      control: 'stepper',
+      fallback: { kind: 'int', min: 1, step: 1 },
+    },
+    UPSCALE_MEGAPIXELS,
+    { inputKey: 'resize_method', title: 'Resize Method', fallback: { kind: 'combo', options: RESIZE_METHODS } },
+  ];
+
+  return <SchemaNode {...props} fields={fields} />;
 }

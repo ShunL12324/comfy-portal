@@ -1,9 +1,13 @@
+import { SchemaFieldDef, partitionFields } from '@/features/comfy-node/utils/schema-fields';
 import { Node } from '@/features/workflow/types';
 import { useNodeSchema } from '@/hooks/use-node-schema';
 import { NodeSchema } from '@/services/node-schema';
 import { ReactNode } from 'react';
+import AdvancedSection from './advanced-section';
 import BaseNode from './base-node';
-import SchemaField, { SchemaFieldProps } from './schema-field';
+import SchemaFieldList from './schema-field-list';
+
+export type { SchemaFieldDef };
 
 export interface NodeEditorProps {
   node: Node;
@@ -11,41 +15,30 @@ export interface NodeEditorProps {
   workflowId: string;
 }
 
-export type SchemaFieldDef = Omit<SchemaFieldProps, 'node' | 'workflowId' | 'serverId' | 'schema'> & {
-  /** Hide the field when another input makes it irrelevant. */
-  visible?: (inputs: Node['inputs']) => boolean;
-};
-
 interface SchemaNodeProps extends NodeEditorProps {
   fields: SchemaFieldDef[];
   /** Rendered above the fields. */
   header?: (schema: NodeSchema | null) => ReactNode;
-  /** Rendered below the fields. */
+  /** Rendered below the main fields, above the Advanced section. */
   footer?: (schema: NodeSchema | null) => ReactNode;
 }
 
 /**
  * A node editor that is a curated list of its inputs: which to show, in what
- * order, under which title. Controls come from `SchemaField`.
+ * order, under which title. Controls come from `SchemaField`. Fields the
+ * server (or the editor) marks advanced keep their order but move to a
+ * collapsed section at the bottom of the node.
  */
 export default function SchemaNode({ node, serverId, workflowId, fields, header, footer }: SchemaNodeProps) {
   const schema = useNodeSchema(serverId, node.class_type);
+  const { main, advanced } = partitionFields(fields, schema, node.inputs);
+  const shared = { node, serverId, workflowId, schema };
   return (
     <BaseNode node={node}>
       {header?.(schema)}
-      {fields.map(({ visible, ...field }) =>
-        visible && !visible(node.inputs) ? null : (
-          <SchemaField
-            key={field.inputKey}
-            node={node}
-            workflowId={workflowId}
-            serverId={serverId}
-            schema={schema}
-            {...field}
-          />
-        ),
-      )}
+      <SchemaFieldList {...shared} fields={main} />
       {footer?.(schema)}
+      <AdvancedSection {...shared} fields={advanced} />
     </BaseNode>
   );
 }
