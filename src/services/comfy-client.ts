@@ -106,12 +106,89 @@ interface TrackedPrompt {
   nodeCount: number;
   finishedNodes: Set<string>;
   resolve: (result: GenerationResult) => void;
+  /** Last WebSocket frame about this prompt. */
   lastActivity: number;
+  /** Last time the server answered anything about it: a frame or a watchdog poll. */
+  lastContact: number;
   started: boolean;
+  /** False until POST /prompt returns; the watchdog leaves the prompt alone till then. */
+  submitted: boolean;
+  /** Socket id the prompt was queued with. The server routes its frames to that id only. */
+  clientId?: string;
+  nextPollAt: number;
+  pollDelay: number;
+  polling: boolean;
+  /** First poll that found the prompt in neither history nor the queue. */
+  notFoundSince?: number;
 }
 
+/**
+ * Classify a finished history entry.
+ *
+ * Mirrors the server's own `normalize_history_item`: only `status_str ===
+ * 'error'` is a failure, and anything else — including a missing status — is
+ * treated as completed. `status_str` alone can't separate a real error from a
+ * user interrupt, so the terminal event in `messages` decides that.
+ */
+export function classifyHistoryEntry(entry: any): 'success' | 'interrupted' | 'error' {
+  const status = entry?.status;
+  if (status?.status_str !== 'error') return 'success';
+  const messages: [string, any][] = status?.messages ?? [];
+  if (messages.some(([event]) => event === 'execution_interrupted')) return 'interrupted';
+  if (messages.some(([event]) => event === 'execution_success')) return 'success';
+  return 'error';
+}
+
+export function errorMessageFromEntry(entry: any): string {
+  const messages: [string, any][] = entry?.status?.messages ?? [];
+  const failure = messages.find(([event]) => event === 'execution_error');
+  const data = failure?.[1];
+  if (!data) return 'Generation failed on the server.';
+  const nodeType = data.node_type;
+  const message = data.exception_message || 'Unknown error';
+  return nodeType ? `[${nodeType}] ${message}` : message;
+}
+
+/** The throw-on-failure contract generation callers use. */
+function throwIfFailed(result: GenerationResult): void {
+  if (result.success) return;
+  if (result.aborted) throw new GenerationAbortedError(result.error);
+  throw new Error(result.error);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Timed out')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** A socket only counts as alive if a frame arrived this recently. */
+export const LIVENESS_MAX_SILENCE_MS = 30_000;
+/** Budget for a pre-submit liveness check: (re)connect plus the server's initial `status`. */
+export const LIVENESS_WAIT_MS = 3_000;
+/** Silence on a tracked prompt before the watchdog asks the server over HTTP. */
+export const WATCHDOG_SILENCE_MS = 15_000;
+/**
+ * Socket silence, while our prompt runs on it, before the watchdog replaces the
+ * socket. Longer than WATCHDOG_SILENCE_MS because a healthy socket goes quiet
+ * during nodes that report no progress (model loads), and a replacement can't
+ * win back that prompt's progress anyway — the server routes it to the old id.
+ */
+export const WATCHDOG_DEAF_SOCKET_MS = 60_000;
+const WATCHDOG_TICK_MS = 5_000;
+const WATCHDOG_MAX_POLL_DELAY_MS = 60_000;
+/** A prompt that just finished can briefly be in neither history nor the queue. */
+const WATCHDOG_NOT_FOUND_RECHECK_MS = 2_000;
+const WATCHDOG_LOST_GRACE_MS = 60_000;
+/** Stop tracking when the server has answered nothing — no frame, no poll — for this long. */
+const UNREACHABLE_TIMEOUT_MS = 600_000;
+
 export class ComfyClient {
-  private clientId: string;
+  private readonly installId: string;
+  private clientId: string = '';
+  private connectionCount = 0;
   private ws: WebSocket | null = null;
   private host: string;
   private port: string;
@@ -121,13 +198,26 @@ export class ComfyClient {
   private maxReconnectAttempts: number = 10;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed: boolean = false;
+  /** Backgrounded: sockets are closed and nothing reconnects until resume(). */
+  private suspended = false;
+  private connecting: Promise<void> | null = null;
+  /** Bumped whenever the socket is torn down, so an in-flight connect knows it lost. */
+  private socketEpoch = 0;
+  private everConnected = false;
+
+  // Liveness of the current socket. An open socket proves nothing: the server
+  // can drop its registration and stop sending without closing it.
+  private openedAt = 0;
+  private lastFrameAt = 0;
+  /** The server sent this socket its initial `status`, so it is in the registry. */
+  private registered = false;
+  private registrationWaiters = new Set<() => void>();
 
   // Multi-prompt tracking: each queued prompt gets its own slot
   private trackedPrompts = new Map<string, TrackedPrompt>();
   // The "active" prompt is the one currently shown in the UI (latest queued)
   private activePromptId: string | null = null;
-  private readonly TIMEOUT_MS = 600_000; // 10 minutes with no activity
-  private timeoutCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private watchdogInterval: ReturnType<typeof setInterval> | null = null;
 
   /** Persistent callback for queue status updates — fires on every WS 'status' message */
   onQueueUpdate?: (queueRemaining: number) => void;
@@ -136,11 +226,34 @@ export class ComfyClient {
     this.host = options.host;
     this.port = options.port;
     this.useSSL = options.useSSL;
-    // Must be unique per device: the server evicts the previous socket when a
-    // new one connects with the same clientId, so a host/port-derived id would
-    // make two devices on the same server kick each other offline.
-    this.clientId = `comfy-portal-${getInstallId()}`;
+    this.installId = getInstallId();
+    this.rotateClientId();
     this.token = options.token;
+  }
+
+  /**
+   * Give the next socket a fresh clientId.
+   *
+   * Never reuse one. ComfyUI's socket handler unregisters the id when ANY
+   * socket that used it closes, without checking which socket owns it
+   * (Comfy-Org/ComfyUI#16010). A reconnect under the old id is silently
+   * dropped from the registry once the server notices the dead predecessor:
+   * still open, but it never receives another frame. The install id keeps
+   * devices apart; the suffix keeps this device's sockets apart.
+   */
+  private rotateClientId() {
+    this.connectionCount += 1;
+    this.clientId = `comfy-portal-${this.installId}-${this.connectionCount.toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  }
+
+  /** The id prompts are queued under right now. */
+  getClientId(): string {
+    return this.clientId;
+  }
+
+  /** Per-connection part of the clientId — all the diagnostics ever log of it. */
+  private clientIdSuffix(clientId = this.clientId) {
+    return clientId.slice(`comfy-portal-${this.installId}-`.length);
   }
 
   /**
@@ -207,32 +320,63 @@ export class ComfyClient {
    */
   private setupWebSocket(wsUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      diag('ws', 'connecting', { url: redactUrl(wsUrl) });
-      this.ws = new WebSocket(wsUrl);
+      diag('ws', 'connecting', {
+        url: redactUrl(wsUrl).replace(/([?&]clientId=)[^&]*/, `$1…${this.clientIdSuffix()}`),
+      });
+      const ws = new WebSocket(wsUrl);
+      this.ws = ws;
+      this.registered = false;
+      this.lastFrameAt = 0;
 
-      this.ws.onopen = () => {
-        diag('ws', 'open', { attempt: this.reconnectAttempts, tracked: this.trackedPromptIds() });
+      // Events from a socket we have since replaced are ignored: it must not
+      // schedule reconnects, nor feed frames for an id we no longer queue under.
+      ws.onopen = () => {
+        if (this.ws !== ws) return;
+        diag('ws', 'open', {
+          attempt: this.reconnectAttempts,
+          clientId: this.clientIdSuffix(),
+          tracked: this.trackedPromptIds(),
+        });
+        this.openedAt = Date.now();
+        this.everConnected = true;
         this.reconnectAttempts = 0;
         resolve();
       };
 
-      this.ws.onclose = (event) => {
+      ws.onclose = (event) => {
+        if (this.ws !== ws) return;
         diag('ws', 'close', {
           code: event?.code,
           reason: event?.reason || undefined,
           disposed: this.disposed,
           tracked: this.trackedPromptIds(),
         });
+        this.ws = null;
+        this.registered = false;
+        reject(new Error(`Cannot connect to server at ${wsUrl.split('/ws')[0]}`));
         this.scheduleReconnect();
       };
 
-      this.ws.onerror = (event) => {
+      ws.onerror = (event) => {
+        if (this.ws !== ws) return;
         diag('ws', 'error', { message: (event as { message?: string })?.message });
         reject(new Error(`Cannot connect to server at ${wsUrl.split('/ws')[0]}`));
       };
 
-      this.ws.addEventListener('message', this.handleMessage);
+      ws.addEventListener('message', (event) => {
+        if (this.ws === ws) this.handleMessage(event);
+      });
     });
+  }
+
+  /** Drop the current socket without triggering a reconnect. */
+  private closeSocket() {
+    const ws = this.ws;
+    this.socketEpoch += 1;
+    this.ws = null;
+    this.connecting = null;
+    this.registered = false;
+    ws?.close();
   }
 
   /**
@@ -240,7 +384,7 @@ export class ComfyClient {
    * @private
    */
   private scheduleReconnect() {
-    if (this.disposed) return;
+    if (this.disposed || this.suspended) return;
     if (this.reconnectTimer) return;
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       diag('ws', 'reconnect gave up', { attempts: this.reconnectAttempts, tracked: this.trackedPromptIds() });
@@ -265,26 +409,136 @@ export class ComfyClient {
   }
 
   /**
-   * Establishes a WebSocket connection to the ComfyUI server.
-   * If already connected, does nothing.
+   * Establishes a WebSocket connection to the ComfyUI server, under a fresh
+   * clientId. If already connected, does nothing; concurrent callers share
+   * one attempt.
    * @throws Error if connection fails
    */
-  async connect(): Promise<void> {
-    if (this.isConnected()) return;
+  connect(): Promise<void> {
+    if (this.isConnected()) return Promise.resolve();
+    if (this.connecting) return this.connecting;
 
     // A previous disconnect() parks the instance permanently; clear that so a
     // client can be reused after the app returns from the background.
     this.disposed = false;
 
+    const attempt = this.openSocket().finally(() => {
+      if (this.connecting === attempt) this.connecting = null;
+    });
+    this.connecting = attempt;
+    return attempt;
+  }
+
+  private async openSocket(): Promise<void> {
+    const epoch = this.socketEpoch;
+    const protocol = (await resolveScheme(this.useSSL, this.host, this.port)) === 'https' ? 'wss' : 'ws';
+    if (epoch !== this.socketEpoch) throw new Error('Connection superseded');
+    this.rotateClientId();
+    let wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
+    if (this.token) {
+      wsUrl += `&token=${this.token}`;
+    }
+    await this.setupWebSocket(wsUrl);
+  }
+
+  /** Replace the current socket with a new one under a fresh clientId. */
+  async reconnect(reason: string): Promise<void> {
+    diag('ws', 'reconnect', { reason, from: this.clientIdSuffix(), tracked: this.trackedPromptIds() });
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempts = 0;
+    this.closeSocket();
+    await this.connect();
+  }
+
+  /**
+   * Make sure the server will actually deliver frames to this socket before a
+   * prompt is queued under its id.
+   *
+   * A socket is trusted only if it has been registered (the server sent its
+   * initial `status`) and heard from recently. Otherwise it is replaced, and
+   * the new one's initial `status` awaited as proof of registration — bounded,
+   * because the prompt is queued over HTTP regardless and the watchdog
+   * finishes it without a socket.
+   *
+   * @returns whether the socket is confirmed live
+   */
+  async ensureLive(): Promise<boolean> {
+    const started = Date.now();
+    const silentMs = this.lastFrameAt ? started - this.lastFrameAt : undefined;
+    if (this.isConnected() && this.registered && silentMs !== undefined && silentMs < LIVENESS_MAX_SILENCE_MS) {
+      diag('live', 'ok', { clientId: this.clientIdSuffix(), silentMs });
+      return true;
+    }
+
+    let reason: string;
+    if (!this.isConnected()) reason = this.connecting ? 'connecting' : 'disconnected';
+    else if (!this.registered) reason = started - this.openedAt < LIVENESS_WAIT_MS ? 'registering' : 'unregistered';
+    else reason = 'stale';
+    diag('live', 'check failed', { reason, clientId: this.clientIdSuffix(), silentMs });
+
     try {
-      const protocol = (await resolveScheme(this.useSSL, this.host, this.port)) === 'https' ? 'wss' : 'ws';
-      let wsUrl = `${protocol}://${this.host}:${this.port}/ws?clientId=${this.clientId}`;
-      if (this.token) {
-        wsUrl += `&token=${this.token}`;
-      }
-      await this.setupWebSocket(wsUrl);
+      // A socket already on its way gets its chance; anything else is replaced.
+      const ready = reason === 'connecting' || reason === 'registering' ? this.connect() : this.reconnect(reason);
+      await withTimeout(ready, LIVENESS_WAIT_MS);
     } catch (error) {
-      throw error;
+      diag('live', 'connect failed', { reason, error: String(error) });
+      return false;
+    }
+    const ok = await this.waitForRegistration(Math.max(0, started + LIVENESS_WAIT_MS - Date.now()));
+    diag('live', ok ? 'registered' : 'no status frame', { clientId: this.clientIdSuffix(), ms: Date.now() - started });
+    return ok;
+  }
+
+  private waitForRegistration(timeoutMs: number): Promise<boolean> {
+    if (this.registered) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const done = (ok: boolean) => {
+        clearTimeout(timer);
+        this.registrationWaiters.delete(onRegistered);
+        resolve(ok);
+      };
+      const onRegistered = () => done(true);
+      const timer = setTimeout(() => done(false), timeoutMs);
+      this.registrationWaiters.add(onRegistered);
+    });
+  }
+
+  /**
+   * Close the socket for the background without giving up on tracked prompts.
+   * The OS kills sockets there anyway; `resume` picks everything back up.
+   */
+  suspend() {
+    diag('ws', 'suspend', { tracked: this.trackedPromptIds() });
+    this.suspended = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.closeSocket();
+  }
+
+  /**
+   * Back in the foreground. Whatever socket survived can't be trusted, so one
+   * in use is replaced under a fresh id, and tracked prompts are checked over
+   * HTTP straight away rather than after the usual silence.
+   */
+  async resume(): Promise<void> {
+    const wasSuspended = this.suspended;
+    this.suspended = false;
+    const silentMs = this.lastFrameAt ? Date.now() - this.lastFrameAt : Infinity;
+    const inUse = this.trackedPrompts.size > 0 || this.everConnected;
+    const trusted = this.isConnected() && this.registered && silentMs < LIVENESS_MAX_SILENCE_MS;
+    diag('ws', 'resume', { wasSuspended, inUse, trusted, tracked: this.trackedPromptIds() });
+
+    const now = Date.now();
+    for (const tracked of this.trackedPrompts.values()) tracked.nextPollAt = now;
+    this.watchdogTick();
+
+    if (inUse && (wasSuspended || !trusted)) {
+      await this.reconnect('foreground');
     }
   }
 
@@ -299,12 +553,7 @@ export class ComfyClient {
       this.reconnectTimer = null;
     }
     this.resolveAllTracked({ success: false, error: 'Disconnected', aborted: true });
-    this.stopTimeoutCheck();
-    if (this.ws) {
-      this.ws.removeEventListener('message', this.handleMessage);
-      this.ws.close();
-      this.ws = null;
-    }
+    this.closeSocket();
   }
 
   /**
@@ -330,7 +579,7 @@ export class ComfyClient {
     if (this.activePromptId === promptId) {
       this.activePromptId = null;
     }
-    if (this.trackedPrompts.size === 0) this.stopTimeoutCheck();
+    if (this.trackedPrompts.size === 0) this.stopWatchdog();
     tracked.resolve(result);
   }
 
@@ -338,7 +587,7 @@ export class ComfyClient {
     const prompts = [...this.trackedPrompts.values()];
     this.trackedPrompts.clear();
     this.activePromptId = null;
-    this.stopTimeoutCheck();
+    this.stopWatchdog();
     for (const tracked of prompts) {
       tracked.resolve(result);
     }
@@ -348,36 +597,128 @@ export class ComfyClient {
     return [...this.trackedPrompts.keys()];
   }
 
-  /** Touch last-activity timestamp for a tracked prompt. */
+  /** A frame about this prompt arrived: it is alive, so push the next HTTP check back. */
   private touchActivity(promptId: string) {
     const tracked = this.trackedPrompts.get(promptId);
-    if (tracked) tracked.lastActivity = Date.now();
+    if (!tracked) return;
+    const now = Date.now();
+    tracked.lastActivity = now;
+    tracked.lastContact = now;
+    tracked.pollDelay = WATCHDOG_SILENCE_MS;
+    tracked.nextPollAt = now + WATCHDOG_SILENCE_MS;
+    tracked.notFoundSince = undefined;
   }
 
-  /** Start the periodic timeout check if not already running. */
-  private startTimeoutCheck() {
-    if (this.timeoutCheckInterval) return;
-    this.timeoutCheckInterval = setInterval(() => {
+  // ---------------------------------------------------------------------------
+  // Watchdog
+  //
+  // The socket is only an accelerator. While a prompt is tracked and its frames
+  // go quiet, ask the server over HTTP: a finished prompt resolves exactly as
+  // the socket would have resolved it, so a deaf socket costs seconds, not the
+  // whole run.
+  // ---------------------------------------------------------------------------
+
+  private startWatchdog() {
+    if (this.watchdogInterval) return;
+    this.watchdogInterval = setInterval(() => this.watchdogTick(), WATCHDOG_TICK_MS);
+  }
+
+  private stopWatchdog() {
+    if (this.watchdogInterval) {
+      clearInterval(this.watchdogInterval);
+      this.watchdogInterval = null;
+    }
+  }
+
+  private watchdogTick() {
+    if (this.suspended) return;
+    const now = Date.now();
+    for (const tracked of [...this.trackedPrompts.values()]) {
+      if (!tracked.submitted || tracked.polling) continue;
+      const lastContact = Math.max(tracked.lastContact, this.lastFrameAt);
+      if (now - lastContact > UNREACHABLE_TIMEOUT_MS) {
+        diag('watchdog', 'unreachable', { promptId: tracked.promptId, silentMs: now - lastContact });
+        // aborted: our silence, not a server verdict. The job stays recoverable.
+        this.resolveTracked(tracked.promptId, {
+          success: false,
+          error: 'Server unreachable (no response for 10 minutes)',
+          aborted: true,
+        });
+        continue;
+      }
+      if (now >= tracked.nextPollAt) void this.pollTracked(tracked);
+    }
+  }
+
+  private async pollTracked(tracked: TrackedPrompt) {
+    const promptId = tracked.promptId;
+    const isCurrent = () => this.trackedPrompts.get(promptId) === tracked;
+    tracked.polling = true;
+    const started = Date.now();
+    diag('watchdog', 'poll', {
+      promptId,
+      silentMs: started - tracked.lastActivity,
+      socketSilentMs: this.lastFrameAt ? started - this.lastFrameAt : null,
+      connected: this.isConnected(),
+    });
+    let nextDelay = Math.min(tracked.pollDelay * 1.5, WATCHDOG_MAX_POLL_DELAY_MS);
+    try {
+      // History first, then queue: the reverse order misses a prompt that
+      // finishes between the two calls.
+      const history = await this.getHistory(promptId);
+      if (!isCurrent()) return;
+      tracked.lastContact = Date.now();
+      const entry = history?.[promptId];
+      if (entry) {
+        const outcome = classifyHistoryEntry(entry);
+        diag('watchdog', 'finished', { promptId, outcome });
+        // The socket may have resolved it while we waited; resolveTracked
+        // ignores a prompt that is no longer tracked.
+        if (outcome === 'success') this.resolveTracked(promptId, { success: true });
+        else if (outcome === 'interrupted') {
+          this.resolveTracked(promptId, { success: false, error: 'Generation interrupted', aborted: true });
+        } else this.resolveTracked(promptId, { success: false, error: errorMessageFromEntry(entry) });
+        return;
+      }
+
+      const queue = await this.getQueue();
+      if (!isCurrent()) return;
+      const running = queue.queue_running.some((item) => item[1] === promptId);
+      const pending = queue.queue_pending.some((item) => item[1] === promptId);
       const now = Date.now();
-      for (const [promptId, tracked] of this.trackedPrompts) {
-        if (now - tracked.lastActivity > this.TIMEOUT_MS) {
-          diag('track', 'inactivity timeout', { promptId, silentMs: now - tracked.lastActivity });
-          // aborted: this is our silence, not a server verdict. The prompt may
-          // well still be running, so the job must stay recoverable.
-          this.resolveTracked(promptId, {
-            success: false,
-            error: 'Generation timed out (no response for 10 minutes)',
-            aborted: true,
-          });
+      diag('watchdog', 'still waiting', { promptId, running, pending });
+
+      if (!running && !pending) {
+        tracked.notFoundSince ??= now;
+        if (now - tracked.notFoundSince > WATCHDOG_LOST_GRACE_MS) {
+          // Recovery owns the verdict on a prompt the server has forgotten.
+          this.resolveTracked(promptId, { success: false, error: 'Generation lost', aborted: true });
+          return;
+        }
+        nextDelay = WATCHDOG_NOT_FOUND_RECHECK_MS;
+      } else {
+        tracked.notFoundSince = undefined;
+        const socketSilentMs = this.lastFrameAt ? now - this.lastFrameAt : Infinity;
+        const closed = !this.isConnected() && !this.connecting && !this.reconnectTimer;
+        const deaf =
+          this.isConnected() &&
+          running &&
+          tracked.clientId === this.clientId &&
+          socketSilentMs >= WATCHDOG_DEAF_SOCKET_MS;
+        if ((closed || deaf) && !this.suspended) {
+          this.reconnect(closed ? 'watchdog: closed' : 'watchdog: deaf').catch((error) =>
+            diag('watchdog', 'reconnect failed', { error: String(error) }),
+          );
         }
       }
-    }, 30_000); // check every 30s
-  }
-
-  private stopTimeoutCheck() {
-    if (this.timeoutCheckInterval) {
-      clearInterval(this.timeoutCheckInterval);
-      this.timeoutCheckInterval = null;
+    } catch (error) {
+      diag('watchdog', 'poll failed', { promptId, error: String(error) });
+    } finally {
+      tracked.polling = false;
+      if (isCurrent()) {
+        tracked.pollDelay = nextDelay;
+        tracked.nextPollAt = Date.now() + nextDelay;
+      }
     }
   }
 
@@ -389,10 +730,13 @@ export class ComfyClient {
   }
 
   private handleMessage = (event: MessageEvent) => {
+    this.lastFrameAt = Date.now();
     try {
       if (typeof event.data !== 'string') {
         // Binary frames are live previews: proof the server is sampling even when text goes quiet.
         diag('msg', 'binary', { bytes: (event.data as ArrayBuffer | Blob | null)?.['byteLength' as never] ?? (event.data as Blob | null)?.size });
+        const active = this.activePromptId ? this.trackedPrompts.get(this.activePromptId) : undefined;
+        if (active?.started) this.touchActivity(active.promptId);
         return;
       }
       if (event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
@@ -411,6 +755,14 @@ export class ComfyClient {
       });
 
       if (message.type === 'status') {
+        // The server greets every socket it registers with a status carrying
+        // its sid; broadcasts only reach registered sockets, so either proves it.
+        const sid = message.data?.sid as string | undefined;
+        if (!this.registered && (!sid || sid === this.clientId)) {
+          this.registered = true;
+          diag('ws', 'registered', { clientId: this.clientIdSuffix(), ms: Date.now() - this.openedAt });
+          for (const waiter of [...this.registrationWaiters]) waiter();
+        }
         this.onQueueUpdate?.(
           message.data?.status?.exec_info?.queue_remaining ?? 0,
         );
@@ -477,6 +829,7 @@ export class ComfyClient {
             const tracked = this.findTracked(msgPromptId);
             if (tracked) {
               tracked.callbacks.onNodeStart?.(message.data.node);
+              this.touchActivity(tracked.promptId);
             }
           } else if (msgPromptId && this.trackedPrompts.has(msgPromptId)) {
             // Authoritative completion signal: the server emits this after it
@@ -543,51 +896,85 @@ export class ComfyClient {
   };
 
   /**
-   * Tracks the progress of a workflow execution.
-   * Adds the prompt to the tracked map and returns a promise that resolves
-   * when the generation completes, fails, or times out.
-   *
-   * @param promptId - The ID of the prompt being executed
-   * @param workflow - The workflow being executed
-   * @param callbacks - Callbacks for progress updates
-   * @returns Promise that resolves to a result object indicating success or failure
-   * @throws Error if WebSocket is not connected
-   * @private
+   * Start listening for a prompt's frames. Registered before the prompt is
+   * queued: a short or cached run can start — even finish — before POST
+   * /prompt returns, and frames for an untracked prompt are dropped.
    */
-  trackProgress(
-    promptId: string,
-    workflow: Workflow,
-    callbacks: ProgressCallback,
-  ): Promise<GenerationResult> {
-    if (!this.ws) {
-      // Client-side condition, not a server verdict — report it as an abort so
-      // the caller keeps the job recoverable over HTTP.
-      diag('track', 'no socket', { promptId });
-      return Promise.resolve({
-        success: false,
-        error: 'WebSocket not connected',
-        aborted: true,
-      });
-    }
-
+  private track(promptId: string, workflow: Workflow, callbacks: ProgressCallback): Promise<GenerationResult> {
     return new Promise((resolve) => {
+      const now = Date.now();
       this.trackedPrompts.set(promptId, {
         promptId,
         callbacks,
         nodeCount: Object.keys(workflow).length,
         finishedNodes: new Set(),
         resolve,
-        lastActivity: Date.now(),
+        lastActivity: now,
+        lastContact: now,
         started: false,
+        submitted: false,
+        nextPollAt: now + WATCHDOG_SILENCE_MS,
+        pollDelay: WATCHDOG_SILENCE_MS,
+        polling: false,
       });
       this.activePromptId = promptId;
       diag('track', 'start', { promptId, nodes: Object.keys(workflow).length, connected: this.isConnected() });
-      this.startTimeoutCheck();
+      this.startWatchdog();
     });
   }
 
+  /** Older servers ignore the requested prompt id and assign their own. */
+  private rekeyTracked(fromId: string, toId: string) {
+    const tracked = this.trackedPrompts.get(fromId);
+    if (!tracked) return;
+    diag('track', 'rekey', { from: fromId, to: toId });
+    this.trackedPrompts.delete(fromId);
+    tracked.promptId = toId;
+    this.trackedPrompts.set(toId, tracked);
+    if (this.activePromptId === fromId) this.activePromptId = toId;
+  }
+
   /**
-   * Queues a workflow for execution on the ComfyUI server.
+   * Queue a workflow and track it to completion.
+   *
+   * Tracking starts before the request goes out (see `track`). Resolving the
+   * results is deliberately NOT part of this: downloading has to be shared
+   * with the recovery path, which reaches a finished prompt over HTTP without
+   * ever having tracked it. See `finalizeJob` in
+   * `features/generation/services/job-recovery.ts`.
+   *
+   * @param promptId - Client-chosen prompt id (see `queuePrompt`).
+   * @returns the server's prompt id, and `completion`, which settles when the
+   *   prompt finishes — over the socket or, failing that, the watchdog.
+   *   It rejects with GenerationAbortedError if we stopped listening
+   *   (cancel, interrupt, disconnect), and Error if the run failed.
+   * @throws whatever `queuePrompt` throws; nothing stays tracked then
+   */
+  async submitPrompt(
+    workflow: Workflow,
+    promptId: string,
+    callbacks: ProgressCallback,
+  ): Promise<{ promptId: string; completion: Promise<void> }> {
+    const result = this.track(promptId, workflow, callbacks);
+    let queued: { promptId: string; clientId: string };
+    try {
+      queued = await this.postPrompt(workflow, promptId);
+    } catch (error) {
+      this.resolveTracked(promptId, { success: false, error: String(error), aborted: true });
+      throw error;
+    }
+    if (queued.promptId !== promptId) this.rekeyTracked(promptId, queued.promptId);
+    const tracked = this.trackedPrompts.get(queued.promptId);
+    if (tracked) {
+      tracked.submitted = true;
+      tracked.clientId = queued.clientId;
+    }
+    return { promptId: queued.promptId, completion: result.then(throwIfFailed) };
+  }
+
+  /**
+   * Queues a workflow for execution on the ComfyUI server, under the current
+   * socket's clientId.
    *
    * @param workflow - The workflow to execute
    * @param promptId - Optional client-chosen prompt ID. Must be a canonical
@@ -599,17 +986,22 @@ export class ComfyClient {
    * @throws Error if queueing fails or server returns an error
    */
   async queuePrompt(workflow: Workflow, promptId?: string): Promise<string> {
+    return (await this.postPrompt(workflow, promptId)).promptId;
+  }
+
+  private async postPrompt(workflow: Workflow, promptId?: string): Promise<{ promptId: string; clientId: string }> {
     let path = '/prompt';
     if (this.token) {
       path += `?token=${this.token}`;
     }
     const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
+    const clientId = this.clientId;
     const response = await fetchWithAuth(url, this.token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt: workflow,
-        client_id: this.clientId,
+        client_id: clientId,
         ...(promptId ? { prompt_id: promptId } : {}),
       }),
     });
@@ -620,7 +1012,7 @@ export class ComfyClient {
     }
 
     const data = await response.json();
-    return data.prompt_id;
+    return { promptId: data.prompt_id, clientId };
   }
 
   /**
@@ -758,30 +1150,5 @@ export class ComfyClient {
     }
 
     return { found: true, mediaUrls };
-  }
-
-  /**
-   * Waits for an already-queued prompt to finish executing.
-   *
-   * Downloading the results is deliberately NOT part of this call: that step
-   * has to be shared with the recovery path, which reaches a finished prompt
-   * over HTTP without ever having tracked it. See `finalizeJob` in
-   * `features/generation/services/job-recovery.ts`.
-   *
-   * @throws GenerationAbortedError if cancelled/interrupted/disconnected
-   * @throws Error if the prompt failed on the server
-   */
-  async awaitCompletion(
-    promptId: string,
-    workflow: Workflow,
-    callbacks: ProgressCallback,
-  ): Promise<void> {
-    const result = await this.trackProgress(promptId, workflow, callbacks);
-    if (!result.success) {
-      if (result.aborted) {
-        throw new GenerationAbortedError(result.error);
-      }
-      throw new Error(result.error);
-    }
   }
 }

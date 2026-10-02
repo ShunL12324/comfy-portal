@@ -92,6 +92,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   // tracked prompts, because a run that is still in its onPre hooks isn't
   // tracked yet and would otherwise be reset to idle by a sibling finishing.
   const inFlightRef = useRef(0);
+  // One submit at a time. The Generate button stays enabled while runs are in
+  // flight (queueing several is allowed), so a double tap — or a second tap
+  // while the first waits on the socket — used to queue the same run twice.
+  // Re-entry is only refused until the prompt has been handed to the server.
+  const submittingRef = useRef<object | null>(null);
 
   // ---------------------------------------------------------------------------
   // Status-guarded setters
@@ -263,6 +268,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
   const generate = useCallback(
     async (workflow: Record<string, Node>, workflowId: string, serverId: string) => {
+      if (submittingRef.current) {
+        diag('gen', 'ignored: submit in flight', { workflowId });
+        return;
+      }
       const client = attachClient(serverId);
       if (!client) {
         showToast.error('Error', 'Server not found');
@@ -274,6 +283,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       const localPromptId = generateUUID();
       let promptId = localPromptId;
 
+      const submit = {};
+      submittingRef.current = submit;
+      const endSubmit = () => {
+        if (submittingRef.current === submit) submittingRef.current = null;
+      };
       inFlightRef.current += 1;
       try {
         // Reset progress from any previous run
@@ -294,13 +308,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         const workflowForExecution =
           useWorkflowStore.getState().workflow.find((p) => p.id === workflowId)?.data ?? workflow;
 
-        if (!client.isConnected()) {
-          // Best-effort: the socket only carries live progress. If it can't be
-          // established (proxy that won't upgrade /ws, flaky network) the
-          // prompt still queues over HTTP and reconciliation delivers the
-          // results — better than refusing to generate at all.
-          await client.connect().catch((error) => diag('gen', 'socket connect failed', { error: String(error) }));
-        }
+        // Best-effort: the socket only carries live progress. If it can't be
+        // proven live (proxy that won't upgrade /ws, flaky network) the prompt
+        // still queues over HTTP and the client's watchdog finishes it —
+        // better than refusing to generate at all.
+        const live = await client.ensureLive();
 
         usePendingJobsStore.getState().addJob({
           promptId: localPromptId,
@@ -312,9 +324,18 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
         await pendingJobStorage.flush();
 
+        let completion: Promise<void>;
         try {
-          promptId = await client.queuePrompt(workflowForExecution, localPromptId);
-          diag('gen', 'queued', { promptId, requested: localPromptId, socket: client.isConnected() });
+          ({ promptId, completion } = await client.submitPrompt(workflowForExecution, localPromptId, {
+            onProgress: handleProgress,
+            onNodeStart: (nodeId) => {
+              setGeneratingStatus(() => ({ currentNodeId: nodeId }));
+            },
+            onNodeComplete: (_nodeId, total, completed) => {
+              handleNodeProgress(completed, total);
+            },
+          }));
+          diag('gen', 'queued', { promptId, requested: localPromptId, live, socket: client.isConnected() });
         } catch (error) {
           diag('gen', 'queue failed', { promptId: localPromptId, error: String(error) });
           // Only a explicit refusal proves nothing was queued. A transport
@@ -324,6 +345,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
             usePendingJobsStore.getState().removeJob(serverId, localPromptId);
           }
           throw error;
+        } finally {
+          endSubmit();
         }
         // Older servers ignore the requested id and assign their own.
         if (promptId !== localPromptId) {
@@ -335,15 +358,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         // that completed before the error wrote real outputs.
         let executionError: unknown;
         try {
-          await client.awaitCompletion(promptId, workflowForExecution, {
-            onProgress: handleProgress,
-            onNodeStart: (nodeId) => {
-              setGeneratingStatus(() => ({ currentNodeId: nodeId }));
-            },
-            onNodeComplete: (_nodeId, total, completed) => {
-              handleNodeProgress(completed, total);
-            },
-          });
+          await completion;
           diag('gen', 'completed', { promptId });
         } catch (error) {
           diag('gen', 'await ended', { promptId, aborted: error instanceof GenerationAbortedError, error: String(error) });
@@ -395,11 +410,15 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
             'Generation Failed',
             error instanceof Error ? error.message : 'An unexpected error occurred.',
           );
+        } else {
+          // We stopped listening, so make sure someone keeps asking.
+          void reconcileAll();
         }
         // Aborts (dropped socket, interrupt) and download failures leave the
         // job in the registry on purpose — reconciliation can still recover
         // the outputs, or retire it once the server's verdict is known.
       } finally {
+        endSubmit();
         // Other generations may still be running — resetting on the first one
         // to finish would blank the UI while they continue.
         inFlightRef.current -= 1;

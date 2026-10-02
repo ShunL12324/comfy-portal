@@ -2,7 +2,7 @@ import { DesignScope } from '@/components/ui/design-system/primitives';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { designColors } from '@/constants/design-tokens';
 import { useLaunchPoller } from '@/features/cloud/hooks/use-launch-poller';
-import { disconnectAllClients, reconcileAll } from '@/features/generation/services/job-recovery';
+import { reconcileAll, watchAppState } from '@/features/generation/services/job-recovery';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { runStorageMigrations } from '@/services/storage-migration';
@@ -22,7 +22,6 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-naviga
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
@@ -95,16 +94,7 @@ function RootLayoutNav() {
     void runStorageMigrations();
     void reconcileAll();
 
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        void reconcileAll();
-      } else if (nextAppState === 'background') {
-        // The OS tears these sockets down anyway; reconnect on the way back in.
-        disconnectAllClients();
-      }
-    });
-
-    return () => subscription.remove();
+    return watchAppState();
   }, []);
 
   // Handle incoming shared images

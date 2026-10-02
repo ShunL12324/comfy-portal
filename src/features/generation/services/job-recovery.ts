@@ -2,11 +2,11 @@ import { diag } from '@/utils/diagnostics';
 import { Server } from '@/features/server/types';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { Workflow } from '@/features/workflow/types';
-import { ComfyClient } from '@/services/comfy-client';
+import { ComfyClient, classifyHistoryEntry, errorMessageFromEntry } from '@/services/comfy-client';
 import { getGeneratedMedia, saveGeneratedMedia } from '@/services/image-storage';
 import { runStorageMigrations } from '@/services/storage-migration';
 import { showToast } from '@/utils/toast';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { PendingJob, getPendingJobs, usePendingJobsStore } from '../stores/pending-jobs-store';
 
@@ -111,16 +111,46 @@ function findServer(serverId: string): Server | undefined {
 }
 
 /**
- * Drop every connection. Called when the app backgrounds — the OS tears these
- * sockets down anyway, and `reconcileAll` re-establishes what's needed on the
- * way back in.
+ * Close every socket when the app backgrounds — the OS tears them down anyway,
+ * often without telling us. Tracked prompts stay tracked: a run screen still
+ * waiting on one picks it up again in `resumeAllClients`.
  */
-export function disconnectAllClients() {
+function suspendAllClients() {
   for (const { client } of clients.values()) {
-    client.disconnect();
+    client.suspend();
   }
-  clients.clear();
   cancelScheduledReconcile();
+}
+
+/**
+ * Back in the foreground: replace each client's socket under a fresh id and
+ * check tracked prompts over HTTP at once, instead of trusting a socket that
+ * may have died silently while we were away.
+ */
+function resumeAllClients() {
+  for (const { client } of clients.values()) {
+    client.resume().catch((error) => diag('job', 'resume reconnect failed', { error: String(error) }));
+  }
+}
+
+/**
+ * Follow the app in and out of the foreground. Generations outlive the run
+ * screen, and the server buffers nothing for a disconnected client, so coming
+ * back is the moment to revive sockets and ask what finished while we were
+ * away. Returns the unsubscribe.
+ */
+export function watchAppState(): () => void {
+  const subscription = AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState === 'active') {
+      // A socket that survived the trip may be silently dead; never trust it.
+      resumeAllClients();
+      void reconcileAll();
+    } else if (nextAppState === 'background') {
+      // The OS tears these sockets down anyway; reconnect on the way back in.
+      suspendAllClients();
+    }
+  });
+  return () => subscription.remove();
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +230,9 @@ export async function finalizeJob(
 
     // Everything the server had for this prompt is now on disk.
     usePendingJobsStore.getState().removeJob(serverId, promptId);
+    // Nothing new, but an earlier pass saved it all: no work done here, and
+    // certainly not "the generation produced nothing".
+    if (savedPaths.length === 0 && alreadySaved.size > 0) return null;
     return savedPaths;
   } finally {
     finalizing.delete(jobKey);
@@ -253,33 +286,6 @@ function scheduleReconcile() {
     reconcileDelay = Math.min(reconcileDelay * 1.5, RECONCILE_MAX_DELAY_MS);
     void reconcileAll();
   }, reconcileDelay);
-}
-
-/**
- * Classify a finished history entry.
- *
- * Mirrors the server's own `normalize_history_item`: only `status_str ===
- * 'error'` is a failure, and anything else — including a missing status — is
- * treated as completed. `status_str` alone can't separate a real error from a
- * user interrupt, so the terminal event in `messages` decides that.
- */
-function classifyHistoryEntry(entry: any): 'success' | 'interrupted' | 'error' {
-  const status = entry?.status;
-  if (status?.status_str !== 'error') return 'success';
-  const messages: [string, any][] = status?.messages ?? [];
-  if (messages.some(([event]) => event === 'execution_interrupted')) return 'interrupted';
-  if (messages.some(([event]) => event === 'execution_success')) return 'success';
-  return 'error';
-}
-
-function errorMessageFromEntry(entry: any): string {
-  const messages: [string, any][] = entry?.status?.messages ?? [];
-  const failure = messages.find(([event]) => event === 'execution_error');
-  const data = failure?.[1];
-  if (!data) return 'Generation failed on the server.';
-  const nodeType = data.node_type;
-  const message = data.exception_message || 'Unknown error';
-  return nodeType ? `[${nodeType}] ${message}` : message;
 }
 
 /**

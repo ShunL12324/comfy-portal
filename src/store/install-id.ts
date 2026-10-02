@@ -7,10 +7,11 @@ interface InstallIdState {
   /**
    * Stable per-install identifier.
    *
-   * Used to build the ComfyUI WebSocket clientId. It must be unique per
+   * Prefix of every ComfyUI WebSocket clientId. It must be unique per
    * device: the server keys its socket registry by clientId and evicts the
    * previous socket when a new one connects with the same id, so two devices
-   * sharing an id would silently kick each other offline.
+   * sharing an id would silently kick each other offline. Each connection
+   * appends its own suffix (see `ComfyClient.rotateClientId`).
    */
   installId: string;
 }
