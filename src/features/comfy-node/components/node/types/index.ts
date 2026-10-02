@@ -58,6 +58,8 @@ import NKDMaskOps from './nkd-nodes/nkd-mask-ops';
 import NKDMaskOpsLean from './nkd-nodes/nkd-mask-ops-lean';
 import OpenAICompatibleChat from './openai-compatible/openai-compatible-chat';
 import PowerLoraLoader from './rgthree/power-lora-loader';
+import VHSLoadVideo from './video-helper-suite/vhs-load-video';
+import VHSLoadVideoFFmpeg from './video-helper-suite/vhs-load-video-ffmpeg';
 import VHSLoadVideoTrimSeek from './video-helper-suite/vhs-load-video-trim-seek';
 import MiniMaxH3Easy from './minimax-h3-easy/minimax-h3-easy';
 import MiniMaxH3EasyLoader from './minimax-h3-easy/minimax-h3-easy-loader';
@@ -124,6 +126,8 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'VAEDecodeAudio': ImmutableNode,
 
   // Video Helper Suite
+  'VHS_LoadVideo': VHSLoadVideo,
+  'VHS_LoadVideoFFmpeg': VHSLoadVideoFFmpeg,
   'VHS_LoadVideoTrimSeek': VHSLoadVideoTrimSeek,
   'VHS_VideoInfo': ImmutableNode,
 

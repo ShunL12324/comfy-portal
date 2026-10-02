@@ -1174,6 +1174,15 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/media-source-sheet.tsx",
+      "textElements": [
+        "Copy",
+        "Title"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/schema-field.tsx",
       "textElements": [
         "Copy",
@@ -1401,8 +1410,7 @@
     {
       "path": "src/features/comfy-node/components/node/types/base/load-image.tsx",
       "textElements": [
-        "Copy",
-        "Title"
+        "Copy"
       ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
@@ -1674,7 +1682,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-load-video-ffmpeg.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-load-video-fields.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-load-video-trim-seek.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-load-video.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"

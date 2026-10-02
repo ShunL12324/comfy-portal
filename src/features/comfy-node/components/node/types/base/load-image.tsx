@@ -1,7 +1,6 @@
-import { ThemedBottomSheetModal } from '@/components/self-ui/themed-bottom-sheet-modal';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
-import { Title, Copy, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
+import { Copy, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { VStack } from '@/components/ui/vstack';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
@@ -11,18 +10,18 @@ import { buildServerUrl } from '@/services/network';
 import { clearNodeSchemaCache } from '@/services/node-schema';
 import { useNodeSchema } from '@/hooks/use-node-schema';
 import { showToast } from '@/utils/toast';
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
-import { AlertTriangle, Camera, Folder, HardDrive, Image as ImageIcon, Share, X } from '@/constants/icons';
+import { AlertTriangle, Image as ImageIcon, Share, X } from '@/constants/icons';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BaseNode from '../../common/base-node';
+import { MediaSource, MediaSourceSheet, MediaSourceSheetRef } from '../../common/media-source-sheet';
 import { ServerImagePicker } from '../../common/server-image-picker';
 import SubItem from '../../common/sub-item';
 import { designTokens as t } from '@/constants/design-tokens';
@@ -40,8 +39,6 @@ interface UploadAssetCandidate {
   mimeType?: string | null;
 }
 
-type PendingSourcePickerAction = 'library' | 'files' | 'camera' | 'server' | null;
-
 export default function LoadImage({ node, serverId, workflowId, sharedImageUri }: LoadImageNodeProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
@@ -53,11 +50,9 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [image, setImage] = useState<string | null>(null);
-  const safeAreaInsets = useSafeAreaInsets();
   const c = useDesign();
   const cancelUploadRef = useRef<(() => Promise<void>) | null>(null);
-  const sourcePickerModalRef = useRef<BottomSheetModal>(null);
-  const pendingSourcePickerActionRef = useRef<PendingSourcePickerAction>(null);
+  const sourcePickerRef = useRef<MediaSourceSheetRef>(null);
   const serverPickerModalRef = useRef<BottomSheetModal>(null);
   const [isServerPickerVisible, setIsServerPickerVisible] = useState(false);
 
@@ -81,8 +76,7 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
 
   useEffect(() => {
     if (isUploading) {
-      pendingSourcePickerActionRef.current = null;
-      sourcePickerModalRef.current?.dismiss();
+      sourcePickerRef.current?.dismiss();
     }
   }, [isUploading]);
 
@@ -290,45 +284,15 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
 
   const handleOpenSourcePicker = () => {
     if (isUploading) return;
-    sourcePickerModalRef.current?.present();
+    sourcePickerRef.current?.present();
   };
 
-  const handleCloseSourcePicker = () => {
-    sourcePickerModalRef.current?.dismiss();
-  };
-
-  const handleSelectSourcePickerAction = (action: Exclude<PendingSourcePickerAction, null>) => {
-    pendingSourcePickerActionRef.current = action;
-    handleCloseSourcePicker();
-  };
-
-  const handleSourcePickerDismiss = () => {
-    if (isUploading) {
-      pendingSourcePickerActionRef.current = null;
-      return;
-    }
-
-    const action = pendingSourcePickerActionRef.current;
-    pendingSourcePickerActionRef.current = null;
-
-    if (action === 'library') {
-      void handlePickFromLibrary();
-      return;
-    }
-
-    if (action === 'files') {
-      void handlePickFromFiles();
-      return;
-    }
-
-    if (action === 'camera') {
-      void handlePickFromCamera();
-      return;
-    }
-
-    if (action === 'server') {
-      setIsServerPickerVisible(true);
-    }
+  const handleSourcePick = (source: MediaSource) => {
+    if (isUploading) return;
+    if (source === 'library') void handlePickFromLibrary();
+    else if (source === 'files') void handlePickFromFiles();
+    else if (source === 'camera') void handlePickFromCamera();
+    else setIsServerPickerVisible(true);
   };
 
   const handleCloseServerPicker = useCallback(() => {
@@ -466,73 +430,12 @@ export default function LoadImage({ node, serverId, workflowId, sharedImageUri }
           )}
         </Pressable>
 
-        <ThemedBottomSheetModal
-          ref={sourcePickerModalRef}
-          index={0}
-          snapPoints={['46%']}
-          topInset={safeAreaInsets.top}
-          enablePanDownToClose
-          onDismiss={handleSourcePickerDismiss}
-        >
-          <BottomSheetView
-            style={{ paddingHorizontal: t.layout.inset, paddingBottom: safeAreaInsets.bottom + t.layout.inset }}
-          >
-            <VStack space="sm">
-              <Title compact className="mb-1">
-                Set Image
-              </Title>
-
-              <Pressable
-                onPress={() => {
-                  handleSelectSourcePickerAction('server');
-                }}
-                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
-              >
-                <Icon size="sm" as={HardDrive} className="text-content-body" />
-                <VStack className="flex-1">
-                  <Copy>Already on Server</Copy>
-                  <Copy size="metadata" muted>
-                    Pick from the server&apos;s input folder — no upload
-                  </Copy>
-                </VStack>
-              </Pressable>
-
-              <Copy size="metadata" muted className="mb-1 mt-2" style={{ fontWeight: '500' }}>
-                Upload
-              </Copy>
-
-              <Pressable
-                onPress={() => {
-                  handleSelectSourcePickerAction('library');
-                }}
-                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
-              >
-                <Icon size="sm" as={ImageIcon} className="text-content-body" />
-                <Copy>Photo Library</Copy>
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  handleSelectSourcePickerAction('files');
-                }}
-                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
-              >
-                <Icon size="sm" as={Folder} className="text-content-body" />
-                <Copy>Files</Copy>
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  handleSelectSourcePickerAction('camera');
-                }}
-                className="gap-3 rounded-xl bg-surface-raised px-4 py-3 flex-row items-center"
-              >
-                <Icon size="sm" as={Camera} className="text-content-body" />
-                <Copy>Camera</Copy>
-              </Pressable>
-            </VStack>
-          </BottomSheetView>
-        </ThemedBottomSheetModal>
+        <MediaSourceSheet
+          ref={sourcePickerRef}
+          title="Set Image"
+          uploads={['library', 'files', 'camera']}
+          onPick={handleSourcePick}
+        />
 
         <ServerImagePicker
           ref={serverPickerModalRef}

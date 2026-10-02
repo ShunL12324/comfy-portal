@@ -110,6 +110,11 @@ interface MediaViewerProps {
    * Without it there is no Delete action.
    */
   onDelete?: (item: MediaViewerItem) => Promise<void> | void;
+  /**
+   * For media streamed from a server only to be looked at, such as a node's
+   * input video: no Save, Share or Delete.
+   */
+  viewOnly?: boolean;
 }
 
 /** Full-screen image and video viewer shared by the Gallery tab, History and run results. */
@@ -184,6 +189,7 @@ function ViewerContent({
   serverId,
   getOriginRect,
   onDelete,
+  viewOnly,
   closeRef,
   handleBack,
 }: ViewerContentProps) {
@@ -506,6 +512,7 @@ function ViewerContent({
     canSetThumbnail: actions.canSetThumbnail,
     canDelete: !!onDelete,
     kind: current?.kind,
+    viewOnly,
   });
   const menuEntries = MENU_ENTRIES.filter((entry) => available.menu.includes(entry.key));
 

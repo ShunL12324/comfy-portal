@@ -14,13 +14,16 @@ const SELECTED_OUTLINE = 2;
 /** The check plate: a 12-point glyph on a 20-point square. */
 const CHECK_PLATE = t.icon.large;
 
-/** A paused player, only for a video whose still frame could not be made. */
-function VideoFrame({ uri }: { uri: string }) {
+/**
+ * A paused player, only for a video whose still frame could not be made (on
+ * web, where none are, a `<video>` element showing its first frame).
+ */
+export function VideoFrame({ uri, contentFit = 'cover' }: { uri: string; contentFit?: 'cover' | 'contain' }) {
   const player = useVideoPlayer(uri, (video) => {
     video.muted = true;
     video.pause();
   });
-  return <VideoView player={player} nativeControls={false} contentFit="cover" style={styles.fill} />;
+  return <VideoView player={player} nativeControls={false} contentFit={contentFit} style={styles.fill} />;
 }
 
 interface MediaTileProps {

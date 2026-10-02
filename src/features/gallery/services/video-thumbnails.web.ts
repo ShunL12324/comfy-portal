@@ -13,3 +13,5 @@ export function subscribeVideoStills(_listener: () => void): () => void {
 export async function requestVideoStill(_videoUri: string): Promise<string | null> {
   return null;
 }
+
+export function forgetVideoStill(_videoUri: string) {}

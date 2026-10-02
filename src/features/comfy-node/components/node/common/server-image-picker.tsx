@@ -13,7 +13,7 @@ import { buildServerUrl } from '@/services/network';
 import { clearNodeSchemaCache, getNodeSchema } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { Check, ImageOff, WifiOff } from '@/constants/icons';
+import { Check, Film, ImageOff, WifiOff } from '@/constants/icons';
 import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface ServerImagePickerProps {
@@ -27,6 +27,11 @@ interface ServerImagePickerProps {
   isVisible: boolean;
   onClose: () => void;
   onSelect: (filename: string) => void;
+  /**
+   * Videos are listed by name: a thumbnail would mean streaming every file in
+   * the folder, and the field previews the one that is picked.
+   */
+  media?: 'image' | 'video';
 }
 
 function ImagePreview({ uri, label }: { uri?: string; label: string }) {
@@ -63,12 +68,14 @@ function ImagePreview({ uri, label }: { uri?: string; label: string }) {
  * which re-sends an image the server already has.
  *
  * Thumbnails go through `/view`'s `preview` parameter, which re-encodes
- * server-side: a 2.6 MB source comes back as a ~40 KB webp.
+ * server-side: a 2.6 MB source comes back as a ~40 KB webp. Video loaders
+ * (VHS) build their combo the same way, so the same sheet lists videos.
  */
 export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerProps>(function ServerImagePicker(
-  { serverId, classType, inputName, value, isVisible, onClose, onSelect },
+  { serverId, classType, inputName, value, isVisible, onClose, onSelect, media = 'image' },
   ref,
 ) {
+  const noun = media === 'video' ? 'videos' : 'images';
   const c = useDesign();
   const server = useServersStore((state) => state.servers.find((s) => s.id === serverId));
   // null while we haven't got an answer yet — an empty array is a real answer
@@ -124,7 +131,9 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
 
   const token = server?.token;
   const options = useMemo<SelectorOption[]>(() => {
-    if (!files || !viewBase) return [];
+    if (!files) return [];
+    if (media === 'video') return files.map((filename) => ({ value: filename, label: filename }));
+    if (!viewBase) return [];
     return files.map((filename) => {
       const params = new URLSearchParams({
         filename,
@@ -139,7 +148,16 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
         image: `${viewBase}?${params.toString()}`,
       };
     });
-  }, [files, viewBase, token]);
+  }, [files, viewBase, token, media]);
+
+  // The default text row only reports the choice; the sheet closes here.
+  const handleSelect = useCallback(
+    (filename: string) => {
+      onSelect(filename);
+      onClose();
+    },
+    [onSelect, onClose],
+  );
 
   const renderItem = useCallback(
     (item: SelectorOption, isSelected: boolean) => (
@@ -182,15 +200,15 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
     files === null ? (
       <VStack space="sm" className="py-8 flex-1 items-center justify-center">
         <Spinner size="small" className="text-content-tertiary" />
-        <Copy muted>Reading the server&apos;s images…</Copy>
+        <Copy muted>Reading the server&apos;s {noun}…</Copy>
       </VStack>
     ) : (
       <VStack space="sm" className="py-8 flex-1 items-center justify-center">
-        <StateIcon icon={failed ? WifiOff : ImageOff} />
+        <StateIcon icon={failed ? WifiOff : media === 'video' ? Film : ImageOff} />
         <Copy muted className="text-center">
           {failed
-            ? 'Could not reach the server to read its images. Check that it is online, then refresh.'
-            : 'No images in this server’s input folder yet. Anything you upload shows up here afterwards.'}
+            ? `Could not reach the server to read its ${noun}. Check that it is online, then refresh.`
+            : `No ${noun} in this server’s input folder yet. Anything you upload shows up here afterwards.`}
         </Copy>
       </VStack>
     );
@@ -200,17 +218,17 @@ export const ServerImagePicker = forwardRef<BottomSheetModal, ServerImagePickerP
       ref={ref}
       isVisible={isVisible}
       onClose={onClose}
-      onSelect={onSelect}
-      title="Server Images"
+      onSelect={handleSelect}
+      title={media === 'video' ? 'Server Videos' : 'Server Images'}
       options={options}
       value={value}
-      searchPlaceholder="Search images..."
+      searchPlaceholder={`Search ${noun}...`}
       showRefreshButton
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}
-      renderItem={renderItem}
+      renderItem={media === 'video' ? undefined : renderItem}
       emptyComponent={emptyComponent}
-      numColumns={2}
+      numColumns={media === 'video' ? 1 : 2}
     />
   );
 });

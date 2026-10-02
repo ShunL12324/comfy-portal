@@ -85,6 +85,12 @@ describe('getViewerActions', () => {
     expect(getViewerActions({ ...base, canShare: true, canDelete: true }).bar).toEqual(['save', 'share', 'delete']);
   });
 
+  test('offers nothing for view-only media such as a streamed node input', () => {
+    expect(
+      getViewerActions({ canShare: true, canSetThumbnail: true, canDelete: true, kind: 'video', viewOnly: true }),
+    ).toEqual({ bar: [], menu: [] });
+  });
+
   test('offers share only where the platform has a share sheet', () => {
     expect(getViewerActions({ ...base, canDelete: true }).bar).toEqual(['save', 'delete']);
   });

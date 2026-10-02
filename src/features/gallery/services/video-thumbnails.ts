@@ -51,6 +51,23 @@ export function peekVideoStill(videoUri: string): string | null | undefined {
   return undefined;
 }
 
+/**
+ * Drops a video's still so the next look makes it again: for a URL whose
+ * content changed under it, such as a server input file overwritten by an upload.
+ */
+export function forgetVideoStill(videoUri: string) {
+  if (pending.has(videoUri)) return;
+  stills.delete(videoUri);
+  looked.delete(videoUri);
+  try {
+    const file = stillFile(videoUri);
+    if (file.exists) file.delete();
+  } catch {
+    /* Nothing cached. */
+  }
+  listeners.forEach((listener) => listener());
+}
+
 export function subscribeVideoStills(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

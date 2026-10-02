@@ -52,20 +52,24 @@ export function indexAfterDelete(deletedIndex: number, remaining: number): numbe
  * download on web); Share only where a share sheet exists; Delete only where
  * the opening screen can delete. Setting the workflow thumbnail is rare, so it
  * sits in the overflow menu, and only for images where a workflow is known.
- * The viewer never shows a control that cannot work, nor an empty menu.
+ * The viewer never shows a control that cannot work, nor an empty menu. A
+ * view-only item (a server file streamed for preview, not a local result)
+ * offers nothing: there is no local file to save or share.
  */
 export function getViewerActions({
   canShare,
   canSetThumbnail,
   canDelete,
   kind,
+  viewOnly = false,
 }: {
   canShare: boolean;
   canSetThumbnail: boolean;
   canDelete: boolean;
   kind: MediaViewerKind | undefined;
+  viewOnly?: boolean;
 }): { bar: MediaViewerBarAction[]; menu: MediaViewerMenuAction[] } {
-  if (!kind) return { bar: [], menu: [] };
+  if (!kind || viewOnly) return { bar: [], menu: [] };
   const bar: MediaViewerBarAction[] = ['save'];
   if (canShare) bar.push('share');
   if (canDelete) bar.push('delete');

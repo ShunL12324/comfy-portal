@@ -1,6 +1,5 @@
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
-import ServerVideoField from '../../common/server-video-field';
+import { VHS_FORMAT_FIELD, VHS_RATE_FIELD, VHS_SIZE_FIELDS, VHSVideoHeader } from './vhs-load-video-fields';
 
 /**
  * VHS keeps timestamps to the millisecond (step 0.001), which makes stepper
@@ -24,59 +23,17 @@ const FIELDS: SchemaFieldDef[] = [
     step: TIMESTAMP_STEP,
     fallback: { kind: 'float', min: 0, step: 0.001 },
   },
-  {
-    inputKey: 'force_rate',
-    title: 'Force Frame Rate (0 = source)',
-    fallback: { kind: 'float', min: 0, max: 60, step: 1 },
-  },
-  {
-    inputKey: 'custom_width',
-    title: 'Width (0 = source)',
-    control: 'stepper',
-    fallback: { kind: 'int', min: 0, max: 8192, step: 8 },
-  },
-  {
-    inputKey: 'custom_height',
-    title: 'Height (0 = source)',
-    control: 'stepper',
-    fallback: { kind: 'int', min: 0, max: 8192, step: 8 },
-  },
+  VHS_RATE_FIELD,
+  ...VHS_SIZE_FIELDS,
   {
     inputKey: 'select_every_nth',
     title: 'Select Every Nth Frame',
     control: 'stepper',
     fallback: { kind: 'int', min: 1, step: 1 },
   },
-  {
-    inputKey: 'format',
-    title: 'Format',
-    fallback: {
-      kind: 'combo',
-      options: ['None', 'AnimateDiff', 'Mochi', 'LTXV', 'Hunyuan', 'Cosmos', 'Wan', 'H3'],
-    },
-  },
+  VHS_FORMAT_FIELD,
 ];
 
 export default function VHSLoadVideoTrimSeek(props: NodeEditorProps) {
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
-  const { node, serverId, workflowId } = props;
-
-  return (
-    <SchemaNode
-      {...props}
-      fields={FIELDS}
-      header={(schema) =>
-        typeof node.inputs.video === 'string' ? (
-          <ServerVideoField
-            node={node}
-            serverId={serverId}
-            schema={schema}
-            inputKey="video"
-            title="Video"
-            onChange={(filename) => updateNodeInput(workflowId, node.id, 'video', filename)}
-          />
-        ) : null
-      }
-    />
-  );
+  return <SchemaNode {...props} fields={FIELDS} header={(schema) => <VHSVideoHeader {...props} schema={schema} />} />;
 }
