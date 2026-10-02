@@ -1174,6 +1174,25 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/schema-field.tsx",
+      "textElements": [
+        "Copy",
+        "Input",
+        "InputField",
+        "NumberInput",
+        "Textarea",
+        "TextareaInput"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/common/schema-node.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/seed-control.tsx",
       "textElements": [
         "Copy",
@@ -1185,6 +1204,14 @@
     },
     {
       "path": "src/features/comfy-node/components/node/common/server-image-picker.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/common/server-video-field.tsx",
       "textElements": [
         "Copy"
       ],
@@ -1284,6 +1311,12 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/base/comfy-math-expression.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/base/dual-clip-loader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
@@ -1327,6 +1360,12 @@
     },
     {
       "path": "src/features/comfy-node/components/node/types/base/image-scale-by.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/base/image-scale-to-total-pixels.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
@@ -1381,6 +1420,18 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/base/manual-sigmas.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/base/model-attention-backend.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/base/model-sampling-flux.tsx",
       "textElements": [
         "NumberInput"
@@ -1401,6 +1452,12 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/base/primitive-int.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/base/primitive-string-multiline.tsx",
       "textElements": [
         "Textarea",
@@ -1411,6 +1468,20 @@
     },
     {
       "path": "src/features/comfy-node/components/node/types/base/random-noise.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/base/resolution-selector.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/base/sam3-temporal-mask.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
@@ -1489,6 +1560,18 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/types/mask-vid-experiments/mvex-subject-crop-parallel.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/mask-vid-experiments/mvex-subject-uncrop.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/minimax-h3-easy-loader.tsx",
       "textElements": [],
       "fontDeclarations": 0,
@@ -1522,11 +1605,83 @@
       "managedAt": "shared text / input / composed control"
     },
     {
-      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-video-combine.tsx",
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-crop-target.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-h3-adaptive-loader.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-h3-optional-shift.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-h3-reference-to-video.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-trim-frames.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/minimax-h3/minimax-video-encode-cached.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/nkd-nodes/nkd-av-latent-preencoded.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/nkd-nodes/nkd-mask-ops-lean.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/nkd-nodes/nkd-mask-ops.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/openai-compatible/openai-compatible-chat.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/rgthree/power-lora-loader.tsx",
       "textElements": [
-        "Input",
-        "InputField"
+        "Copy",
+        "NumberInput"
       ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-load-video-trim-seek.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/comfy-node/components/node/types/video-helper-suite/vhs-video-combine.tsx",
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

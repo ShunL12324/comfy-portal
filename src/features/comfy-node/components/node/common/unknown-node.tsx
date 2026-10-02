@@ -9,7 +9,7 @@ import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { useNodeSchema } from '@/hooks/use-node-schema';
-import { WidgetSpec } from '@/services/node-schema';
+import { WidgetSpec, resolveInputSpec } from '@/services/node-schema';
 import * as Linking from 'expo-linking';
 import { AlertCircle, GitPullRequest } from '@/constants/icons';
 import BaseNode from './base-node';
@@ -39,7 +39,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
   // Linked inputs are wired to other nodes and must not be edited here.
   const displayableInputs = Object.entries(node.inputs).filter(([name, value]) => {
     if (Array.isArray(value)) return false;
-    const spec = schema?.inputs[name];
+    const spec = resolveInputSpec(schema, name, node.inputs);
     // Transport-only inputs the desktop UI hides too (e.g. MiniMax's 30
     // internal media sockets) — showing them would bury the real controls.
     if (spec && (spec.kind === 'link' || spec.hidden)) return false;
@@ -233,7 +233,7 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       <VStack className="w-full" style={{ gap: t.node.fieldGap }}>
         {displayableInputs.length > 0 ? (
           displayableInputs.map(([key, value]) => {
-            const spec = schema?.inputs[key];
+            const spec = resolveInputSpec(schema, key, node.inputs);
             return spec ? renderFromSpec(key, value, spec) : renderFromValue(key, value);
           })
         ) : (

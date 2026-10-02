@@ -1,130 +1,50 @@
-import { OptionSelector } from '@/components/common/selectors/option-selector';
-import { NumberSlider } from '@/components/self-ui/slider';
-import { NativeSwitch } from '@/components/ui/design-system/native-controls';
-import { Input, InputField } from '@/components/ui/input';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { Node } from '@/features/workflow/types';
-import BaseNode from '../../common/base-node';
-import SubItem from '../../common/sub-item';
+import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
 
-interface VHS_VideoCombineProps {
-  node: Node;
-  serverId: string;
-  workflowId: string;
-}
+/**
+ * `pix_fmt`, `crf`, `save_metadata` and `trim_to_audio` belong to the chosen
+ * format (VHS nests them under each format's definition), so the server
+ * schema has no top-level entry for them and their fallbacks are what render.
+ * Whichever of them the workflow carries are shown; the rest render nothing.
+ */
+const FIELDS: SchemaFieldDef[] = [
+  { inputKey: 'frame_rate', title: 'Frame Rate', fallback: { kind: 'float', min: 1, max: 120, step: 1 } },
+  { inputKey: 'loop_count', title: 'Loop Count', fallback: { kind: 'int', min: 0, max: 100, step: 1 } },
+  {
+    inputKey: 'filename_prefix',
+    title: 'Filename Prefix',
+    fallback: { kind: 'string', multiline: false },
+  },
+  {
+    inputKey: 'format',
+    title: 'Format',
+    fallback: {
+      kind: 'combo',
+      options: [
+        'image/gif',
+        'image/webp',
+        'video/16bit-png',
+        'video/8bit-png',
+        'video/ProRes',
+        'video/av1-webm',
+        'video/ffmpeg-gif',
+        'video/ffv1-mkv',
+        'video/h264-mp4',
+        'video/h265-mp4',
+        'video/nvenc_av1-mp4',
+        'video/nvenc_h264-mp4',
+        'video/nvenc_hevc-mp4',
+        'video/webm',
+      ],
+    },
+  },
+  { inputKey: 'pix_fmt', title: 'Pixel Format', fallback: { kind: 'combo', options: ['yuv420p', 'yuv420p10le'] } },
+  { inputKey: 'crf', title: 'CRF', fallback: { kind: 'int', min: 0, max: 51, step: 1 } },
+  { inputKey: 'save_output', title: 'Save Output', fallback: { kind: 'boolean' } },
+  { inputKey: 'pingpong', title: 'Ping Pong', fallback: { kind: 'boolean' } },
+  { inputKey: 'save_metadata', title: 'Save Metadata', fallback: { kind: 'boolean' } },
+  { inputKey: 'trim_to_audio', title: 'Trim to Audio', fallback: { kind: 'boolean' } },
+];
 
-export default function VHS_VideoCombine({ node, workflowId }: VHS_VideoCombineProps) {
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
-
-  const formatOptions = [
-    { label: 'video/h264-mp4', value: 'video/h264-mp4' },
-    { label: 'video/h265-mp4', value: 'video/h265-mp4' },
-    { label: 'video/ProRes', value: 'video/ProRes' },
-    { label: 'video/av1-webm', value: 'video/av1-webm' },
-    { label: 'video/ffmpeg-gif', value: 'video/ffmpeg-gif' },
-    { label: 'image/gif', value: 'image/gif' },
-    { label: 'image/webp', value: 'image/webp' },
-    { label: 'video/8bit-png', value: 'video/8bit-png' },
-    { label: 'video/16bit-png', value: 'video/16bit-png' },
-    { label: 'video/ffv1-mkv', value: 'video/ffv1-mkv' },
-    { label: 'video/nvenc_h264-mp4', value: 'video/nvenc_h264-mp4' },
-    { label: 'video/webm', value: 'video/webm' },
-    { label: 'video/nvenc_av1-mp4', value: 'video/nvenc_av1-mp4' },
-    { label: 'video/nvenc_hevc-mp4', value: 'video/nvenc_hevc-mp4' },
-  ];
-
-  const pixFmtOptions = [
-    { label: 'yuv420p', value: 'yuv420p' },
-    { label: 'yuv420p10le', value: 'yuv420p10le' },
-  ];
-
-  return (
-    <BaseNode node={node}>
-      <SubItem title="Frame Rate">
-        <NumberSlider
-          value={node.inputs.frame_rate}
-          minValue={1}
-          maxValue={120}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'frame_rate', Number(value))}
-        />
-      </SubItem>
-      <SubItem title="Loop Count">
-        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
-          <InputField
-            placeholder="Loop Count"
-            keyboardType="numeric"
-            value={node.inputs.loop_count?.toString()}
-            onChangeText={(text) => updateNodeInput(workflowId, node.id, 'loop_count', Number(text))}
-          />
-        </Input>
-      </SubItem>
-      <SubItem title="Filename Prefix">
-        <Input className="flex-1 rounded-md border-0 bg-surface-raised" variant="outline" size="sm">
-          <InputField
-            placeholder="Filename Prefix"
-            value={node.inputs.filename_prefix}
-            onChangeText={(text) => updateNodeInput(workflowId, node.id, 'filename_prefix', text)}
-          />
-        </Input>
-      </SubItem>
-      <SubItem title="Format">
-        <OptionSelector
-          value={node.inputs.format}
-          onChange={(value) => updateNodeInput(workflowId, node.id, 'format', value)}
-          options={formatOptions}
-          title="Select Format"
-        />
-      </SubItem>
-      <SubItem title="Pixel Format">
-        <OptionSelector
-          value={node.inputs.pix_fmt}
-          onChange={(value) => updateNodeInput(workflowId, node.id, 'pix_fmt', value)}
-          options={pixFmtOptions}
-          title="Select Pixel Format"
-        />
-      </SubItem>
-      <SubItem title="CRF">
-        <NumberSlider
-          value={node.inputs.crf}
-          minValue={0}
-          maxValue={51}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'crf', Number(value))}
-        />
-      </SubItem>
-      <SubItem title="Save Output" rightComponent={
-        <NativeSwitch
-          label="Save Output"
-          value={node.inputs.save_output}
-          onValueChange={(value) => updateNodeInput(workflowId, node.id, 'save_output', value)}
-        />
-      }>
-      </SubItem>
-      <SubItem title="Ping Pong" rightComponent={
-        <NativeSwitch
-          label="Ping Pong"
-          value={node.inputs.pingpong}
-          onValueChange={(value) => updateNodeInput(workflowId, node.id, 'pingpong', value)}
-        />
-      }>
-      </SubItem>
-      <SubItem title="Save Metadata" rightComponent={
-        <NativeSwitch
-          label="Save Metadata"
-          value={node.inputs.save_metadata}
-          onValueChange={(value) => updateNodeInput(workflowId, node.id, 'save_metadata', value)}
-        />
-      }>
-      </SubItem>
-      <SubItem title="Trim to Audio" rightComponent={
-        <NativeSwitch
-          label="Trim to Audio"
-          value={node.inputs.trim_to_audio}
-          onValueChange={(value) => updateNodeInput(workflowId, node.id, 'trim_to_audio', value)}
-        />
-      }>
-      </SubItem>
-    </BaseNode>
-  );
+export default function VHS_VideoCombine(props: NodeEditorProps) {
+  return <SchemaNode {...props} fields={FIELDS} />;
 }

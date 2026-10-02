@@ -10,8 +10,12 @@ interface UploadImageResponse {
   previewUrl: string;
 }
 
+/**
+ * ComfyUI's `/upload/image` stores whatever it is sent in `input/`, which is
+ * also where video loaders (VHS) list their files, so videos go through it too.
+ */
 function resolveImageMimeType(fileName: string, mimeType?: string): string {
-  if (mimeType && mimeType.startsWith('image/')) {
+  if (mimeType && (mimeType.startsWith('image/') || mimeType.startsWith('video/'))) {
     return mimeType;
   }
 
@@ -35,6 +39,15 @@ function resolveImageMimeType(fileName: string, mimeType?: string): string {
     case 'tif':
     case 'tiff':
       return 'image/tiff';
+    case 'mp4':
+    case 'm4v':
+      return 'video/mp4';
+    case 'mov':
+      return 'video/quicktime';
+    case 'webm':
+      return 'video/webm';
+    case 'mkv':
+      return 'video/x-matroska';
     default:
       return 'image/jpeg';
   }

@@ -37,7 +37,28 @@ import VAEEncode from './base/vae-encode';
 import VAEEncodeForInpaint from './base/vae-encode-for-inpaint';
 import VAELoader from './base/vae-loader';
 import WanImageToVideo from './base/wan-image-to-video';
+import ComfyMathExpression from './base/comfy-math-expression';
+import ImageScaleToTotalPixels from './base/image-scale-to-total-pixels';
+import ManualSigmas from './base/manual-sigmas';
+import ModelAttentionBackend from './base/model-attention-backend';
+import PrimitiveInt from './base/primitive-int';
+import ResolutionSelector from './base/resolution-selector';
+import SAM3TemporalMask from './base/sam3-temporal-mask';
 import ImageResizeKJv2 from './kj-nodes/image-resize-kjv2';
+import MVExSubjectCropParallel from './mask-vid-experiments/mvex-subject-crop-parallel';
+import MVExSubjectUncrop from './mask-vid-experiments/mvex-subject-uncrop';
+import MiniMaxCropTarget from './minimax-h3/minimax-crop-target';
+import MiniMaxH3AdaptiveLoader from './minimax-h3/minimax-h3-adaptive-loader';
+import MiniMaxH3OptionalShift from './minimax-h3/minimax-h3-optional-shift';
+import MiniMaxH3ReferenceToVideo from './minimax-h3/minimax-h3-reference-to-video';
+import MiniMaxTrimFrames from './minimax-h3/minimax-trim-frames';
+import MiniMaxVideoEncodeCached from './minimax-h3/minimax-video-encode-cached';
+import NKDAVLatentPreencoded from './nkd-nodes/nkd-av-latent-preencoded';
+import NKDMaskOps from './nkd-nodes/nkd-mask-ops';
+import NKDMaskOpsLean from './nkd-nodes/nkd-mask-ops-lean';
+import OpenAICompatibleChat from './openai-compatible/openai-compatible-chat';
+import PowerLoraLoader from './rgthree/power-lora-loader';
+import VHSLoadVideoTrimSeek from './video-helper-suite/vhs-load-video-trim-seek';
 import MiniMaxH3Easy from './minimax-h3-easy/minimax-h3-easy';
 import MiniMaxH3EasyLoader from './minimax-h3-easy/minimax-h3-easy-loader';
 import MiniMaxH3EasyMediaBridge from './minimax-h3-easy/minimax-h3-easy-media-bridge';
@@ -90,6 +111,46 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'ImageResizeKJv2': ImageResizeKJv2,
   'TextEncodeQwenImageEditPlus': TextEncodeQwenImageEditPlus,
   'GetImageSize': ImmutableNode,
+  'PrimitiveInt': PrimitiveInt,
+  'ResolutionSelector': ResolutionSelector,
+  'ImageScaleToTotalPixels': ImageScaleToTotalPixels,
+  'ManualSigmas': ManualSigmas,
+  'ModelAttentionBackend': ModelAttentionBackend,
+  'ComfyMathExpression': ComfyMathExpression,
+  'SAM3TemporalMask': SAM3TemporalMask,
+  // Link-only nodes: nothing to edit, but recognised.
+  'BatchImagesNode': ImmutableNode,
+  'PreviewAny': ImmutableNode,
+  'VAEDecodeAudio': ImmutableNode,
+
+  // Video Helper Suite
+  'VHS_LoadVideoTrimSeek': VHSLoadVideoTrimSeek,
+  'VHS_VideoInfo': ImmutableNode,
+
+  // rgthree
+  'Power Lora Loader (rgthree)': PowerLoraLoader,
+
+  // OpenAI-compatible LLM
+  'OpenAICompatibleChat': OpenAICompatibleChat,
+
+  // MiniMax H3 (multi-GPU loader, reference-to-video and the face-swap helpers)
+  'MiniMaxH3AdaptiveLoader': MiniMaxH3AdaptiveLoader,
+  'MiniMaxH3OptionalShift': MiniMaxH3OptionalShift,
+  'MiniMaxH3ReferenceToVideo': MiniMaxH3ReferenceToVideo,
+  'MiniMaxCropTarget': MiniMaxCropTarget,
+  'MiniMaxTrimFrames': MiniMaxTrimFrames,
+  'MiniMaxVideoEncodeCached': MiniMaxVideoEncodeCached,
+  'MiniMaxH3SPVAEDecode': ImmutableNode,
+  'MiniMaxPadFrames': ImmutableNode,
+
+  // MaskVidExperiments
+  'MVEx_SubjectCropParallel': MVExSubjectCropParallel,
+  'MVEx_SubjectUncrop': MVExSubjectUncrop,
+
+  // NKD Nodes
+  'NKDMaskOps': NKDMaskOps,
+  'NKDMaskOpsLean': NKDMaskOpsLean,
+  'NKDAVLatentPreencoded': NKDAVLatentPreencoded,
 
   // ComfyUI-MiniMaxH3-Easy. The remaining four nodes only take links, so they
   // render as plain immutable nodes.

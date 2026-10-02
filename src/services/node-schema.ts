@@ -11,9 +11,9 @@ import { buildServerUrl, fetchWithAuth } from './network';
  */
 
 /** Raw input spec: `[type, options]`, where combos have two legal spellings. */
-type RawInputSpec = [unknown, Record<string, any> | undefined];
+export type RawInputSpec = [unknown, Record<string, any> | undefined];
 
-interface RawNodeSchema {
+export interface RawNodeSchema {
   input?: {
     required?: Record<string, RawInputSpec>;
     optional?: Record<string, RawInputSpec>;
@@ -22,20 +22,38 @@ interface RawNodeSchema {
   description?: string;
 }
 
+/** Presentation hints every widget can carry. */
+interface WidgetMeta {
+  hidden?: boolean;
+  tooltip?: string;
+  /** The node's own label for the input, when it differs from the key. */
+  label?: string;
+  /** The desktop UI tucks these behind its "advanced" toggle. */
+  advanced?: boolean;
+}
+
 /** A widget we know how to render, normalised across both combo spellings. */
 export type WidgetSpec =
-  | { kind: 'combo'; options: string[]; default?: unknown; hidden: boolean; tooltip?: string }
-  | {
+  | (WidgetMeta & {
+      kind: 'combo';
+      options: string[];
+      default?: unknown;
+      /**
+       * Dynamic combos (`COMFY_DYNAMICCOMBO_V3`) swap in extra inputs per
+       * option. The workflow stores them as `<combo>.<child>` keys, e.g.
+       * `mode.crop_scale`; see `resolveInputSpec`.
+       */
+      children?: Record<string, Record<string, WidgetSpec>>;
+    })
+  | (WidgetMeta & {
       kind: 'int' | 'float';
       min?: number;
       max?: number;
       step?: number;
       default?: number;
-      hidden: boolean;
-      tooltip?: string;
-    }
-  | { kind: 'boolean'; default?: boolean; hidden: boolean; tooltip?: string }
-  | { kind: 'string'; multiline: boolean; default?: string; hidden: boolean; tooltip?: string }
+    })
+  | (WidgetMeta & { kind: 'boolean'; default?: boolean })
+  | (WidgetMeta & { kind: 'string'; multiline: boolean; default?: string })
   /** A typed socket (IMAGE, MODEL, ...) — wired, never a widget. */
   | { kind: 'link' };
 
@@ -46,37 +64,48 @@ export interface NodeSchema {
 
 const SCALAR_TYPES = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING']);
 
-function normalizeInputSpec(spec: RawInputSpec): WidgetSpec {
+export function normalizeInputSpec(spec: RawInputSpec): WidgetSpec {
   const [type, rawOptions] = Array.isArray(spec) ? spec : [undefined, undefined];
   const options = rawOptions ?? {};
-  const hidden = options.hidden === true;
-  const tooltip = typeof options.tooltip === 'string' ? options.tooltip : undefined;
+  const meta: WidgetMeta = {
+    hidden: options.hidden === true,
+    tooltip: typeof options.tooltip === 'string' ? options.tooltip : undefined,
+    label: typeof options.display_name === 'string' ? options.display_name : undefined,
+    advanced: options.advanced === true ? true : undefined,
+  };
 
   // Legacy combo: the option list *is* the type slot.
   if (Array.isArray(type)) {
-    return { kind: 'combo', options: type.map(String), default: options.default, hidden, tooltip };
+    return { kind: 'combo', options: type.map(String), default: options.default, ...meta };
   }
 
   if (typeof type !== 'string') return { kind: 'link' };
 
   if (type === 'COMBO') {
     const list = Array.isArray(options.options) ? options.options.map(String) : [];
-    return { kind: 'combo', options: list, default: options.default, hidden, tooltip };
+    return { kind: 'combo', options: list, default: options.default, ...meta };
+  }
+
+  if (type === 'COMFY_DYNAMICCOMBO_V3') {
+    const entries: { key?: unknown; inputs?: RawNodeSchema['input'] }[] = Array.isArray(options.options)
+      ? options.options
+      : [];
+    const children: Record<string, Record<string, WidgetSpec>> = {};
+    for (const entry of entries) {
+      if (typeof entry?.key !== 'string') continue;
+      children[entry.key] = normalizeInputs(entry.inputs);
+    }
+    const keys = Object.keys(children);
+    return { kind: 'combo', options: keys, default: options.default ?? keys[0], children, ...meta };
   }
 
   if (!SCALAR_TYPES.has(type)) return { kind: 'link' };
 
   if (type === 'BOOLEAN') {
-    return { kind: 'boolean', default: options.default, hidden, tooltip };
+    return { kind: 'boolean', default: options.default, ...meta };
   }
   if (type === 'STRING') {
-    return {
-      kind: 'string',
-      multiline: options.multiline === true,
-      default: options.default,
-      hidden,
-      tooltip,
-    };
+    return { kind: 'string', multiline: options.multiline === true, default: options.default, ...meta };
   }
   return {
     kind: type === 'INT' ? 'int' : 'float',
@@ -84,19 +113,44 @@ function normalizeInputSpec(spec: RawInputSpec): WidgetSpec {
     max: typeof options.max === 'number' ? options.max : undefined,
     step: typeof options.step === 'number' ? options.step : undefined,
     default: typeof options.default === 'number' ? options.default : undefined,
-    hidden,
-    tooltip,
+    ...meta,
   };
 }
 
-function normalizeSchema(raw: RawNodeSchema): NodeSchema {
+function normalizeInputs(input: RawNodeSchema['input']): Record<string, WidgetSpec> {
   const inputs: Record<string, WidgetSpec> = {};
-  for (const group of [raw.input?.required, raw.input?.optional]) {
+  for (const group of [input?.required, input?.optional]) {
     for (const [name, spec] of Object.entries(group ?? {})) {
       inputs[name] = normalizeInputSpec(spec);
     }
   }
-  return { inputs, description: raw.description };
+  return inputs;
+}
+
+export function normalizeSchema(raw: RawNodeSchema): NodeSchema {
+  return { inputs: normalizeInputs(raw.input), description: raw.description };
+}
+
+/**
+ * The spec for one workflow input, including a dynamic combo's children.
+ *
+ * `mode.crop_scale` resolves against whichever option `mode` currently holds,
+ * since the same child can carry a different range or tooltip per option.
+ */
+export function resolveInputSpec(
+  schema: NodeSchema | null | undefined,
+  key: string,
+  inputs: Record<string, unknown>,
+): WidgetSpec | undefined {
+  if (!schema) return undefined;
+  const direct = schema.inputs[key];
+  if (direct) return direct;
+  const dot = key.indexOf('.');
+  if (dot < 0) return undefined;
+  const parent = schema.inputs[key.slice(0, dot)];
+  if (parent?.kind !== 'combo' || !parent.children) return undefined;
+  const selected = inputs[key.slice(0, dot)];
+  return typeof selected === 'string' ? parent.children[selected]?.[key.slice(dot + 1)] : undefined;
 }
 
 // serverId -> classType -> schema (null = server has no such node)

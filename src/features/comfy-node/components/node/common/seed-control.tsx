@@ -32,6 +32,11 @@ interface SeedControlProps {
   /** Sampler nodes call it `seed`; noise nodes call it `noise_seed`. */
   inputKey: 'seed' | 'noise_seed';
   title?: string;
+  /**
+   * Start in Random mode (the default). Nodes whose seed only decides whether
+   * a cached result is reused, rather than what gets generated, start Fixed.
+   */
+  defaultRandom?: boolean;
 }
 
 /**
@@ -41,7 +46,13 @@ interface SeedControlProps {
  * in local state would display as "Fixed" while the generation quietly used
  * whatever value was last persisted.
  */
-export default function SeedControl({ node, workflowId, inputKey, title = 'Seed' }: SeedControlProps) {
+export default function SeedControl({
+  node,
+  workflowId,
+  inputKey,
+  title = 'Seed',
+  defaultRandom = true,
+}: SeedControlProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
   const { registerNodeHooks, unregisterNodeHooks } = useGenerationActions();
 
@@ -50,7 +61,7 @@ export default function SeedControl({ node, workflowId, inputKey, title = 'Seed'
   // the link.
   const isLinked = Array.isArray(node.inputs[inputKey]);
 
-  const [randomSeed, setRandomSeed] = useState(true);
+  const [randomSeed, setRandomSeed] = useState(defaultRandom);
   const [seed, setSeed] = useState<number>(() => {
     const current = Number(node.inputs[inputKey]);
     return Number.isFinite(current) ? current : 0;
