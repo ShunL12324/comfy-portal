@@ -7,7 +7,6 @@ import React, { memo, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 
-import { ProgressOverlay } from './progress-overlay';
 import { MediaViewer, toViewerItem, type MediaViewerItem } from '@/features/gallery/components/media-viewer';
 import { deleteGeneratedMedia } from '@/services/image-storage';
 
@@ -196,9 +195,6 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId }
         </View>
       )}
 
-      {generatedMedia.length > 0 && status === 'generating' && progress.max > 0 && (
-        <ProgressOverlay key={currentNodeId} current={progress.value} total={progress.max} />
-      )}
     </View>
   );
 });

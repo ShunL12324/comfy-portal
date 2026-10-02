@@ -77,7 +77,7 @@ export function ServerStatus({
               : currentNodeName || (currentNodeId ? 'Node ' + currentNodeId : 'Waiting for execution')}
           </Copy>
           {percent === undefined ? (
-            <RotatingSpinner size="sm" color={c.warning} />
+            <RotatingSpinner size="sm" color={c.ink} />
           ) : (
             <Copy muted size="metadata">
               {downloading
@@ -98,7 +98,7 @@ export function ServerStatus({
             key={downloading ? 'saving' : (currentNodeId ?? 'steps')}
             animate={{ width: `${percent}%` }}
             transition={{ type: 'timing', duration: reduced ? 0 : 240 }}
-            style={{ height: 3, backgroundColor: c.warning }}
+            style={{ height: 3, backgroundColor: c.ink }}
           />
         </View>
       )}
