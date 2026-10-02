@@ -34,7 +34,7 @@ cssInterop(PrimitiveIcon, {
 });
 
 const buttonStyle = tva({
-  base: 'group/button rounded-lg bg-primary-500 data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2 gap-2 flex-row items-center justify-center data-[disabled=true]:opacity-disabled',
+  base: 'group/button rounded-lg bg-primary-500 data-[focus-visible=true]:web:outline-none data-[focus-visible=true]:web:ring-2 gap-icon-label flex-row items-center justify-center data-[disabled=true]:opacity-disabled',
   variants: {
     action: {
       primary:
@@ -179,12 +179,13 @@ const buttonIconStyle = tva({
       outline: '',
       solid: 'text-typography-0 data-[hover=true]:text-typography-0 data-[active=true]:text-typography-0',
     },
+    // One step below the label's cap height (see Action in design-system/primitives).
     size: {
-      xs: 'size-icon-small',
-      sm: 'size-icon-control',
-      md: 'size-icon-medium',
-      lg: 'size-icon-medium',
-      xl: 'size-icon-large',
+      xs: 'size-icon-micro',
+      sm: 'size-icon-small',
+      md: 'size-icon-control',
+      lg: 'size-icon-control',
+      xl: 'size-icon-medium',
     },
     action: {
       primary: 'text-primary-600 data-[hover=true]:text-primary-600 data-[active=true]:text-primary-700',

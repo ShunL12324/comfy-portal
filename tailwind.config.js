@@ -25,7 +25,10 @@ module.exports = {
       full: '9999px',
     },
     extend: {
-      spacing: Object.fromEntries(Object.entries(designTokens.icon).map(([role, size]) => [`icon-${role}`, `${size}px`])),
+      spacing: {
+        ...Object.fromEntries(Object.entries(designTokens.icon).map(([role, size]) => [`icon-${role}`, `${size}px`])),
+        'icon-label': `${designTokens.layout.iconLabel}px`,
+      },
       colors: {
         // Scrims over photos and video, and the light content on them; the same in both themes.
         media: 'rgb(var(--surface-role-media)/<alpha-value>)',

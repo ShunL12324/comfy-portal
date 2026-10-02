@@ -39,11 +39,11 @@ export const GenerateActionButton = memo(({ onGenerate }: { onGenerate: () => vo
             backgroundColor: c.tint,
           }}
         />
-        <View pointerEvents="none" style={{ flexDirection: 'row', gap: t.layout.label, alignItems: 'center' }}>
+        <View pointerEvents="none" style={{ flexDirection: 'row', gap: t.layout.iconLabel, alignItems: 'center' }}>
           {saving ? (
-            <ButtonSpinner size="small" color={c.onTint} />
+            <ButtonSpinner size={t.icon.micro} color={c.onTint} />
           ) : (
-            <Wand2 size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={c.onTint} />
+            <Wand2 size={t.icon.micro} strokeWidth={iconStroke(t.icon.micro)} color={c.onTint} />
           )}
           <ButtonText
             style={{

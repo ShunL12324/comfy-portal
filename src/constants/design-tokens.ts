@@ -103,6 +103,8 @@ export const designTokens = {
     badgeY: 2,
     joined: 0,
     status: 6,
+    /** Icon-to-label gap inside a labelled button; the icon slot is sized to the icon, so this is the visible gap. */
+    iconLabel: 6,
   },
   font: {
     sans: 'Barlow',

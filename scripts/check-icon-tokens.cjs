@@ -10,6 +10,7 @@ const load = require('tailwindcss/loadConfig');
     {
       raw: Object.keys(designTokens.icon)
         .map((k) => `size-icon-${k}`)
+        .concat('gap-icon-label')
         .join(' '),
     },
   ];
@@ -20,6 +21,8 @@ const load = require('tailwindcss/loadConfig');
     assert.ok(rule, `Missing icon class ${role}`);
     for (const key of ['width', 'height']) assert.equal(rule.nodes.find((n) => n.prop === key)?.value, `${size}px`);
   }
+  const gap = result.root.nodes.find((n) => n.selector === '.gap-icon-label');
+  assert.equal(gap?.nodes.find((n) => n.prop === 'gap')?.value, `${designTokens.layout.iconLabel}px`);
   console.log('All icon utilities compile to their shared width and height tokens.');
 })().catch((e) => {
   console.error(e);

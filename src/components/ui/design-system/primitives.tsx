@@ -31,6 +31,7 @@ import {
 import { useResolvedTheme } from '@/store/theme';
 import { usePressFeedback } from './press-feedback';
 import { useCompactControls } from './control-density';
+import { actionIconGeometry } from './action-geometry';
 
 const Context = createContext<(typeof designColors)[DesignMode] | null>(null);
 export const DesignColorProvider = Context.Provider;
@@ -229,7 +230,7 @@ export function Action({
   const inAppBar = useContext(AppBarActionContext);
   const iconOnly = !children;
   const kind = providedKind ?? (inAppBar ? 'text' : 'secondary');
-  const iconSize = providedIconSize ?? (inAppBar && iconOnly ? t.icon.large : t.icon.small);
+  const { iconSize, slot, spinner, gap } = actionIconGeometry({ iconOnly, inAppBar, iconSize: providedIconSize });
   const surfaceHeight = small && !iconOnly ? t.height.small : t.height.control;
   const surfaceInset = (t.height.touch - surfaceHeight) / 2;
   const solid = kind === 'primary';
@@ -307,12 +308,12 @@ export function Action({
         <MotiView
           testID="button-icon-slot"
           animate={{
-            width: icon || loading ? Math.max(t.icon.control, iconSize) : 0,
-            marginRight: !iconOnly && (icon || loading) ? t.layout.label : 0,
+            width: icon || loading ? slot : 0,
+            marginRight: icon || loading ? gap : 0,
           }}
           transition={{ type: 'timing', duration: reduced ? 0 : 180 }}
           style={{
-            height: Math.max(t.icon.control, iconSize),
+            height: slot,
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
@@ -328,8 +329,8 @@ export function Action({
                 accessibilityElementsHidden
                 animating={loading}
                 color={foreground}
-                size="small"
-                style={{ position: 'absolute', top: 0, left: 0 }}
+                size={spinner}
+                style={{ position: 'absolute', top: (slot - spinner) / 2, left: (slot - spinner) / 2 }}
               />
               {!loading && ActionIcon ? (
                 <ActionIcon
