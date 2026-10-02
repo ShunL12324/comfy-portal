@@ -60,3 +60,12 @@ export function newPowerLoraValue(): PowerLoraValue {
 export function hasSeparateClipStrength(value: PowerLoraValue): boolean {
   return typeof value.strengthTwo === 'number';
 }
+
+/**
+ * A row with some fields changed. Everything else, including fields this app
+ * doesn't know about, is carried over untouched and in its original order, so
+ * the row round-trips to the server exactly as rgthree wrote it.
+ */
+export function patchPowerLoraValue(value: PowerLoraValue, next: Partial<PowerLoraValue>): PowerLoraValue {
+  return { ...value, ...next };
+}

@@ -95,8 +95,9 @@ export function NumberInput({
             setFocused(false);
           }}
           onSubmitEditing={() => commit(numeric)}
-          textAlign="center"
           style={{
+            // A style, not the prop: RN Web ignores TextInput's textAlign prop.
+            textAlign: 'center',
             fontVariant: ['tabular-nums'],
             fontSize: compact ? t.node.body.fontSize : t.type.body,
             paddingHorizontal: t.layout.label,

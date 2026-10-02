@@ -249,8 +249,7 @@
     {
       "path": "src/components/common/selectors/model/selector.tsx",
       "textElements": [
-        "Copy",
-        "FieldLabel"
+        "Copy"
       ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
@@ -1190,6 +1189,15 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/lora-row.tsx",
+      "textElements": [
+        "Copy",
+        "NumberInput"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/media-source-sheet.tsx",
       "textElements": [
         "Copy",
@@ -1726,8 +1734,7 @@
     {
       "path": "src/features/comfy-node/components/node/types/rgthree/power-lora-loader.tsx",
       "textElements": [
-        "Copy",
-        "NumberInput"
+        "Copy"
       ],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"

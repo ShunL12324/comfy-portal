@@ -1,24 +1,19 @@
-import { ModelSelector } from '@/components/common/selectors/model';
-import { NumberInput } from '@/components/self-ui/number-input';
-import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Action, Copy } from '@/components/ui/design-system/primitives';
-import { designTokens as t } from '@/constants/design-tokens';
-import { Plus, Trash2 } from '@/constants/icons';
+import { Plus } from '@/constants/icons';
+import { loraStrengthValue } from '@/features/comfy-node/utils/lora-strength';
 import {
   PowerLoraValue,
   hasSeparateClipStrength,
   newPowerLoraValue,
   nextPowerLoraKey,
+  patchPowerLoraValue,
   powerLoraEntries,
 } from '@/features/comfy-node/utils/power-lora';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { View } from 'react-native';
 import BaseNode from '../../common/base-node';
+import LoraRow from '../../common/lora-row';
 import { NodeEditorProps } from '../../common/schema-node';
-import SubItem from '../../common/sub-item';
-
-/** rgthree steps strengths by 0.05 and doesn't bound them. */
-const STRENGTH_STEP = 0.05;
 
 /**
  * rgthree's Power Lora Loader: any number of LoRAs, each toggled, picked and
@@ -43,56 +38,25 @@ export default function PowerLoraLoader({ node, serverId, workflowId }: NodeEdit
       ) : null}
       {entries.map(({ key, value }, index) => {
         const separate = hasSeparateClipStrength(value);
-        const patch = (next: Partial<PowerLoraValue>) => setRow(key, { ...value, ...next });
+        const patch = (next: Partial<PowerLoraValue>) => setRow(key, patchPowerLoraValue(value, next));
+        const strength = loraStrengthValue(value.strength);
         return (
-          <SubItem
+          <LoraRow
             key={key}
             title={`LoRA ${index + 1}`}
-            rightComponent={
-              <View className="flex-row items-center" style={{ gap: t.node.inlineGap }}>
-                <NativeSwitch
-                  label={`Enable LoRA ${index + 1}`}
-                  value={value.on === true}
-                  onValueChange={(on) => patch({ on })}
-                />
-                <Action
-                  kind="text"
-                  icon={Trash2}
-                  label={`Remove LoRA ${index + 1}`}
-                  onPress={() => setRow(key, undefined)}
-                />
-              </View>
-            }
-          >
-            <View style={{ gap: t.node.labelGap, opacity: value.on ? 1 : t.opacity.disabled }}>
-              <ModelSelector
-                value={value.lora ?? 'None'}
-                onChange={(lora) => patch({ lora })}
-                type={['loras']}
-                classType="LoraLoader"
-                inputName="lora_name"
-                serverId={serverId}
-              />
-              <SubItem title={separate ? 'Model Strength' : 'Strength'}>
-                <NumberInput
-                  value={value.strength}
-                  onChange={(strength) => patch({ strength })}
-                  step={STRENGTH_STEP}
-                  decimalPlaces={2}
-                />
-              </SubItem>
-              {separate ? (
-                <SubItem title="Clip Strength">
-                  <NumberInput
-                    value={value.strengthTwo ?? value.strength}
-                    onChange={(strengthTwo) => patch({ strengthTwo })}
-                    step={STRENGTH_STEP}
-                    decimalPlaces={2}
-                  />
-                </SubItem>
-              ) : null}
-            </View>
-          </SubItem>
+            serverId={serverId}
+            lora={value.lora ?? 'None'}
+            onLoraChange={(lora) => patch({ lora })}
+            classType="LoraLoader"
+            strengthKind={separate ? 'model' : 'shared'}
+            strength={strength}
+            onStrengthChange={(next) => patch({ strength: next })}
+            clipStrength={separate ? loraStrengthValue(value.strengthTwo) : undefined}
+            onClipStrengthChange={separate ? (strengthTwo) => patch({ strengthTwo }) : undefined}
+            enabled={value.on === true}
+            onEnabledChange={(on) => patch({ on })}
+            onRemove={() => setRow(key, undefined)}
+          />
         );
       })}
       <View className="flex-row">

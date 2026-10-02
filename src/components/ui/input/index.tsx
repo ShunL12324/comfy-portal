@@ -11,6 +11,7 @@ import { withStyleContext, useStyleContext } from '@gluestack-ui/utils/nativewin
 import { cssInterop } from 'nativewind';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
+import { compactFieldStyle } from './compact-field-style';
 
 const SCOPE = 'INPUT';
 
@@ -208,18 +209,7 @@ const InputField = React.forwardRef<React.ComponentRef<typeof UIInput.Input>, II
     <UIInput.Input
       ref={ref}
       {...props}
-      style={[
-        props.style,
-        compact && {
-          ...t.node.body,
-          height: t.height.control,
-          paddingHorizontal: t.node.inset,
-          paddingVertical: 0,
-          ...(props.keyboardType === 'numeric' || props.keyboardType === 'numbers-and-punctuation'
-            ? { fontVariant: ['tabular-nums' as const] }
-            : {}),
-        },
-      ]}
+      style={[props.style, compact && compactFieldStyle(props.keyboardType)]}
       className={inputFieldStyle({
         parentVariants: {
           variant: parentVariant,

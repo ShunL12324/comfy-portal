@@ -1,6 +1,5 @@
 import { useCompactControls } from '@/components/ui/design-system/control-density';
-import { NumberSlider } from '@/components/self-ui/slider';
-import { Action, Copy, FieldLabel, Row, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Copy, Row, StateIcon, useDesign } from '@/components/ui/design-system/primitives';
 import { HStack } from '@/components/ui/hstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
@@ -10,7 +9,7 @@ import { useServersStore } from '@/features/server/stores/server-store';
 import { clearNodeSchemaCache } from '@/services/node-schema';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { Check, ChevronDown, ImageIcon, Sliders, Trash2 } from '@/constants/icons';
+import { Check, ChevronDown, ImageIcon } from '@/constants/icons';
 import React, { useCallback, useRef } from 'react';
 import { SearchableBottomSheet } from '../bottom-sheet';
 import { getOptionSurfaceStyle } from '../bottom-sheet/item';
@@ -22,7 +21,6 @@ interface ModelSelectorProps {
   value: string;
   onChange: (value: string) => void;
   onRefresh?: () => Promise<void>;
-  onDelete?: () => void;
   isRefreshing?: boolean;
   /**
    * Model folders behind this input. Drives preview images and the refresh
@@ -34,41 +32,6 @@ interface ModelSelectorProps {
   /** Input this picker edits, e.g. `ckpt_name`. */
   inputName?: string;
   serverId: string;
-  onLoraClipStrengthChange?: (value: number) => void;
-  onLoraModelStrengthChange?: (value: number) => void;
-  initialClipStrength?: number;
-  initialModelStrength?: number;
-}
-
-interface StrengthControlProps {
-  label: string;
-  value: number;
-  onChange?: (value: number) => void;
-  onChangeEnd?: (value: number) => void;
-}
-
-function StrengthControl({ label, value, onChange, onChangeEnd }: StrengthControlProps) {
-  return (
-    <>
-      <HStack space="xs" className="mt-2 items-center justify-between">
-        <HStack space="xs" className="items-center">
-          <Icon as={Sliders} size="xs" className="text-content-heading" />
-          <FieldLabel>{label}</FieldLabel>
-        </HStack>
-      </HStack>
-      <HStack space="sm" className="mt-2 w-full items-center">
-        <NumberSlider
-          value={value}
-          minValue={0}
-          maxValue={2}
-          step={0.05}
-          onChange={onChange}
-          onChangeEnd={onChangeEnd}
-          decimalPlaces={2}
-        />
-      </HStack>
-    </>
-  );
 }
 
 function ModelPreview({ image, label }: { image?: string; label: string }) {
@@ -98,15 +61,10 @@ export function ModelSelector({
   onChange,
   onRefresh: customOnRefresh,
   isRefreshing: customIsRefreshing,
-  onDelete,
   type = 'checkpoints',
   classType,
   inputName,
   serverId,
-  onLoraClipStrengthChange,
-  onLoraModelStrengthChange,
-  initialClipStrength = 1,
-  initialModelStrength = 1,
 }: ModelSelectorProps) {
   const [isVisible, setIsVisible] = React.useState(false);
   const [preview, setPreview] = React.useState<SelectorOption | null>(null);
@@ -236,52 +194,9 @@ export function ModelSelector({
             <Icon as={ChevronDown} size="sm" className="text-content-tertiary" />
           </HStack>
         </Pressable>
-        {type === 'loras' && (
-          <VStack className="px-4 pb-3">
-            {onLoraModelStrengthChange && (
-              <StrengthControl
-                label="Model Strength"
-                value={initialModelStrength}
-                onChangeEnd={onLoraModelStrengthChange}
-              />
-            )}
-            {onLoraClipStrengthChange && (
-              <StrengthControl
-                label="Clip Strength"
-                value={initialClipStrength}
-                onChangeEnd={onLoraClipStrengthChange}
-              />
-            )}
-            {onDelete && (
-              <Pressable
-                className="active:opacity-pressed mt-4 gap-2 rounded-lg border-stroke bg-surface-raised p-3 flex-row items-center justify-center border-[0.5px]"
-                onPress={onDelete}
-              >
-                <Icon as={Trash2} size="xs" className="text-status-danger" />
-                <Copy size="label" style={{ color: c.danger }}>
-                  Remove LoRA
-                </Copy>
-              </Pressable>
-            )}
-          </VStack>
-        )}
       </Box>
     ),
-    [
-      handlePress,
-      type,
-      initialClipStrength,
-      initialModelStrength,
-      onLoraClipStrengthChange,
-      onLoraModelStrengthChange,
-      value,
-      onDelete,
-      isMissing,
-      currentOption,
-      missingLabel,
-      c,
-      compact,
-    ],
+    [handlePress, value, isMissing, currentOption, missingLabel, c, compact],
   );
 
   const renderItem = useCallback(

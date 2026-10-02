@@ -1,7 +1,8 @@
-import { ModelSelector } from '@/components/common/selectors/model';
+import { loraStrengthValue } from '@/features/comfy-node/utils/lora-strength';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import BaseNode from '../../common/base-node';
+import LoraRow from '../../common/lora-row';
 
 interface LoraLoaderProps {
   node: Node;
@@ -14,17 +15,17 @@ export default function LoraLoader({ node, serverId, workflowId }: LoraLoaderPro
 
   return (
     <BaseNode node={node}>
-      <ModelSelector
-        value={node.inputs.lora_name}
-        onChange={(value) => updateNodeInput(workflowId, node.id, 'lora_name', value)}
+      <LoraRow
+        title="LoRA"
         serverId={serverId}
-        type="loras"
+        lora={node.inputs.lora_name}
+        onLoraChange={(value) => updateNodeInput(workflowId, node.id, 'lora_name', value)}
         classType={node.class_type}
-        inputName="lora_name"
-        onLoraClipStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_clip', value)}
-        onLoraModelStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_model', value)}
-        initialClipStrength={node.inputs.strength_clip}
-        initialModelStrength={node.inputs.strength_model}
+        strengthKind="model"
+        strength={loraStrengthValue(node.inputs.strength_model)}
+        onStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_model', value)}
+        clipStrength={loraStrengthValue(node.inputs.strength_clip)}
+        onClipStrengthChange={(value) => updateNodeInput(workflowId, node.id, 'strength_clip', value)}
       />
     </BaseNode>
   );
