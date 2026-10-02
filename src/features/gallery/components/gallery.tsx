@@ -13,6 +13,7 @@ import { MediaViewer, type MediaViewerItem } from './media-viewer';
 import { designTokens as t } from '@/constants/design-tokens';
 
 const deleteOne = (item: MediaViewerItem) => deleteGeneratedMedia([item.uri]);
+const positionKey = (_: unknown, index: number) => String(index);
 
 /**
  * One media collection, optionally scoped to a server, under its own app bar.
@@ -29,7 +30,9 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
   // wrongly sized tiles that visibly jumped once onLayout arrived; an empty
   // frame is quieter than a wrong one.
   const [width, setWidth] = useState<number>();
-  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  // The viewer opens on an item, not an index, so the tiles' press handler does
+  // not depend on the filtered list and survives a filter switch.
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const assets = useMemo(
     () =>
       all.filter(
@@ -47,13 +50,13 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
   const selection = useMediaSelection(ids);
   const { listRef: gridRef, registerTile, getOriginRect } = useMediaTileRects<(typeof assets)[number]>();
   const { active: selecting, toggle, begin } = selection;
-  const closePreview = useCallback(() => setPreviewIndex(null), []);
+  const closePreview = useCallback(() => setPreviewUri(null), []);
   const openOrToggle = useCallback(
     (uri: string) => {
       if (selecting) toggle(uri);
-      else setPreviewIndex(Math.max(ids.indexOf(uri), 0));
+      else setPreviewUri(uri);
     },
-    [selecting, toggle, ids],
+    [selecting, toggle],
   );
   const deleteMany = useCallback((uris: string[]) => deleteGeneratedMedia(uris), []);
   const hasMedia = all.some((asset) => !serverId || asset.serverId === serverId);
@@ -62,6 +65,22 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
   // Square tiles with a 4-point gap, so a row's pitch is exact.
   const rowPitch = size + t.layout.label;
   const noun = filter === 'All' ? 'media' : filter.toLowerCase();
+  const { isSelected } = selection;
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof assets)[number] }) => (
+      <MediaTile
+        uri={item.path}
+        kind={item.kind}
+        size={size}
+        selecting={selecting}
+        selected={isSelected(item.path)}
+        onPress={openOrToggle}
+        onLongPress={begin}
+        onTileRef={registerTile}
+      />
+    ),
+    [size, selecting, isSelected, openOrToggle, begin, registerTile],
+  );
   return (
     <View style={{ flex: 1 }}>
       <MediaSelectionAppBar title={title} selection={selection} onDelete={deleteMany} />
@@ -81,23 +100,28 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
               key={columns}
               data={assets}
               numColumns={columns}
-              keyExtractor={(asset) => asset.id}
+              /**
+               * Keyed by position, not by asset. With several columns FlatList keys
+               * each row by its items' keys joined, so keying by id made almost
+               * every row key change on a filter switch (or a new item at the top)
+               * and remounted every visible tile with its native views. By
+               * position, rows and tiles stay mounted and only their props change.
+               */
+              keyExtractor={positionKey}
               columnWrapperStyle={{ gap: t.layout.label }}
               contentContainerStyle={{ flexGrow: 1, gap: t.layout.label, paddingBottom: t.layout.gutter }}
               /**
-               * Bounded so the number of live video players stays proportional to
-               * what is on screen. Every video tile holds its own `useVideoPlayer`,
-               * i.e. a native player object, purely to show a paused first frame. At
-               * the default windowSize of 21 the list keeps ten viewports of tiles
-               * mounted either side of the visible one — roughly 380 tiles on a
-               * phone at three columns — and since the pool became global this list
-               * is the user's whole history rather than one workflow's output. Five
-               * viewports' worth is enough to scroll smoothly.
+               * Bounded so the number of mounted tiles stays proportional to what is
+               * on screen. At the default windowSize of 21 the list keeps ten
+               * viewports of tiles mounted either side of the visible one — roughly
+               * 380 tiles on a phone at three columns — and since the pool became
+               * global this list is the user's whole history rather than one
+               * workflow's output. Five viewports' worth is enough to scroll
+               * smoothly. Video tiles show cached stills, not players (see
+               * `useVideoStill`), so a tile costs one image view either way.
                *
                * `removeClippedSubviews` is deliberately not set: it has a history of
-               * blanking cells on iOS, and unmounting out-of-window rows already
-               * releases the players. The real fix is not to create a player for a
-               * still frame at all, which needs thumbnail generation and a cache.
+               * blanking cells on iOS.
                */
               windowSize={5}
               initialNumToRender={columns * 8}
@@ -120,26 +144,15 @@ export function Gallery({ serverId, title = 'Gallery' }: { serverId?: string; ti
                   </EmptyState>
                 )
               }
-              renderItem={({ item }) => (
-                <MediaTile
-                  uri={item.path}
-                  kind={item.kind}
-                  size={size}
-                  selecting={selecting}
-                  selected={selection.isSelected(item.path)}
-                  onPress={openOrToggle}
-                  onLongPress={begin}
-                  onTileRef={registerTile}
-                />
-              )}
+              renderItem={renderItem}
             />
           )}
         </View>
       </View>
       <MediaViewer
         items={viewerItems}
-        initialIndex={previewIndex ?? 0}
-        visible={previewIndex !== null}
+        initialIndex={previewUri === null ? 0 : Math.max(ids.indexOf(previewUri), 0)}
+        visible={previewUri !== null}
         onClose={closePreview}
         getOriginRect={getOriginRect}
         onDelete={deleteOne}

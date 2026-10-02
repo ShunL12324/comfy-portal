@@ -1,11 +1,12 @@
 import { useDesign } from '@/components/ui/design-system/primitives';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Check, PlayCircle } from '@/constants/icons';
-import { Image } from 'expo-image';
+import { Image, type ImageLoadEventData } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { memo, useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useVideoStill } from '../hooks/use-video-still';
 import { rememberAspect } from './media-viewer/media-aspect';
 
 /** The selected tile's outline; heavy enough to read over any image. */
@@ -13,6 +14,7 @@ const SELECTED_OUTLINE = 2;
 /** The check plate: a 12-point glyph on a 20-point square. */
 const CHECK_PLATE = t.icon.large;
 
+/** A paused player, only for a video whose still frame could not be made. */
 function VideoFrame({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (video) => {
     video.muted = true;
@@ -39,6 +41,10 @@ interface MediaTileProps {
  * opens the viewer, or toggles the tile while selecting; a long-press starts
  * selecting. While selecting every tile shows a check plate, and a selected
  * tile is dimmed and outlined so the choice reads at a glance.
+ *
+ * Videos show a cached still (`useVideoStill`) through the same image view as
+ * images, so a grid holds no players, and a tile the grid reuses for another
+ * item, of either kind, keeps its native view.
  */
 export const MediaTile = memo(function MediaTile({
   uri,
@@ -53,6 +59,14 @@ export const MediaTile = memo(function MediaTile({
   const c = useDesign();
   const tileRef = useCallback((view: View | null) => onTileRef?.(uri, view), [onTileRef, uri]);
   const noun = kind === 'video' ? 'video' : 'image';
+  const still = useVideoStill(kind === 'video' ? uri : undefined);
+  const source = kind === 'video' ? still : uri;
+  const onLoad = useCallback(
+    (event: ImageLoadEventData) => {
+      if (kind === 'image') rememberAspect(uri, event.source.width, event.source.height);
+    },
+    [kind, uri],
+  );
   return (
     <Pressable
       ref={tileRef}
@@ -66,16 +80,16 @@ export const MediaTile = memo(function MediaTile({
         { borderRadius: t.radius.control, overflow: 'hidden', backgroundColor: c.well },
       ]}
     >
-      {kind === 'video' ? (
+      {kind === 'video' && still === null ? (
         <VideoFrame uri={uri} />
       ) : (
         <Image
-          source={{ uri }}
+          source={source ? { uri: source } : null}
           contentFit="cover"
           cachePolicy="memory-disk"
           recyclingKey={uri}
           style={styles.fill}
-          onLoad={(event) => rememberAspect(uri, event.source.width, event.source.height)}
+          onLoad={onLoad}
         />
       )}
       {kind === 'video' && (

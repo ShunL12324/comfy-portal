@@ -4,6 +4,7 @@ import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { mediaTime } from '@/features/gallery/utils/media-time';
 import { resolveProvenance } from '@/services/media-provenance';
 import { generateUUID } from '@/utils/uuid';
+import { deleteVideoStills } from '@/features/gallery/services/video-still-file';
 import { Directory, File, Paths } from 'expo-file-system';
 
 interface SaveMediaOptions {
@@ -84,8 +85,11 @@ export async function deleteGeneratedMedia(paths: string[]) {
     } catch {
       // A file that cannot be deleted must still leave the gallery.
     }
-    store.remove(path);
   }
+  deleteVideoStills(paths);
+  // Each store update re-renders the grid and rewrites the whole persisted
+  // index, workflows included, so a batch leaves in one.
+  store.removeMany(paths);
   await mediaStorage.flush();
 }
 
@@ -105,7 +109,7 @@ export async function pruneMissingMedia() {
     }
   });
   if (!missing.length) return;
-  missing.forEach((asset) => store.remove(asset.path));
+  store.removeMany(missing.map((asset) => asset.path));
   await mediaStorage.flush();
 }
 

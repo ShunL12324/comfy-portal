@@ -26,11 +26,13 @@ export function useMediaSelection(ids: string[]) {
     [allSelected, ids],
   );
   const selectedSet = useMemo(() => new Set(state.selected), [state.selected]);
+  // Stable between selection changes, so a grid's renderItem can depend on it.
+  const isSelected = useCallback((id: string) => selectedSet.has(id), [selectedSet]);
 
   return {
     active: state.active,
     selected: state.selected,
-    isSelected: (id: string) => selectedSet.has(id),
+    isSelected,
     allSelected,
     begin,
     toggle,

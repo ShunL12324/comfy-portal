@@ -112,7 +112,7 @@ export async function cleanupServerData(_serverId: string) {}
 export async function deleteGeneratedMedia(paths: string[]) {
   await waitForMediaHydration();
   const store = useMediaStore.getState();
-  paths.forEach((path) => store.remove(path));
+  store.removeMany(paths);
   await mediaStorage.flush();
 }
 

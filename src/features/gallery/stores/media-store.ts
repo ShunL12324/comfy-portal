@@ -65,6 +65,8 @@ export const useMediaStore = create<{
   assets: MediaAsset[];
   upsert: (asset: MediaAsset) => void;
   remove: (path: string) => void;
+  /** One update, and one write of the persisted index, for any number of paths. */
+  removeMany: (paths: string[]) => void;
 }>()(
   persist(
     (set) => ({
@@ -77,6 +79,11 @@ export const useMediaStore = create<{
           ].sort((a, b) => compareMediaTimeDesc(a.metadata.timestamp, b.metadata.timestamp)),
         })),
       remove: (path) => set((state) => ({ assets: state.assets.filter((item) => item.path !== path) })),
+      removeMany: (paths) => {
+        if (!paths.length) return;
+        const gone = new Set(paths);
+        set((state) => ({ assets: state.assets.filter((item) => !gone.has(item.path)) }));
+      },
     }),
     { name: 'cp-media-v2', storage: createJSONStorage(() => mediaStorage) },
   ),
