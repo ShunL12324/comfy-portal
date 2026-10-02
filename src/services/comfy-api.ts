@@ -1,5 +1,5 @@
 import { useServersStore } from '@/features/server/stores/server-store';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, UploadType, type UploadTask } from 'expo-file-system';
 import { buildServerUrl, fetchWithAuth } from './network';
 import { withRequestTimeout } from '@/utils/request-timeout';
 
@@ -87,38 +87,50 @@ export const uploadImage = (
     };
   }
 
-  let task: FileSystem.UploadTask | null = null;
+  let task: UploadTask | null = null;
+  let cancelled = false;
 
   const promise = (async () => {
     const uploadPath = server.token ? `/upload/image?token=${encodeURIComponent(server.token)}` : '/upload/image';
     const url = await buildServerUrl(server.useSSL, server.host, server.port, uploadPath);
+    if (cancelled) throw new Error('Upload canceled');
 
-    task = FileSystem.createUploadTask(
-      url,
-      fileUri,
-      {
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'image',
-        parameters: {
-          type: 'input',
-          overwrite: 'true',
-        },
-        headers: server.token
-          ? {
-              Authorization: `Bearer ${server.token}`,
-            }
-          : undefined,
-        mimeType: resolveImageMimeType(fileName, mimeType),
-        httpMethod: 'POST',
+    // Unlike a result download, an upload cannot be paused and resumed, so it
+    // keeps the background session: leaving the app mid-upload must not lose
+    // it, and one task's scheduling overhead is small next to its transfer.
+    task = new File(fileUri).createUploadTask(url, {
+      uploadType: UploadType.MULTIPART,
+      sessionType: 'background',
+      fieldName: 'image',
+      parameters: {
+        type: 'input',
+        overwrite: 'true',
       },
-      (data) => {
-        if (onProgress && data.totalBytesExpectedToSend > 0) {
-          onProgress(data.totalBytesSent / data.totalBytesExpectedToSend);
+      headers: server.token
+        ? {
+            Authorization: `Bearer ${server.token}`,
+          }
+        : undefined,
+      mimeType: resolveImageMimeType(fileName, mimeType),
+      httpMethod: 'POST',
+      onProgress: ({ bytesSent, totalBytes }) => {
+        // Multipart framing can push the sent count past the file's size.
+        if (onProgress && totalBytes > 0) {
+          onProgress(Math.min(1, bytesSent / totalBytes));
         }
       },
-    );
+    });
 
-    const uploadResult = await task.uploadAsync();
+    let uploadResult;
+    try {
+      uploadResult = await task.uploadAsync();
+    } catch (error) {
+      // Callers recognise a cancellation by this wording.
+      if (cancelled) throw new Error('Upload canceled');
+      throw error;
+    } finally {
+      task.release();
+    }
 
     if (!uploadResult || uploadResult.status !== 200) {
       const details = uploadResult?.body?.slice(0, 200);
@@ -152,9 +164,8 @@ export const uploadImage = (
   return {
     promise,
     cancel: async () => {
-      if (task) {
-        await task.cancelAsync();
-      }
+      cancelled = true;
+      task?.cancel();
     },
   };
 };

@@ -2,12 +2,13 @@ import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
 import { getInstallId } from '@/store/install-id';
 
-import * as FileSystem from 'expo-file-system/legacy';
+import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth } from './network';
 import { resolveScheme } from './server-scheme';
 import { diag, redactUrl } from '@/utils/diagnostics';
 import { mapWithConcurrency } from '@/utils/concurrency';
+import { downloadToCache } from './media-download';
 
 /**
  * Configuration options for the ComfyUI client
@@ -82,7 +83,12 @@ function overallProgress(count: number, report?: (filename: string, progress: nu
 /** Best-effort removal of a downloaded file that will not be saved. */
 function discardDownload(uri: string) {
   if (!uri.startsWith('file://')) return;
-  FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+  try {
+    const file = new File(uri);
+    if (file.exists) file.delete();
+  } catch {
+    // Best effort: the cache is the OS's to purge.
+  }
 }
 
 /**
@@ -1101,32 +1107,7 @@ export class ComfyClient {
       return url;
     }
 
-    // Use a unique filename to avoid download resume conflicts
-    const ext = filename.split('.').pop() || 'png';
-    const uniqueFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-    await FileSystem.makeDirectoryAsync(FileSystem.cacheDirectory + 'comfy-downloads', { intermediates: true });
-    const downloadResumable = FileSystem.createDownloadResumable(
-      url,
-      FileSystem.cacheDirectory + 'comfy-downloads/' + uniqueFilename,
-      {},
-      ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
-        // Without a Content-Length the expected size is -1: no fraction to give.
-        if (totalBytesExpectedToWrite > 0) onProgress?.(totalBytesWritten / totalBytesExpectedToWrite);
-      },
-    );
-
-    const result = await downloadResumable.downloadAsync();
-    if (!result?.uri) {
-      throw new Error(`Failed to download ${filename}`);
-    }
-    // downloadAsync resolves for non-2xx too, writing the error body to the
-    // file. Without this check a 401 would be saved as a corrupt image.
-    if (result.status >= 400) {
-      discardDownload(result.uri);
-      throw new Error(`Failed to download ${filename} (HTTP ${result.status})`);
-    }
-    return result.uri;
+    return downloadToCache(url, { name: filename, onProgress });
   }
 
   /**

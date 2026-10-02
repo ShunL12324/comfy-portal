@@ -1,5 +1,5 @@
 import { ComfyClient } from '@/services/comfy-client';
-import * as FileSystem from 'expo-file-system/legacy';
+import { downloadToCache } from '@/services/media-download';
 jest.mock('@/store/install-id', () => ({ getInstallId: () => 'test' }));
 jest.mock('@/services/network', () => ({
   buildServerUrl: jest.fn(
@@ -8,12 +8,12 @@ jest.mock('@/services/network', () => ({
   fetchWithAuth: jest.fn(),
 }));
 jest.mock('@/services/server-scheme', () => ({ resolveScheme: jest.fn() }));
-jest.mock('expo-file-system/legacy', () => ({
-  cacheDirectory: 'file:///cache/',
-  makeDirectoryAsync: jest.fn(async () => {}),
-  deleteAsync: jest.fn(async () => {}),
-  createDownloadResumable: jest.fn(),
+/** URIs of files the client deleted. */
+const mockDeleted: string[] = [];
+jest.mock('expo-file-system', () => ({
+  File: jest.fn().mockImplementation((uri: string) => ({ uri, exists: true, delete: () => mockDeleted.push(uri) })),
 }));
+jest.mock('@/services/media-download', () => ({ downloadToCache: jest.fn() }));
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -34,7 +34,9 @@ function clientWithOutputs(filenames: string[]) {
   return client;
 }
 
-beforeEach(() => jest.mocked(FileSystem.deleteAsync).mockClear());
+beforeEach(() => {
+  mockDeleted.length = 0;
+});
 
 test('partial output recovery uses stable server identities, not changing download paths', async () => {
   const client = new ComfyClient({ host: 'test', port: '8188', useSSL: 'Never' });
@@ -134,12 +136,7 @@ test('a failed save stops the batch and discards downloads it will not save', as
   expect(save).toHaveBeenCalledTimes(1);
   // Every download that arrived is cleaned up, since none of them was saved.
   const downloaded = download.mock.calls.map((call) => `file:///cache/${call[0]}`);
-  expect(
-    jest
-      .mocked(FileSystem.deleteAsync)
-      .mock.calls.map((call) => call[0])
-      .sort(),
-  ).toEqual(downloaded.sort());
+  expect(mockDeleted.sort()).toEqual(downloaded.sort());
 });
 
 test('nothing new starts once a save has failed', async () => {
@@ -181,12 +178,8 @@ test('progress covers the whole result set and is reported only when it changes'
 });
 
 test('the /view URL encodes subfolder and type, and tolerates a missing subfolder', async () => {
-  const urls: string[] = [];
-  jest.mocked(FileSystem.createDownloadResumable).mockImplementation(((url: string, fileUri: string) => {
-    urls.push(url);
-    return { downloadAsync: async () => ({ uri: fileUri, status: 200 }) };
-  }) as any);
-  const client = new ComfyClient({ host: 'test', port: '8188', useSSL: 'Never' });
+  jest.mocked(downloadToCache).mockImplementation(async (url) => url);
+  const client = new ComfyClient({ host: 'test', port: '8188', useSSL: 'Never', token: 'secret' });
   jest.spyOn(client, 'getHistory').mockResolvedValue({
     prompt: {
       outputs: {
@@ -196,18 +189,20 @@ test('the /view URL encodes subfolder and type, and tolerates a missing subfolde
     },
   });
   await client.fetchAndDownloadResults('prompt', {}, new Set(), async () => {});
-  const params = urls.map((url) => new URL(url).searchParams);
+  const calls = jest.mocked(downloadToCache).mock.calls;
+  const params = calls.map(([url]) => new URL(url).searchParams);
   expect(params.map((query) => [query.get('filename'), query.get('subfolder'), query.get('type')])).toEqual([
     ['a b.png', 'my run/#1&x=y', 'output'],
     ['c.flac', '', 'output'],
   ]);
+  expect(params.map((query) => query.get('token'))).toEqual(['secret', 'secret']);
+  expect(calls.map(([, options]) => options.name)).toEqual(['a b.png', 'c.flac']);
 });
 
-test('an HTTP error body is not left behind in the cache', async () => {
-  jest.mocked(FileSystem.createDownloadResumable).mockImplementation(((_url: string, fileUri: string) => ({
-    downloadAsync: async () => ({ uri: fileUri, status: 401 }),
-  })) as any);
+test('a failed transfer rejects the batch without saving anything', async () => {
+  jest.mocked(downloadToCache).mockRejectedValue(new Error('Failed to download a.png (HTTP 401)'));
   const client = clientWithOutputs(['a.png']);
-  await expect(client.fetchAndDownloadResults('prompt', {}, new Set(), async () => {})).rejects.toThrow('HTTP 401');
-  expect(FileSystem.deleteAsync).toHaveBeenCalledTimes(1);
+  const save = jest.fn(async () => {});
+  await expect(client.fetchAndDownloadResults('prompt', {}, new Set(), save)).rejects.toThrow('HTTP 401');
+  expect(save).not.toHaveBeenCalled();
 });
