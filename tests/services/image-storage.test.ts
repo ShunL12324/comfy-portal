@@ -1,25 +1,39 @@
 import { useMediaStore, type MediaAsset } from '@/features/gallery/stores/media-store';
-import { deleteGeneratedMedia, pruneMissingMedia } from '@/services/image-storage';
+import { deleteGeneratedMedia, pruneMissingMedia, saveGeneratedMedia } from '@/services/image-storage';
 import { stillFile } from '@/features/gallery/services/video-still-file';
 
 /** Paths that exist on the fake mockDisk; `delete()` takes them off it. */
 const mockDisk = new Set<string>();
-jest.mock('expo-file-system', () => ({
-  // A file in a directory (a video's still) is keyed by its name alone.
-  File: jest.fn().mockImplementation((path: string, name?: string) => {
-    const uri = name ? `still:${name}` : path;
-    return {
-      uri,
+/** Bytes written by copies; a move writes none. */
+const mockCopies: string[] = [];
+jest.mock('expo-file-system', () => {
+  const Directory = jest.fn().mockImplementation((parent: { uri: string }, name: string) => ({
+    uri: `${parent.uri}${name}/`,
+    create: jest.fn(),
+  }));
+  const File = jest.fn().mockImplementation((pathOrDir: string | { uri: string }, name?: string) => {
+    const file = {
+      uri: typeof pathOrDir === 'string' ? pathOrDir : `${pathOrDir.uri}${name}`,
       get exists() {
-        return mockDisk.has(uri);
+        return mockDisk.has(file.uri);
       },
-      delete: () => mockDisk.delete(uri),
+      delete: () => mockDisk.delete(file.uri),
+      move: async (to: { uri: string }) => {
+        mockDisk.delete(file.uri);
+        mockDisk.add(to.uri);
+        file.uri = to.uri;
+      },
+      copy: async (to: { uri: string }) => {
+        mockCopies.push(file.uri);
+        mockDisk.add(to.uri);
+      },
     };
-  }),
-  Directory: jest.fn(),
-  Paths: {},
-}));
+    return file;
+  });
+  return { File, Directory, Paths: { cache: { uri: 'file:///cache/' }, document: { uri: 'file:///docs/' } } };
+});
 jest.mock('@/features/workflow/stores/workflow-store', () => ({ useWorkflowStore: {} }));
+jest.mock('@/services/media-provenance', () => ({ resolveProvenance: () => ({}) }));
 
 const asset = (id: string): MediaAsset => ({
   id,
@@ -83,4 +97,43 @@ test('deleting a video deletes its cached still, and only its own', async () => 
   await deleteGeneratedMedia([asset('a').path]);
   expect(mockDisk.has(stillA)).toBe(false);
   expect(mockDisk.has(stillB)).toBe(true);
+});
+
+describe('saving a downloaded result', () => {
+  const download = 'file:///cache/comfy-downloads/123-abc.mp4';
+  const sourceId = JSON.stringify(['out.mp4', '', 'output']);
+  const save = () =>
+    saveGeneratedMedia({
+      serverId: 'server',
+      workflowId: 'workflow',
+      mediaUrl: download,
+      workflow: {},
+      promptId: 'prompt',
+      sourceId,
+    });
+
+  beforeEach(() => {
+    mockCopies.length = 0;
+    useMediaStore.setState({ assets: [] });
+  });
+
+  test('moves the download into the gallery instead of copying it', async () => {
+    mockDisk.add(download);
+    const { path } = await save();
+    expect(path).toMatch(/^file:\/\/\/docs\/media-v2\/.+\.mp4$/);
+    expect(mockCopies).toEqual([]);
+    expect(mockDisk.has(download)).toBe(false);
+    expect(mockDisk.has(path)).toBe(true);
+    expect(useMediaStore.getState().assets.map((item) => item.path)).toEqual([path]);
+  });
+
+  test('a duplicate download is deleted, not left in the cache', async () => {
+    mockDisk.add(download);
+    const first = await save();
+    mockDisk.add(download);
+    const second = await save();
+    expect(second.path).toBe(first.path);
+    expect(mockDisk.has(download)).toBe(false);
+    expect(useMediaStore.getState().assets).toHaveLength(1);
+  });
 });

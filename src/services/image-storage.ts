@@ -34,6 +34,10 @@ export async function saveGeneratedMedia({
 }: SaveMediaOptions) {
   await waitForMediaHydration();
   const store = useMediaStore.getState();
+  // A result the client downloaded into the cache is ours to consume.
+  const downloaded = mediaUrl.startsWith(new Directory(Paths.cache, 'comfy-downloads').uri.replace(/\/?$/, '/'))
+    ? new File(mediaUrl)
+    : undefined;
   const existing =
     promptId &&
     store.assets.find(
@@ -43,6 +47,7 @@ export async function saveGeneratedMedia({
         (sourceId ? item.metadata.sourceId === sourceId : item.metadata.originalUrl === mediaUrl),
     );
   if (existing) {
+    if (downloaded?.exists) downloaded.delete();
     store.upsert(existing);
     await mediaStorage.flush();
     return { path: existing.path, metadata: existing.metadata };
@@ -55,7 +60,10 @@ export async function saveGeneratedMedia({
   const sourceName = parsed.searchParams.get('filename') ?? parsed.pathname;
   const extension = sourceName.match(/\.(png|jpe?g|webp|gif|mp4|mov|webm|m4v)$/i)?.[1]?.toLowerCase() ?? 'png';
   const destination = new File(directory, id + '.' + extension);
-  if (mediaUrl.startsWith('file://')) await new File(mediaUrl).copy(destination);
+  // Moving a download is a rename on the same volume; copying rewrote every
+  // video in full before deleting the original.
+  if (downloaded) await downloaded.move(destination);
+  else if (mediaUrl.startsWith('file://')) await new File(mediaUrl).copy(destination);
   else await File.downloadFileAsync(mediaUrl, destination, { idempotent: true });
   const metadata = {
     timestamp: new Date().toISOString(),
@@ -67,10 +75,6 @@ export async function saveGeneratedMedia({
   };
   store.upsert({ id, serverId, workflowId, kind: mediaKind(destination.uri), path: destination.uri, metadata });
   await mediaStorage.flush();
-  if (mediaUrl.startsWith(new Directory(Paths.cache, 'comfy-downloads').uri.replace(/\/?$/, '/'))) {
-    const downloaded = new File(mediaUrl);
-    if (downloaded.exists) downloaded.delete();
-  }
   return { path: destination.uri, metadata };
 }
 

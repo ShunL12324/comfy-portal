@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth } from './network';
 import { resolveScheme } from './server-scheme';
 import { diag, redactUrl } from '@/utils/diagnostics';
+import { mapWithConcurrency } from '@/utils/concurrency';
 
 /**
  * Configuration options for the ComfyUI client
@@ -50,6 +51,38 @@ interface ProgressCallback {
    */
   onDownloadProgress?: (filename: string, progress: number) => void;
 
+}
+
+/**
+ * How many result files download at once. Against a ComfyUI server 260 ms
+ * away, five videos (31 MB) took 4.6 s one after another and 2.0 s in
+ * parallel; past a few streams they only split the same link further.
+ */
+const RESULT_DOWNLOAD_CONCURRENCY = 3;
+
+/**
+ * Folds per-file download fractions into one 0-100 figure for the whole result
+ * set, reported only when the rounded value changes. Native progress events
+ * arrive far more often than that (iOS does not throttle them), and each
+ * report re-renders the generation UI.
+ */
+function overallProgress(count: number, report?: (filename: string, progress: number) => void) {
+  const fractions = new Array<number>(count).fill(0);
+  let last = -1;
+  return (index: number, filename: string, fraction: number) => {
+    if (!report) return;
+    fractions[index] = Math.min(1, Math.max(0, fraction));
+    const progress = Math.round((fractions.reduce((sum, value) => sum + value, 0) / count) * 100);
+    if (progress === last) return;
+    last = progress;
+    report(filename, progress);
+  };
+}
+
+/** Best-effort removal of a downloaded file that will not be saved. */
+function discardDownload(uri: string) {
+  if (!uri.startsWith('file://')) return;
+  FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
 }
 
 /**
@@ -1038,22 +1071,25 @@ export class ComfyClient {
   }
 
   /**
-   * Constructs the URL for downloading a generated media file.
-   * 
+   * Downloads one generated media file into the cache.
+   *
    * @param filename - The name of the media file
    * @param subfolder - The subfolder containing the media
    * @param type - The type of the media (output/temp)
-   * @returns Promise that resolves to the download URL
+   * @param onProgress - Receives the fraction (0-1) of this file written so far
+   * @returns Promise that resolves to the local file URI (the remote URL on web)
    * @private
    */
   private async downloadMedia(
     filename: string,
-    subfolder: string,
-    type: string,
-    callbacks?: ProgressCallback
+    subfolder: string | undefined,
+    type: string | undefined,
+    onProgress?: (fraction: number) => void,
   ): Promise<string> {
     // Append token to the path if it exists
-    let path = `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`;
+    let path =
+      `/view?filename=${encodeURIComponent(filename)}` +
+      `&subfolder=${encodeURIComponent(subfolder ?? '')}&type=${encodeURIComponent(type ?? 'output')}`;
     if (this.token) {
       path += `&token=${this.token}`;
     }
@@ -1074,12 +1110,10 @@ export class ComfyClient {
       url,
       FileSystem.cacheDirectory + 'comfy-downloads/' + uniqueFilename,
       {},
-      (downloadProgress) => {
-        if (callbacks?.onDownloadProgress) {
-          const progress = (downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite) * 100;
-          callbacks.onDownloadProgress(filename, Math.round(progress));
-        }
-      }
+      ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+        // Without a Content-Length the expected size is -1: no fraction to give.
+        if (totalBytesExpectedToWrite > 0) onProgress?.(totalBytesWritten / totalBytesExpectedToWrite);
+      },
     );
 
     const result = await downloadResumable.downloadAsync();
@@ -1089,6 +1123,7 @@ export class ComfyClient {
     // downloadAsync resolves for non-2xx too, writing the error body to the
     // file. Without this check a 401 would be saved as a corrupt image.
     if (result.status >= 400) {
+      discardDownload(result.uri);
       throw new Error(`Failed to download ${filename} (HTTP ${result.status})`);
     }
     return result.uri;
@@ -1122,7 +1157,7 @@ export class ComfyClient {
     if (!outputs) return { found: true, mediaUrls: [] };
 
     const mediaUrls: string[] = [];
-    const allMedia: { filename: string; subfolder: string; type: string }[] = [];
+    const allMedia: { filename: string; subfolder?: string; type?: string }[] = [];
 
     for (const nodeId in outputs) {
       const nodeOutput = outputs[nodeId];
@@ -1135,19 +1170,53 @@ export class ComfyClient {
     const outputMedia = allMedia.filter((img) => img.type === 'output');
     const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
 
-    for (const media of mediaToDownload) {
-      const sourceId = JSON.stringify([media.filename, media.subfolder ?? '', media.type ?? 'output']);
-      if (savedOutputIds.has(sourceId)) continue;
-      const mediaUrl = await this.downloadMedia(
-        media.filename,
-        media.subfolder,
-        media.type,
-        callbacks,
+    const pending = mediaToDownload
+      .map((media) => ({
+        media,
+        sourceId: JSON.stringify([media.filename, media.subfolder ?? '', media.type ?? 'output']),
+      }))
+      .filter(({ sourceId }) => !savedOutputIds.has(sourceId));
+
+    // Several files download at once, since one stream leaves a high-latency
+    // link idle between files, but they are committed one by one in history
+    // order, so the saved order and partial-recovery bookkeeping are unchanged.
+    // A failed download doesn't stop the others: whatever arrives is saved, and
+    // the job stays pending so the next pass fetches only what is missing. A
+    // failed save does stop the batch, since the next one would likely fail too.
+    let downloadFailure: { error: unknown } | undefined;
+    let saveFailure: { error: unknown } | undefined;
+    const reportProgress = overallProgress(pending.length, callbacks.onDownloadProgress);
+    const downloads = mapWithConcurrency(pending, RESULT_DOWNLOAD_CONCURRENCY, ({ media }, index) => {
+      if (saveFailure) return Promise.reject(saveFailure.error);
+      return this.downloadMedia(media.filename, media.subfolder, media.type, (fraction) =>
+        reportProgress(index, media.filename, fraction),
       );
-      await onOutput?.(mediaUrl, sourceId);
+    });
+
+    for (const [index, { sourceId }] of pending.entries()) {
+      let mediaUrl: string;
+      try {
+        mediaUrl = await downloads[index];
+      } catch (error) {
+        downloadFailure ??= { error };
+        continue;
+      }
+      if (saveFailure) {
+        discardDownload(mediaUrl);
+        continue;
+      }
+      try {
+        await onOutput?.(mediaUrl, sourceId);
+      } catch (error) {
+        saveFailure = { error };
+        discardDownload(mediaUrl);
+        continue;
+      }
       savedOutputIds.add(sourceId);
       mediaUrls.push(mediaUrl);
     }
+    const failure = saveFailure ?? downloadFailure;
+    if (failure) throw failure.error;
 
     return { found: true, mediaUrls };
   }
