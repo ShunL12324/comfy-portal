@@ -153,22 +153,7 @@ Node typography and spacing follow `designTokens.node`: all displayed node title
 
 Schema-driven editors (`SchemaNode`) file inputs the server marks `advanced` (or the editor marks, where the desktop UI hides them) under one collapsed Advanced section at the bottom of the node, after any footer, in the editor's order. Its header is a 44-point row under a hairline `subtle` rule: the muted label, `N changed` in tint metadata when any of its values differ from their defaults, and a 14-point chevron that turns 90° over `motion.fast`. Open or closed is remembered per node on the device, never in the workflow. Inputs set as a pair (width and height) share one row titled `Width × Height (px)`: two steppers with the same step side by side, wrapping below 152 points each, with an optional swap icon (ArrowLeftRight) in the title row. A linked or missing side falls back to separate fields.
 
-Slider or stepper is decided in one place, `numberControlFor` (`features/comfy-node/utils/number-control.ts`), from what the parameter means first and its range second. A slider is for a value tuned by feel, where the thumb's position means something and the useful range is about the whole declared range. A stepper is for an exact value, or where the declared range dwarfs the useful one. Ranges always come from the server's node definition; an editor's fallback spec (ComfyUI's own declaration) only stands in until it loads, and no editor narrows the server's range to a "nice" one. A feel value whose declared range is too long to drag gets a stepper, not a shortened slider. A stepper whose server step is too fine to tap (CFG 0.1, a timestamp 0.001) moves by a practical step; typing still accepts the server's precision. Saved values are shown as they are, even out of range, and are clamped only when edited. Editors pass `control` only for a genuine one-off.
-
-| Parameter | Control | Why |
-| --- | --- | --- |
-| `denoise`, 0–1 `strength`, `opacity`, `blend*` | Slider | Feel; the whole 0–1 range is useful |
-| `feather`, `blur*`, `volume` | Slider when the range is short, else stepper | Feel, but never a narrowed range |
-| `steps`, `*_at_step`, `batch_size`, `length`, `frame*`, `*_count`, `select_every_nth` | Stepper | Exact counts |
-| `seed`, `noise_seed` | Stepper (seed control) | Exact; up to 2^64 |
-| `width`, `height`, `*_width`, `*_side`, `multiple`, `divisible_by` | Stepper | Exact pixels |
-| `fps`, `*_rate`, `seconds`, `duration`, `*_time` | Stepper (fps 1, time 0.1) | Exact rates and times |
-| `cfg`, `guidance` | Stepper (0.5) | Declared 0–100, used about 1–12 |
-| `shift*` | Stepper (0.5) | Declared 0–100, used about 1–12 |
-| `megapixels`, `scale_by` | Stepper (0.1, 0.05) | Exact sizes |
-| `crf`, `bitrate`, `*tokens` | Stepper | Exact encoder and API values |
-| `strength_model`, `strength_clip`, LoRA rows | Stepper (0.05) | Declared −100–100 |
-| Anything else | 0–1 float: slider. Unbounded, an int with over 256 positions or a float with over 2000: stepper. Otherwise slider | Range fallback |
+Slider or stepper, and each numeric input's range, step and precision, follow one rule decided by what the parameter means: see [`numeric-controls.md`](numeric-controls.md).
 
 Run Assistant uses the same opaque paper panel as Nodes, without separate left/right outlines. Messages share 16-point insets and a 16-point group gap; role labels are 11/16, body 13/20 and Markdown headings 14/20 Medium. User messages use a quiet well bubble; assistant replies remain unfilled, with ordered, compact tool feedback. The 4-point composer field owns its single focus border and uses a 28-point Send/Stop surface inside a 44-point target. On phones it lives in the measured Gorhom footer at every detent and above the keyboard; split panels keep it inline. Clear is contextual and disabled during a turn. Provider configuration failures retain an actionable settings link after transport serialization, without displaying raw provider payloads.
 

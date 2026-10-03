@@ -87,6 +87,8 @@ function fitsSlider(spec: RangeSpec): boolean {
  *
  * The range is always the server's (or the editor's fallback until it loads).
  * An editor's `control` prop still overrides this for a one-off.
+ *
+ * The rule and its rationale: dev-docs/numeric-controls.md. Change it here, not per editor.
  */
 export function numberControlFor(spec: RangeSpec, inputKey = ''): NumberControl {
   const name = parameterName(inputKey);
