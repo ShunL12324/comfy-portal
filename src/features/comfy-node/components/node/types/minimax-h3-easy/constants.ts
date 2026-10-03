@@ -1,3 +1,5 @@
+import { NumberSpec } from '@/features/comfy-node/utils/schema-inputs';
+
 /**
  * Input options for ComfyUI-MiniMaxH3-Easy.
  *
@@ -90,13 +92,15 @@ export function withCurrentValue(options: Option[], value: unknown): Option[] {
   return [...options, { value, label: value, description: 'Not offered by this server' }];
 }
 
-export const SECONDS_MIN = 0.2;
-export const SECONDS_MAX = 30;
-export const FPS_MIN = 1;
-export const FPS_MAX = 120;
-export const DIMENSION_MIN = 32;
-export const DIMENSION_MAX = 16384;
-export const DIMENSION_STEP = 32;
+const DIMENSION: NumberSpec = { kind: 'int', min: 32, max: 16384, step: 32 };
+
+/** The node's number inputs, used only until the server's definition loads. */
+export const NUMBER_FALLBACKS = {
+  seconds: { kind: 'float', min: 0.2, max: 30, step: 0.1 },
+  fps: { kind: 'int', min: 1, max: 120, step: 1 },
+  width: DIMENSION,
+  height: DIMENSION,
+} satisfies Record<string, NumberSpec>;
 
 export const MAX_IMAGES = 9;
 export const MAX_VIDEOS = 3;

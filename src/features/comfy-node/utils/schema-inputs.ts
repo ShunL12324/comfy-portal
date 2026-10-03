@@ -36,22 +36,6 @@ export function comboOptions(options: string[], current: unknown, labels?: Recor
   return [...list, { value: current, label: labels?.[current] ?? current, description: 'Not offered by this server' }];
 }
 
-export type NumberControl = 'slider' | 'stepper';
-
-/** The most slider positions a thumb can still place precisely on a phone. */
-const MAX_SLIDER_STOPS = 2000;
-
-/**
- * Sliders for short, bounded ranges; steppers for open-ended or huge ones
- * (ComfyUI's INT max is 2^63, which no slider can address).
- */
-export function numberControlFor(spec: { min?: number; max?: number; step?: number; kind: string }): NumberControl {
-  const { min, max } = spec;
-  if (min === undefined || max === undefined || !Number.isFinite(min) || !Number.isFinite(max)) return 'stepper';
-  const step = spec.step ?? (spec.kind === 'int' ? 1 : 0.01);
-  return (max - min) / step <= MAX_SLIDER_STOPS ? 'slider' : 'stepper';
-}
-
 /** NumberInput rounds to its decimal places, so a float's must come from its step. */
 export function decimalPlacesFor(spec: { kind: string; step?: number }): number {
   if (spec.kind === 'int') return 0;
@@ -97,7 +81,7 @@ export function dynamicComboUpdates(
   return updates;
 }
 
-type NumberSpec = Extract<FieldSpec, { kind: 'int' | 'float' }>;
+export type NumberSpec = Extract<FieldSpec, { kind: 'int' | 'float' }>;
 
 export interface PairedNumbers {
   first: { value: number; spec: NumberSpec };

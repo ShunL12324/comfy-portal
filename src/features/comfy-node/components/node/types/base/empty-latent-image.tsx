@@ -1,17 +1,23 @@
 import { Icon } from '@/components/ui/icon';
 import { X } from '@/constants/icons';
 import { NativeSegments } from '@/components/ui/design-system/native-controls';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { Input, InputField } from '@/components/ui/input';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
+import { pickFieldSpec } from '@/features/comfy-node/utils/schema-inputs';
+import { useNodeSchema } from '@/hooks/use-node-schema';
+import { resolveInputSpec } from '@/services/node-schema';
 import { showToast } from '@/utils/toast';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { designTokens as t } from '@/constants/design-tokens';
 import BaseNode from '../../common/base-node';
+import SchemaField from '../../common/schema-field';
 import SubItem from '../../common/sub-item';
 import { Copy } from '@/components/ui/design-system/primitives';
+import { CORE_NUMBER_SPECS } from './core-number-specs';
+
+const SPECS = CORE_NUMBER_SPECS.EmptyLatentImage;
 
 const RESOLUTION_OPTIONS = [
   { label: '1024x1024', width: 1024, height: 1024 },
@@ -30,6 +36,7 @@ interface EmptyLatentImageProps {
 
 export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLatentImageProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const schema = useNodeSchema(serverId, node.class_type);
   const isWidthLinked = Array.isArray(node.inputs.width);
   const isHeightLinked = Array.isArray(node.inputs.height);
   const hasLinkedDimensions = isWidthLinked || isHeightLinked;
@@ -46,11 +53,29 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
     );
   });
 
-  useEffect(() => {
-    if (hasLinkedDimensions) return;
-    updateNodeInput(workflowId, node.id, 'width', Number(dimensions.width));
-    updateNodeInput(workflowId, node.id, 'height', Number(dimensions.height));
-  }, [dimensions, hasLinkedDimensions, workflowId, node.id, updateNodeInput]);
+  /** The server's range for a side; the saved value is never rewritten until it is edited. */
+  const boundsOf = (key: 'width' | 'height') => {
+    const spec = pickFieldSpec(resolveInputSpec(schema, key, node.inputs), SPECS[key]);
+    const numeric = spec.kind === 'int' || spec.kind === 'float' ? spec : SPECS[key];
+    return { min: numeric.min ?? SPECS[key].min, max: numeric.max ?? SPECS[key].max };
+  };
+
+  const setDimension = (key: 'width' | 'height', value: number) => {
+    setDimensions((prev) => ({ ...prev, [key]: value }));
+    const { min, max } = boundsOf(key);
+    if (value >= min && value <= max) updateNodeInput(workflowId, node.id, key, value);
+  };
+
+  /** Out-of-range typing is clamped to the server's bounds when the field is left. */
+  const commitDimension = (key: 'width' | 'height', label: string) => {
+    const { min, max } = boundsOf(key);
+    const value = dimensions[key];
+    if (value >= min && value <= max) return;
+    const clamped = Math.min(max, Math.max(min, value));
+    setDimensions((prev) => ({ ...prev, [key]: clamped }));
+    updateNodeInput(workflowId, node.id, key, clamped);
+    showToast.error(`Invalid ${label}`, `Please enter an integer between ${min} and ${max}`);
+  };
 
   const handleResolutionChange = (value: ResolutionOption) => {
     setSelectedResolution(value);
@@ -63,6 +88,8 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
       width: selectedOption.width,
       height: selectedOption.height,
     });
+    updateNodeInput(workflowId, node.id, 'width', selectedOption.width);
+    updateNodeInput(workflowId, node.id, 'height', selectedOption.height);
   };
 
   return (
@@ -108,15 +135,10 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
                     onChangeText={(text) => {
                       const parsedValue = text === '' ? 0 : parseInt(text, 10);
                       if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
-                        setDimensions((prev) => ({ ...prev, width: parsedValue }));
+                        setDimension('width', parsedValue);
                       }
                     }}
-                    onBlur={() => {
-                      if (dimensions.width < 16 || dimensions.width > 10240) {
-                        setDimensions((prev) => ({ ...prev, width: 1024 }));
-                        showToast.error('Invalid width', `Please enter a valid integer number between 16 and 10240`);
-                      }
-                    }}
+                    onBlur={() => commitDimension('width', 'width')}
                   />
                 </Input>
                 <Icon as={X} size="xs" className="text-content-tertiary" />
@@ -135,15 +157,10 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
                     onChangeText={(text) => {
                       const parsedValue = text === '' ? 0 : parseInt(text, 10);
                       if (text === '' || (!isNaN(parsedValue) && parsedValue > 0)) {
-                        setDimensions((prev) => ({ ...prev, height: parsedValue }));
+                        setDimension('height', parsedValue);
                       }
                     }}
-                    onBlur={() => {
-                      if (dimensions.height < 16 || dimensions.height > 10240) {
-                        setDimensions((prev) => ({ ...prev, height: 1024 }));
-                        showToast.error('Invalid height', `Please enter a valid integer number between 16 and 10240`);
-                      }
-                    }}
+                    onBlur={() => commitDimension('height', 'height')}
                   />
                 </Input>
               </View>
@@ -151,15 +168,15 @@ export default function EmptyLatentImage({ node, serverId, workflowId }: EmptyLa
           </View>
         )}
       </SubItem>
-      <SubItem title="Batch Size">
-        <NumberSlider
-          value={node.inputs.batch_size || 1}
-          minValue={1}
-          maxValue={4}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'batch_size', Number(value))}
-        />
-      </SubItem>
+      <SchemaField
+        node={node}
+        serverId={serverId}
+        workflowId={workflowId}
+        schema={schema}
+        inputKey="batch_size"
+        title="Batch Size"
+        fallback={SPECS.batch_size}
+      />
     </BaseNode>
   );
 }

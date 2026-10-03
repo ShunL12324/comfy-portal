@@ -15,8 +15,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'start_time',
     title: 'Start (s)',
-    control: 'stepper',
-    step: 0.1,
     fallback: { kind: 'float', min: 0, step: 0.001 },
   },
   VHS_FORMAT_FIELD,

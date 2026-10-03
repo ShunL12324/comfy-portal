@@ -1,6 +1,4 @@
 import { OptionSelector } from '@/components/common/selectors/option-selector';
-import { NumberInput } from '@/components/self-ui/number-input';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
@@ -8,26 +6,22 @@ import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { PromptEditorModal, PromptEditorModalRef } from '@/features/ai-assistant/components/prompt-editor-modal';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 import { Maximize2 } from '@/constants/icons';
 import { useCallback, useRef } from 'react';
 import { View } from 'react-native';
 import BaseNode from '../../common/base-node';
+import SchemaField from '../../common/schema-field';
 import SubItem from '../../common/sub-item';
 import {
   ASPECT_RATIO_OPTIONS,
-  DIMENSION_MAX,
-  DIMENSION_MIN,
-  DIMENSION_STEP,
-  FPS_MAX,
-  FPS_MIN,
   KEYFRAME_ROLE_OPTIONS,
   MODE_OPTIONS,
+  NUMBER_FALLBACKS,
   REFERENCE_MENTION_OPTIONS,
   REF_IMAGE_SIZE_OPTIONS,
   RESOLUTION_OPTIONS,
   SCENE_GUIDE_OPTIONS,
-  SECONDS_MAX,
-  SECONDS_MIN,
   withCurrentValue,
 } from './constants';
 
@@ -45,8 +39,10 @@ interface MiniMaxH3EasyProps {
  * the same four fields, and width/height only appear for the `custom`
  * resolution (other presets derive dimensions from the aspect ratio).
  */
-export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) {
+export default function MiniMaxH3Easy({ node, serverId, workflowId }: MiniMaxH3EasyProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const schema = useNodeSchema(serverId, node.class_type);
+  const shared = { node, serverId, workflowId, schema };
   const promptEditorRef = useRef<PromptEditorModalRef>(null);
 
   const setInput = useCallback(
@@ -126,39 +122,12 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
 
       {isCustomResolution && (
         <>
-          <SubItem title="Width" node={node} dependencies={['width']}>
-            <NumberInput
-              value={node.inputs.width}
-              onChange={(value) => setInput('width', Number(value))}
-              minValue={DIMENSION_MIN}
-              maxValue={DIMENSION_MAX}
-              step={DIMENSION_STEP}
-              decimalPlaces={0}
-            />
-          </SubItem>
-          <SubItem title="Height" node={node} dependencies={['height']}>
-            <NumberInput
-              value={node.inputs.height}
-              onChange={(value) => setInput('height', Number(value))}
-              minValue={DIMENSION_MIN}
-              maxValue={DIMENSION_MAX}
-              step={DIMENSION_STEP}
-              decimalPlaces={0}
-            />
-          </SubItem>
+          <SchemaField {...shared} inputKey="width" title="Width" fallback={NUMBER_FALLBACKS.width} />
+          <SchemaField {...shared} inputKey="height" title="Height" fallback={NUMBER_FALLBACKS.height} />
         </>
       )}
 
-      <SubItem title="Duration (seconds)" node={node} dependencies={['seconds']}>
-        <NumberSlider
-          value={node.inputs.seconds}
-          minValue={SECONDS_MIN}
-          maxValue={SECONDS_MAX}
-          step={0.1}
-          onChangeEnd={(value) => setInput('seconds', Number(value))}
-          decimalPlaces={1}
-        />
-      </SubItem>
+      <SchemaField {...shared} inputKey="seconds" title="Duration (seconds)" fallback={NUMBER_FALLBACKS.seconds} />
 
       <SubItem title="Scene Guide" node={node} dependencies={['prompt_optimizer_scene_guide']}>
         <OptionSelector
@@ -193,16 +162,7 @@ export default function MiniMaxH3Easy({ node, workflowId }: MiniMaxH3EasyProps) 
 
       {isAdvanced && (
         <>
-          <SubItem title="FPS" node={node} dependencies={['fps']}>
-            <NumberSlider
-              value={node.inputs.fps}
-              minValue={FPS_MIN}
-              maxValue={FPS_MAX}
-              step={1}
-              onChangeEnd={(value) => setInput('fps', Number(value))}
-              decimalPlaces={0}
-            />
-          </SubItem>
+          <SchemaField {...shared} inputKey="fps" title="FPS" fallback={NUMBER_FALLBACKS.fps} />
 
           {!isReferenceMode && (
             <SubItem title="Single image is" node={node} dependencies={['keyframe_role']}>

@@ -4,7 +4,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'frame_count',
     title: 'Frame Count',
-    control: 'stepper',
     fallback: { kind: 'int', min: 0, step: 1 },
   },
 ];

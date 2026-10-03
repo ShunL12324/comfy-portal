@@ -10,7 +10,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'resolution_steps',
     title: 'Round to Multiple of',
-    control: 'stepper',
     fallback: { kind: 'int', min: 1, max: 256, step: 1 },
   },
 ];

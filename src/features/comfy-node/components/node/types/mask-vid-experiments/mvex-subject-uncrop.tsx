@@ -5,7 +5,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'feather',
     title: 'Feather (px)',
-    control: 'stepper',
     fallback: { kind: 'int', min: 0, step: 1 },
   },
   { inputKey: 'resize_method', title: 'Resize Method', fallback: { kind: 'combo', options: RESIZE_METHODS } },

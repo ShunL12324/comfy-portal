@@ -53,7 +53,6 @@ export default function VHS_VideoCombine(props: NodeEditorProps) {
     {
       inputKey: 'frame_rate',
       title: 'Frame Rate (fps)',
-      control: 'stepper',
       fallback: { kind: 'float', min: 1, max: 120, step: 1 },
     },
     {

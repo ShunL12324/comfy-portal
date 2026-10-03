@@ -102,7 +102,6 @@ export default function MVExSubjectCropParallel(props: NodeEditorProps) {
     {
       inputKey: 'divisible_by',
       title: 'Round to Multiple of (px)',
-      control: 'stepper',
       fallback: { kind: 'int', min: 1, step: 1 },
     },
     UPSCALE_MEGAPIXELS,

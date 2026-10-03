@@ -1207,6 +1207,14 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/comfy-node/components/node/common/number-field.tsx",
+      "textElements": [
+        "NumberInput"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/comfy-node/components/node/common/paired-number-field.tsx",
       "textElements": [
         "Copy",
@@ -1227,7 +1235,6 @@
         "Copy",
         "Input",
         "InputField",
-        "NumberInput",
         "Textarea",
         "TextareaInput"
       ],
@@ -1290,7 +1297,6 @@
         "Copy",
         "Input",
         "InputField",
-        "NumberInput",
         "Textarea",
         "TextareaInput"
       ],
@@ -1436,9 +1442,7 @@
     },
     {
       "path": "src/features/comfy-node/components/node/types/base/k-sampler-advanced.tsx",
-      "textElements": [
-        "NumberInput"
-      ],
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
@@ -1610,10 +1614,7 @@
     },
     {
       "path": "src/features/comfy-node/components/node/types/base/wan-image-to-video.tsx",
-      "textElements": [
-        "Input",
-        "InputField"
-      ],
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
@@ -1656,7 +1657,6 @@
     {
       "path": "src/features/comfy-node/components/node/types/minimax-h3-easy/minimax-h3-easy.tsx",
       "textElements": [
-        "NumberInput",
         "Textarea",
         "TextareaInput"
       ],

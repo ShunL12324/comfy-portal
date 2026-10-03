@@ -1,30 +1,10 @@
-import { NumberSlider } from '@/components/self-ui/slider';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { Node } from '@/features/workflow/types';
-import BaseNode from '../../common/base-node';
-import SubItem from '../../common/sub-item';
+import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
+import { CORE_NUMBER_SPECS } from './core-number-specs';
 
-interface VAEEncodeForInpaintNodeProps {
-  node: Node;
-  serverId: string;
-  workflowId: string;
-}
+const FIELDS: SchemaFieldDef[] = [
+  { inputKey: 'grow_mask_by', title: 'grow_mask_by', fallback: CORE_NUMBER_SPECS.VAEEncodeForInpaint.grow_mask_by },
+];
 
-export default function VAEEncodeForInpaint({ node, serverId, workflowId }: VAEEncodeForInpaintNodeProps) {
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
-  return (
-    <BaseNode node={node}>
-      <SubItem title="grow_mask_by" node={node} dependencies={['grow_mask_by']}>
-        <NumberSlider
-          value={node.inputs.grow_mask_by}
-          onChange={(value) => {
-            updateNodeInput(workflowId, node.id, 'grow_mask_by', value);
-          }}
-          minValue={0}
-          maxValue={64}
-          step={1}
-        />
-      </SubItem>
-    </BaseNode>
-  );
+export default function VAEEncodeForInpaint(props: NodeEditorProps) {
+  return <SchemaNode {...props} fields={FIELDS} />;
 }

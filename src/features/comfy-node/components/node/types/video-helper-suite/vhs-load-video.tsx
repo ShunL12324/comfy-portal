@@ -15,13 +15,11 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'skip_first_frames',
     title: 'Skip First Frames',
-    control: 'stepper',
     fallback: { kind: 'int', min: 0, step: 1 },
   },
   {
     inputKey: 'select_every_nth',
     title: 'Select Every Nth Frame',
-    control: 'stepper',
     fallback: { kind: 'int', min: 1, step: 1 },
   },
   VHS_FORMAT_FIELD,

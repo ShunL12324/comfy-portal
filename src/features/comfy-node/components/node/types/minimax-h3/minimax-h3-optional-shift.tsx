@@ -1,8 +1,5 @@
 import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
 
-/** The node keeps two decimals, but a hundredth per tap is no use on a shift of 3–12. */
-const SHIFT_STEP = 0.5;
-
 const isEnabled = (inputs: NodeEditorProps['node']['inputs']) => inputs.enabled !== false;
 
 /** The shifts only apply while the patch is on, so they step aside when it's off. */
@@ -11,16 +8,12 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'shift_video',
     title: 'Video Shift',
-    control: 'stepper',
-    step: SHIFT_STEP,
     fallback: { kind: 'float', min: 0.01, max: 100, step: 0.01 },
     visible: isEnabled,
   },
   {
     inputKey: 'shift_audio',
     title: 'Audio Shift',
-    control: 'stepper',
-    step: SHIFT_STEP,
     fallback: { kind: 'float', min: 0.01, max: 100, step: 0.01 },
     visible: isEnabled,
   },

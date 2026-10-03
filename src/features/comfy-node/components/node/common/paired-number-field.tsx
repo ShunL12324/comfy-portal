@@ -55,8 +55,8 @@ export default function PairedNumberField({
   if (!pair) {
     return (
       <>
-        <SchemaField {...props} hint={undefined} control="stepper" />
-        <SchemaField {...props} inputKey={pairKey} title={pairTitle} control="stepper" />
+        <SchemaField {...props} hint={undefined} />
+        <SchemaField {...props} inputKey={pairKey} title={pairTitle} />
       </>
     );
   }

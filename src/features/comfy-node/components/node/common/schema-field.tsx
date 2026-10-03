@@ -1,7 +1,5 @@
 import { ModelSelector } from '@/components/common/selectors/model';
 import { OptionSelector } from '@/components/common/selectors/option-selector';
-import { NumberInput } from '@/components/self-ui/number-input';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { NativeSwitch } from '@/components/ui/design-system/native-controls';
 import { Copy } from '@/components/ui/design-system/primitives';
 import { Icon } from '@/components/ui/icon';
@@ -10,20 +8,14 @@ import { Pressable } from '@/components/ui/pressable';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
 import { Maximize2 } from '@/constants/icons';
 import { PromptEditorModal, PromptEditorModalRef } from '@/features/ai-assistant/components/prompt-editor-modal';
-import {
-  FieldSpec,
-  NumberControl,
-  comboOptions,
-  decimalPlacesFor,
-  numberControlFor,
-  pickFieldSpec,
-  toNumber,
-} from '@/features/comfy-node/utils/schema-inputs';
+import { NumberControl } from '@/features/comfy-node/utils/number-control';
+import { FieldSpec, comboOptions, pickFieldSpec } from '@/features/comfy-node/utils/schema-inputs';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
 import { NodeSchema, resolveInputSpec } from '@/services/node-schema';
 import { ReactNode, useCallback, useRef } from 'react';
 import { View } from 'react-native';
+import NumberField from './number-field';
 import SubItem from './sub-item';
 import { designTokens as t } from '@/constants/design-tokens';
 
@@ -37,7 +29,7 @@ export interface SchemaFieldProps {
   title: string;
   /** Shape to render while the schema loads, or if the server can't say. */
   fallback: FieldSpec;
-  /** Overrides the slider/stepper choice made from the range. */
+  /** Overrides the slider/stepper choice `numberControlFor` makes from the name and range. */
   control?: NumberControl;
   /** Overrides the increment (not the precision) when the node's is impractically fine. */
   step?: number;
@@ -145,38 +137,20 @@ export default function SchemaField({
     }
 
     case 'int':
-    case 'float': {
-      const specStep = spec.step ?? (spec.kind === 'int' ? 1 : 0.01);
-      const step = stepOverride ?? specStep;
-      const decimalPlaces = decimalPlacesFor({ kind: spec.kind, step: specStep });
-      const numeric = toNumber(value, spec.default ?? spec.min ?? 0);
-      const write = (next: number) => setValue(spec.kind === 'int' ? Math.round(next) : next);
+    case 'float':
       return (
-        <SubItem title={title}>
-          {(control ?? numberControlFor({ ...spec, step })) === 'slider' ? (
-            <NumberSlider
-              value={numeric}
-              minValue={spec.min}
-              maxValue={spec.max}
-              step={step}
-              decimalPlaces={decimalPlaces}
-              onChangeEnd={write}
-            />
-          ) : (
-            <NumberInput
-              value={numeric}
-              // ComfyUI's INT bounds (±2^63) are past what a JS number holds exactly.
-              minValue={Math.max(spec.min ?? -Infinity, Number.MIN_SAFE_INTEGER)}
-              maxValue={Math.min(spec.max ?? Infinity, Number.MAX_SAFE_INTEGER)}
-              step={step}
-              decimalPlaces={decimalPlaces}
-              onChange={write}
-            />
-          )}
+        <NumberField
+          title={title}
+          inputKey={inputKey}
+          spec={spec}
+          value={value}
+          control={control}
+          step={stepOverride}
+          onChange={setValue}
+        >
           {hintLine}
-        </SubItem>
+        </NumberField>
       );
-    }
 
     case 'boolean':
       return (

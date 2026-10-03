@@ -16,7 +16,6 @@ const ADVANCED_FIELDS: SchemaFieldDef[] = (
     {
       inputKey: 'max_tokens',
       title: 'Max Tokens (0 = provider)',
-      control: 'stepper',
       fallback: { kind: 'int', min: 0, max: 1000000, step: 1 },
     },
     {
@@ -39,7 +38,6 @@ const ADVANCED_FIELDS: SchemaFieldDef[] = (
     {
       inputKey: 'timeout',
       title: 'Timeout (s)',
-      control: 'stepper',
       fallback: { kind: 'int', min: 5, max: 3600, step: 1 },
     },
     {
@@ -55,14 +53,12 @@ const ADVANCED_FIELDS: SchemaFieldDef[] = (
     {
       inputKey: 'image_max_side',
       title: 'Image Max Side (px, 0 = full size)',
-      control: 'stepper',
       step: 64,
       fallback: { kind: 'int', min: 0, max: 8192, step: 64 },
     },
     {
       inputKey: 'video_max_mb',
       title: 'Video Max (MB)',
-      control: 'stepper',
       fallback: { kind: 'int', min: 1, max: 500, step: 1 },
     },
   ] satisfies SchemaFieldDef[]

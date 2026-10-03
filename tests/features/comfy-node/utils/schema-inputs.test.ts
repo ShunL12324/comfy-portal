@@ -3,7 +3,6 @@ import {
   decimalPlacesFor,
   dynamicComboUpdates,
   isChangedFromDefault,
-  numberControlFor,
   optionWidgetUpdates,
   pairedNumberSpecs,
   pickFieldSpec,
@@ -167,19 +166,6 @@ describe('comboOptions', () => {
   it('adds nothing for empty or non-string values', () => {
     expect(comboOptions(['a'], '')).toHaveLength(1);
     expect(comboOptions(['a'], 3)).toHaveLength(1);
-  });
-});
-
-describe('numberControlFor', () => {
-  it('uses a slider for short bounded ranges', () => {
-    expect(numberControlFor({ kind: 'float', min: 0, max: 1, step: 0.01 })).toBe('slider');
-    expect(numberControlFor({ kind: 'int', min: 0, max: 256 })).toBe('slider');
-  });
-
-  it('uses a stepper for open or huge ranges', () => {
-    expect(numberControlFor({ kind: 'int', min: 0 })).toBe('stepper');
-    expect(numberControlFor({ kind: 'int', min: -9223372036854775807, max: 9223372036854775807 })).toBe('stepper');
-    expect(numberControlFor({ kind: 'float', min: 0.01, max: 100, step: 0.01 })).toBe('stepper');
   });
 });
 

@@ -1,43 +1,31 @@
-
 import { SamplerSelector } from '@/components/common/selectors/sampler';
 import { SchedulerSelector } from '@/components/common/selectors/scheduler';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 import BaseNode from '../../common/base-node';
+import SchemaField from '../../common/schema-field';
 import SeedControl from '../../common/seed-control';
 import SubItem from '../../common/sub-item';
+import { CORE_NUMBER_SPECS } from './core-number-specs';
+
+const SPECS = CORE_NUMBER_SPECS.KSampler;
 
 interface KSamplerProps {
   node: Node;
   serverId: string;
   workflowId: string;
 }
-export default function KSampler({ node, workflowId }: KSamplerProps) {
+export default function KSampler({ node, serverId, workflowId }: KSamplerProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const schema = useNodeSchema(serverId, node.class_type);
+  const shared = { node, serverId, workflowId, schema };
 
   return (
     <BaseNode node={node}>
       <SeedControl node={node} workflowId={workflowId} inputKey="seed" title="Seed" />
-      <SubItem title="Steps">
-        <NumberSlider
-          value={node.inputs.steps}
-          minValue={1}
-          maxValue={100}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-        />
-      </SubItem>
-      <SubItem title="CFG">
-        <NumberSlider
-          value={node.inputs.cfg}
-          minValue={1}
-          maxValue={30}
-          step={0.5}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'cfg', Number(value))}
-          decimalPlaces={1}
-        />
-      </SubItem>
+      <SchemaField {...shared} inputKey="steps" title="Steps" fallback={SPECS.steps} />
+      <SchemaField {...shared} inputKey="cfg" title="CFG" fallback={SPECS.cfg} />
       <SubItem title="Sampler">
         <SamplerSelector
           value={node.inputs.sampler_name}
@@ -50,16 +38,7 @@ export default function KSampler({ node, workflowId }: KSamplerProps) {
           onChange={(value) => updateNodeInput(workflowId, node.id, 'scheduler', value)}
         />
       </SubItem>
-      <SubItem title="Denoise">
-        <NumberSlider
-          value={node.inputs.denoise}
-          minValue={0}
-          maxValue={1}
-          step={0.01}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'denoise', Number(value))}
-          decimalPlaces={2}
-        />
-      </SubItem>
+      <SchemaField {...shared} inputKey="denoise" title="Denoise" fallback={SPECS.denoise} />
     </BaseNode>
   );
 }

@@ -1,5 +1,4 @@
 import { OptionSelector } from '@/components/common/selectors/option-selector';
-import { NumberInput } from '@/components/self-ui/number-input';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Icon } from '@/components/ui/icon';
 import { Input, InputField } from '@/components/ui/input';
@@ -13,6 +12,7 @@ import { WidgetSpec, resolveInputSpec } from '@/services/node-schema';
 import * as Linking from 'expo-linking';
 import { AlertCircle, GitPullRequest } from '@/constants/icons';
 import BaseNode from './base-node';
+import NumberField from './number-field';
 import SubItem from './sub-item';
 import { Copy } from '@/components/ui/design-system/primitives';
 import { designTokens as t } from '@/constants/design-tokens';
@@ -82,24 +82,17 @@ export default function UnknownNode({ node, serverId, workflowId }: UnknownNodeP
       }
 
       case 'int':
-      case 'float': {
-        const step = spec.step ?? (spec.kind === 'int' ? 1 : 0.01);
-        // NumberInput rounds to decimalPlaces, which defaults to 0 — derive it
-        // from the step or a float would be truncated to an integer.
-        const decimalPlaces = spec.kind === 'int' ? 0 : (String(step).split('.')[1] ?? '').length;
+      case 'float':
         return (
-          <SubItem key={key} title={key}>
-            <NumberInput
-              value={typeof value === 'number' ? value : (spec.default ?? 0)}
-              onChange={(next) => setInput(key, Number(next))}
-              minValue={spec.min}
-              maxValue={spec.max}
-              step={step}
-              decimalPlaces={decimalPlaces}
-            />
-          </SubItem>
+          <NumberField
+            key={key}
+            title={key}
+            inputKey={key}
+            spec={spec}
+            value={value}
+            onChange={(next) => setInput(key, next)}
+          />
         );
-      }
 
       case 'boolean':
         return (

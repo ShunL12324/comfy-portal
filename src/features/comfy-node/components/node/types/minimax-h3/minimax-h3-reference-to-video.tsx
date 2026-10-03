@@ -22,7 +22,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'length',
     title: 'Length (frames)',
-    control: 'stepper',
     fallback: { kind: 'int', min: 5, max: 3600, step: 17 },
     hint: '24 fps: 124 frames is about 5 s.',
   },

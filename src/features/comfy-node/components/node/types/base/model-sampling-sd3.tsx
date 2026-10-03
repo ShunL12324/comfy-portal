@@ -1,30 +1,10 @@
-import { NumberSlider } from '@/components/self-ui/slider';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { Node } from '@/features/workflow/types';
-import BaseNode from '../../common/base-node';
-import SubItem from '../../common/sub-item';
+import SchemaNode, { NodeEditorProps, SchemaFieldDef } from '../../common/schema-node';
+import { CORE_NUMBER_SPECS } from './core-number-specs';
 
-interface ModelSamplingSD3Props {
-  node: Node;
-  serverId: string;
-  workflowId: string;
-}
+const FIELDS: SchemaFieldDef[] = [
+  { inputKey: 'shift', title: 'Shift', fallback: CORE_NUMBER_SPECS.ModelSamplingSD3.shift },
+];
 
-export default function ModelSamplingSD3({ node, workflowId }: ModelSamplingSD3Props) {
-  const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
-
-  return (
-    <BaseNode node={node}>
-      <SubItem title="Shift">
-        <NumberSlider
-          value={node.inputs.shift}
-          minValue={0}
-          maxValue={100}
-          step={0.1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'shift', Number(value))}
-          decimalPlaces={1}
-        />
-      </SubItem>
-    </BaseNode>
-  );
+export default function ModelSamplingSD3(props: NodeEditorProps) {
+  return <SchemaNode {...props} fields={FIELDS} />;
 }

@@ -15,7 +15,7 @@ const FIELDS: SchemaFieldDef[] = [
   { inputKey: 'close_gaps', title: 'Close Gaps (px)', fallback: PIXELS },
   { inputKey: 'temporal_expand', title: 'Expand in Time (frames)', fallback: FRAMES },
   { inputKey: 'temporal_smooth', title: 'Smooth in Time (frames)', fallback: FRAMES },
-  { inputKey: 'expand', title: 'Expand / Contract (px)', control: 'stepper', fallback: EXPAND },
+  { inputKey: 'expand', title: 'Expand / Contract (px)', fallback: EXPAND },
   { inputKey: 'blockify', title: 'Blockify (px)', fallback: PIXELS, hint: 'A connected VAE sets the grid itself.' },
   { inputKey: 'blockify_threshold', title: 'Block Coverage', fallback: UNIT },
   { inputKey: 'feather', title: 'Feather (px)', fallback: PIXELS },

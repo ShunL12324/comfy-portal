@@ -1,9 +1,13 @@
 import { SchedulerSelector } from '@/components/common/selectors/scheduler';
-import { NumberSlider } from '@/components/self-ui/slider';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { Node } from '@/features/workflow/types';
+import { useNodeSchema } from '@/hooks/use-node-schema';
 import BaseNode from '../../common/base-node';
+import SchemaField from '../../common/schema-field';
 import SubItem from '../../common/sub-item';
+import { CORE_NUMBER_SPECS } from './core-number-specs';
+
+const SPECS = CORE_NUMBER_SPECS.BasicScheduler;
 
 interface BasicSchedulerProps {
   node: Node;
@@ -13,6 +17,8 @@ interface BasicSchedulerProps {
 
 export default function BasicScheduler({ node, serverId, workflowId }: BasicSchedulerProps) {
   const updateNodeInput = useWorkflowStore((state) => state.updateNodeInput);
+  const schema = useNodeSchema(serverId, node.class_type);
+  const shared = { node, serverId, workflowId, schema };
   return (
     <BaseNode node={node}>
       <SubItem title="scheduler" node={node} dependencies={['scheduler']}>
@@ -23,26 +29,8 @@ export default function BasicScheduler({ node, serverId, workflowId }: BasicSche
           }}
         />
       </SubItem>
-      <SubItem title="steps" node={node} dependencies={['steps']}>
-        <NumberSlider
-          value={node.inputs.steps}
-          minValue={1}
-          maxValue={100}
-          step={1}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'steps', Number(value))}
-          decimalPlaces={0}
-        />
-      </SubItem>
-      <SubItem title="denoise" node={node} dependencies={['denoise']}>
-        <NumberSlider
-          value={node.inputs.denoise}
-          minValue={0}
-          maxValue={1}
-          step={0.01}
-          onChangeEnd={(value) => updateNodeInput(workflowId, node.id, 'denoise', Number(value))}
-          decimalPlaces={2}
-        />
-      </SubItem>
+      <SchemaField {...shared} inputKey="steps" title="steps" fallback={SPECS.steps} />
+      <SchemaField {...shared} inputKey="denoise" title="denoise" fallback={SPECS.denoise} />
     </BaseNode>
   );
 }

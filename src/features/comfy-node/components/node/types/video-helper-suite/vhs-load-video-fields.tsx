@@ -41,14 +41,12 @@ export const VHS_SIZE_FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'custom_width',
     title: 'Width (px, 0 = source)',
-    control: 'stepper',
     step: 8,
     fallback: { kind: 'int', min: 0, max: 8192, step: 8 },
   },
   {
     inputKey: 'custom_height',
     title: 'Height (px, 0 = source)',
-    control: 'stepper',
     step: 8,
     fallback: { kind: 'int', min: 0, max: 8192, step: 8 },
   },
@@ -57,7 +55,6 @@ export const VHS_SIZE_FIELDS: SchemaFieldDef[] = [
 export const VHS_FRAME_CAP_FIELD: SchemaFieldDef = {
   inputKey: 'frame_load_cap',
   title: 'Frame Load Cap (0 = all)',
-  control: 'stepper',
   fallback: { kind: 'int', min: 0, step: 1 },
 };
 

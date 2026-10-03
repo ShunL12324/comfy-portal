@@ -21,7 +21,6 @@ const FIELDS: SchemaFieldDef[] = [
   {
     inputKey: 'multiple',
     title: 'Round to Multiple of',
-    control: 'stepper',
     fallback: { kind: 'int', min: 8, max: 128, step: 4 },
   },
 ];
