@@ -18,7 +18,7 @@ import { useGenerationActions, useGenerationStatus } from '@/features/generation
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
 import { isVideoUrl } from '@/features/generation/utils/media';
-import { followPage, resultPages, type PagerPosition } from '@/features/generation/utils/run-results';
+import { followPage, movePage, resultPages, type PagerPosition } from '@/features/generation/utils/run-results';
 import { PageDots, PendingResultPage, ResultAppear, ResultBadges } from './result-overlays';
 import { ResultPlaceholder } from './result-placeholder';
 import { VisibleRegion } from './visible-region';
@@ -53,6 +53,11 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId, 
   if (followed !== position) setPosition(followed);
   const activeIndex = followed.index;
   const pageCount = pages.length;
+  // Stable, and a no-op for the current page: the viewer reports its index from an effect.
+  const setActiveIndex = useCallback(
+    (index: number) => setPosition((current) => movePage(current, resultsKey, index)),
+    [resultsKey],
+  );
 
   const viewerItems = useMemo(() => generatedMedia.map((uri) => toViewerItem(uri)), [generatedMedia]);
   // Results are already saved to the gallery; deleting one removes it there and from this run.
@@ -66,7 +71,7 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId, 
       const offsetX = e.nativeEvent.contentOffset.x;
       const page = Math.round(offsetX / screenWidth);
       if (page >= 0 && page < pageCount) {
-        setPosition({ resultsKey, index: page });
+        setPosition((current) => movePage(current, resultsKey, page));
       }
     },
     [screenWidth, pageCount, resultsKey],
@@ -137,7 +142,7 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId, 
             initialIndex={Math.min(activeIndex, viewerItems.length - 1)}
             visible={isPreviewOpen}
             onClose={handleModalClose}
-            onIndexChange={(index) => setPosition({ resultsKey, index })}
+            onIndexChange={setActiveIndex}
             workflowId={workflowId}
             serverId={serverId}
             onDelete={deleteResult}

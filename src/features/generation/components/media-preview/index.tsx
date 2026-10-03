@@ -1,7 +1,7 @@
 import { useDesign } from '@/components/ui/design-system/primitives';
 import { Image } from 'expo-image';
 import { PlayCircle } from '@/constants/icons';
-import React, { memo, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import type { SharedValue } from 'react-native-reanimated';
@@ -15,7 +15,7 @@ import { isVideoUrl } from '@/features/generation/utils/media';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { Pressable } from '@/components/ui/pressable';
-import { followPage, resultPages, type PagerPosition } from '@/features/generation/utils/run-results';
+import { followPage, movePage, resultPages, type PagerPosition } from '@/features/generation/utils/run-results';
 import { PageDots, PendingResultPage, ResultAppear, ResultBadges } from './result-overlays';
 import { ResultPlaceholder } from './result-placeholder';
 import { VisibleRegion } from './visible-region';
@@ -57,7 +57,11 @@ export const MediaPreview = memo(function ParallaxMedia({ workflowId, serverId, 
   const followed = followPage(position, resultsKey, pages.length);
   if (followed !== position) setPosition(followed);
   const activeIndex = followed.index;
-  const setActiveIndex = (index: number) => setPosition({ resultsKey, index });
+  // Stable, and a no-op for the current page: the viewer reports its index from an effect.
+  const setActiveIndex = useCallback(
+    (index: number) => setPosition((current) => movePage(current, resultsKey, index)),
+    [resultsKey],
+  );
 
   const viewerItems = useMemo(() => generatedMedia.map((uri) => toViewerItem(uri)), [generatedMedia]);
   // Results are already saved to the gallery; deleting one removes it there and from this run.

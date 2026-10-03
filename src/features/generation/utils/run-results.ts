@@ -66,3 +66,12 @@ export function followPage(position: PagerPosition, resultsKey: string, pageCoun
   const index = Math.max(0, Math.min(position.index, pageCount - 1));
   return index === position.index ? position : { resultsKey, index };
 }
+
+/**
+ * The pager moved to `index`. Returns the same object when nothing changed, so
+ * a caller that reports its current page on every render (the media viewer's
+ * index effect) settles instead of looping.
+ */
+export function movePage(position: PagerPosition, resultsKey: string, index: number): PagerPosition {
+  return position.resultsKey === resultsKey && position.index === index ? position : { resultsKey, index };
+}

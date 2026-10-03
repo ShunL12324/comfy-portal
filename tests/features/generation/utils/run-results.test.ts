@@ -1,4 +1,5 @@
 import {
+  movePage,
   followPage,
   resultPages,
   resultSaved,
@@ -99,4 +100,17 @@ test('the page is pulled back only when the list shrinks under it', () => {
 
 test('a new run starts on its first page', () => {
   expect(followPage({ resultsKey: 'old', index: 3 }, 'run', 4)).toEqual({ resultsKey: 'run', index: 0 });
+});
+
+describe('movePage', () => {
+  it('returns the same position when the page did not change, so effect-driven reports settle', () => {
+    const position = { resultsKey: 'run-a', index: 1 };
+    expect(movePage(position, 'run-a', 1)).toBe(position);
+  });
+
+  it('moves to a new page or run', () => {
+    const position = { resultsKey: 'run-a', index: 1 };
+    expect(movePage(position, 'run-a', 2)).toEqual({ resultsKey: 'run-a', index: 2 });
+    expect(movePage(position, 'run-b', 1)).toEqual({ resultsKey: 'run-b', index: 1 });
+  });
 });
