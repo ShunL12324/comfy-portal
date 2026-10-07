@@ -12,7 +12,8 @@ import GorhomBottomSheet, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View as Box } from '@/components/ui/view';
 
-import { Title, useDesign } from './primitives';
+import { Action, Title, useDesign } from './primitives';
+import { ChevronLeft } from '@/constants/icons';
 import { ControlDensityProvider } from './control-density';
 /** One appearance contract for modal overlays and persistent workspace sheets. */
 export function useSheetAppearance(outlined = false, layer: 'overlay' | 'workspace' = 'overlay') {
@@ -76,6 +77,7 @@ export function Sheet({
   snapPoints,
   dismissible = true,
   onDismiss,
+  onBack,
 }: {
   open: boolean;
   onClose: () => void;
@@ -87,6 +89,8 @@ export function Sheet({
   snapPoints?: (string | number)[];
   dismissible?: boolean;
   onDismiss?: () => void;
+  /** A step inside the sheet: a back chevron before the title returns to the previous step. */
+  onBack?: () => void;
 }) {
   const ref = useRef<BottomSheetModal>(null);
   const presented = useRef(false);
@@ -153,6 +157,12 @@ export function Sheet({
               justifyContent: centerTitle ? 'center' : 'space-between',
             }}
           >
+            {onBack && (
+              // The glyph, not its 44-point target, sits on the sheet's inset.
+              <Box style={{ marginLeft: -(t.height.touch - t.icon.small) / 2 }}>
+                <Action kind="text" icon={ChevronLeft} label="Back" onPress={onBack} />
+              </Box>
+            )}
             <Box style={{ flex: 1, minWidth: 0, alignItems: centerTitle ? 'center' : 'flex-start' }}>
               <Title compact={compactTitle}>{title}</Title>
             </Box>

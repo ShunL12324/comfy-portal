@@ -7,15 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Action, ActionRow, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
-import {
-  FileJson,
-  Clipboard as ClipboardIcon,
-  History,
-  ImagePlus,
-  ChevronLeft,
-  ChevronRight,
-  X,
-} from '@/constants/icons';
+import { FileJson, Clipboard as ClipboardIcon, History, ImagePlus, ChevronRight, X } from '@/constants/icons';
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '../stores/workflow-store';
 import { parseWorkflowTemplate } from '../utils/workflow-parser';
@@ -189,16 +181,12 @@ function AddWorkflowFlow({
         if (!busy) onClose();
       }}
       title={step === 'library' ? 'History workflows' : 'Add workflow'}
+      onBack={step === 'library' ? () => setStep('source') : undefined}
     >
       {step !== 'library' && !!destination && (
         <Copy muted size="label">
           Into {destination}
         </Copy>
-      )}
-      {step === 'library' && (
-        <Row>
-          <Action kind="text" icon={ChevronLeft} label="Back to add options" onPress={() => setStep('source')} />
-        </Row>
       )}
       {step === 'source' && (
         <>
