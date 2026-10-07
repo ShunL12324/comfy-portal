@@ -12,6 +12,7 @@ import {
   Cloud,
   CodeXml,
   FileText,
+  History,
   Moon,
   Shield,
   Sparkles,
@@ -32,6 +33,7 @@ type SettingEntry = {
 const ENTRIES: SettingEntry[] = [
   { icon: Sparkles, label: 'AI assistant', href: '/settings/ai-assistant' },
   { icon: Cloud, label: 'Cloud accounts & keys', href: '/settings/cloud-gpu' },
+  { icon: History, label: 'History workflows', href: '/settings/history-workflows' },
   { icon: BookOpen, label: 'Connection guide', href: '/guide' },
   { icon: Shield, label: 'Privacy policy', href: '/legal/privacy' },
   { icon: FileText, label: 'Terms of service', href: '/legal/terms' },

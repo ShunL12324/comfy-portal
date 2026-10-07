@@ -199,7 +199,7 @@ export default function ServerScreen() {
                 ? 'Try another name or source.'
                 : syncState === 'unsupported'
                   ? 'Add a workflow, or install Comfy Portal Endpoint to sync server files.'
-                  : 'Add a workflow file or choose a saved workflow.'}
+                  : 'Add a workflow file or pick one from history.'}
             </Copy>
           </View>
         }

@@ -1,10 +1,8 @@
 import { FilterChips } from '@/components/ui/design-system/filter-chips';
 import { useMemo, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 import { SvgXml } from 'react-native-svg';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
@@ -15,9 +13,9 @@ import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { providerLogos } from '@/features/cloud/components/provider-logos';
 import { MODEL_TYPES, resolveModelUrl } from '@/services/model-url';
-import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser';
 import { uniqueCopyName } from '@/features/workflow/utils/copy-name';
-import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
+import { AddWorkflowSheet, type WorkflowDraft } from '@/features/workflow/components/import-workflow-modal';
+import type { EnvironmentWorkflow } from '@/features/cloud/types';
 import { showToast } from '@/utils/toast';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
@@ -54,7 +52,6 @@ export default function EnvironmentResources() {
   const c = useDesign();
   const environment = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
   const update = useEnvironmentStore((state) => state.updateEnvironment);
-  const library = useWorkflowStore((state) => state.assets);
   const key = useCloudCredentialsStore((state) => state.civitaiApiKey);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -96,43 +93,23 @@ export default function EnvironmentResources() {
       model: undefined,
     }));
   }, [environment, filter, resource]);
-  const addWorkflow = (name: string, data: Parameters<typeof parseWorkflowTemplate>[0]) => {
+  // Same Add workflow sheet as a server's page; only where the workflows land differs.
+  const addWorkflows = (incoming: EnvironmentWorkflow[]) => {
     const current = useEnvironmentStore.getState().environments.find((item) => item.id === id);
-    if (!current) return;
-    update(id, {
-      workflows: [
-        ...current.workflows,
-        {
-          name: uniqueCopyName(
-            name,
-            current.workflows.map((item) => item.name),
-          ),
-          data: parseWorkflowTemplate(data),
-        },
-      ],
-    });
-    setAdding(false);
-    showToast.success('Workflow imported');
-  };
-  const importFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', '*/*'],
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled) return;
-      addWorkflow(
-        result.assets[0].name.replace(/\.json$/i, ''),
-        JSON.parse(
-          Platform.OS === 'web'
-            ? await (await fetch(result.assets[0].uri)).text()
-            : await new File(result.assets[0].uri).text(),
+    if (!current) throw new Error('Environment not found');
+    const workflows = [...current.workflows];
+    for (const item of incoming) {
+      workflows.push({
+        name: uniqueCopyName(
+          item.name,
+          workflows.map((existing) => existing.name),
         ),
-      );
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Could not import workflow');
+        data: item.data,
+      });
     }
+    update(id, { workflows });
   };
+  const addReviewedWorkflow = async ({ name, data }: WorkflowDraft) => addWorkflows([{ name, data }]);
   const add = async () => {
     if (!environment || busy) return;
     setBusy(true);
@@ -408,44 +385,39 @@ export default function EnvironmentResources() {
         </Action>
       </Sheet>
       <Sheet
-        open={adding}
+        open={adding && resource !== 'workflows'}
         onClose={() => {
           if (!busy) setAdding(false);
         }}
         title={`Add ${title.toLowerCase()}`}
       >
-        {resource === 'workflows' ? (
-          <>
-            <Action onPress={importFile}>Import JSON file</Action>
-            {library.map((item) => (
-              <Action key={item.id} onPress={() => addWorkflow(item.name, item.data)}>
-                {item.name}
-              </Action>
-            ))}
-          </>
-        ) : (
-          <>
-            <Field
-              label={resource === 'models' ? 'Model page or download URL' : 'GitHub repository URL'}
-              value={url}
-              onChange={setUrl}
-              placeholder="https://…"
-            />
-            {resource === 'models' && (
-              <OptionSelector
-                value={type}
-                onChange={setType}
-                title="Model type"
-                options={MODEL_TYPES.map((value) => ({ value, label: modelLabels[value] || value }))}
-              />
-            )}
-            <Action kind="primary" disabled={!url.trim()} loading={busy} onPress={add}>
-              Add {resource === 'models' ? 'model' : 'extension'}
-            </Action>
-          </>
+        <Field
+          label={resource === 'models' ? 'Model page or download URL' : 'GitHub repository URL'}
+          value={url}
+          onChange={setUrl}
+          placeholder="https://…"
+        />
+        {resource === 'models' && (
+          <OptionSelector
+            value={type}
+            onChange={setType}
+            title="Model type"
+            options={MODEL_TYPES.map((value) => ({ value, label: modelLabels[value] || value }))}
+          />
         )}
+        <Action kind="primary" disabled={!url.trim()} loading={busy} onPress={add}>
+          Add {resource === 'models' ? 'model' : 'extension'}
+        </Action>
         {!!error && <Copy accessibilityRole="alert">{error}</Copy>}
       </Sheet>
+      <AddWorkflowSheet
+        isOpen={adding && resource === 'workflows'}
+        onClose={() => setAdding(false)}
+        destination={environment?.name}
+        previewImage={false}
+        onAdd={addReviewedWorkflow}
+        onAddFromHistory={(assets) => addWorkflows(assets.map(({ name, data }) => ({ name, data })))}
+      />
     </SafeAreaView>
   );
 }

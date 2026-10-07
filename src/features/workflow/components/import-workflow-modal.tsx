@@ -10,7 +10,7 @@ import { Sheet } from '@/components/ui/design-system/overlays';
 import {
   FileJson,
   Clipboard as ClipboardIcon,
-  Images,
+  History,
   ImagePlus,
   ChevronLeft,
   ChevronRight,
@@ -19,22 +19,89 @@ import {
 import { useServersStore } from '@/features/server/stores/server-store';
 import { useWorkflowStore } from '../stores/workflow-store';
 import { parseWorkflowTemplate } from '../utils/workflow-parser';
-import type { Workflow, WorkflowRecord } from '../types';
+import type { Workflow, WorkflowAsset, WorkflowRecord } from '../types';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
 import { showToast } from '@/utils/toast';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 
-interface ImportWorkflowModalProps {
+/** A workflow read from a file or the clipboard, reviewed and named, ready to add. */
+export interface WorkflowDraft {
+  name: string;
+  data: Workflow;
+  method: WorkflowRecord['addMethod'];
+  /** Optional preview image chosen during review. */
+  thumbnail?: string;
+}
+
+interface AddWorkflowSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Where the workflow goes, shown as "Into …" under the title. */
+  destination?: string;
+  /** Offer a preview image during review; off where the destination keeps none. */
+  previewImage?: boolean;
+  /** Adds a reviewed workflow. Throws on failure; `previewFailed` reports a lost preview image. */
+  onAdd: (draft: WorkflowDraft) => Promise<{ previewFailed?: boolean } | void>;
+  /** Adds the workflows picked from history. */
+  onAddFromHistory: (assets: WorkflowAsset[]) => void;
+}
+
+/**
+ * The one Add workflow flow: from a file, from the clipboard, or from history
+ * (every workflow this device has kept). Servers and environments both use it;
+ * only where the result lands differs.
+ */
+export function AddWorkflowSheet(props: AddWorkflowSheetProps) {
+  return props.isOpen ? <AddWorkflowFlow {...props} /> : null;
+}
+
+/** Add workflow into a server's list. */
+export function ImportWorkflowModal({
+  isOpen,
+  onClose,
+  serverId,
+}: {
   isOpen: boolean;
   onClose: () => void;
   serverId: string;
-}
-export function ImportWorkflowModal(props: ImportWorkflowModalProps) {
-  return props.isOpen ? <ImportFlow {...props} /> : null;
-}
-function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
-  const c = useDesign();
+}) {
   const serverName = useServersStore((state) => state.servers.find((server) => server.id === serverId)?.name);
+  const onAdd = async ({ name, data, method, thumbnail }: WorkflowDraft) => {
+    const store = useWorkflowStore.getState();
+    const id = store.addWorkflow({ serverId, name, data, addMethod: method });
+    if (!thumbnail) return;
+    try {
+      const saved = await saveWorkflowThumbnail({ serverId, workflowId: id, imageUri: thumbnail });
+      if (saved) store.updateWorkflow(id, { thumbnail: saved.path });
+      else return { previewFailed: true };
+    } catch {
+      return { previewFailed: true };
+    }
+  };
+  const onAddFromHistory = (assets: WorkflowAsset[]) => {
+    const store = useWorkflowStore.getState();
+    for (const asset of assets) store.importAsset(asset.id, serverId);
+  };
+  return (
+    <AddWorkflowSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      destination={serverName}
+      onAdd={onAdd}
+      onAddFromHistory={onAddFromHistory}
+    />
+  );
+}
+
+function AddWorkflowFlow({
+  isOpen,
+  onClose,
+  destination,
+  previewImage = true,
+  onAdd,
+  onAddFromHistory,
+}: AddWorkflowSheetProps) {
+  const c = useDesign();
   const assets = useWorkflowStore((state) => state.assets);
   const [step, setStep] = useState<'source' | 'configure' | 'library'>('source');
   const [name, setName] = useState('');
@@ -100,20 +167,9 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
     if (busy || !data || !name.trim()) return;
     setBusy(true);
     try {
-      const store = useWorkflowStore.getState();
-      const id = store.addWorkflow({ serverId, name: name.trim(), data, addMethod: method });
-      let previewFailed = false;
-      if (thumbnail) {
-        try {
-          const saved = await saveWorkflowThumbnail({ serverId, workflowId: id, imageUri: thumbnail });
-          if (saved) store.updateWorkflow(id, { thumbnail: saved.path });
-          else previewFailed = true;
-        } catch {
-          previewFailed = true;
-        }
-      }
+      const result = await onAdd({ name: name.trim(), data, method, thumbnail: thumbnail || undefined });
       onClose();
-      if (previewFailed) showToast.info('Workflow added', 'Preview image could not be saved.');
+      if (result?.previewFailed) showToast.info('Workflow added', 'Preview image could not be saved.');
       else showToast.success('Workflow added');
     } catch {
       showToast.error('Could not add workflow', 'Please try again.');
@@ -122,23 +178,21 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
     }
   };
   const importSelected = () => {
-    const store = useWorkflowStore.getState();
-    for (const assetId of selected) store.importAsset(assetId, serverId);
+    onAddFromHistory(assets.filter((asset) => selected.includes(asset.id)));
     showToast.success(`${selected.length} workflow${selected.length === 1 ? '' : 's'} added`);
     onClose();
   };
   return (
     <Sheet
-
       open={isOpen}
       onClose={() => {
         if (!busy) onClose();
       }}
-      title={step === 'library' ? 'Saved workflows' : 'Add workflow'}
+      title={step === 'library' ? 'History workflows' : 'Add workflow'}
     >
-      {step !== 'library' && (
+      {step !== 'library' && !!destination && (
         <Copy muted size="label">
-          Into {serverName}
+          Into {destination}
         </Copy>
       )}
       {step === 'library' && (
@@ -166,11 +220,11 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
             ...(assets.length
               ? [
                   {
-                    title: 'Saved workflows',
-                    subtitle: 'Choose a saved workflow',
-                    icon: Images,
+                    title: 'From History',
+                    subtitle: 'Choose workflows you have added or run before',
+                    icon: History,
                     onPress: () => setStep('library'),
-                    label: 'Saved workflows',
+                    label: 'From history workflows',
                   },
                 ]
               : []),
@@ -220,48 +274,50 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
         <>
           <Field label="Workflow name" value={name} onChange={setName} placeholder="Workflow name" />
           <Row style={{ alignItems: 'flex-start', gap: t.layout.field }}>
-            <View style={{ width: 112, gap: t.layout.related }}>
-              <Copy size="label">Preview image</Copy>
-              <View style={{ width: 112, height: 112 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Choose preview image"
-                  onPress={pickImage}
-                  style={{
-                    width: 112,
-                    height: 112,
-                    borderRadius: t.radius.control,
-                    overflow: 'hidden',
-                    backgroundColor: c.well,
-                    borderWidth: thumbnail ? 0 : 1,
-                    borderStyle: 'dashed',
-                    borderColor: c.faint,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: t.layout.related,
-                  }}
-                >
-                  {thumbnail ? (
-                    <Image source={{ uri: thumbnail }} style={{ width: 112, height: 112 }} contentFit="cover" />
-                  ) : (
-                    <>
-                      <ImagePlus size={t.icon.hero} strokeWidth={iconStroke(t.icon.hero)} color={c.ink} />
-                      <Copy muted size="metadata">
-                        Add image
-                      </Copy>
-                      <Copy muted size="micro">
-                        Optional
-                      </Copy>
-                    </>
+            {previewImage && (
+              <View style={{ width: 112, gap: t.layout.related }}>
+                <Copy size="label">Preview image</Copy>
+                <View style={{ width: 112, height: 112 }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Choose preview image"
+                    onPress={pickImage}
+                    style={{
+                      width: 112,
+                      height: 112,
+                      borderRadius: t.radius.control,
+                      overflow: 'hidden',
+                      backgroundColor: c.well,
+                      borderWidth: thumbnail ? 0 : 1,
+                      borderStyle: 'dashed',
+                      borderColor: c.faint,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: t.layout.related,
+                    }}
+                  >
+                    {thumbnail ? (
+                      <Image source={{ uri: thumbnail }} style={{ width: 112, height: 112 }} contentFit="cover" />
+                    ) : (
+                      <>
+                        <ImagePlus size={t.icon.hero} strokeWidth={iconStroke(t.icon.hero)} color={c.ink} />
+                        <Copy muted size="metadata">
+                          Add image
+                        </Copy>
+                        <Copy muted size="micro">
+                          Optional
+                        </Copy>
+                      </>
+                    )}
+                  </Pressable>
+                  {!!thumbnail && (
+                    <View style={{ position: 'absolute', top: 0, right: 0 }}>
+                      <Action kind="tonal" icon={X} label="Remove preview image" onPress={() => setThumbnail('')} />
+                    </View>
                   )}
-                </Pressable>
-                {!!thumbnail && (
-                  <View style={{ position: 'absolute', top: 0, right: 0 }}>
-                    <Action kind="tonal" icon={X} label="Remove preview image" onPress={() => setThumbnail('')} />
-                  </View>
-                )}
+                </View>
               </View>
-            </View>
+            )}
             <View style={{ flex: 1, gap: t.layout.related }}>
               <Copy size="label">Nodes · {Object.keys(data).length}</Copy>
               {/* Plain RN ScrollView: Gorhom tracks one scrollable per sheet, so a nested sheet scrollable would take over the sheet's own. */}
@@ -296,7 +352,7 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
       {step === 'library' && (
         <>
           <Field
-            label="Search saved workflows"
+            label="Search history workflows"
             search
             value={query}
             onChange={setQuery}
@@ -331,7 +387,7 @@ function ImportFlow({ isOpen, onClose, serverId }: ImportWorkflowModalProps) {
                 </Pressable>
               );
             })}
-          {!assets.length && <Copy muted>No saved workflows yet.</Copy>}
+          {!assets.length && <Copy muted>No history workflows yet.</Copy>}
           <Action kind="primary" disabled={!selected.length} onPress={importSelected}>
             Add selected ({selected.length})
           </Action>

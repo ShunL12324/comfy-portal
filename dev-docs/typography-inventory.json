@@ -173,6 +173,14 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/app/settings/history-workflows.tsx",
+      "textElements": [
+        "Copy"
+      ],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/app/templates/[id].tsx",
       "textElements": [
         "Copy"

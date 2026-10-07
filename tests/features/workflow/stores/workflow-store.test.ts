@@ -91,3 +91,21 @@ test('editing a node preserves other node references and owns the incoming value
   incoming[0] = 'changed';
   expect(after['1'].inputs.model).toEqual(['2', 0]);
 });
+
+test('deleting from history removes the asset and its server lists, and keeps a synced copy hidden', () => {
+  const state = useWorkflowStore.getState();
+  state.addWorkflow({ serverId: 'a', name: 'Kept', data: graph(), addMethod: 'file' });
+  state.addWorkflow({
+    serverId: 'b',
+    name: 'Synced',
+    data: graph(),
+    addMethod: 'server-sync',
+    serverSync: { filename: 'synced.json' } as never,
+  });
+  const synced = useWorkflowStore.getState().assets.find((asset) => asset.name === 'Synced')!;
+  useWorkflowStore.getState().removeAsset(synced.id);
+  const after = useWorkflowStore.getState();
+  expect(after.assets.map((asset) => asset.name)).toEqual(['Kept']);
+  expect(after.workflow.map((record) => record.name)).toEqual(['Kept']);
+  expect(after.bindings.every((binding) => binding.assetId !== synced.id)).toBe(true);
+});

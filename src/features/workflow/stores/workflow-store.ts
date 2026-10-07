@@ -23,6 +23,8 @@ interface WorkflowStoreState {
   importAsset: (assetId: string, serverId: string) => string | undefined;
   detachServer: (serverId: string) => void;
   removeWorkflow: (id: string) => void;
+  /** Deletes a workflow from history: the kept asset and every server list it is on. */
+  removeAsset: (assetId: string) => void;
   updateWorkflow: (id: string, updates: Partial<Omit<WorkflowRecord, 'id'>>) => void;
   updateUsage: (id: string) => void;
   updateNodeInput: (workflowId: string, nodeId: string, inputKey: string, value: unknown) => void;
@@ -134,6 +136,16 @@ export const useWorkflowStore = create<WorkflowStoreState>()(
             state.assets,
             state.bindings.filter((item) => item.id !== id),
             { hiddenServerWorkflows },
+          );
+        },
+        removeAsset: (assetId) => {
+          // Through removeWorkflow, so a server-synced copy stays hidden instead of syncing back.
+          for (const binding of get().bindings.filter((item) => item.assetId === assetId))
+            get().removeWorkflow(binding.id);
+          const state = get();
+          commit(
+            state.assets.filter((asset) => asset.id !== assetId),
+            state.bindings,
           );
         },
         updateWorkflow: (id, updates) => {
