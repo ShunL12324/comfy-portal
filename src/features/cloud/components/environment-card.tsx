@@ -3,6 +3,14 @@ import { Fact, ListCard } from '@/components/ui/design-system/list-card';
 import { spoken } from '@/utils/spoken';
 import type { Environment } from '@/features/cloud/types';
 import { environmentSummary } from '@/features/cloud/utils/environment-summary';
+import { Box, GitBranch, Puzzle } from '@/constants/icons';
+
+/** The same glyphs as the environment page's sections, so a badge points at its section. */
+const FACTS = [
+  { key: 'models', icon: Box, testID: 'environment-model-count' },
+  { key: 'extensions', icon: Puzzle, testID: 'environment-extension-count' },
+  { key: 'workflows', icon: GitBranch, testID: 'environment-workflow-count' },
+] as const;
 
 /** An environment card opens its recipe; hardware rental starts from the detail page. */
 export function EnvironmentCard({ environment }: { environment: Environment }) {
@@ -13,19 +21,20 @@ export function EnvironmentCard({ environment }: { environment: Environment }) {
       testID="environment-card"
       title={environment.name}
       subtitle={environment.description.trim() || 'No description yet'}
-      wrapFacts={false}
-      distributeFacts
+      wrapFacts
       accessibilityLabel={`Open ${environment.name}`}
       accessibilityHint={spoken(summary.models.text, summary.extensions.text, summary.workflows.text)}
       onPress={() => router.navigate(`/templates/${environment.id}`)}
       facts={
         <>
-          {[summary.models, summary.extensions, summary.workflows].map((item, index) => (
+          {FACTS.map(({ key, icon, testID }) => (
             <Fact
-              key={item.label}
-              value={String(item.count)}
-              label={item.label}
-              testID={`environment-${['model', 'extension', 'workflow'][index]}-count`}
+              key={key}
+              badge
+              icon={icon}
+              value={String(summary[key].count)}
+              label={summary[key].label}
+              testID={testID}
             />
           ))}
         </>

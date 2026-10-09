@@ -199,12 +199,17 @@ export function ListCard({
   );
 }
 
-/** A glyph, a numeric readout and its unit word: `▣ 12 models`. Reads as one element. */
+/**
+ * A glyph, a numeric readout and its unit word: `▣ 12 models`. Reads as one
+ * element. `badge` sets it on a small sunken well, for counts that should read
+ * as tags rather than a line of text.
+ */
 export function Fact({
   icon: Icon,
   value,
   label,
   mono = true,
+  badge = false,
   testID,
 }: {
   icon?: LucideIcon;
@@ -212,6 +217,7 @@ export function Fact({
   label?: string;
   /** Off for prose values such as `Size unavailable`. */
   mono?: boolean;
+  badge?: boolean;
   testID?: string;
 }) {
   const c = useDesign();
@@ -220,7 +226,19 @@ export function Fact({
       testID={testID}
       accessible
       accessibilityLabel={label ? `${value} ${label}` : value}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: t.layout.label, flexShrink: 1, minWidth: 0 }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: t.layout.label,
+        flexShrink: 1,
+        minWidth: 0,
+        ...(badge && {
+          minHeight: t.height.small,
+          paddingHorizontal: t.layout.related,
+          borderRadius: t.radius.small,
+          backgroundColor: c.well,
+        }),
+      }}
     >
       {Icon ? (
         <Icon size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={c.muted} style={{ flexShrink: 0 }} />
