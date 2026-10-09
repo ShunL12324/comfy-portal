@@ -112,14 +112,8 @@ export default function HomeScreen() {
                 <Copy muted>Try another name or address.</Copy>
               </View>
             ) : (
-              <EmptyState
-                testID="servers-empty"
-                align="center"
-                art={<EmptyServersArt />}
-                title="No servers yet"
-                hint="Tap + to add a server."
-              >
-                Connect ComfyUI on your computer or a cloud machine to use its workflows here.
+              <EmptyState testID="servers-empty" align="center" art={<EmptyServersArt />} title="No servers yet">
+                Connect a ComfyUI server to run its workflows here.
               </EmptyState>
             )}
           </View>

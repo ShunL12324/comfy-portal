@@ -9,9 +9,7 @@
     },
     {
       "path": "src/app/(tabs)/explore.tsx",
-      "textElements": [
-        "Copy"
-      ],
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },
@@ -1138,6 +1136,12 @@
     },
     {
       "path": "src/features/cloud/components/edit-environment-sheet.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
+      "path": "src/features/cloud/components/empty-environments-art.tsx",
       "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"

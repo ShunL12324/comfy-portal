@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
-import { Action, Copy, Field, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Field, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
 import { Plus } from '@/constants/icons';
+import { EmptyState } from '@/components/self-ui/empty-state';
+import { EmptyEnvironmentsArt } from '@/features/cloud/components/empty-environments-art';
 import { EnvironmentCard } from '@/features/cloud/components/environment-card';
 import { EditEnvironmentSheet } from '@/features/cloud/components/edit-environment-sheet';
 import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
@@ -56,18 +58,30 @@ export default function EnvironmentsScreen() {
           gap: t.layout.inset,
         }}
       >
-        <Field label="Search environments" search value={query} onChange={setQuery} placeholder="Search environments" />
-        <View style={{ gap: t.layout.list }}>
+        {environments.length > 0 && (
+          <Field
+            label="Search environments"
+            search
+            value={query}
+            onChange={setQuery}
+            placeholder="Search environments"
+          />
+        )}
+        <View style={{ flex: environments.length > 0 ? undefined : 1, gap: t.layout.list }}>
           {filtered.map((item) => (
             <EnvironmentCard key={item.id} environment={item} onLongPress={setEditingId} />
           ))}
-          {!filtered.length && (
-            <View style={{ paddingVertical: t.layout.section, gap: t.layout.label }}>
-              <Copy>{query ? 'No matching environments' : 'Your environments'}</Copy>
-              <Copy muted>
-                {query ? 'Try another search.' : 'Add an environment to collect models, extensions and workflows.'}
-              </Copy>
-            </View>
+          {!environments.length ? (
+            <EmptyState
+              testID="environments-empty"
+              align="center"
+              art={<EmptyEnvironmentsArt />}
+              title="No environments yet"
+            >
+              Bundle models, extensions and workflows for a GPU.
+            </EmptyState>
+          ) : (
+            !filtered.length && <EmptyState title="No matching environments">Try another search.</EmptyState>
           )}
         </View>
       </ScrollView>
