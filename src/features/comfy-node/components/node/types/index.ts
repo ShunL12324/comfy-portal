@@ -33,6 +33,10 @@ import RandomNoise from './base/random-noise';
 import SamplerCustomAdvanced from './base/sampler-custom-advanced';
 import SaveImage from './base/save-image';
 import TextEncodeQwenImageEditPlus from './base/text-encode-qwen-image-edit-plus';
+import TextEncodeQwenImage21 from './base/text-encode-qwen-image-21';
+import QwenImage21Cache from './base/qwen-image-21-cache';
+import CreateVideo from './base/create-video';
+import SaveVideo from './base/save-video';
 import UNETLoader from './base/unet-loader';
 import VAEDecode from './base/vae-decode';
 import VAEEncode from './base/vae-encode';
@@ -51,6 +55,8 @@ import MVExSubjectCropParallel from './mask-vid-experiments/mvex-subject-crop-pa
 import MVExSubjectUncrop from './mask-vid-experiments/mvex-subject-uncrop';
 import MiniMaxCropTarget from './minimax-h3/minimax-crop-target';
 import MiniMaxH3AdaptiveLoader from './minimax-h3/minimax-h3-adaptive-loader';
+import MiniMaxH3ImageToVideo from './minimax-h3/minimax-h3-image-to-video';
+import MiniMaxH3SigmaShift from './minimax-h3/minimax-h3-sigma-shift';
 import MiniMaxH3OptionalShift from './minimax-h3/minimax-h3-optional-shift';
 import MiniMaxH3ReferenceToVideo from './minimax-h3/minimax-h3-reference-to-video';
 import MiniMaxTrimFrames from './minimax-h3/minimax-trim-frames';
@@ -116,6 +122,10 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   'ImageScaleBy': ImageScaleBy,
   'ImageResizeKJv2': ImageResizeKJv2,
   'TextEncodeQwenImageEditPlus': TextEncodeQwenImageEditPlus,
+  'TextEncodeQwenImage21': TextEncodeQwenImage21,
+  'QwenImage21Cache': QwenImage21Cache,
+  'CreateVideo': CreateVideo,
+  'SaveVideo': SaveVideo,
   'GetImageSize': ImmutableNode,
   'PrimitiveInt': PrimitiveInt,
   'ResolutionSelector': ResolutionSelector,
@@ -141,7 +151,9 @@ export const nodeComponentMap: Record<string, ComponentType<NodeContentProps>> =
   // OpenAI-compatible LLM
   'OpenAICompatibleChat': OpenAICompatibleChat,
 
-  // MiniMax H3 (multi-GPU loader, reference-to-video and the face-swap helpers)
+  // MiniMax H3: core nodes (comfy_extras/nodes_minimax_h3.py), then the multi-GPU loader and face-swap helpers
+  'MiniMaxH3ImageToVideo': MiniMaxH3ImageToVideo,
+  'MiniMaxH3SigmaShift': MiniMaxH3SigmaShift,
   'MiniMaxH3AdaptiveLoader': MiniMaxH3AdaptiveLoader,
   'MiniMaxH3OptionalShift': MiniMaxH3OptionalShift,
   'MiniMaxH3ReferenceToVideo': MiniMaxH3ReferenceToVideo,

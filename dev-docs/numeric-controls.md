@@ -20,7 +20,7 @@ How a numeric node input is drawn: as a **slider** or a **stepper** (a number fi
 | `feather`, `blur*`, `volume` | Slider when the range is short, else stepper | Feel, but never a narrowed range |
 | `steps`, `*_at_step`, `batch_size`, `length`, `frame*`, `*_count`, `select_every_nth` | Stepper | Exact counts |
 | `seed`, `noise_seed` | Stepper (seed control) | Exact; up to 2^64 |
-| `width`, `height`, `*_width`, `*_side`, `multiple`, `divisible_by` | Stepper | Exact pixels |
+| `width`, `height`, `*_width`, `*_side`, `resolution`, `multiple`, `divisible_by` | Stepper | Exact pixels |
 | `fps`, `*_rate`, `seconds`, `duration`, `*_time` | Stepper (fps 1, time 0.1) | Exact rates and times |
 | `cfg`, `guidance` | Stepper (0.5) | Declared 0–100, used about 1–12 |
 | `shift*` | Stepper (0.5) | Declared 0–100, used about 1–12 |

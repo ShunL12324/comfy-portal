@@ -30,6 +30,8 @@ describe('numberControlFor', () => {
     ['width', RESOLUTION],
     ['height', RESOLUTION],
     ['custom_width', { kind: 'int', min: 0, max: 8192, step: 8 }],
+    // A pixel edge (Qwen Image 2.1's reference size), not a feel value, despite its short 0–4096 / 32 range.
+    ['resolution', { kind: 'int', min: 0, max: 4096, step: 32 }],
     ['batch_size', { kind: 'int', min: 1, max: 4096 }],
     ['length', { kind: 'int', min: 1, max: 16384, step: 4 }],
     ['frame_count', { kind: 'int', min: 0, max: 64 }],

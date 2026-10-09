@@ -36,4 +36,17 @@ export const CORE_NUMBER_SPECS = {
     length: { kind: 'int', min: 1, max: MAX_RESOLUTION, step: 4, default: 81 },
     batch_size: BATCH_SIZE,
   },
+  TextEncodeQwenImage21: { resolution: { kind: 'int', min: 0, max: 4096, step: 32, default: 1024 } },
+  // comfy_extras/nodes_minimax_h3.py
+  MiniMaxH3ImageToVideo: {
+    width: { kind: 'int', min: 32, max: MAX_RESOLUTION, step: 32, default: 1344 },
+    height: { kind: 'int', min: 32, max: MAX_RESOLUTION, step: 32, default: 768 },
+    length: { kind: 'int', min: 5, max: 3600, step: 17, default: 124 },
+  },
+  MiniMaxH3SigmaShift: {
+    shift_video: { kind: 'float', min: 0.01, max: 100, step: 0.01, default: 12 },
+    shift_audio: { kind: 'float', min: 0.01, max: 100, step: 0.01, default: 3 },
+  },
+  // comfy_extras/nodes_video.py
+  CreateVideo: { fps: { kind: 'float', min: 1, max: 120, step: 1, default: 30 } },
 } satisfies Record<string, Record<string, NumberSpec>>;

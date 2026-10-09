@@ -10,9 +10,10 @@ import { Sheet } from '@/components/ui/design-system/overlays';
 import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { Plus, ChevronRight, GitBranch, Trash2 } from '@/constants/icons';
 import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
+import { useEnvironmentRecipe } from '@/features/cloud/hooks/use-environment-recipe';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { providerLogos } from '@/features/cloud/components/provider-logos';
-import { MODEL_TYPES, resolveModelUrl } from '@/services/model-url';
+import { MODEL_TYPES, formatBytes, resolveModelUrl } from '@/services/model-url';
 import { uniqueCopyName } from '@/features/workflow/utils/copy-name';
 import { AddWorkflowSheet, type WorkflowDraft } from '@/features/workflow/components/import-workflow-modal';
 import type { EnvironmentWorkflow } from '@/features/cloud/types';
@@ -50,7 +51,8 @@ function provider(url: string) {
 export default function EnvironmentResources() {
   const { id, resource } = useLocalSearchParams<{ id: string; resource: string }>();
   const c = useDesign();
-  const environment = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
+  // A built-in example is read-only: no Add, no Delete.
+  const { environment, example } = useEnvironmentRecipe(id);
   const update = useEnvironmentStore((state) => state.updateEnvironment);
   const key = useCloudCredentialsStore((state) => state.civitaiApiKey);
   const [query, setQuery] = useState('');
@@ -162,15 +164,17 @@ export default function EnvironmentResources() {
         titleSize="sm"
         showBack
         rightElement={
-          <Action
-            kind="tonal"
-            icon={Plus}
-            label={`Add ${title.toLowerCase()}`}
-            onPress={() => {
-              setAdding(true);
-              setError('');
-            }}
-          />
+          example ? undefined : (
+            <Action
+              kind="tonal"
+              icon={Plus}
+              label={`Add ${title.toLowerCase()}`}
+              onPress={() => {
+                setAdding(true);
+                setError('');
+              }}
+            />
+          )
         }
       />
       <View style={{ paddingHorizontal: t.layout.gutter, paddingBottom: t.layout.field, gap: t.layout.related }}>
@@ -278,7 +282,7 @@ export default function EnvironmentResources() {
                 </Row>
                 <Copy muted size="metadata" numberOfLines={1}>
                   {item.model
-                    ? `${provider(item.model.pageUrl || item.model.url) === 'huggingface' ? 'Hugging Face' : provider(item.model.pageUrl || item.model.url) === 'civitai' ? 'Civitai' : 'Direct URL'} · ${item.detail}`
+                    ? `${provider(item.model.pageUrl || item.model.url) === 'huggingface' ? 'Hugging Face' : provider(item.model.pageUrl || item.model.url) === 'civitai' ? 'Civitai' : 'Direct URL'} · ${item.detail}${item.model.sizeBytes ? ` · ${formatBytes(item.model.sizeBytes)}` : ''}`
                     : item.detail.replace('https://', '')}
                 </Copy>
               </View>
@@ -306,6 +310,16 @@ export default function EnvironmentResources() {
               Filename
             </Copy>
             <Copy size="body">{model.filename || model.label || model.url}</Copy>
+            {!!model.sizeBytes && (
+              <>
+                <Copy muted size="metadata">
+                  Size
+                </Copy>
+                <Copy mono size="body">
+                  {formatBytes(model.sizeBytes)}
+                </Copy>
+              </>
+            )}
             <Copy muted size="metadata">
               Model page
             </Copy>
@@ -380,9 +394,11 @@ export default function EnvironmentResources() {
             </View>
           </>
         )}
-        <Action kind="secondary" destructive icon={Trash2} fill onPress={remove}>
-          Delete {resource === 'models' ? 'model' : resource === 'extensions' ? 'extension' : 'workflow'}
-        </Action>
+        {!example && (
+          <Action kind="secondary" destructive icon={Trash2} fill onPress={remove}>
+            Delete {resource === 'models' ? 'model' : resource === 'extensions' ? 'extension' : 'workflow'}
+          </Action>
+        )}
       </Sheet>
       <Sheet
         open={adding && resource !== 'workflows'}

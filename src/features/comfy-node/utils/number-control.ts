@@ -19,7 +19,7 @@ const STEPPER_NAMES: RegExp[] = [
   /(^|_)steps$|_at_step$/, // steps, resolution_steps, start_at_step (not zoom_step, an increment)
   /^(cfg|guidance)(_|$)/,
   /seed$/, // seed, noise_seed
-  /^(width|height)(_|$)|_(width|height)$|(^|_)side$/, // width, custom_width, image_max_side
+  /^(width|height)(_|$)|_(width|height)$|(^|_)side$|^resolution$/, // width, custom_width, image_max_side, resolution
   /^(batch_size|length|multiple|divisible_by)$|_multiple$/,
   /frame|(^|_)nth$|(^|_)count$/, // frame_rate, skip_first_frames, frame_load_cap, select_every_nth
   /^fps$|(^|_)rate$/, // fps, frame_rate, sample_rate
