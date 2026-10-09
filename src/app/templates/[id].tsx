@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, ActionRow, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
-import { Box, GitBranch, Puzzle, Settings2 } from '@/constants/icons';
+import { AlertTriangle, Box, GitBranch, Puzzle, Settings2 } from '@/constants/icons';
+import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
+import { showToast } from '@/utils/toast';
+import type { Environment } from '@/features/cloud/types';
 import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
 import { Spinner } from '@/components/ui/spinner';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
@@ -16,9 +19,14 @@ export default function EnvironmentScreen() {
   const c = useDesign();
   const insets = useSafeAreaInsets();
   const hydrated = useEnvironmentsHydrated();
-  const environment = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
+  const current = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
+  // Keep the last seen recipe while the page leaves after a delete, so it never flashes "not found".
+  const lastSeen = useRef<Environment | undefined>(current);
+  if (current) lastSeen.current = current;
+  const environment = current ?? lastSeen.current;
   const update = useEnvironmentStore((state) => state.updateEnvironment);
   const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   if (!hydrated) return <Spinner />;
@@ -86,7 +94,9 @@ export default function EnvironmentScreen() {
             key={key}
             accessibilityRole="button"
             accessibilityLabel={title}
-            onPress={() => router.navigate({ pathname: '/environments/[id]/[resource]', params: { id, resource: key } })}
+            onPress={() =>
+              router.navigate({ pathname: '/environments/[id]/[resource]', params: { id, resource: key } })
+            }
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -163,7 +173,25 @@ export default function EnvironmentScreen() {
             Save changes
           </Action>
         </ActionRow>
+        <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirmingDelete(true)}>
+          Delete environment
+        </Action>
       </Sheet>
+      <ConfirmDialog
+        isOpen={confirmingDelete}
+        destructive
+        title="Delete environment?"
+        description="Delete this recipe and its model, extension and workflow lists from the app. Servers already built from it keep running with their own copy; nothing is destroyed or billed."
+        confirmText="Delete environment"
+        onClose={() => setConfirmingDelete(false)}
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          setEditing(false);
+          router.back();
+          useEnvironmentStore.getState().removeEnvironment(id);
+          showToast.success('Environment deleted');
+        }}
+      />
     </View>
   );
 }
