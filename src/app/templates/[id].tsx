@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
@@ -21,9 +21,9 @@ export default function EnvironmentScreen() {
   const hydrated = useEnvironmentsHydrated();
   const current = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
   // Keep the last seen recipe while the page leaves after a delete, so it never flashes "not found".
-  const lastSeen = useRef<Environment | undefined>(current);
-  if (current) lastSeen.current = current;
-  const environment = current ?? lastSeen.current;
+  const [lastSeen, setLastSeen] = useState<Environment | undefined>(current);
+  if (current && current !== lastSeen) setLastSeen(current);
+  const environment = current ?? lastSeen;
   const update = useEnvironmentStore((state) => state.updateEnvironment);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
