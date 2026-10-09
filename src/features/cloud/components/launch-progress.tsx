@@ -71,7 +71,9 @@ function Step({ label, state, ratio, detail }: { label: string; state: State; ra
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   const c = useDesign();
   return (
-    <View style={{ padding: t.layout.field, gap: t.layout.field, borderRadius: t.radius.panel, backgroundColor: c.card }}>
+    <View
+      style={{ padding: t.layout.field, gap: t.layout.field, borderRadius: t.radius.panel, backgroundColor: c.card }}
+    >
       <Copy size="body" style={{ fontWeight: '500' }}>
         {title}
       </Copy>

@@ -13,7 +13,14 @@ const FACTS = [
 ] as const;
 
 /** An environment card opens its recipe; hardware rental starts from the detail page. */
-export function EnvironmentCard({ environment }: { environment: Environment }) {
+export function EnvironmentCard({
+  environment,
+  onLongPress,
+}: {
+  environment: Environment;
+  /** Opens Edit environment, like a server card's Connection sheet. */
+  onLongPress?: (id: string) => void;
+}) {
   const router = useRouter();
   const summary = environmentSummary(environment);
   return (
@@ -25,6 +32,8 @@ export function EnvironmentCard({ environment }: { environment: Environment }) {
       accessibilityLabel={`Open ${environment.name}`}
       accessibilityHint={spoken(summary.models.text, summary.extensions.text, summary.workflows.text)}
       onPress={() => router.navigate(`/templates/${environment.id}`)}
+      onLongPress={onLongPress ? () => onLongPress(environment.id) : undefined}
+      longPressLabel={onLongPress ? 'Edit environment' : undefined}
       facts={
         <>
           {FACTS.map(({ key, icon, testID }) => (

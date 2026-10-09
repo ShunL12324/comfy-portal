@@ -32,13 +32,7 @@ export function launchStatusLine(launch: LaunchRecord): string {
   return 'Building · Installing environment';
 }
 
-export function LaunchCard({
-  launch,
-  onOpen,
-}: {
-  launch: LaunchRecord;
-  onOpen?: () => void;
-}) {
+export function LaunchCard({ launch, onOpen }: { launch: LaunchRecord; onOpen?: () => void }) {
   const [, tick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => tick((v) => v + 1), 60_000);

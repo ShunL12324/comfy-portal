@@ -1137,6 +1137,12 @@
       "managedAt": "shared text / input / composed control"
     },
     {
+      "path": "src/features/cloud/components/edit-environment-sheet.tsx",
+      "textElements": [],
+      "fontDeclarations": 0,
+      "managedAt": "shared text / input / composed control"
+    },
+    {
       "path": "src/features/cloud/components/environment-card.tsx",
       "textElements": [],
       "fontDeclarations": 0,

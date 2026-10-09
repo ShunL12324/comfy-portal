@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { ScrollView, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
-import { Action, ActionRow, Copy, Field, Row, useDesign } from '@/components/ui/design-system/primitives';
-import { Sheet } from '@/components/ui/design-system/overlays';
-import { AlertTriangle, Box, GitBranch, Puzzle, Settings2 } from '@/constants/icons';
-import { ConfirmDialog } from '@/components/self-ui/confirm-dialog';
-import { showToast } from '@/utils/toast';
+import { Action, Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { Box, GitBranch, Puzzle, Settings2 } from '@/constants/icons';
+import { EditEnvironmentSheet } from '@/features/cloud/components/edit-environment-sheet';
 import type { Environment } from '@/features/cloud/types';
 import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
 import { Spinner } from '@/components/ui/spinner';
@@ -24,11 +22,7 @@ export default function EnvironmentScreen() {
   const [lastSeen, setLastSeen] = useState<Environment | undefined>(current);
   if (current && current !== lastSeen) setLastSeen(current);
   const environment = current ?? lastSeen;
-  const update = useEnvironmentStore((state) => state.updateEnvironment);
   const [editing, setEditing] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   if (!hydrated) return <Spinner />;
   if (!environment)
     return (
@@ -66,18 +60,7 @@ export default function EnvironmentScreen() {
         title={environment.name}
         titleSize="sm"
         showBack
-        rightElement={
-          <Action
-            kind="text"
-            icon={Settings2}
-            label="Edit environment"
-            onPress={() => {
-              setName(environment.name);
-              setDescription(environment.description);
-              setEditing(true);
-            }}
-          />
-        }
+        rightElement={<Action kind="text" icon={Settings2} label="Edit environment" onPress={() => setEditing(true)} />}
       />
       <ScrollView
         testID="environment-content"
@@ -154,43 +137,11 @@ export default function EnvironmentScreen() {
           Create instance
         </Action>
       </View>
-      <Sheet open={editing} onClose={() => setEditing(false)} title="Edit environment">
-        <Field label="Name" value={name} onChange={setName} placeholder="Environment name" />
-        <Field label="Description" multiline value={description} onChange={setDescription} placeholder="Description" />
-        <ActionRow>
-          <Action kind="secondary" fill onPress={() => setEditing(false)}>
-            Cancel
-          </Action>
-          <Action
-            kind="primary"
-            fill
-            disabled={!name.trim()}
-            onPress={() => {
-              update(id, { name: name.trim(), description: description.trim() });
-              setEditing(false);
-            }}
-          >
-            Save changes
-          </Action>
-        </ActionRow>
-        <Action kind="primary" destructive fill icon={AlertTriangle} onPress={() => setConfirmingDelete(true)}>
-          Delete environment
-        </Action>
-      </Sheet>
-      <ConfirmDialog
-        isOpen={confirmingDelete}
-        destructive
-        title="Delete environment?"
-        description="Delete this recipe and its model, extension and workflow lists from the app. Servers already built from it keep running with their own copy; nothing is destroyed or billed."
-        confirmText="Delete environment"
-        onClose={() => setConfirmingDelete(false)}
-        onConfirm={() => {
-          setConfirmingDelete(false);
-          setEditing(false);
-          router.back();
-          useEnvironmentStore.getState().removeEnvironment(id);
-          showToast.success('Environment deleted');
-        }}
+      <EditEnvironmentSheet
+        environmentId={id}
+        open={editing}
+        onClose={() => setEditing(false)}
+        onDeleted={() => router.back()}
       />
     </View>
   );

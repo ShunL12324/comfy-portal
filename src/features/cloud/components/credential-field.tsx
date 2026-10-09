@@ -80,7 +80,11 @@ export function CredentialField({ title, value, onChangeText, placeholder, hint,
         autoCorrect={false}
       />
 
-      {hint ? <Copy size="metadata" muted className="-mt-1">{hint}</Copy> : null}
+      {hint ? (
+        <Copy size="metadata" muted className="-mt-1">
+          {hint}
+        </Copy>
+      ) : null}
 
       <HStack space="sm" className="items-center">
         <Action kind="secondary" small loading={visibleState === 'testing'} disabled={!value.trim()} onPress={runTest}>

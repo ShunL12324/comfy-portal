@@ -6,6 +6,7 @@ import { Action, Copy, Field, useDesign } from '@/components/ui/design-system/pr
 import { Sheet } from '@/components/ui/design-system/overlays';
 import { Plus } from '@/constants/icons';
 import { EnvironmentCard } from '@/features/cloud/components/environment-card';
+import { EditEnvironmentSheet } from '@/features/cloud/components/edit-environment-sheet';
 import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
 import { designTokens as t } from '@/constants/design-tokens';
 
@@ -15,6 +16,7 @@ export default function EnvironmentsScreen() {
   const { environments, addEnvironment } = useEnvironmentStore();
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const filtered = environments.filter((item) =>
@@ -57,7 +59,7 @@ export default function EnvironmentsScreen() {
         <Field label="Search environments" search value={query} onChange={setQuery} placeholder="Search environments" />
         <View style={{ gap: t.layout.list }}>
           {filtered.map((item) => (
-            <EnvironmentCard key={item.id} environment={item} />
+            <EnvironmentCard key={item.id} environment={item} onLongPress={setEditingId} />
           ))}
           {!filtered.length && (
             <View style={{ paddingVertical: t.layout.section, gap: t.layout.label }}>
@@ -82,6 +84,7 @@ export default function EnvironmentsScreen() {
           Create environment
         </Action>
       </Sheet>
+      <EditEnvironmentSheet environmentId={editingId} open={!!editingId} onClose={() => setEditingId(undefined)} />
     </View>
   );
 }
