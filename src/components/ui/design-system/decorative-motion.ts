@@ -13,11 +13,12 @@ import {
 import { designTokens as t } from '@/constants/design-tokens';
 
 /**
- * A 0–1 phase that loops once per `t.motion.breathe` for decorative state
- * indicators. It rests at `rest` under Reduce Motion, off screen and while the
- * app is in the background, so illustrations hold a meaningful still frame.
+ * A 0–1 phase that loops once per `duration` (default `t.motion.breathe`) for
+ * decorative state indicators. It rests at `rest` under Reduce Motion, off
+ * screen and while the app is in the background, so illustrations hold a
+ * meaningful still frame.
  */
-export function useDecorativeMotion(rest = 0): SharedValue<number> {
+export function useDecorativeMotion(rest = 0, duration: number = t.motion.breathe): SharedValue<number> {
   const focused = useIsFocused();
   const initiallyReduced = useReducedMotion();
   const [reduced, setReduced] = useState(initiallyReduced);
@@ -39,8 +40,8 @@ export function useDecorativeMotion(rest = 0): SharedValue<number> {
       return;
     }
     phase.set(0);
-    phase.set(withRepeat(withTiming(1, { duration: t.motion.breathe, easing: Easing.linear }), -1, false));
+    phase.set(withRepeat(withTiming(1, { duration, easing: Easing.linear }), -1, false));
     return () => cancelAnimation(phase);
-  }, [animated, phase, rest]);
+  }, [animated, duration, phase, rest]);
   return phase;
 }

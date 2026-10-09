@@ -4,6 +4,7 @@ import { useDesign } from '@/components/ui/design-system/primitives';
 import { useDecorativeMotion } from '@/components/ui/design-system/decorative-motion';
 import { EMPTY_ART_STROKE as STROKE, EmptyStateArt } from '@/components/ui/design-system/empty-state-art';
 import { designTokens as t } from '@/constants/design-tokens';
+import { scanOffset } from '@/features/gallery/utils/scan-offset';
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 
@@ -12,15 +13,19 @@ const FRAME = { x: 28, y: 8, width: 64, height: 48 };
 const CROP = 6;
 const CROP_INSET = 4;
 const CROSS = 3;
+/** A down-and-up pass covers twice the old one-way sweep, so it gets two breaths to keep the same average pace. */
+const SCAN_CYCLE = t.motion.breathe * 2;
+/** Still frame a third of the way down: `scanOffset(0.2)` ≈ 0.35. */
+const SCAN_REST = 0.2;
 
-/** An empty viewfinder: crop marks, a centre cross and a slow scan line passing through it. */
+/** An empty viewfinder: crop marks, a centre cross and a slow scan line sweeping up and down through it. */
 export function EmptyGalleryArt() {
   const c = useDesign();
-  const phase = useDecorativeMotion(0.35);
+  const phase = useDecorativeMotion(SCAN_REST, SCAN_CYCLE);
   const top = FRAME.y + CROP_INSET;
   const travel = FRAME.height - CROP_INSET * 2;
   const scan = useAnimatedProps(() => {
-    const y = top + phase.get() * travel;
+    const y = top + scanOffset(phase.get()) * travel;
     return { y1: y, y2: y };
   });
   const left = FRAME.x + CROP_INSET;
