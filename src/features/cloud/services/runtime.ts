@@ -5,12 +5,13 @@ const configuredBase = process.env.EXPO_PUBLIC_CP_RUNTIME_IMAGE;
 const configuredOllama = process.env.EXPO_PUBLIC_CP_RUNTIME_OLLAMA_IMAGE;
 const configuredVersion = Number(process.env.EXPO_PUBLIC_CP_RUNTIME_VERSION ?? '1');
 /**
- * The Go `cpd` runtime (comfy-portal-cloud-server, feat/go-rewrite at 44dfa01): ComfyUI
- * v0.39.2, uv installs, parallel extension setup. It keeps `/opt/cp/supervisor.py` and
- * the v1 API, so the launch command below is unchanged. Passed the vast smoke test.
+ * The Go `cpd` runtime (comfy-portal-cloud-server, task/t1-cpd-progress-lines at bbbf00f,
+ * on feat/go-rewrite 2716d97): ComfyUI v0.39.2, uv installs, parallel extension setup, and
+ * one-line progress reports in the container log. It keeps `/opt/cp/supervisor.py` and the
+ * v1 API, so the launch command below is unchanged. Passed the vast smoke test.
  */
-const DEFAULT_BASE = 'ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01';
-const DEFAULT_OLLAMA = 'ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01-ollama';
+const DEFAULT_BASE = 'ghcr.io/shunl12324/comfy-portal-cloud-server:sha-bbbf00f';
+const DEFAULT_OLLAMA = 'ghcr.io/shunl12324/comfy-portal-cloud-server:sha-bbbf00f-ollama';
 export function imageFor(environment: Environment): string {
   return environment.ollamaModels?.length ? configuredOllama || DEFAULT_OLLAMA : configuredBase || DEFAULT_BASE;
 }
