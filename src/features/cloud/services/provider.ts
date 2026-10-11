@@ -24,6 +24,9 @@ export interface CloudInstance {
   ports: Record<string, number>;
   sshHost?: string;
   sshPort?: number;
+  /** e.g. `Machine 18023 · Poland, PL`; vast only. */
+  machine?: string;
+  image?: string;
 }
 function fromVast(instance: VastInstance): CloudInstance {
   return {
@@ -40,6 +43,11 @@ function fromVast(instance: VastInstance): CloudInstance {
     ports: instance.ports,
     sshHost: instance.sshHost ?? undefined,
     sshPort: instance.sshPort ?? undefined,
+    machine:
+      instance.machineId != null
+        ? [`Machine ${instance.machineId}`, instance.geolocation].filter(Boolean).join(' · ')
+        : undefined,
+    image: instance.image ?? undefined,
   };
 }
 function fromRunPod(instance: RunPodInstance): CloudInstance {

@@ -16,12 +16,7 @@
 /** Published alongside 8188 at creation time; ports can't be added later. */
 export const SUPERVISOR_PORT = 8189;
 
-export type SupervisorPhase =
-  | 'preparing'
-  | 'downloading'
-  | 'starting'
-  | 'ready'
-  | 'failed';
+export type SupervisorPhase = 'preparing' | 'downloading' | 'starting' | 'ready' | 'failed';
 
 export type StepState = 'running' | 'done' | 'failed';
 
@@ -31,6 +26,8 @@ export interface SupervisorStep {
   detail: string;
   /** Wall time once the step settles; null while it runs. */
   ms: number | null;
+  /** Unix ms on the box's clock. /v2 only. */
+  startedAt?: number;
 }
 
 export interface SupervisorModel {
@@ -45,6 +42,9 @@ export interface SupervisorModel {
   error?: string | null;
   errorCode?: string;
   hint?: string;
+  /** Unix ms on the box's clock: when the download went active and finished. /v2 only. */
+  startedAt?: number;
+  finishedAt?: number;
 }
 
 export interface SupervisorSnapshot {
@@ -85,6 +85,57 @@ export class SupervisorError extends Error {
     super(message);
     this.name = 'SupervisorError';
   }
+}
+
+/**
+ * The supervisor's /v2/snapshot in the shape above (/v1/status's).
+ *
+ * The app asks for /v2 first because only it carries when each step and
+ * download started, which the setup screen's timers need; /v1 stays the
+ * fallback for images from before the Go supervisor. /v1 itself must not
+ * change: released app builds parse it.
+ */
+export function normalizeSnapshot(raw: any): SupervisorSnapshot {
+  if (!Array.isArray(raw?.services)) return raw as SupervisorSnapshot;
+  const services: SupervisorSnapshot['services'] = {};
+  for (const service of raw.services) {
+    // v1 clients only knew comfyui and ollama.
+    if (!service?.name || service.name === 'aria2') continue;
+    const { name, ...rest } = service;
+    delete rest.readyMs;
+    services[name] = rest;
+  }
+  return {
+    supervisorVersion: 3,
+    phase: raw.phase,
+    startedAt: raw.startedAt,
+    elapsed: raw.elapsed,
+    stalled: !!raw.stalled,
+    lastProgressAt: raw.lastProgressAt,
+    steps: (raw.steps ?? []).map((step: any) => ({
+      id: step.id,
+      state: step.state,
+      detail: step.detail ?? '',
+      ms: step.ms ?? null,
+      startedAt: step.startedAt || undefined,
+    })),
+    models: (raw.models ?? []).map((model: any) => ({
+      name: model.name,
+      folder: model.folder,
+      total: model.total ?? 0,
+      completed: model.completed ?? 0,
+      speed: model.speed ?? 0,
+      state: model.state,
+      error: model.error || null,
+      errorCode: model.errorCode,
+      hint: model.hint,
+      startedAt: model.startedAt || undefined,
+      finishedAt: model.finishedAt || undefined,
+    })),
+    totals: raw.totals,
+    services,
+    error: raw.error ?? null,
+  };
 }
 
 /** `models[]` uses "<folder>/<name>" as its identity; retry takes the same. */

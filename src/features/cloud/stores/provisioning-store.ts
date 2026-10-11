@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CloudProvider, Environment, HardwareSelection } from '../types';
 
 import type { SupervisorSnapshot } from '@/services/cloud-supervisor';
+import type { ImageLayer, PullState } from '../utils/pull-progress';
 
 /**
  * Launches that haven't finished yet.
@@ -26,6 +27,27 @@ export type LaunchStage =
   | 'installing'
   | 'ready'
   | 'failed';
+
+/**
+ * When each opening step was seen to finish, on this device's clock (ms).
+ * Nothing on the instance can be asked yet, so these come from watching vast:
+ * they are as fine as the poll, and a step that was already over when the app
+ * first looked has its mark set to the moment it was found done.
+ */
+export interface LaunchMarks {
+  /** vast returned an instance id. */
+  orderedAt?: number;
+  /** The host acknowledged the instance: a status, or any status text. */
+  hostAt?: number;
+  /** The image is pulled (vast moved on to its own build or the container). */
+  pulledAt?: number;
+  /** The container runs and its ports are published. */
+  runningAt?: number;
+  /** The supervisor answered over SSH. */
+  supervisorAt?: number;
+  /** The last time vast's status text changed: a host that stops talking is stuck. */
+  statusChangedAt?: number;
+}
 
 export interface LaunchRecord {
   id: string;
@@ -55,8 +77,17 @@ export interface LaunchRecord {
   serverId?: string;
   /** Last snapshot, so returning to the screen renders instantly. */
   snapshot?: SupervisorSnapshot;
+  /** When `snapshot` arrived, on this device's clock: lines the box's clock up with ours. */
+  snapshotAt?: number;
   /** vast's own words, the only signal before the supervisor answers. */
   providerStatus?: string;
+  marks?: LaunchMarks;
+  /** What vast's statuses have said about the image pull so far. */
+  pull?: PullState;
+  /** The image's layers from its registry; null when they could not be read. */
+  imageLayers?: ImageLayer[] | null;
+  /** e.g. `Machine 18023 · Poland, PL`. */
+  machine?: string;
   error?: string;
 }
 
@@ -115,11 +146,15 @@ export const useProvisioningStore = create<ProvisioningState>()(
         // Retain pre-refactor rentals so their billing controls remain reachable.
         launches: ((saved as { launches?: LaunchRecord[] } | undefined)?.launches ?? []).map((savedRecord) => {
           const { templateId, templateName, templateSnapshot, vastStatus, ...record } = savedRecord as LaunchRecord & {
-            templateId?: string; templateName?: string; templateSnapshot?: Environment; vastStatus?: string;
+            templateId?: string;
+            templateName?: string;
+            templateSnapshot?: Environment;
+            vastStatus?: string;
           };
           return {
             ...record,
-            id: record.id ?? launchKey(record), provider: record.provider ?? 'vast',
+            id: record.id ?? launchKey(record),
+            provider: record.provider ?? 'vast',
             instanceId: String(record.instanceId),
             environmentId: record.environmentId ?? templateId ?? '',
             environmentName: record.environmentName ?? templateName ?? 'Cloud instance',

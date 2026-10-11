@@ -65,7 +65,8 @@ export function SetupContent({ launch, onDestroyed }: { launch: LaunchRecord; on
       polling = true;
       try {
         const snapshot = await getStatus({ sshHost, sshPort, token });
-        if (active && !isInstanceDestroying(id)) useProvisioningStore.getState().update(id, { snapshot });
+        if (active && !isInstanceDestroying(id))
+          useProvisioningStore.getState().update(id, { snapshot, snapshotAt: Date.now() });
       } catch {
         /* The launch poller handles connection recovery. */
       } finally {
@@ -89,7 +90,7 @@ export function SetupContent({ launch, onDestroyed }: { launch: LaunchRecord; on
       if (!result.retried?.includes(key))
         throw new Error('This download was not queued. Refresh its status and try again.');
       const snapshot = await getStatus({ sshHost, sshPort, token });
-      useProvisioningStore.getState().update(id, { snapshot });
+      useProvisioningStore.getState().update(id, { snapshot, snapshotAt: Date.now() });
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Could not retry this download.');
     } finally {

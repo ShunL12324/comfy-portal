@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Action, Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { RotatingSpinner } from '@/components/ui/rotating-spinner';
@@ -5,10 +6,18 @@ import { Check, X } from '@/constants/icons';
 import type { LaunchRecord } from '../stores/provisioning-store';
 import type { EnvironmentModel } from '../types';
 import { formatUsd } from '../utils/cost';
+import {
+  boxClockOffset,
+  formatDuration,
+  formatElapsed,
+  fromSupervisorStep,
+  hostWarning,
+  openingSteps,
+  type SetupStep,
+  type StepState,
+} from '../utils/launch-steps';
 import { formatBytes } from '@/services/model-url';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
-
-type State = 'waiting' | 'running' | 'done' | 'failed';
 
 // Matches the supervisor's name for a model without an explicit filename; a malformed URL falls back to itself.
 function modelFilename(model: EnvironmentModel) {
@@ -19,15 +28,44 @@ function modelFilename(model: EnvironmentModel) {
     return model.url;
   }
 }
-function Step({ label, state, ratio, detail }: { label: string; state: State; ratio?: number; detail?: string }) {
+
+/** The current time, once a second while something is running: the timers' clock. */
+function useNow(ticking: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ticking) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [ticking]);
+  return now;
+}
+
+function Step({ step, now }: { step: SetupStep; now: number }) {
   const c = useDesign();
+  const { label, state, ratio, detail, ms } = step;
+  // A running step without a start time from the instance (an older
+  // supervisor, a workflow upload) is timed from when this screen saw it start.
+  const [seen, setSeen] = useState({ state, at: state === 'running' ? now : undefined });
+  if (seen.state !== state) setSeen({ state, at: state === 'running' ? now : undefined });
+  const startedAt = step.startedAt ?? seen.at;
   const color = state === 'done' ? c.ink : state === 'failed' ? c.danger : c.warning;
+  const clock =
+    state === 'running' && startedAt !== undefined
+      ? formatElapsed(now - startedAt)
+      : state === 'done' && ms !== undefined
+        ? formatDuration(ms)
+        : undefined;
   return (
     <View style={{ gap: t.layout.label }}>
       <Row style={{ justifyContent: 'space-between', gap: t.layout.related }}>
         <Copy size="label" numberOfLines={1} style={{ flex: 1 }}>
           {label}
         </Copy>
+        {!!clock && (
+          <Copy mono muted size="micro" accessibilityLabel={state === 'running' ? `Elapsed ${clock}` : `Took ${clock}`}>
+            {clock}
+          </Copy>
+        )}
         {state === 'done' ? (
           <Check size={t.icon.small} strokeWidth={iconStroke(t.icon.small)} color={color} />
         ) : state === 'failed' ? (
@@ -61,7 +99,7 @@ function Step({ label, state, ratio, detail }: { label: string; state: State; ra
         />
       </View>
       {!!detail && (
-        <Copy muted size="micro">
+        <Copy mono muted size="micro">
           {detail}
         </Copy>
       )}
@@ -92,7 +130,28 @@ export function LaunchProgress({
 }) {
   const snapshot = launch.snapshot;
   const environment = launch.environmentSnapshot;
-  const stepState = (id: string): State => snapshot?.steps.find((step) => step.id === id)?.state ?? 'waiting';
+  const settled = launch.stage === 'ready' || launch.stage === 'failed';
+  const now = useNow(!settled);
+  const offset = boxClockOffset(snapshot, launch.snapshotAt);
+  const step = (id: string, label: string) =>
+    fromSupervisorStep(
+      snapshot?.steps.find((item) => item.id === id),
+      label,
+      offset,
+      id,
+    );
+  const warning = hostWarning(launch, now);
+  const base: SetupStep[] = [
+    ...openingSteps(launch),
+    step('link-directories', 'Prepare storage'),
+    ...(environment?.models.length || snapshot?.steps.some((item) => item.id === 'disk-check')
+      ? [step('disk-check', 'Check disk space')]
+      : []),
+    step('aria2', 'Start downloader'),
+  ];
+  const extensionsDone = snapshot?.steps.find((item) => item.id === 'extensions')?.state === 'done';
+  const requirements = snapshot?.steps.find((item) => item.id === 'extensions:requirements');
+  const comfyStep = snapshot?.steps.find((item) => item.id === 'comfyui-start');
   return (
     <View style={{ gap: t.layout.field }}>
       <Row style={{ justifyContent: 'space-between' }}>
@@ -103,40 +162,21 @@ export function LaunchProgress({
         </Copy>
       </Row>
       {!!launch.error && <Copy accessibilityRole="alert">{launch.error}</Copy>}
+      {!!warning && <Copy accessibilityRole="alert">{warning}</Copy>}
       <Group title="Base">
-        <Step
-          label="Allocate server"
-          state={launch.stage === 'placing' ? 'running' : launch.stage === 'failed' && !launch.host ? 'failed' : 'done'}
-        />
-        <Step
-          label="Start runtime"
-          state={
-            launch.stage === 'placing'
-              ? 'waiting'
-              : launch.stage === 'booting'
-                ? 'running'
-                : launch.stage === 'failed' && !snapshot
-                  ? 'failed'
-                  : 'done'
-          }
-        />
-        <Step label="Prepare storage" state={stepState('link-directories')} />
+        {base.map((item) => (
+          <Step key={item.id} step={item} now={now} />
+        ))}
       </Group>
       <Group title="Extensions">
-        {(environment?.extensions ?? []).map((url) => (
-          <Step
-            key={url}
-            label={url.replace('https://github.com/', '')}
-            state={
-              snapshot?.steps.some((step) => step.id === 'extension:' + url)
-                ? stepState('extension:' + url)
-                : stepState('extensions') === 'done'
-                  ? 'done'
-                  : 'waiting'
-            }
-            detail={snapshot?.steps.find((step) => step.id === 'extension:' + url)?.detail}
-          />
-        ))}
+        {(environment?.extensions ?? []).map((url) => {
+          const own = snapshot?.steps.find((item) => item.id === 'extension:' + url);
+          const item = fromSupervisorStep(own, url.replace('https://github.com/', ''), offset, url);
+          return <Step key={url} step={!own && extensionsDone ? { ...item, state: 'done' } : item} now={now} />;
+        })}
+        {!!requirements && (
+          <Step step={fromSupervisorStep(requirements, 'Install Python requirements', offset)} now={now} />
+        )}
         {!environment?.extensions.length && (
           <Copy muted size="metadata">
             No extensions required
@@ -147,7 +187,7 @@ export function LaunchProgress({
         {(environment?.models ?? []).map((model) => {
           const filename = modelFilename(model);
           const status = snapshot?.models.find((item) => item.folder === model.type && item.name === filename);
-          const state: State =
+          const state: StepState =
             status?.state === 'done'
               ? 'done'
               : status?.state === 'active'
@@ -155,18 +195,31 @@ export function LaunchProgress({
                 : status?.state === 'error'
                   ? 'failed'
                   : 'waiting';
+          const bytes = status
+            ? `${formatBytes(status.completed) || '0 MB'} / ${status.total ? formatBytes(status.total) : 'Size unavailable'}`
+            : undefined;
           return (
             <View key={model.url} style={{ gap: t.layout.label }}>
               <Step
-                label={model.label || model.filename || model.url}
-                state={state}
-                ratio={status && status.total > 0 ? status.completed / status.total : undefined}
-                detail={
-                  status?.error ||
-                  (status
-                    ? `${formatBytes(status.completed)} / ${status.total ? formatBytes(status.total) : 'Size unavailable'}`
-                    : undefined)
-                }
+                now={now}
+                step={{
+                  id: model.url,
+                  label: model.label || model.filename || model.url,
+                  state,
+                  ratio: status && status.total > 0 ? status.completed / status.total : undefined,
+                  startedAt: status?.startedAt ? status.startedAt + offset : undefined,
+                  ms:
+                    status?.startedAt && status.finishedAt && status.finishedAt >= status.startedAt
+                      ? status.finishedAt - status.startedAt
+                      : undefined,
+                  detail:
+                    status?.error ||
+                    (bytes && state === 'running' && status?.speed
+                      ? `${bytes} · ${formatBytes(status.speed)}/s`
+                      : state === 'waiting' && status
+                        ? `Queued · ${bytes}`
+                        : bytes),
+                }}
               />
               {state === 'failed' && status && retryModel && (
                 <Row>
@@ -192,7 +245,16 @@ export function LaunchProgress({
       </Group>
       <Group title="Workflows">
         {(environment?.workflows ?? []).map((workflow, index) => (
-          <Step key={index} label={workflow.name} state={launch.workflowProgress?.[String(index)] ?? 'waiting'} />
+          <Step
+            key={index}
+            now={now}
+            step={{
+              id: String(index),
+              label: workflow.name,
+              state: launch.workflowProgress?.[String(index)] ?? 'waiting',
+              detail: launch.workflowProgress?.[String(index)] === 'running' ? 'Saving to the server' : undefined,
+            }}
+          />
         ))}
         {!environment?.workflows.length && (
           <Copy muted size="metadata">
@@ -203,15 +265,33 @@ export function LaunchProgress({
       {!!environment?.ollamaModels?.length && (
         <Group title="Ollama models">
           {environment.ollamaModels.map((model) => (
-            <Step key={model} label={model} state={stepState('ollama:' + model)} />
+            <Step key={model} now={now} step={step('ollama:' + model, model)} />
           ))}
         </Group>
       )}
       <Group title="Startup checks">
-        <Step label="Start ComfyUI" state={stepState('comfyui-start')} />
         <Step
-          label="Verify connection"
-          state={launch.stage === 'ready' ? 'done' : snapshot?.phase === 'ready' ? 'running' : 'waiting'}
+          now={now}
+          step={{
+            ...step('comfyui-start', 'Start ComfyUI'),
+            detail:
+              comfyStep?.state === 'running'
+                ? 'Waiting for ComfyUI to answer'
+                : !comfyStep && snapshot?.services.comfyui
+                  ? snapshot.services.comfyui.state === 'running'
+                    ? 'Already answering; checked once the models are in'
+                    : 'Starting while the models download'
+                  : undefined,
+          }}
+        />
+        <Step
+          now={now}
+          step={{
+            id: 'verify',
+            label: 'Verify connection',
+            state: launch.stage === 'ready' ? 'done' : snapshot?.phase === 'ready' ? 'running' : 'waiting',
+            detail: launch.stage !== 'ready' && snapshot?.phase === 'ready' ? 'Adding the server' : undefined,
+          }}
         />
       </Group>
     </View>

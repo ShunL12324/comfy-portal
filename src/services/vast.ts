@@ -52,6 +52,12 @@ export interface VastInstance {
    *  services/ssh-supervisor.ts. Absent until vast places the instance. */
   sshHost: string | null;
   sshPort: number | null;
+  /** The host machine. vast names it from the first poll, before the host has
+   *  acknowledged the instance (actual_status stays absent until it does). */
+  machineId: number | null;
+  geolocation: string | null;
+  /** The image reference the instance runs. */
+  image: string | null;
 }
 
 export class VastError extends Error {
@@ -274,6 +280,9 @@ function toInstance(i: any): VastInstance {
     startedAt: i.start_date ? Math.floor(i.start_date) : null,
     sshHost: i.ssh_host ?? null,
     sshPort: i.ssh_port ?? null,
+    machineId: Number.isInteger(i.machine_id) ? i.machine_id : null,
+    geolocation: typeof i.geolocation === 'string' && i.geolocation ? i.geolocation : null,
+    image: typeof i.image_uuid === 'string' && i.image_uuid ? i.image_uuid : null,
   };
 }
 

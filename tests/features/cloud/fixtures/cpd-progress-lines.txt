@@ -1,0 +1,8 @@
+CP phase=downloading steps=8/8 models=1/2 bytes=1171367928/7166530678 rate=101000306 t=18
+CP phase=downloading steps=8/8 models=1/2 bytes=1407084536/7166530678 rate=114157513 t=21
+CP phase=downloading steps=8/8 models=1/2 bytes=1628563448/7166530678 rate=115437511 t=23
+CP phase=downloading steps=8/8 models=1/2 bytes=1861724152/7166530678 rate=115271771 t=25
+CP phase=downloading steps=8/8 models=1/2 bytes=2088134648/7166530678 rate=113846417 t=27
+CP phase=downloading steps=8/8 models=1/2 bytes=2296124534/7166530678 rate=112262177 t=29
+CP phase=downloading steps=8/8 models=1/2 bytes=2518176886/7166530678 rate=110771564 t=31
+CP phase=downloading steps=8/8 models=1/2 bytes=2752975990/7166530678 rate=111848847 t=34

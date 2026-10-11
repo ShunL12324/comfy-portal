@@ -1,0 +1,113 @@
+{
+  "source": "test/vast-timeline.sh, image sha-44dfa01, 2026-10-11",
+  "host": {
+    "gpu": "RTX 3060",
+    "location": "Utah, US",
+    "inetDownMbps": 5481.5
+  },
+  "note": "status_msg as the app sees it (control characters removed); consecutive duplicates dropped; t is ms since the instance was created",
+  "samples": [
+    {
+      "t": 2381,
+      "actualStatus": null,
+      "statusMsg": "",
+      "portsPublished": false
+    },
+    {
+      "t": 34753,
+      "actualStatus": "loading",
+      "statusMsg": "91c5c8c49e44: Verifying Checksum\n91c5c8c49e44: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 37434,
+      "actualStatus": "loading",
+      "statusMsg": "ce2970b16a29: Verifying Checksum\nce2970b16a29: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 42802,
+      "actualStatus": "loading",
+      "statusMsg": "ce2970b16a29: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 53512,
+      "actualStatus": "loading",
+      "statusMsg": "96527c57ab41: Verifying Checksum\n96527c57ab41: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 58858,
+      "actualStatus": "loading",
+      "statusMsg": "81556f260922: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 64174,
+      "actualStatus": "loading",
+      "statusMsg": "96527c57ab41: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 69479,
+      "actualStatus": "loading",
+      "statusMsg": "ab04618ee625: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 72141,
+      "actualStatus": "loading",
+      "statusMsg": "b9308ac5411d: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 77420,
+      "actualStatus": "loading",
+      "statusMsg": "7422939f9feb: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 93373,
+      "actualStatus": "loading",
+      "statusMsg": "c113229542bd: Verifying Checksum\nc113229542bd: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 98745,
+      "actualStatus": "loading",
+      "statusMsg": "46b3fd1ea4bc: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 104478,
+      "actualStatus": "loading",
+      "statusMsg": "7422939f9feb: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 113139,
+      "actualStatus": "loading",
+      "statusMsg": "#0 building with \"default\" instance using docker driver\n\n#1 [internal] load build definition from ghcr.io_shunl12324_comfy-portal-cloud-server_sha-44dfa01\n#1 transferring dockerfile: 2.19kB done\n#1 DONE 0.1s\n\n#2 [internal] load metadata for ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n",
+      "portsPublished": false
+    },
+    {
+      "t": 118525,
+      "actualStatus": "loading",
+      "statusMsg": "#6 2.522 Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [4757 kB]\n",
+      "portsPublished": false
+    },
+    {
+      "t": 124346,
+      "actualStatus": "loading",
+      "statusMsg": "\n#9 [6/6] RUN echo 'PS1=\"\\[\\e]0;\\u@$VAST_CONTAINERLABEL: \\w\\a\\]\\[\\e[01;34m\\]\\u\\[\\e[m\\e[01m\\]@\\[\\e[01;36m\\]$VAST_CONTAINERLABEL\\[\\e[m\\e[01m\\]:\\[\\e[01;37m\\]\\w\\$\\[\\e[m\\] \" ; if [ ! -e \"$HOME/.no_auto_tmux\" ] && [[ -z \"$TMUX\" ]] && [ \"$SSH_CONNECTION\" != \"\" ] && [ \"$TMUX_STARTED\" = \"\" ]; then tmux attach-session -t ssh_tmux || tmux new-session -s ssh_tmux; exit; elif ! [[ -z \"$TMUX\" ]]; then echo '\"'\"'Welcome to your vast.ai container! This session is running in `tmux`.'\"'\"'; echo '\"'\"'To disconnect without closing your processes, press ctrl+b, release, then d.'\"'\"'; echo '\"'\"'To disable auto-tmux, run `touch ~/.no_auto_tmux` and reconnect. See also https://tmuxcheatsheet.com/'\"'\"'; fi; ' >> ~/.bashrc\n",
+      "portsPublished": false
+    },
+    {
+      "t": 129637,
+      "actualStatus": "running",
+      "statusMsg": "success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-44dfa01/ssh",
+      "portsPublished": true
+    }
+  ]
+}

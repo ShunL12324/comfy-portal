@@ -1,0 +1,137 @@
+{
+  "source": "test/vast-timeline.sh, image sha-44dfa01, 2026-10-11",
+  "host": {
+    "gpu": "RTX 3060",
+    "location": "Poland, PL",
+    "inetDownMbps": 899.0
+  },
+  "note": "status_msg as the app sees it (control characters removed); consecutive duplicates dropped; t is ms since the instance was created",
+  "samples": [
+    {
+      "t": 2220,
+      "actualStatus": null,
+      "statusMsg": "",
+      "portsPublished": false
+    },
+    {
+      "t": 10341,
+      "actualStatus": "loading",
+      "statusMsg": "sha-44dfa01: Pulling from shunl12324/comfy-portal-cloud-server\n",
+      "portsPublished": false
+    },
+    {
+      "t": 15928,
+      "actualStatus": "loading",
+      "statusMsg": "8b79ec3555de: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 26827,
+      "actualStatus": "loading",
+      "statusMsg": "ce2970b16a29: Verifying Checksum\nce2970b16a29: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 39897,
+      "actualStatus": "loading",
+      "statusMsg": "ce2970b16a29: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 50507,
+      "actualStatus": "loading",
+      "statusMsg": "c0e84dcfb319: Verifying Checksum\nc0e84dcfb319: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 60974,
+      "actualStatus": "loading",
+      "statusMsg": "96527c57ab41: Verifying Checksum\n96527c57ab41: ",
+      "portsPublished": false
+    },
+    {
+      "t": 71545,
+      "actualStatus": "loading",
+      "statusMsg": "81556f260922: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 82293,
+      "actualStatus": "loading",
+      "statusMsg": "b9308ac5411d: Verifying Checksum\nb9308ac5411d: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 92978,
+      "actualStatus": "loading",
+      "statusMsg": "df65e8722117: Verifying Checksum\n",
+      "portsPublished": false
+    },
+    {
+      "t": 100951,
+      "actualStatus": "loading",
+      "statusMsg": "7422939f9feb: Verifying Checksum\n7422939f9feb: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 106330,
+      "actualStatus": "loading",
+      "statusMsg": "b9308ac5411d: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 112126,
+      "actualStatus": "loading",
+      "statusMsg": "46b3fd1ea4bc: Verifying Checksum\n46b3fd1ea4bc: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 120469,
+      "actualStatus": "loading",
+      "statusMsg": "c113229542bd: Download complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 131045,
+      "actualStatus": "loading",
+      "statusMsg": "2bbc08362155: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 141893,
+      "actualStatus": "loading",
+      "statusMsg": "46b3fd1ea4bc: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 147155,
+      "actualStatus": "loading",
+      "statusMsg": "df65e8722117: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 149759,
+      "actualStatus": "loading",
+      "statusMsg": "7422939f9feb: Pull complete\n",
+      "portsPublished": false
+    },
+    {
+      "t": 165689,
+      "actualStatus": "loading",
+      "statusMsg": "#6 2.980 Fetched 52.1 MB in 3s (18.7 MB/s)\n#6 2.980 Reading package lists...",
+      "portsPublished": false
+    },
+    {
+      "t": 170961,
+      "actualStatus": "loading",
+      "statusMsg": "Successfully loaded ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01",
+      "portsPublished": false
+    },
+    {
+      "t": 176651,
+      "actualStatus": "running",
+      "statusMsg": "success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-44dfa01/ssh",
+      "portsPublished": true
+    }
+  ]
+}

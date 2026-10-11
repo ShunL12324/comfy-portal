@@ -1,0 +1,47 @@
+{
+  "source": "test/vast-timeline.sh, image sha-bbbf00f on a host that had most of its layers, 2026-10-11",
+  "host": {
+    "gpu": "RTX 3060 Ti",
+    "location": "Norway, NO",
+    "inetDownMbps": 8859.5
+  },
+  "note": "status_msg as the app sees it (control characters removed); consecutive duplicates dropped; t is ms since the instance was created",
+  "samples": [
+    {
+      "t": 2543,
+      "actualStatus": null,
+      "statusMsg": "",
+      "portsPublished": false
+    },
+    {
+      "t": 10496,
+      "actualStatus": "loading",
+      "statusMsg": "",
+      "portsPublished": false
+    },
+    {
+      "t": 13420,
+      "actualStatus": "loading",
+      "statusMsg": "#0 building with \"default\" instance using docker driver\n\n#1 [internal] load build definition from ghcr.io_shunl12324_comfy-portal-cloud-server_sha-bbbf00f\n",
+      "portsPublished": false
+    },
+    {
+      "t": 20477,
+      "actualStatus": "loading",
+      "statusMsg": "\n",
+      "portsPublished": false
+    },
+    {
+      "t": 23224,
+      "actualStatus": "loading",
+      "statusMsg": "Successfully loaded ghcr.io/shunl12324/comfy-portal-cloud-server:sha-bbbf00f",
+      "portsPublished": false
+    },
+    {
+      "t": 28510,
+      "actualStatus": "running",
+      "statusMsg": "success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-bbbf00f/ssh",
+      "portsPublished": true
+    }
+  ]
+}

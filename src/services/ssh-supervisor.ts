@@ -1,6 +1,6 @@
 import SSHClient from '@dylankenneally/react-native-ssh-sftp';
 
-import { SupervisorError, SUPERVISOR_PORT, type SupervisorSnapshot } from './cloud-supervisor';
+import { normalizeSnapshot, SupervisorError, SUPERVISOR_PORT, type SupervisorSnapshot } from './cloud-supervisor';
 import { ensureSshKeyPair } from './ssh-keys';
 
 /**
@@ -99,8 +99,20 @@ async function curlJson<T>(
   }
 }
 
-export function getStatus(target: SshSupervisorTarget) {
-  return curlJson<SupervisorSnapshot>(target, '/v1/status');
+/** One SSH round trip: /v2/snapshot, or /v1/status from a supervisor that predates it. */
+export async function getStatus(target: SshSupervisorTarget): Promise<SupervisorSnapshot> {
+  const auth = `-H ${shellQuote(`Authorization: Bearer ${target.token}`)}`;
+  const url = (path: string) => shellQuote(`http://127.0.0.1:${SUPERVISOR_PORT}${path}`);
+  const output = await exec(
+    target,
+    `curl -fsS -m 10 ${auth} ${url('/v2/snapshot')} 2>/dev/null || curl -fsS -m 10 ${auth} ${url('/v1/status')}`,
+  );
+  if (!output) throw new SupervisorError('Unreachable');
+  try {
+    return normalizeSnapshot(JSON.parse(output));
+  } catch {
+    throw new SupervisorError('Supervisor returned an unexpected response.');
+  }
 }
 
 /** Whether the supervisor process itself is answering — not just SSH. Stays

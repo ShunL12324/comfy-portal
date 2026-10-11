@@ -4,9 +4,7 @@ import { AppState } from 'react-native';
 import { useCloudCredentialsStore } from '../stores/credentials-store';
 import { useProvisioningStore } from '../stores/provisioning-store';
 import { advanceLaunch } from '../services/provision';
-
-/** Slow enough not to hammer a phone's radio, fast enough to feel live. */
-const INTERVAL_MS = 4_000;
+import { pollInterval } from '../utils/launch-steps';
 
 /**
  * Drives every unfinished launch forward.
@@ -25,6 +23,7 @@ export function useLaunchPoller() {
     if (!hydrated) return;
 
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     const tick = async () => {
       // Polling while suspended is pointless — iOS freezes the timer anyway,
@@ -53,15 +52,26 @@ export function useLaunchPoller() {
       }
     };
 
-    void tick();
-    const timer = setInterval(tick, INTERVAL_MS);
+    // Every 2 s until each launch's supervisor answers, when vast's status is
+    // all there is and each change is a step; then every 4 s, slow enough not
+    // to hammer a phone's radio. Rescheduled after each tick, so the cadence
+    // follows the stage. Counted from the start of a tick, so a slow round
+    // trip does not stretch the cadence.
+    const run = async () => {
+      const startedAt = Date.now();
+      await tick();
+      if (cancelled) return;
+      const wait = pollInterval(useProvisioningStore.getState().active()) - (Date.now() - startedAt);
+      timer = setTimeout(run, Math.max(500, wait));
+    };
+    void run();
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') void tick();
     });
 
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      clearTimeout(timer);
       subscription.remove();
     };
   }, [hydrated]);

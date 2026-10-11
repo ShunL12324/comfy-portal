@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import type { LaunchRecord } from '../stores/provisioning-store';
 import { formatRentalCost } from '../utils/cost';
+import { openingSteps } from '../utils/launch-steps';
+import { pullProgress } from '../utils/pull-progress';
 
 const steps: Record<string, string> = {
   'link-directories': 'Preparing folders',
@@ -17,8 +19,16 @@ export function launchStatusLine(launch: LaunchRecord): string {
   if (launch.stage === 'failed')
     return `Setup failed · ${launch.error || launch.snapshot?.error?.message || 'Tap to review'}`;
   if (launch.stage === 'ready') return 'Setup complete · Preparing connection';
-  if (launch.stage === 'placing') return 'Building · Finding a host';
-  if (launch.stage === 'booting') return 'Building · Starting the machine';
+  if (launch.stage === 'placing' || launch.stage === 'booting') {
+    const current = openingSteps(launch).find((step) => step.state === 'running')?.id;
+    if (current === 'host') return 'Building · Waiting for the host';
+    if (current === 'image') {
+      const { layersDone, layersTotal } = pullProgress(launch.pull, launch.imageLayers);
+      return `Building · Downloading the runtime${layersTotal ? ` (${layersDone}/${layersTotal} layers)` : ''}`;
+    }
+    if (current === 'container') return 'Building · Starting the container';
+    return 'Building · Starting the supervisor';
+  }
   const snapshot = launch.snapshot;
   if (snapshot?.stalled) return 'Building · Download stalled — tap to review';
   const step = snapshot?.steps.find((entry) => entry.state === 'running');

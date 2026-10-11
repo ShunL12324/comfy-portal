@@ -15,6 +15,8 @@ import { SUPERVISOR_PORT } from '@/services/cloud-supervisor';
 import { saveWorkflowToServer } from '@/services/comfy-api';
 import { ensureSshKeyPair, isSshKeyRegistered, markSshKeyRegistered } from '@/services/ssh-keys';
 import { getStatus, isReachable } from '@/services/ssh-supervisor';
+import { fetchImageLayers } from '@/services/image-manifest';
+import { accumulatePull, readStatusMessage } from '../utils/pull-progress';
 import { createInstance, ONSTART_LIMIT, registerSshKey } from '@/services/vast';
 import { generateUUID } from '@/utils/uuid';
 
@@ -24,6 +26,7 @@ import {
   provisioningStorage,
   waitForProvisioning,
   launchKey,
+  type LaunchMarks,
   type LaunchRecord,
 } from '../stores/provisioning-store';
 import { MIN_DISK_GB, type Environment, type HardwareSelection } from '../types';
@@ -243,6 +246,7 @@ async function commitLaunchRequest(request: LaunchRequest): Promise<string> {
       priceScope: request.receipt.pricePerHour == null ? request.hardware.priceScope : 'instance',
       startedAt: request.requestedAt,
       stage: 'placing',
+      marks: { orderedAt: Date.now() },
     });
   }
   await provisioningStorage.flush();
@@ -379,24 +383,43 @@ async function performAdvanceLaunch(instanceId: string | number, credentials: Cl
     store.update(instanceId, { pricePerHour: instance.pricePerHour, priceScope: 'instance' });
   }
   const comfyPort = instance.ports[String(COMFY_PORT)];
+  const published = !!(instance.host && comfyPort && instance.sshHost && instance.sshPort);
+
+  // Until the supervisor answers, each step is read off vast's instance.
+  const now = Date.now();
+  const current = store.get(instanceId) ?? record;
+  const marks: LaunchMarks = { ...current.marks };
+  const status = instance.statusMessage;
+  const providerStatus = published ? status : status || instance.status;
+  if (providerStatus !== current.providerStatus || marks.statusChangedAt === undefined) marks.statusChangedAt = now;
+  const pull = accumulatePull(current.pull, readStatusMessage(status));
+  if (instance.status !== 'pending' || status || published) marks.hostAt ??= now;
+  if (pull.finished || instance.status === 'running' || published) marks.pulledAt ??= now;
+  if (published) marks.runningAt ??= now;
+  const opening = { marks, pull, machine: instance.machine ?? current.machine };
+  if (record.provider === 'vast' && current.imageLayers === undefined && !published) {
+    loadImageLayers(record.id, instance.image ?? imageFor(record.environmentSnapshot));
+  }
 
   // Nothing on the instance exists yet — no supervisor to ask, so vast's own
   // words are the only honest thing to show.
-  if (!instance.host || !comfyPort || !instance.sshHost || !instance.sshPort) {
+  if (!published) {
     store.update(instanceId, {
+      ...opening,
       stage: 'placing',
-      providerStatus: instance.statusMessage || instance.status,
+      providerStatus,
     });
     return;
   }
 
-  const target = { sshHost: instance.sshHost, sshPort: instance.sshPort, token: record.token };
+  const target = { sshHost: instance.sshHost!, sshPort: instance.sshPort!, token: record.token };
   store.update(instanceId, {
+    ...opening,
     host: instance.host,
     comfyPort,
     sshHost: instance.sshHost,
     sshPort: instance.sshPort,
-    providerStatus: instance.statusMessage,
+    providerStatus,
   });
 
   const reachable = await isReachable(target);
@@ -410,7 +433,13 @@ async function performAdvanceLaunch(instanceId: string | number, credentials: Cl
 
   const snapshot = await getStatus(target);
   if (cancelled()) return;
-  store.update(instanceId, { stage: 'installing', snapshot });
+  const answeredAt = Date.now();
+  store.update(instanceId, {
+    stage: 'installing',
+    snapshot,
+    snapshotAt: answeredAt,
+    marks: { ...store.get(instanceId)?.marks, supervisorAt: store.get(instanceId)?.marks?.supervisorAt ?? answeredAt },
+  });
 
   if (snapshot.phase === 'failed') {
     store.update(instanceId, {
@@ -423,8 +452,8 @@ async function performAdvanceLaunch(instanceId: string | number, credentials: Cl
   if (snapshot.phase !== 'ready' || !comfyPort) return;
 
   if (store.get(instanceId)?.token !== record.token) return;
-  const serverId = registerServer(store.get(instanceId)!, instance.host, comfyPort);
-  store.update(instanceId, { serverId, snapshot });
+  const serverId = registerServer(store.get(instanceId)!, instance.host!, comfyPort);
+  store.update(instanceId, { serverId, snapshot, snapshotAt: answeredAt });
 
   const recipe = record.environmentSnapshot;
   if (recipe?.workflows.length) {
@@ -432,6 +461,27 @@ async function performAdvanceLaunch(instanceId: string | number, credentials: Cl
   }
   if (cancelled()) return;
   store.update(instanceId, { stage: 'ready' });
+}
+
+const loadingLayers = new Set<string>();
+const layerAttempts = new Map<string, number>();
+
+/**
+ * The image's layer sizes, once per launch and off the poll's path: a slow
+ * registry must not hold up the next status. Three failures and the pull is
+ * shown without totals.
+ */
+function loadImageLayers(id: string, image: string) {
+  if (loadingLayers.has(id)) return;
+  loadingLayers.add(id);
+  fetchImageLayers(image)
+    .then((layers) => useProvisioningStore.getState().update(id, { imageLayers: layers ?? null }))
+    .catch(() => {
+      const attempts = (layerAttempts.get(id) ?? 0) + 1;
+      layerAttempts.set(id, attempts);
+      if (attempts >= 3) useProvisioningStore.getState().update(id, { imageLayers: null });
+    })
+    .finally(() => loadingLayers.delete(id));
 }
 
 /** Screen visits and the recovery loop must not register the same server twice. */

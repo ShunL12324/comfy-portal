@@ -2,7 +2,13 @@ import { supportsRunPod } from '@/features/cloud/services/runtime';
 import { useLaunchRequestStore, launchRequestStorage } from '@/features/cloud/stores/launch-request-store';
 import { createRunPodInstance, listRunPodInstances } from '@/services/runpod';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
-import { getStatus } from '@/services/ssh-supervisor';
+import { getStatus, isReachable } from '@/services/ssh-supervisor';
+import { fetchImageLayers } from '@/services/image-manifest';
+import manifest from '../fixtures/ghcr-manifest-sha-44dfa01.json';
+import typical from '../fixtures/vast-timeline-typical.json';
+import fast from '../fixtures/vast-timeline-fast.json';
+import cached from '../fixtures/vast-timeline-cached.json';
+import cachedFast from '../fixtures/vast-timeline-cached-fast.json';
 import { createInstance, getInstance, listInstances } from '@/services/vast';
 import { useProvisioningStore } from '@/features/cloud/stores/provisioning-store';
 import type { Environment, HardwareSelection } from '@/features/cloud/types';
@@ -47,7 +53,10 @@ jest.mock('@/services/ssh-supervisor', () => ({
   isReachable: jest.fn().mockResolvedValue(true),
   getStatus: jest.fn(),
 }));
-jest.mock('@/features/cloud/services/runtime', () => ({ supportsRunPod: jest.fn().mockReturnValue(true), imageFor: () => 'test-runtime' }));
+jest.mock('@/features/cloud/services/runtime', () => ({
+  supportsRunPod: jest.fn().mockReturnValue(true),
+  imageFor: () => 'test-runtime',
+}));
 jest.mock('@/services/runpod', () => ({
   createRunPodInstance: jest.fn(),
   listRunPodInstances: jest.fn(),
@@ -83,6 +92,7 @@ jest.mock('@/services/vast', () => ({
   registerSshKey: jest.fn(),
 }));
 jest.mock('@/utils/uuid', () => ({ generateUUID: () => 'test-token' }));
+jest.mock('@/services/image-manifest', () => ({ fetchImageLayers: jest.fn() }));
 
 const hardware = (diskGb = 80): HardwareSelection => ({
   provider: 'vast',
@@ -282,4 +292,116 @@ test('clearing an absent order flushes its removal after checking inventory', as
   expect(listInstances).toHaveBeenCalledWith('test-only');
   expect(useLaunchRequestStore.getState().requests).toHaveLength(0);
   expect(launchRequestStorage.flush).toHaveBeenCalled();
+});
+
+test("each opening step is marked as vast's instance moves through it", async () => {
+  (fetchImageLayers as jest.Mock).mockResolvedValue(manifest.layers);
+  const clock = jest.spyOn(Date, 'now');
+  let now = 1_000_000;
+  clock.mockImplementation(() => now);
+  await createLaunch({ environment: environment(), hardware: hardware(), credentials });
+  const record = () => useProvisioningStore.getState().get(123)!;
+  const poll = async (instance: object, at: number) => {
+    now = at;
+    (getInstance as jest.Mock).mockResolvedValueOnce({
+      status: 'pending',
+      statusMessage: '',
+      publicIp: '91.150.160.38',
+      ports: {},
+      sshHost: 'ssh8.vast.ai',
+      sshPort: 38462,
+      machineId: 18023,
+      geolocation: 'Poland, PL',
+      image: 'ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01',
+      ...instance,
+    });
+    await advanceLaunch(123, credentials);
+  };
+  try {
+    // Statuses from a real launch (tests/features/cloud/fixtures/vast-timeline-typical.json).
+    await poll({}, 1_002_000);
+    expect(record()).toMatchObject({ stage: 'placing', machine: 'Machine 18023 · Poland, PL' });
+    expect(record().marks).toEqual({ orderedAt: 1_000_000, statusChangedAt: 1_002_000 });
+    expect(fetchImageLayers).toHaveBeenCalledWith('ghcr.io/shunl12324/comfy-portal-cloud-server:sha-44dfa01');
+
+    await poll(
+      { status: 'loading', statusMessage: 'sha-44dfa01: Pulling from shunl12324/comfy-portal-cloud-server' },
+      1_010_000,
+    );
+    expect(record().marks).toMatchObject({ hostAt: 1_010_000, statusChangedAt: 1_010_000 });
+    expect(record().imageLayers).toHaveLength(26);
+
+    await poll({ status: 'loading', statusMessage: 'ce2970b16a29: Pull complete' }, 1_040_000);
+    await poll({ status: 'loading', statusMessage: 'ce2970b16a29: Pull complete' }, 1_042_000);
+    expect(record().pull?.layers).toEqual({ ce2970b16a29: 'extracted' });
+    expect(record().marks?.statusChangedAt).toBe(1_040_000);
+    expect(record().marks?.pulledAt).toBeUndefined();
+
+    await poll({ status: 'loading', statusMessage: '#6 2.980 Reading package lists...' }, 1_166_000);
+    expect(record().marks?.pulledAt).toBe(1_166_000);
+    expect(record().stage).toBe('placing');
+
+    (isReachable as jest.Mock).mockResolvedValueOnce(false);
+    const running = {
+      status: 'running',
+      statusMessage: 'success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-44dfa01/ssh',
+      ports: { '8188': 11771, '8189': 11765, '22': 11775 },
+    };
+    await poll(running, 1_177_000);
+    expect(record()).toMatchObject({ stage: 'booting', marks: { runningAt: 1_177_000 } });
+    expect(record().marks?.supervisorAt).toBeUndefined();
+
+    (getStatus as jest.Mock).mockResolvedValueOnce({ phase: 'downloading', steps: [], models: [] });
+    await poll(running, 1_181_000);
+    expect(record()).toMatchObject({ stage: 'installing', snapshotAt: 1_181_000, marks: { supervisorAt: 1_181_000 } });
+    expect(record().marks).toMatchObject({ orderedAt: 1_000_000, hostAt: 1_010_000, pulledAt: 1_166_000 });
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+type Timeline = { samples: { t: number; actualStatus: string | null; statusMsg: string; portsPublished: boolean }[] };
+
+describe.each([
+  ['typical host, nothing cached', typical],
+  ['fast host, nothing cached', fast],
+  ['host with most layers cached', cached],
+  ['fast host with most layers cached', cachedFast],
+])('replaying a recorded launch: %s', (_name, timeline: Timeline) => {
+  test('the opening steps are marked in order, and never go back', async () => {
+    (fetchImageLayers as jest.Mock).mockResolvedValue(manifest.layers);
+    (isReachable as jest.Mock).mockResolvedValue(false);
+    const clock = jest.spyOn(Date, 'now');
+    let now = 0;
+    clock.mockImplementation(() => now);
+    try {
+      await createLaunch({ environment: environment(), hardware: hardware(), credentials });
+      const order = ['orderedAt', 'hostAt', 'pulledAt', 'runningAt'] as const;
+      let reached = 1;
+      for (const sample of timeline.samples) {
+        now = sample.t;
+        (getInstance as jest.Mock).mockResolvedValueOnce({
+          status: sample.actualStatus ?? 'pending',
+          statusMessage: sample.statusMsg.trim(),
+          publicIp: '91.150.160.38',
+          ports: sample.portsPublished ? { '8188': 11771, '8189': 11765, '22': 11775 } : {},
+          sshHost: 'ssh8.vast.ai',
+          sshPort: 38462,
+          machineId: 18023,
+        });
+        await advanceLaunch(123, credentials);
+        const marks = useProvisioningStore.getState().get(123)!.marks!;
+        const count = order.filter((key) => marks[key] !== undefined).length;
+        expect(count).toBeGreaterThanOrEqual(reached);
+        expect(order.slice(0, count).every((key) => marks[key] !== undefined)).toBe(true);
+        reached = count;
+      }
+      const { stage, marks } = useProvisioningStore.getState().get(123)!;
+      expect(stage).toBe('booting');
+      expect(marks!.hostAt!).toBeLessThanOrEqual(marks!.pulledAt!);
+      expect(marks!.pulledAt!).toBeLessThanOrEqual(marks!.runningAt!);
+    } finally {
+      clock.mockRestore();
+    }
+  });
 });

@@ -1,0 +1,41 @@
+{
+  "source": "test/vast-timeline.sh, image sha-bbbf00f on a host that had most of its layers, 2026-10-11",
+  "host": {
+    "gpu": "RTX 3060",
+    "location": "Poland, PL",
+    "inetDownMbps": 899.0
+  },
+  "note": "status_msg as the app sees it (control characters removed); consecutive duplicates dropped; t is ms since the instance was created",
+  "samples": [
+    {
+      "t": 2262,
+      "actualStatus": null,
+      "statusMsg": "",
+      "portsPublished": false
+    },
+    {
+      "t": 15605,
+      "actualStatus": "loading",
+      "statusMsg": "sha-bbbf00f: Pulling from shunl12324/comfy-portal-cloud-server\n",
+      "portsPublished": false
+    },
+    {
+      "t": 21142,
+      "actualStatus": "loading",
+      "statusMsg": "\n",
+      "portsPublished": false
+    },
+    {
+      "t": 27075,
+      "actualStatus": "loading",
+      "statusMsg": "success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-bbbf00f/ssh",
+      "portsPublished": false
+    },
+    {
+      "t": 32395,
+      "actualStatus": "running",
+      "statusMsg": "success, running ghcr.io/shunl12324/comfy-portal-cloud-server_sha-bbbf00f/ssh",
+      "portsPublished": true
+    }
+  ]
+}
