@@ -126,7 +126,19 @@ export async function verifyApiKey(apiKey: string): Promise<{ email?: string; ba
  * so a key added once a box is already running never reaches it.
  */
 export async function registerSshKey(apiKey: string, publicKeyOpenSsh: string): Promise<void> {
-  await request(apiKey, '/ssh/', { method: 'POST', body: { ssh_key: publicKeyOpenSsh } });
+  try {
+    await request(apiKey, '/ssh/', { method: 'POST', body: { ssh_key: publicKeyOpenSsh } });
+  } catch (error) {
+    // The key is already on the account: what we wanted. The device only forgets
+    // that it registered it (a reinstall clears the flag), not the account.
+    if (isKeyAlreadyRegistered(error)) return;
+    throw error;
+  }
+}
+
+/** vast answers a duplicate key with 400 "the ssh key already exists on this account". */
+export function isKeyAlreadyRegistered(error: unknown): boolean {
+  return error instanceof VastError && error.status === 400 && /already exists/i.test(error.message);
 }
 
 const EU_COUNTRY_HINTS = [
