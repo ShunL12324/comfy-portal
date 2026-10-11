@@ -1,7 +1,8 @@
 import { FilterChips } from '@/components/ui/design-system/filter-chips';
 import { supportsRunPod } from '@/features/cloud/services/runtime';
 import { AppBar } from '@/components/layout/app-bar';
-import { Action, Copy, Field, Panel, Row, Stepper, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Copy, Field, Panel, Row, useDesign } from '@/components/ui/design-system/primitives';
+import { NumberSlider } from '@/components/self-ui/slider';
 import { Pressable } from '@/components/ui/pressable';
 import { EmptyState } from '@/components/self-ui/empty-state';
 import { RefreshScrollView } from '@/components/ui/design-system/pull-refresh';
@@ -61,6 +62,8 @@ function LaunchFlow({ environment }: { environment: Environment }) {
   const requestId = useRef(0);
   const submitting = useRef(false);
   const minimumDisk = diskPlan.minGb;
+  // Room to spare above the suggestion, on a range short enough to drag with a thumb.
+  const maximumDisk = Math.max(1000, Math.ceil((diskPlan.defaultGb * 2) / 100) * 100);
   const { hydrated, vastApiKey, runpodApiKey } = credentials;
   const load = useCallback(() => {
     const id = ++requestId.current;
@@ -379,26 +382,22 @@ function LaunchFlow({ environment }: { environment: Environment }) {
           }}
         >
           <View style={{ gap: t.layout.label }}>
-            <Row style={{ gap: t.layout.related }}>
-              <Copy size="label" style={{ flex: 1 }}>
-                {runpodDisk ? 'Volume disk · GB' : 'Disk · GB'}
-              </Copy>
-              <View style={{ flex: 1 }}>
-                <Stepper
-                  label="Disk capacity in GB"
-                  value={disk}
-                  min={minimumDisk}
-                  max={10000}
-                  step={10}
-                  onChange={(value) => {
-                    setSelected(undefined);
-                    setCatalog(EMPTY_CATALOG);
-                    setLoading(true);
-                    setDisk(value);
-                  }}
-                />
-              </View>
-            </Row>
+            <Copy size="label">{runpodDisk ? 'Volume disk · GB' : 'Disk · GB'}</Copy>
+            {/* A slider: disk size is chosen by feel against the hint below. Each change re-queries
+                offers, so only a settled value (release or ±) counts. */}
+            <NumberSlider
+              value={disk}
+              minValue={minimumDisk}
+              maxValue={maximumDisk}
+              step={10}
+              onChangeEnd={(value) => {
+                if (value === disk) return;
+                setSelected(undefined);
+                setCatalog(EMPTY_CATALOG);
+                setLoading(true);
+                setDisk(value);
+              }}
+            />
             <Copy muted size="metadata">
               {diskHint(diskPlan)}
               {runpodDisk ? ' 20 GB container disk · volume storage is billed separately.' : ''}
