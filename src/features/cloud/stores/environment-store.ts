@@ -17,6 +17,9 @@ import { uniqueCopyName } from '@/features/workflow/utils/copy-name';
  */
 interface EnvironmentState {
   environments: Environment[];
+  /** Built-in example ids already added to the list, so a deleted example stays deleted. */
+  seededExamples: string[];
+  markExamplesSeeded: (ids: string[]) => void;
   addEnvironment: (template: Omit<Environment, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateEnvironment: (id: string, updates: Partial<Omit<Environment, 'id' | 'createdAt'>>) => void;
   removeEnvironment: (id: string) => void;
@@ -28,6 +31,9 @@ export const useEnvironmentStore = create<EnvironmentState>()(
   persist(
     (set, get) => ({
       environments: [],
+      seededExamples: [],
+      markExamplesSeeded: (ids) =>
+        set((state) => ({ seededExamples: Array.from(new Set([...state.seededExamples, ...ids])) })),
 
       addEnvironment: (template) => {
         const now = new Date().toISOString();

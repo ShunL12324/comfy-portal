@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { BUILT_IN_ENVIRONMENTS, copyBuiltInEnvironment, getBuiltInEnvironment } from '@/features/cloud/built-in';
+import { BUILT_IN_ENVIRONMENTS, getBuiltInEnvironment, seedBuiltInEnvironments } from '@/features/cloud/built-in';
 import type { ApiWorkflow, BuiltInEnvironmentSource } from '@/features/cloud/built-in/define';
 import { minimaxH3VideoTurbo } from '@/features/cloud/built-in/minimax-h3-video-turbo';
 import { qwenImage21 } from '@/features/cloud/built-in/qwen-image-2-1';
@@ -193,26 +193,26 @@ test('built-in ids are unique, readable and never look like a stored environment
   expect(getBuiltInEnvironment('not-an-example')).toBeUndefined();
 });
 
-test('using an example adds an independent copy and leaves the built-in untouched', () => {
+test("examples join the user's list once, tagged, as ordinary editable environments", () => {
+  useEnvironmentStore.setState({ environments: [], seededExamples: [] });
   const example = BUILT_IN_ENVIRONMENTS[0];
   const before = JSON.stringify(example);
-  const id = copyBuiltInEnvironment(example);
-  const copy = useEnvironmentStore.getState().getEnvironment(id)!;
+  seedBuiltInEnvironments();
+  const added = useEnvironmentStore.getState().environments;
+  expect(added.map((item) => item.name)).toEqual(
+    BUILT_IN_ENVIRONMENTS.map((item) => `${item.environment.name} · Example`),
+  );
+  const copy = added[0];
   expect(copy.id).not.toBe(example.id);
-  expect(copy.name).toBe(example.environment.name);
   expect(copy.models).toEqual(example.environment.models);
   expect(copy.workflows).toEqual(example.environment.workflows);
   expect(copy.models).not.toBe(example.environment.models);
 
-  useEnvironmentStore.getState().updateEnvironment(id, { name: 'Mine', models: [] });
-  const second = copyBuiltInEnvironment(example);
-  expect(useEnvironmentStore.getState().getEnvironment(second)!.name).toBe(example.environment.name);
-  expect(copyBuiltInEnvironment(example)).not.toBe(second);
-  expect(useEnvironmentStore.getState().environments.map((item) => item.name)).toEqual([
-    'Mine',
-    example.environment.name,
-    `${example.environment.name} copy`,
-  ]);
+  // Edited and deleted examples stay that way: seeding again adds nothing.
+  useEnvironmentStore.getState().updateEnvironment(copy.id, { name: 'Mine', models: [] });
+  useEnvironmentStore.getState().removeEnvironment(added[1].id);
+  seedBuiltInEnvironments();
+  expect(useEnvironmentStore.getState().environments.map((item) => item.name)).toEqual(['Mine']);
 
   expect(JSON.stringify(example)).toBe(before);
   expect(Object.isFrozen(example.environment.models[0])).toBe(true);

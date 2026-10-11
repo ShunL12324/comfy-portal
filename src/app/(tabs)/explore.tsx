@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
-import { Action, Copy, Field, FieldLabel, useDesign } from '@/components/ui/design-system/primitives';
+import { Action, Field, useDesign } from '@/components/ui/design-system/primitives';
 import { Sheet } from '@/components/ui/design-system/overlays';
 import { Plus } from '@/constants/icons';
 import { EmptyState } from '@/components/self-ui/empty-state';
 import { EmptyEnvironmentsArt } from '@/features/cloud/components/empty-environments-art';
-import { BUILT_IN_ENVIRONMENTS } from '@/features/cloud/built-in';
 import { EnvironmentCard } from '@/features/cloud/components/environment-card';
 import { EditEnvironmentSheet } from '@/features/cloud/components/edit-environment-sheet';
 import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
@@ -25,7 +24,6 @@ export default function EnvironmentsScreen() {
   const matches = (item: { name: string; description: string }) =>
     (item.name + ' ' + item.description).toLowerCase().includes(query.toLowerCase());
   const filtered = environments.filter(matches);
-  const examples = BUILT_IN_ENVIRONMENTS.filter((example) => matches(example.environment));
   const create = () => {
     if (!name.trim()) return;
     const id = addEnvironment({
@@ -60,7 +58,7 @@ export default function EnvironmentsScreen() {
           gap: t.layout.inset,
         }}
       >
-        {(environments.length > 0 || BUILT_IN_ENVIRONMENTS.length > 0) && (
+        {environments.length > 0 && (
           <Field
             label="Search environments"
             search
@@ -69,14 +67,12 @@ export default function EnvironmentsScreen() {
             placeholder="Search environments"
           />
         )}
-        <View style={{ flex: environments.length || BUILT_IN_ENVIRONMENTS.length ? undefined : 1, gap: t.layout.list }}>
+        <View style={{ flex: environments.length > 0 ? undefined : 1, gap: t.layout.list }}>
           {filtered.map((item) => (
             <EnvironmentCard key={item.id} environment={item} onLongPress={setEditingId} />
           ))}
           {!environments.length && !query ? (
-            // Your own list is empty. With examples below, the illustration takes its natural
-            // height instead of the whole screen, so the examples stay in view.
-            <View style={examples.length ? { paddingVertical: t.layout.section } : { flex: 1 }}>
+            <View style={{ flex: 1 }}>
               <EmptyState
                 testID="environments-empty"
                 align="center"
@@ -87,23 +83,9 @@ export default function EnvironmentsScreen() {
               </EmptyState>
             </View>
           ) : (
-            !filtered.length &&
-            !examples.length && <EmptyState title="No matching environments">Try another search.</EmptyState>
+            !filtered.length && <EmptyState title="No matching environments">Try another search.</EmptyState>
           )}
         </View>
-        {!!examples.length && (
-          <View testID="environment-examples" style={{ gap: t.layout.list, paddingTop: t.layout.related }}>
-            <View style={{ gap: t.layout.label }}>
-              <FieldLabel>Examples</FieldLabel>
-              <Copy muted size="metadata">
-                Ready-made recipes. Open one to see what it installs, then use it to get your own copy.
-              </Copy>
-            </View>
-            {examples.map((example) => (
-              <EnvironmentCard key={example.id} environment={example.environment} />
-            ))}
-          </View>
-        )}
       </ScrollView>
       <Sheet open={creating} onClose={() => setCreating(false)} title="New environment">
         <Field label="Name" value={name} onChange={setName} placeholder="Environment name" />

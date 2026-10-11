@@ -15,6 +15,7 @@ import { CLOUD_GPU_SUPPORTED, CLOUD_GPU_UNSUPPORTED_REASON } from '@/features/cl
 import { formatUsd } from '@/features/cloud/utils/cost';
 import { hardwareEmptyReason } from '@/features/cloud/utils/hardware-empty';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
 import { Gpu } from '@/constants/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -107,6 +108,18 @@ function LaunchFlow({ environment }: { environment: Environment }) {
     unavailable: catalog.unavailable,
   });
   const runpodDisk = selected?.provider === 'runpod' || provider === 'runpod';
+  // Review is a step of this screen, not a route: back (the AppBar chevron, the iOS
+  // swipe and Android's back) returns to the hardware list instead of leaving.
+  const navigation = useNavigation();
+  const leaving = useRef(false);
+  const backToHardware = () => {
+    if (!submitting.current) setStep('hardware');
+  };
+  usePreventRemove(step === 'review', ({ data }) => {
+    // Opening the new instance's setup replaces this screen; that one goes through.
+    if (leaving.current) navigation.dispatch(data.action);
+    else backToHardware();
+  });
   const rent = async () => {
     if (!selected || submitting.current || !CLOUD_GPU_SUPPORTED) return;
     submitting.current = true;
@@ -123,6 +136,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
         throw new Error('Availability or price changed. Select hardware and review again.');
       }
       const id = await createLaunch({ environment: recipe, hardware: current, credentials });
+      leaving.current = true;
       router.replace({ pathname: '/cloud/launch-status/[instanceId]', params: { instanceId: id } });
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Could not create the instance.');
@@ -132,7 +146,11 @@ function LaunchFlow({ environment }: { environment: Environment }) {
   };
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
-      <AppBar title={step === 'hardware' ? 'Choose hardware' : 'Review server'} showBack />
+      <AppBar
+        title={step === 'hardware' ? 'Choose hardware' : 'Review server'}
+        showBack
+        onBack={step === 'review' ? backToHardware : undefined}
+      />
       <View style={{ paddingHorizontal: t.layout.gutter, paddingBottom: t.layout.field, gap: t.layout.related }}>
         <Copy muted size="label">
           {recipe.name}
@@ -167,7 +185,7 @@ function LaunchFlow({ environment }: { environment: Environment }) {
           contentContainerStyle={{
             paddingHorizontal: t.layout.gutter,
             gap: t.layout.section,
-            paddingBottom: step === 'hardware' ? t.layout.inset : insets.bottom + t.layout.section,
+            paddingBottom: t.layout.inset,
           }}
         >
           {step === 'hardware' ? (
@@ -332,12 +350,6 @@ function LaunchFlow({ environment }: { environment: Environment }) {
                     ? ' Storage and other charges are additional to the displayed GPU rate.'
                     : ''}
                 </Copy>
-                <Action kind="primary" loading={launching} onPress={rent}>
-                  Create server
-                </Action>
-                <Action kind="secondary" disabled={launching} onPress={() => setStep('hardware')}>
-                  Change hardware
-                </Action>
               </>
             )
           )}
@@ -404,6 +416,21 @@ function LaunchFlow({ environment }: { environment: Environment }) {
             onPress={() => setStep('review')}
           >
             Next
+          </Action>
+        </View>
+      )}
+      {step === 'review' && selected && (
+        // Pinned like Next, so Create server stays in reach however long the recipe runs.
+        <View
+          style={{
+            paddingHorizontal: t.layout.gutter,
+            paddingTop: t.layout.related,
+            paddingBottom: Math.max(insets.bottom, t.layout.field),
+            backgroundColor: c.paper,
+          }}
+        >
+          <Action kind="primary" fill loading={launching} onPress={rent}>
+            Create server
           </Action>
         </View>
       )}

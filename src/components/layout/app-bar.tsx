@@ -12,6 +12,8 @@ interface AppBarProps {
   titleSize?: 'lg' | 'sm' | 'md' | 'xl' | '2xl' | 'xs' | '3xl' | '4xl' | '5xl';
   subtitle?: string;
   showBack?: boolean;
+  /** Replaces the default back (pop the route), e.g. to step back inside a multi-step screen. */
+  onBack?: () => void;
   centerTitle?: boolean;
   rightElement?: ReactNode;
   centerElement?: ReactNode;
@@ -26,6 +28,7 @@ export function AppBar({
   titleSize,
   subtitle,
   showBack,
+  onBack,
   centerTitle,
   rightElement,
   centerElement,
@@ -59,7 +62,7 @@ export function AppBar({
                 icon={ChevronLeft}
                 iconSize={t.icon.large}
                 label="Go back"
-                onPress={() => router.back()}
+                onPress={onBack ?? (() => router.back())}
               />
             </View>
           </View>

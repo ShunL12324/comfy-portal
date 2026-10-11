@@ -9,10 +9,7 @@
     },
     {
       "path": "src/app/(tabs)/explore.tsx",
-      "textElements": [
-        "Copy",
-        "FieldLabel"
-      ],
+      "textElements": [],
       "fontDeclarations": 0,
       "managedAt": "shared text / input / composed control"
     },

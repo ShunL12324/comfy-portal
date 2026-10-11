@@ -4,14 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppBar } from '@/components/layout/app-bar';
 import { Action, Copy, Row, useDesign } from '@/components/ui/design-system/primitives';
 import { Fact } from '@/components/ui/design-system/list-card';
-import { Box, GitBranch, Gpu, HardDrive, Puzzle, Settings2 } from '@/constants/icons';
-import { copyBuiltInEnvironment } from '@/features/cloud/built-in';
+import { Box, GitBranch, HardDrive, Puzzle, Settings2 } from '@/constants/icons';
 import { EditEnvironmentSheet } from '@/features/cloud/components/edit-environment-sheet';
-import { useEnvironmentRecipe } from '@/features/cloud/hooks/use-environment-recipe';
 import type { Environment } from '@/features/cloud/types';
-import { useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
+import { useEnvironmentStore, useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
 import { environmentSize } from '@/features/cloud/utils/environment-summary';
-import { showToast } from '@/utils/toast';
 import { Spinner } from '@/components/ui/spinner';
 import { designTokens as t, iconStroke } from '@/constants/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,13 +19,13 @@ export default function EnvironmentScreen() {
   const c = useDesign();
   const insets = useSafeAreaInsets();
   const hydrated = useEnvironmentsHydrated();
-  const { environment: current, example } = useEnvironmentRecipe(id);
+  const current = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
   // Keep the last seen recipe while the page leaves after a delete, so it never flashes "not found".
   const [lastSeen, setLastSeen] = useState<Environment | undefined>(current);
   if (current && current !== lastSeen) setLastSeen(current);
   const environment = current ?? lastSeen;
   const [editing, setEditing] = useState(false);
-  if (!hydrated && !example) return <Spinner />;
+  if (!hydrated) return <Spinner />;
   if (!environment)
     return (
       <View style={{ flex: 1, backgroundColor: c.paper }}>
@@ -59,24 +56,14 @@ export default function EnvironmentScreen() {
       icon: GitBranch,
     },
   ] as const;
-  const size = example && environmentSize(environment.models);
-  const copyExample = () => {
-    if (!example) return;
-    const copyId = copyBuiltInEnvironment(example);
-    showToast.success('Added to your environments');
-    router.replace(`/templates/${copyId}`);
-  };
+  const size = environmentSize(environment.models);
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
       <AppBar
         title={environment.name}
         titleSize="sm"
         showBack
-        rightElement={
-          example ? undefined : (
-            <Action kind="text" icon={Settings2} label="Edit environment" onPress={() => setEditing(true)} />
-          )
-        }
+        rightElement={<Action kind="text" icon={Settings2} label="Edit environment" onPress={() => setEditing(true)} />}
       />
       <ScrollView
         testID="environment-content"
@@ -88,10 +75,9 @@ export default function EnvironmentScreen() {
         }}
       >
         {!!environment.description && <Copy muted>{environment.description}</Copy>}
-        {example && (
+        {size && (
           <Row style={{ gap: t.layout.related, flexWrap: 'wrap' }}>
-            {size && <Fact badge icon={HardDrive} mono={size.mono} value={size.text} label="download" />}
-            <Fact badge icon={Gpu} value={`${example.gpuMemoryGb} GB`} label="GPU memory" />
+            <Fact badge icon={HardDrive} mono={size.mono} value={size.text} label="download" />
           </Row>
         )}
         {resources.map(({ key, title, detail, count, icon: Icon }) => (
@@ -140,9 +126,7 @@ export default function EnvironmentScreen() {
           </Pressable>
         ))}
         <Copy muted size="metadata">
-          {example
-            ? `Built-in example, read-only. Needs ComfyUI ${example.minComfyUI} or later. Use it to get your own copy to edit and launch.`
-            : 'Changes apply to future builds. Running servers stay unchanged.'}
+          Changes apply to future builds. Running servers stay unchanged.
         </Copy>
       </ScrollView>
       <View
@@ -153,23 +137,17 @@ export default function EnvironmentScreen() {
           paddingBottom: Math.max(insets.bottom, t.layout.field),
         }}
       >
-        {example ? (
-          <Action kind="primary" fill onPress={copyExample}>
-            Use this environment
-          </Action>
-        ) : (
-          <Action
-            kind="primary"
-            fill
-            onPress={() => router.navigate({ pathname: '/cloud/launch', params: { environmentId: id } })}
-          >
-            Create instance
-          </Action>
-        )}
+        <Action
+          kind="primary"
+          fill
+          onPress={() => router.navigate({ pathname: '/cloud/launch', params: { environmentId: id } })}
+        >
+          Create instance
+        </Action>
       </View>
       <EditEnvironmentSheet
         environmentId={id}
-        open={editing && !example}
+        open={editing}
         onClose={() => setEditing(false)}
         onDeleted={() => router.back()}
       />

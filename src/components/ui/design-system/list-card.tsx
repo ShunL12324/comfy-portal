@@ -34,6 +34,7 @@ export function ListCard({
   title,
   subtitle,
   subtitleMono = false,
+  subtitleLines = 1,
   badge,
   action,
   facts,
@@ -51,9 +52,11 @@ export function ListCard({
   testID,
 }: {
   title: string;
-  /** Numeric addresses stay on one line; descriptions may wrap to two lines. */
+  /** Numeric addresses stay on one line; prose descriptions wrap to `subtitleLines`. */
   subtitle?: string;
   subtitleMono?: boolean;
+  /** Lines a prose subtitle may wrap to before it truncates; addresses keep 1. */
+  subtitleLines?: number;
   /** Trailing decoration of the identity band, such as an origin word; taps pass through to the card. */
   badge?: ReactNode;
   /** Trailing action of the identity band; the only part of the card with its own touch target. */
@@ -139,7 +142,7 @@ export function ListCard({
               {title}
             </Copy>
             {subtitle ? (
-              <Copy mono={subtitleMono} muted size="label" numberOfLines={1} ellipsizeMode="tail">
+              <Copy mono={subtitleMono} muted size="label" numberOfLines={subtitleLines} ellipsizeMode="tail">
                 {subtitle}
               </Copy>
             ) : null}

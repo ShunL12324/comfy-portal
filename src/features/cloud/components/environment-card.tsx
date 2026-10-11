@@ -28,6 +28,7 @@ export function EnvironmentCard({
       testID="environment-card"
       title={environment.name}
       subtitle={environment.description.trim() || 'No description yet'}
+      subtitleLines={3}
       wrapFacts
       accessibilityLabel={`Open ${environment.name}`}
       accessibilityHint={spoken(summary.models.text, summary.extensions.text, summary.workflows.text)}

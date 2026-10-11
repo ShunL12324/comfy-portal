@@ -2,6 +2,8 @@ import { DesignScope } from '@/components/ui/design-system/primitives';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { designColors } from '@/constants/design-tokens';
 import { useLaunchPoller } from '@/features/cloud/hooks/use-launch-poller';
+import { seedBuiltInEnvironments } from '@/features/cloud/built-in';
+import { useEnvironmentsHydrated } from '@/features/cloud/stores/environment-store';
 import { reconcileAll, watchAppState } from '@/features/generation/services/job-recovery';
 import { useQuickActionStore } from '@/features/quick-action/stores/quick-action-store';
 import { useServersStore } from '@/features/server/stores/server-store';
@@ -77,6 +79,13 @@ function RootLayoutNav() {
   // bills throughout, so it has to keep progressing with nobody watching — and
   // on a cold start this is what reattaches to one left running.
   useLaunchPoller();
+
+  // Examples join the user's own environments once the stored list is known,
+  // so a deleted example is never added back.
+  const environmentsHydrated = useEnvironmentsHydrated();
+  useEffect(() => {
+    if (environmentsHydrated) seedBuiltInEnvironments();
+  }, [environmentsHydrated]);
 
   useEffect(() => {
     if (loaded) {

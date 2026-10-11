@@ -10,7 +10,6 @@ import { Sheet } from '@/components/ui/design-system/overlays';
 import { OptionSelector } from '@/components/common/selectors/option-selector';
 import { Plus, ChevronRight, GitBranch, Trash2 } from '@/constants/icons';
 import { useEnvironmentStore } from '@/features/cloud/stores/environment-store';
-import { useEnvironmentRecipe } from '@/features/cloud/hooks/use-environment-recipe';
 import { useCloudCredentialsStore } from '@/features/cloud/stores/credentials-store';
 import { providerLogos } from '@/features/cloud/components/provider-logos';
 import { MODEL_TYPES, formatBytes, resolveModelUrl } from '@/services/model-url';
@@ -51,8 +50,7 @@ function provider(url: string) {
 export default function EnvironmentResources() {
   const { id, resource } = useLocalSearchParams<{ id: string; resource: string }>();
   const c = useDesign();
-  // A built-in example is read-only: no Add, no Delete.
-  const { environment, example } = useEnvironmentRecipe(id);
+  const environment = useEnvironmentStore((state) => state.environments.find((item) => item.id === id));
   const update = useEnvironmentStore((state) => state.updateEnvironment);
   const key = useCloudCredentialsStore((state) => state.civitaiApiKey);
   const [query, setQuery] = useState('');
@@ -164,17 +162,15 @@ export default function EnvironmentResources() {
         titleSize="sm"
         showBack
         rightElement={
-          example ? undefined : (
-            <Action
-              kind="tonal"
-              icon={Plus}
-              label={`Add ${title.toLowerCase()}`}
-              onPress={() => {
-                setAdding(true);
-                setError('');
-              }}
-            />
-          )
+          <Action
+            kind="tonal"
+            icon={Plus}
+            label={`Add ${title.toLowerCase()}`}
+            onPress={() => {
+              setAdding(true);
+              setError('');
+            }}
+          />
         }
       />
       <View style={{ paddingHorizontal: t.layout.gutter, paddingBottom: t.layout.field, gap: t.layout.related }}>
@@ -394,11 +390,9 @@ export default function EnvironmentResources() {
             </View>
           </>
         )}
-        {!example && (
-          <Action kind="secondary" destructive icon={Trash2} fill onPress={remove}>
-            Delete {resource === 'models' ? 'model' : resource === 'extensions' ? 'extension' : 'workflow'}
-          </Action>
-        )}
+        <Action kind="secondary" destructive icon={Trash2} fill onPress={remove}>
+          Delete {resource === 'models' ? 'model' : resource === 'extensions' ? 'extension' : 'workflow'}
+        </Action>
       </Sheet>
       <Sheet
         open={adding && resource !== 'workflows'}
