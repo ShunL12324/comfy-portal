@@ -26,6 +26,7 @@ import { GenerationProvider, useGenerationActions } from '@/features/generation/
 import { useResolvedTheme } from '@/store/theme';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import BottomSheet from '@gorhom/bottom-sheet';
+import { useSharedValue } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 
@@ -160,6 +161,8 @@ function RunWorkflowScreenContent() {
 
   const snapPoints = useMemo(() => ['30%', '60%', '80%'], []);
   const sheetRef = useRef<BottomSheet>(null);
+  // Position is local to the content container below the navigation bar.
+  const sheetPosition = useSharedValue(-1);
   const aiChatTabRef = useRef<AIChatTabRef>(null);
   const sheetSnapIndexRef = useRef(1);
 
@@ -317,11 +320,12 @@ function RunWorkflowScreenContent() {
           </View>
         </View>
       ) : (
-        <>
-          <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} />
+        <View style={{ flex: 1 }}>
+          <MediaPreview workflowId={workflowRecord.id} serverId={serverId as string} sheetPosition={sheetPosition} />
 
           <BottomSheet
             ref={sheetRef}
+            animatedPosition={sheetPosition}
             index={sharedImageUri ? 2 : 1}
             snapPoints={snapPoints}
             enableDynamicSizing={false}
@@ -377,7 +381,7 @@ function RunWorkflowScreenContent() {
               />
             )}
           </BottomSheet>
-        </>
+        </View>
       )}
 
     </View>
