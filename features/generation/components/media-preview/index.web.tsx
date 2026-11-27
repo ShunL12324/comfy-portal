@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { MediaActions } from './media-actions';
 import { ProgressOverlay } from './progress-overlay';
@@ -34,6 +35,7 @@ const isVideoUrl = (url: string): boolean => {
 interface ParallaxMediaProps {
   workflowId?: string;
   serverId?: string;
+  sheetPosition?: SharedValue<number>;
 }
 
 const VideoPreview = ({ url }: { url: string }) => {
@@ -53,9 +55,17 @@ const VideoPreview = ({ url }: { url: string }) => {
 export const MediaPreview = memo(function ParallaxMedia({
   workflowId,
   serverId,
+  sheetPosition,
 }: ParallaxMediaProps) {
   const { generatedMedia, status } = useGenerationStatus();
-  const { progress } = useGenerationProgress();
+  const { progress, previewUri } = useGenerationProgress();
+  // A live image must be centered in the visible viewport, not behind the sheet.
+  const liveViewportStyle = useAnimatedStyle(() => {
+    const position = sheetPosition?.value ?? -1;
+    return position >= 0
+      ? { flex: 0, height: position, maxHeight: '100%' as const }
+      : { flex: 1, height: undefined, maxHeight: '100%' as const };
+  }, [sheetPosition]);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showActionsheet, setShowActionsheet] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -98,7 +108,17 @@ export const MediaPreview = memo(function ParallaxMedia({
 
   return (
     <View className="relative w-full flex-1 flex-col items-start justify-start">
-      {generatedMedia.length > 0 ? (
+      {previewUri && status !== 'idle' ? (
+        <Animated.View
+          className="relative w-full overflow-hidden items-center justify-center bg-background-0"
+          style={liveViewportStyle}
+        >
+          <img src={previewUri} alt="Live sampling preview" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }} />
+          <View className="absolute top-3 right-3 rounded-full bg-black/50 px-2.5 py-1">
+            <Text className="text-xs font-medium text-white">Live Preview</Text>
+          </View>
+        </Animated.View>
+      ) : generatedMedia.length > 0 ? (
         <View className="h-auto w-full flex-1 justify-start">
           <ScrollView
             key={generatedMedia.join('-')}
@@ -293,7 +313,7 @@ export const MediaPreview = memo(function ParallaxMedia({
         </View>
       )}
 
-      {status === 'generating' && progress.value > 0 && progress.value < progress.max && (
+      {!previewUri && status === 'generating' && progress.value > 0 && progress.value < progress.max && (
         <ProgressOverlay current={progress.value} total={progress.max} />
       )}
     </View>

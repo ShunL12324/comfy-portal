@@ -8,6 +8,7 @@ import React, { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { MediaActions } from './media-actions';
 import { ProgressOverlay } from './progress-overlay';
@@ -22,6 +23,7 @@ import { PlayCircle } from 'lucide-react-native';
 interface ParallaxMediaProps {
   workflowId?: string;
   serverId?: string;
+  sheetPosition?: SharedValue<number>;
 }
 
 const VideoPreview = ({ url }: { url: string }) => {
@@ -47,9 +49,17 @@ const VideoPreview = ({ url }: { url: string }) => {
 export const MediaPreview = memo(function ParallaxMedia({
   workflowId,
   serverId,
+  sheetPosition,
 }: ParallaxMediaProps) {
   const { generatedMedia, status } = useGenerationStatus();
-  const { progress } = useGenerationProgress();
+  const { progress, previewUri } = useGenerationProgress();
+  // A live image must be centered in the visible viewport, not behind the sheet.
+  const liveViewportStyle = useAnimatedStyle(() => {
+    const position = sheetPosition?.value ?? -1;
+    return position >= 0
+      ? { flex: 0, height: position, maxHeight: '100%' as const }
+      : { flex: 1, height: undefined, maxHeight: '100%' as const };
+  }, [sheetPosition]);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [showActionsheet, setShowActionsheet] = useState(false);
@@ -92,7 +102,24 @@ export const MediaPreview = memo(function ParallaxMedia({
         setContainerSize({ width, height });
       }}
     >
-      {generatedMedia.length > 0 ? (
+      {previewUri && status !== 'idle' ? (
+        <Animated.View
+          className="relative w-full overflow-hidden items-center justify-center bg-background-0"
+          style={liveViewportStyle}
+        >
+          <Image
+            source={{ uri: previewUri }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+            contentFit="contain"
+            contentPosition="center"
+            cachePolicy="none"
+            transition={0}
+          />
+          <View className="absolute top-3 right-3 rounded-full bg-black/50 px-2.5 py-1">
+            <Text className="text-xs font-medium text-white">Live Preview</Text>
+          </View>
+        </Animated.View>
+      ) : generatedMedia.length > 0 ? (
         <View className="h-auto w-full flex-1 justify-start">
           <PagerView
             key={generatedMedia.join('-')}
@@ -279,7 +306,7 @@ export const MediaPreview = memo(function ParallaxMedia({
         </View>
       )}
 
-      {status === 'generating' && progress.value > 0 && progress.value < progress.max && (
+      {!previewUri && status === 'generating' && progress.value > 0 && progress.value < progress.max && (
         <ProgressOverlay current={progress.value} total={progress.max} />
       )}
     </View>

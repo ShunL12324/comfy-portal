@@ -54,6 +54,7 @@ interface GenerationProgress {
   progress: { value: number; max: number };
   nodeProgress: { completed: number; total: number };
   downloadProgress: number;
+  previewUri?: string;
 }
 
 const GenerationStatusContext = createContext<GenerationStatus | null>(null);
@@ -330,6 +331,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         try {
           await client.awaitCompletion(promptId, workflowForExecution, {
             onProgress: handleProgress,
+            onPreview: (uri) => {
+              if (statusRef.current === 'generating') {
+                setActiveProgress(() => ({ previewUri: uri }));
+              }
+            },
             onNodeStart: (nodeId) => {
               setGeneratingStatus(() => ({ currentNodeId: nodeId }));
             },
@@ -363,6 +369,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
         if (savedPaths && savedPaths.length > 0) {
           setGeneratedMedia(savedPaths);
+          setActiveProgress(() => ({ previewUri: undefined }));
         }
         if (executionError) throw executionError;
         // null means the run isn't committed yet or another pass owns it —
