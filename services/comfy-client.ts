@@ -2,6 +2,7 @@ import { Server } from '@/features/server/types';
 import { Workflow } from '@/features/workflow/types';
 import { getInstallId } from '@/store/install-id';
 
+import { decodePreviewFrame } from './preview-frame';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
@@ -26,6 +27,7 @@ interface ProgressCallback {
    * @param max - Maximum progress value
    */
   onProgress?: (value: number, max: number) => void;
+  onPreview?: (uri: string) => void;
 
   /**
    * Called when a workflow node starts executing
@@ -124,6 +126,8 @@ export class ComfyClient {
   private trackedPrompts = new Map<string, TrackedPrompt>();
   // The "active" prompt is the one currently shown in the UI (latest queued)
   private activePromptId: string | null = null;
+  // Legacy preview frames have no prompt ID; route by the executing prompt, not the last queued one.
+  private previewPromptId: string | null = null;
   private readonly TIMEOUT_MS = 600_000; // 10 minutes with no activity
   private timeoutCheckInterval: NodeJS.Timeout | null = null;
 
@@ -206,6 +210,8 @@ export class ComfyClient {
   private setupWebSocket(wsUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(wsUrl);
+      this.ws.binaryType = 'arraybuffer';
+      this.previewPromptId = null;
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
@@ -320,6 +326,7 @@ export class ComfyClient {
     const tracked = this.trackedPrompts.get(promptId);
     if (!tracked) return;
     this.trackedPrompts.delete(promptId);
+    if (this.previewPromptId === promptId) this.previewPromptId = null;
     if (this.activePromptId === promptId) {
       this.activePromptId = null;
     }
@@ -330,6 +337,7 @@ export class ComfyClient {
   private resolveAllTracked(result: GenerationResult) {
     const prompts = [...this.trackedPrompts.values()];
     this.trackedPrompts.clear();
+    this.previewPromptId = null;
     this.activePromptId = null;
     this.stopTimeoutCheck();
     for (const tracked of prompts) {
@@ -378,6 +386,18 @@ export class ComfyClient {
 
   private handleMessage = (event: MessageEvent) => {
     try {
+      if (event.data instanceof ArrayBuffer) {
+        const frame = decodePreviewFrame(event.data);
+        if (!frame) return;
+        const promptId = frame.promptId ?? this.previewPromptId;
+        if (!promptId) return;
+        const tracked = this.trackedPrompts.get(promptId);
+        if (tracked) {
+          this.touchActivity(promptId);
+          tracked.callbacks.onPreview?.(frame.uri);
+        }
+        return;
+      }
       if (typeof event.data !== 'string' || event.data.startsWith('o') || event.data === '[]' || event.data.startsWith('primus')) {
         return;
       }
@@ -397,6 +417,7 @@ export class ComfyClient {
 
       switch (message.type) {
         case 'execution_start': {
+          this.previewPromptId = msgPromptId ?? null;
           const tracked = msgPromptId ? this.trackedPrompts.get(msgPromptId) : undefined;
           if (tracked) {
             tracked.started = true;
@@ -407,6 +428,7 @@ export class ComfyClient {
         }
 
         case 'progress': {
+          if (msgPromptId) this.previewPromptId = msgPromptId;
           const tracked = this.findTracked(msgPromptId);
           if (tracked) {
             tracked.callbacks.onProgress?.(message.data.value, message.data.max);
@@ -449,6 +471,7 @@ export class ComfyClient {
         }
 
         case 'executing': {
+          if (msgPromptId) this.previewPromptId = message.data.node === null ? null : msgPromptId;
           if (message.data.node !== null) {
             const tracked = this.findTracked(msgPromptId);
             if (tracked) {
