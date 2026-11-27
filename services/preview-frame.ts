@@ -7,9 +7,12 @@ export interface PreviewFrame {
 
 // ComfyUI sends big-endian event IDs. Type 1 has a four-byte image
 // format; type 4 has a four-byte JSON length followed by UTF-8 metadata.
-export function decodePreviewFrame(data: ArrayBuffer): PreviewFrame | null {
+export function decodePreviewFrame(data: ArrayBuffer | ArrayBufferView): PreviewFrame | null {
   if (data.byteLength <= 8 || data.byteLength > 16 * 1024 * 1024) return null;
-  const view = new DataView(data);
+  const raw = data instanceof ArrayBuffer
+    ? new Uint8Array(data)
+    : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const event = view.getUint32(0);
   const header = view.getUint32(4);
   let offset = 8;
@@ -22,11 +25,12 @@ export function decodePreviewFrame(data: ArrayBuffer): PreviewFrame | null {
   } else if (event === 4) {
     if (header > 65536 || header >= data.byteLength - 8) return null;
     try {
-      const metadata = JSON.parse(Buffer.from(data, 8, header).toString('utf8'));
+      const metadata = JSON.parse(Buffer.from(raw.subarray(8, 8 + header)).toString('utf8'));
       if (metadata.image_type !== 'image/jpeg' && metadata.image_type !== 'image/png') return null;
       mime = metadata.image_type;
-      if (typeof metadata.prompt_id !== 'string' || !metadata.prompt_id) return null;
-      promptId = metadata.prompt_id;
+      if (typeof metadata.prompt_id === 'string' && metadata.prompt_id) {
+        promptId = metadata.prompt_id;
+      }
       offset += header;
     } catch {
       return null;
@@ -35,7 +39,7 @@ export function decodePreviewFrame(data: ArrayBuffer): PreviewFrame | null {
     return null;
   }
 
-  const bytes = new Uint8Array(data, offset);
+  const bytes = raw.subarray(offset);
   if (mime === 'image/jpeg') {
     if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) return null;
   } else {

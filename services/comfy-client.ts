@@ -215,6 +215,12 @@ export class ComfyClient {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
+        // Opt in to prompt-tagged previews before any other client message.
+        // Older servers still send the legacy binary format.
+        this.ws?.send(JSON.stringify({
+          type: 'feature_flags',
+          data: { supports_preview_metadata: true },
+        }));
         resolve();
       };
 
@@ -386,7 +392,7 @@ export class ComfyClient {
 
   private handleMessage = (event: MessageEvent) => {
     try {
-      if (event.data instanceof ArrayBuffer) {
+      if (event.data instanceof ArrayBuffer || ArrayBuffer.isView(event.data)) {
         const frame = decodePreviewFrame(event.data);
         if (!frame) return;
         const promptId = frame.promptId ?? this.previewPromptId;
@@ -438,6 +444,9 @@ export class ComfyClient {
         }
 
         case 'progress_state': {
+          if (msgPromptId && Object.values(message.data?.nodes ?? {}).some(
+            (node) => (node as { state?: string }).state === 'running',
+          )) this.previewPromptId = msgPromptId;
           const tracked = this.findTracked(msgPromptId);
           if (!tracked) break;
           const nodes = message.data?.nodes;
@@ -606,6 +615,9 @@ export class ComfyClient {
       body: JSON.stringify({
         prompt: workflow,
         client_id: this.clientId,
+        // Recent ComfyUI versions default to no previews unless requested
+        // per prompt. Latent2RGB keeps preview overhead low on remote GPUs.
+        extra_data: { preview_method: 'latent2rgb' },
         ...(promptId ? { prompt_id: promptId } : {}),
       }),
     });

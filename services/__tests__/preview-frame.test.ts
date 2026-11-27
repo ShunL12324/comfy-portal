@@ -31,3 +31,17 @@ test('ignores malformed, truncated and unrelated binary frames', () => {
   expect(decodePreviewFrame(frame(4, 999, jpeg))).toBeNull();
   expect(decodePreviewFrame(frame(1, 2, jpeg))).toBeNull();
 });
+
+test('decodes views with a nonzero byte offset', () => {
+  const original = new Uint8Array(frame(1, 1, jpeg));
+  const wrapped = new Uint8Array(original.length + 6);
+  wrapped.set(original, 3);
+  expect(decodePreviewFrame(wrapped.subarray(3, 3 + original.length))).toEqual(decodePreviewFrame(original.buffer));
+});
+
+test('accepts metadata previews without a prompt ID for legacy routing', () => {
+  const meta = Buffer.from(JSON.stringify({ node_id: '7', image_type: 'image/jpeg' }));
+  expect(decodePreviewFrame(frame(4, meta.length, Buffer.concat([meta, jpeg])))).toEqual({
+    promptId: undefined, uri: 'data:image/jpeg;base64,' + Buffer.from(jpeg).toString('base64'),
+  });
+});
