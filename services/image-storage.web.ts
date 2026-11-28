@@ -6,6 +6,7 @@
  */
 
 import { Workflow } from '@/features/workflow/types';
+import { getSavedOutputPath, type GalleryMedia } from './comfy-assets';
 
 interface SaveMediaOptions {
   serverId: string;
@@ -15,6 +16,7 @@ interface SaveMediaOptions {
   delete?: boolean;
   /** Prompt that produced this media; see the native implementation. */
   promptId?: string;
+  outputPath?: string;
 }
 
 // In-memory storage for generated media on web
@@ -24,6 +26,12 @@ function getStoreKey(serverId: string, workflowId: string) {
   return `${serverId}:${workflowId}`;
 }
 
+export async function removeGeneratedMedia(serverId: string, workflowId: string, url: string) {
+  const key = getStoreKey(serverId, workflowId);
+  const items = memoryStore.get(key) || [];
+  memoryStore.set(key, items.filter((item) => item.path !== url));
+}
+
 export async function saveGeneratedMedia({
   serverId,
   workflowId,
@@ -31,13 +39,13 @@ export async function saveGeneratedMedia({
   workflow,
   delete: shouldDelete,
   promptId,
+  outputPath,
 }: SaveMediaOptions) {
   try {
     const key = getStoreKey(serverId, workflowId);
 
     if (shouldDelete) {
-      const items = memoryStore.get(key) || [];
-      memoryStore.set(key, items.filter((item) => item.path !== mediaUrl));
+      await removeGeneratedMedia(serverId, workflowId, mediaUrl);
       return;
     }
 
@@ -48,6 +56,7 @@ export async function saveGeneratedMedia({
       workflow,
       originalUrl: mediaUrl,
       ...(promptId ? { promptId } : {}),
+      ...(outputPath ? { outputPath } : {}),
     };
 
     const items = memoryStore.get(key) || [];
@@ -74,7 +83,7 @@ export async function getGeneratedMedia(serverId: string, workflowId: string) {
   }
 }
 
-export async function loadHistoryMedia(serverId: string, workflowId: string) {
+export async function loadHistoryMedia(serverId: string, workflowId: string): Promise<GalleryMedia[]> {
   try {
     const mediaItems = await getGeneratedMedia(serverId, workflowId);
 
@@ -83,6 +92,7 @@ export async function loadHistoryMedia(serverId: string, workflowId: string) {
       .map((item) => ({
         url: item.path,
         timestamp: new Date(item.metadata.timestamp).getTime(),
+        outputPath: getSavedOutputPath(item.metadata.outputPath, item.metadata.originalUrl),
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {

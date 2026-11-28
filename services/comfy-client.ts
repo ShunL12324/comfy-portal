@@ -5,6 +5,7 @@ import { getInstallId } from '@/store/install-id';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { buildServerUrl, fetchWithAuth, isLocalOrLanIP } from './network';
+import { getOutputPath } from './comfy-assets';
 
 /**
  * Configuration options for the ComfyUI client
@@ -632,12 +633,10 @@ export class ComfyClient {
     subfolder: string,
     type: string,
     callbacks?: ProgressCallback
-  ): Promise<string> {
-    // Append token to the path if it exists
-    let path = `/view?filename=${encodeURIComponent(filename)}&subfolder=${subfolder}&type=${type}`;
-    if (this.token) {
-      path += `&token=${this.token}`;
-    }
+  ): Promise<string | null> {
+    const params = new URLSearchParams({ filename, subfolder, type });
+    if (this.token) params.set('token', this.token);
+    const path = `/view?${params}`;
     const url = await buildServerUrl(this.useSSL, this.host, this.port, path);
 
     // On web, skip file system download — just return the URL directly
@@ -669,6 +668,8 @@ export class ComfyClient {
     // downloadAsync resolves for non-2xx too, writing the error body to the
     // file. Without this check a 401 would be saved as a corrupt image.
     if (result.status >= 400) {
+      await FileSystem.deleteAsync(result.uri, { idempotent: true });
+      if (result.status === 404 && type === 'output') return null;
       throw new Error(`Failed to download ${filename} (HTTP ${result.status})`);
     }
     return result.uri;
@@ -684,7 +685,7 @@ export class ComfyClient {
   async fetchAndDownloadResults(
     promptId: string,
     callbacks: ProgressCallback,
-  ): Promise<{ found: boolean; mediaUrls: string[] }> {
+  ): Promise<{ found: boolean; media: { url: string; outputPath?: string }[] }> {
     let entry: any;
     for (let attempt = 0; attempt < 3; attempt++) {
       const history = await this.getHistory(promptId);
@@ -694,12 +695,12 @@ export class ComfyClient {
     }
     // No entry means the server hasn't committed the run yet (or never will).
     // Callers must keep the job pending rather than treat this as "no output".
-    if (!entry) return { found: false, mediaUrls: [] };
+    if (!entry) return { found: false, media: [] };
 
     const outputs = entry.outputs;
-    if (!outputs) return { found: true, mediaUrls: [] };
+    if (!outputs) return { found: true, media: [] };
 
-    const mediaUrls: string[] = [];
+    const media: { url: string; outputPath?: string }[] = [];
     const allMedia: { filename: string; subfolder: string; type: string }[] = [];
 
     for (const nodeId in outputs) {
@@ -713,17 +714,22 @@ export class ComfyClient {
     const outputMedia = allMedia.filter((img) => img.type === 'output');
     const mediaToDownload = outputMedia.length > 0 ? outputMedia : allMedia;
 
-    for (const media of mediaToDownload) {
+    for (const item of mediaToDownload) {
       const mediaUrl = await this.downloadMedia(
-        media.filename,
-        media.subfolder,
-        media.type,
+        item.filename,
+        item.subfolder ?? '',
+        item.type,
         callbacks,
       );
-      mediaUrls.push(mediaUrl);
+      if (mediaUrl) {
+        media.push({
+          url: mediaUrl,
+          outputPath: item.type === 'output' ? getOutputPath(item.filename, item.subfolder) : undefined,
+        });
+      }
     }
 
-    return { found: true, mediaUrls };
+    return { found: true, media };
   }
 
   /**

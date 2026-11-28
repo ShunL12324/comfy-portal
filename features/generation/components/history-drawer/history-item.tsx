@@ -1,5 +1,6 @@
 import { Box } from '@/components/ui/box';
 import { Icon } from '@/components/ui/icon';
+import { isVideoUrl } from '@/features/generation/utils/media';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Check, PlayCircle } from 'lucide-react-native';
@@ -8,6 +9,7 @@ import { Pressable, View } from 'react-native';
 
 interface HistoryItemProps {
   url: string;
+  thumbnailUrl?: string;
   index: number;
   isSelectionMode: boolean;
   isSelected: boolean;
@@ -27,7 +29,7 @@ function SelectionIndicator({ isSelected }: { isSelected: boolean }) {
   );
 }
 
-function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
+function ImageItem({ url, thumbnailUrl, isSelectionMode, isSelected, onPress, onLongPress }: HistoryItemProps) {
   const handlePress = useCallback(() => onPress(url), [onPress, url]);
   const handleLongPress = useCallback(() => onLongPress(url), [onLongPress, url]);
 
@@ -35,12 +37,17 @@ function ImageItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
     <Pressable onPress={handlePress} onLongPress={handleLongPress} className="relative">
       <Box className="aspect-square overflow-hidden bg-background-100">
         <Image
-          source={url}
+          source={thumbnailUrl ?? url}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           cachePolicy="memory-disk"
           recyclingKey={url}
         />
+        {thumbnailUrl && isVideoUrl(url) && (
+          <View className="absolute inset-0 items-center justify-center bg-black/20">
+            <Icon as={PlayCircle} className="h-8 w-8 text-white opacity-90" />
+          </View>
+        )}
       </Box>
       {isSelected && (
         <View className="absolute inset-0 border-[3px] border-typography-950" />
@@ -81,18 +88,16 @@ function VideoItem({ url, isSelectionMode, isSelected, onPress, onLongPress }: H
   );
 }
 
-const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'webm']);
-
 export const HistoryItem = React.memo(
   function HistoryItem(props: HistoryItemProps) {
-    const ext = props.url.split('.').pop()?.toLowerCase() ?? '';
-    if (VIDEO_EXTENSIONS.has(ext)) {
+    if (isVideoUrl(props.url) && !props.thumbnailUrl) {
       return <VideoItem {...props} />;
     }
     return <ImageItem {...props} />;
   },
   (prev, next) => (
     prev.url === next.url &&
+    prev.thumbnailUrl === next.thumbnailUrl &&
     prev.isSelectionMode === next.isSelectionMode &&
     prev.isSelected === next.isSelected
   ),

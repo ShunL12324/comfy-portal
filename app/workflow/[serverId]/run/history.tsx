@@ -5,9 +5,11 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ZoomableMedia } from '@/features/generation/components/media-preview/zoomable-media';
 import { MediaActions } from '@/features/generation/components/media-preview/media-actions';
-import { loadHistoryMedia } from '@/services/image-storage';
+import { useAssetGallery } from '@/features/generation/hooks/use-asset-gallery';
+import { useServersStore } from '@/features/server/stores/server-store';
+import type { GalleryMedia } from '@/services/comfy-assets';
+import { downloadMediaOnWeb, withLocalMedia } from '@/services/media-export';
 import { showToast } from '@/utils/toast';
-import { File } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
@@ -19,6 +21,7 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
@@ -38,13 +41,16 @@ const listContentStyle = {
 };
 
 export default function HistoryGalleryPage() {
-  const { serverId, workflowId } = useLocalSearchParams<{ serverId: string; workflowId: string }>();
+  const { serverId, workflowId } = useLocalSearchParams<{ serverId: string; workflowId?: string }>();
+  const server = useServersStore((state) => state.servers.find((entry) => entry.id === serverId));
+  const serverGallery = !workflowId;
+  const { items: mediaItems, error, refreshing, isDeleting, assetsAvailable, refresh, deleteItems } =
+    useAssetGallery(server, serverId, workflowId);
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
 
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
-  const [mediaItems, setMediaItems] = useState<{ url: string; timestamp: number }[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
   // Preview state. The preview pages through the whole gallery, so what it
@@ -56,6 +62,7 @@ export default function HistoryGalleryPage() {
   // honours `initialScrollIndex` on mount, and feeding it a value that moves
   // while the user swipes invites it to jump back.
   const initialPreviewIndexRef = useRef(0);
+  const activePreviewUrlRef = useRef<string | undefined>(undefined);
   const previewUrl = mediaItems[previewIndex]?.url;
 
   // The preview is an in-tree overlay rather than a Modal, so Android's back
@@ -75,11 +82,24 @@ export default function HistoryGalleryPage() {
     return () => subscription.remove();
   }, [isPreviewOpen, closePreview]);
 
+  useEffect(() => {
+    if (isPreviewOpen && activePreviewUrlRef.current !== previewUrl) closePreview();
+  }, [isPreviewOpen, previewUrl, closePreview]);
+
+  useEffect(() => {
+    const urls = new Set(mediaItems.map((item) => item.url));
+    setSelectedMedia((current) => {
+      const visible = new Set([...current].filter((url) => urls.has(url)));
+      return visible.size === current.size ? current : visible;
+    });
+  }, [mediaItems]);
+
   // Stable callback refs to avoid re-renders
   const onItemPressRef = useRef<(url: string) => void>(() => {});
   const onItemLongPressRef = useRef<(url: string) => void>(() => {});
 
   onItemPressRef.current = (url: string) => {
+    if (isDeleting) return;
     if (isSelectionMode) {
       setSelectedMedia((prev) => {
         const next = new Set(prev);
@@ -94,22 +114,17 @@ export default function HistoryGalleryPage() {
         0,
       );
       initialPreviewIndexRef.current = index;
+      activePreviewUrlRef.current = url;
       setPreviewIndex(index);
       setIsPreviewOpen(true);
     }
   };
 
   onItemLongPressRef.current = (url: string) => {
+    if (isDeleting) return;
     setIsSelectionMode(true);
     setSelectedMedia(new Set([url]));
   };
-
-  // Load data on mount
-  useEffect(() => {
-    if (serverId && workflowId) {
-      loadHistoryMedia(serverId, workflowId).then(setMediaItems);
-    }
-  }, [serverId, workflowId]);
 
   const exitSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
@@ -117,21 +132,22 @@ export default function HistoryGalleryPage() {
   }, []);
 
   const confirmDelete = useCallback(async () => {
-    if (!workflowId || selectedMedia.size === 0) return;
+    if (isDeleting || selectedMedia.size === 0) return;
     try {
-      for (const url of selectedMedia) {
-        try { new File(url).delete(); } catch { /* ignore */ }
-        try { new File(`${url}.json`).delete(); } catch { /* ignore */ }
+      const removed = await deleteItems(selectedMedia);
+      if ([...selectedMedia].every((url) => removed.has(url))) {
+        exitSelectionMode();
+      } else {
+        setSelectedMedia((current) => new Set([...current].filter((url) => !removed.has(url))));
+        showToast.error('Delete incomplete', 'Some selected items could not be deleted.', insets.top + 8);
       }
-      const updatedMedia = await loadHistoryMedia(serverId, workflowId);
-      setMediaItems(updatedMedia);
-      setSelectedMedia(new Set());
-      setIsSelectionMode(false);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Failed to delete media.';
+      showToast.error('Delete failed', message, insets.top + 8);
+    } finally {
       setIsDeleteAlertOpen(false);
-    } catch {
-      showToast.error('Delete Failed', 'Failed to delete media', insets.top + 8);
     }
-  }, [selectedMedia, serverId, workflowId, insets.top]);
+  }, [deleteItems, exitSelectionMode, isDeleting, selectedMedia, insets.top]);
 
   const handleShare = useCallback(async () => {
     if (selectedMedia.size === 0) return;
@@ -141,24 +157,29 @@ export default function HistoryGalleryPage() {
         showToast.error('Not available', 'Sharing is not supported on this device', insets.top + 8);
         return;
       }
-      await Sharing.shareAsync(selectedMedia.values().next().value!);
-    } catch { /* ignore */ }
+      await withLocalMedia(selectedMedia.values().next().value!, Sharing.shareAsync);
+    } catch {
+      showToast.error('Share failed', 'Could not share media.', insets.top + 8);
+    }
   }, [insets.top, selectedMedia]);
 
   const handleSave = useCallback(async () => {
     if (selectedMedia.size === 0) return;
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== 'granted') {
-      showToast.error('Permission required', 'Please allow access to save media', insets.top + 8);
-      return;
-    }
     let savedCount = 0;
     try {
+      if (Platform.OS !== 'web') {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          showToast.error('Permission required', 'Please allow access to save media', insets.top + 8);
+          return;
+        }
+      }
       for (const url of selectedMedia) {
-        await MediaLibrary.saveToLibraryAsync(url);
+        if (Platform.OS === 'web') await downloadMediaOnWeb(url);
+        else await withLocalMedia(url, MediaLibrary.saveToLibraryAsync);
         savedCount++;
       }
-      showToast.success('Saved', `Saved ${savedCount} item${savedCount > 1 ? 's' : ''} to Photos`, insets.top + 8);
+      showToast.success('Saved', `Saved ${savedCount} item${savedCount === 1 ? '' : 's'}`, insets.top + 8);
       setIsSelectionMode(false);
       setSelectedMedia(new Set());
     } catch {
@@ -168,13 +189,15 @@ export default function HistoryGalleryPage() {
 
   const handlePreviewScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      setPreviewIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
+      const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+      activePreviewUrlRef.current = mediaItems[index]?.url;
+      setPreviewIndex(index);
     },
-    [screenWidth],
+    [mediaItems, screenWidth],
   );
 
   const renderPreviewPage = useCallback(
-    ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
+    ({ item, index }: { item: GalleryMedia; index: number }) => (
       <View style={{ width: screenWidth }}>
         <ZoomableMedia
           mediaUrl={item.url}
@@ -188,10 +211,11 @@ export default function HistoryGalleryPage() {
   );
 
   const renderItem = useCallback(
-    ({ item, index }: { item: { url: string; timestamp: number }; index: number }) => (
+    ({ item, index }: { item: GalleryMedia; index: number }) => (
       <View style={{ flex: 1, padding: GRID_GAP / 2 }}>
         <HistoryItem
           url={item.url}
+          thumbnailUrl={item.thumbnailUrl}
           index={index}
           isSelectionMode={isSelectionMode}
           isSelected={selectedMedia.has(item.url)}
@@ -204,6 +228,8 @@ export default function HistoryGalleryPage() {
   );
 
   const hasSelection = selectedMedia.size > 0;
+  const deletesServerFiles = (serverGallery || assetsAvailable !== false) &&
+    mediaItems.some((item) => selectedMedia.has(item.url) && item.outputPath);
 
   const rightElement = useMemo(() => {
     return (
@@ -212,7 +238,7 @@ export default function HistoryGalleryPage() {
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
           onPress={handleShare}
-          disabled={!isSelectionMode || !hasSelection}
+          disabled={!isSelectionMode || !hasSelection || isDeleting}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
@@ -222,7 +248,7 @@ export default function HistoryGalleryPage() {
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
           onPress={handleSave}
-          disabled={!isSelectionMode || !hasSelection}
+          disabled={!isSelectionMode || !hasSelection || isDeleting}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
@@ -232,7 +258,7 @@ export default function HistoryGalleryPage() {
           variant="link"
           className="h-9 w-9 rounded-xl p-0"
           onPress={() => setIsDeleteAlertOpen(true)}
-          disabled={!isSelectionMode || !hasSelection}
+          disabled={!isSelectionMode || !hasSelection || isDeleting}
           style={{ opacity: isSelectionMode && hasSelection ? 1 : isSelectionMode ? 0.3 : 0 }}
           pointerEvents={isSelectionMode ? 'auto' : 'none'}
         >
@@ -243,6 +269,7 @@ export default function HistoryGalleryPage() {
             variant="solid"
             size="xs"
             onPress={exitSelectionMode}
+            disabled={isDeleting}
             className="ml-1 rounded-lg bg-primary-500"
             style={{ width: 60 }}
           >
@@ -261,16 +288,20 @@ export default function HistoryGalleryPage() {
         )}
       </HStack>
     );
-  }, [isSelectionMode, hasSelection, handleShare, handleSave, exitSelectionMode]);
+  }, [isSelectionMode, hasSelection, isDeleting, handleShare, handleSave, exitSelectionMode]);
 
   return (
     <View className="flex-1 bg-background-0">
       <AppBar
-        title={isSelectionMode ? `${selectedMedia.size} selected` : 'History'}
+        title={isSelectionMode ? `${selectedMedia.size} selected` : serverGallery ? 'Server Assets' : 'History'}
         titleSize="sm"
+        showBack={serverGallery}
         rightElement={rightElement}
       />
 
+      {error && (
+        <Text className="px-4 py-2 text-sm text-typography-500">{error}</Text>
+      )}
       {/* Grid */}
       <FlatList
         data={mediaItems}
@@ -282,6 +313,11 @@ export default function HistoryGalleryPage() {
         initialNumToRender={12}
         maxToRenderPerBatch={9}
         windowSize={5}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        ListEmptyComponent={serverGallery && !refreshing && !error ? (
+          <Text className="px-4 py-8 text-center text-typography-500">No images or videos on this server yet.</Text>
+        ) : null}
       />
 
       {/* Fullscreen preview.
@@ -393,15 +429,15 @@ export default function HistoryGalleryPage() {
       </AnimatePresence>
 
       <DeleteAlert
-        isOpen={isDeleteAlertOpen}
-        onClose={() => setIsDeleteAlertOpen(false)}
+        isOpen={isDeleteAlertOpen && hasSelection}
+        onClose={() => {
+          if (!isDeleting) setIsDeleteAlertOpen(false);
+        }}
         onConfirm={confirmDelete}
         title={selectedMedia.size > 1 ? 'Delete Selected Media' : 'Delete Media'}
-        description={
-          selectedMedia.size > 1
-            ? `Are you sure you want to delete ${selectedMedia.size} items? This action cannot be undone.`
-            : 'Are you sure you want to delete this item? This action cannot be undone.'
-        }
+        description={deletesServerFiles
+          ? 'This permanently deletes the linked files from the ComfyUI server and removes the selected items from this gallery.'
+          : 'This permanently removes the selected items from this workflow history.'}
       />
     </View>
   );

@@ -170,12 +170,12 @@ export async function finalizeJob(
     const alreadySaved = new Set(
       existing
         .filter((item) => item.metadata?.promptId === promptId)
-        .map((item) => item.metadata?.originalUrl)
+        .map((item) => item.metadata?.outputPath ?? item.metadata?.originalUrl)
         .filter(Boolean),
     );
 
     const client = getClient(server);
-    const { found, mediaUrls } = await client.fetchAndDownloadResults(promptId, {
+    const { found, media } = await client.fetchAndDownloadResults(promptId, {
       onDownloadProgress: options.onDownloadProgress,
     });
 
@@ -184,14 +184,15 @@ export async function finalizeJob(
 
     const workflow = options.workflow ?? {};
     const savedPaths: string[] = [];
-    for (const mediaUrl of mediaUrls) {
-      if (alreadySaved.has(mediaUrl)) continue;
+    for (const { url: mediaUrl, outputPath } of media) {
+      if (alreadySaved.has(outputPath ?? mediaUrl)) continue;
       const result = await saveGeneratedMedia({
         serverId,
         workflowId,
         mediaUrl,
         workflow,
         promptId,
+        outputPath,
       });
       if (result) {
         const localUrl =
