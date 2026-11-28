@@ -47,6 +47,7 @@
 | **Workflow Manager** | View, manage, and execute your workflows on the go — import from a file, a URL or the clipboard, or sync them straight from your server. |
 | **AI Assistant** | Edit a workflow by describing what you want. Streams its replies, shows every change it makes, and works with 17 providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, xAI, Mistral…) or any OpenAI-compatible endpoint, including local ones like Ollama and LM Studio. |
 | **History Gallery** | Every generation kept per workflow — images and video — with multi-select to save, share or delete, and swipe navigation in full screen. |
+| **Server Assets** | Browse images and videos directly from the server's output folder and delete the actual files. Requires [Assets+](https://github.com/DIGIDWARF-CC/ComfyUI-AssetsPlus). |
 | **Broad Node Support** | Hand-built editors for the common nodes, and anything else rendered straight from your server's own node definitions, so custom nodes work without waiting for an app update. |
 | **Privacy First** | Direct connection to your server. No data is stored on our cloud. |
 
@@ -102,6 +103,10 @@ To unlock full functionality, including **workflow synchronization** and enhance
 - **Enhanced Integration**: Provides necessary API endpoints for better app performance.
 
 [Install Comfy Portal Endpoint →](https://github.com/ShunL12324/comfy-portal-endpoint)
+
+To browse server outputs, install [Assets+](https://github.com/DIGIDWARF-CC/ComfyUI-AssetsPlus) and tap the gallery button on a server's Workflows screen. The gallery refreshes while open, when returning to the app, and when pulled down. Deleting a server asset permanently removes it from the server's output folder.
+
+New workflow history items track their server output paths. Older device-only copies remain available in History. Their originals can be managed from Server Assets.
 
 ## Development
 

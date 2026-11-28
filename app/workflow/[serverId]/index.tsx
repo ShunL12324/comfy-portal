@@ -18,7 +18,7 @@ import { parseWorkflowTemplate } from '@/features/workflow/utils/workflow-parser
 import { getAndConvertWorkflow as apiGetAndConvertWorkflow, listWorkflows as apiListWorkflows, ServerWorkflowFile } from '@/services/comfy-api';
 import { showToast } from '@/utils/toast';
 import { Link as ExpoLink, useLocalSearchParams } from 'expo-router';
-import { FileSearch, Folder, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud, type LucideIcon } from 'lucide-react-native';
+import { FileSearch, Folder, Images, RefreshCw, Server as ServerIcon, ServerCrash, Trash2, UploadCloud, type LucideIcon } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -624,7 +624,20 @@ const WorkflowsScreen = () => {
         title={server?.name || 'Workflows'}
         showBack
         centerTitle={true}
-        rightElement={<WorkflowTabToggle index={index} onChange={setIndex} />}
+        rightElement={
+          <HStack className="items-center" space="xs">
+            <ExpoLink
+              href={{ pathname: '/workflow/[serverId]/run/history', params: { serverId } }}
+              asChild
+              push
+            >
+              <Button variant="link" accessibilityLabel="Server Assets" className="h-9 w-9 p-0">
+                <Icon as={Images} size="sm" className="text-primary-500" />
+              </Button>
+            </ExpoLink>
+            <WorkflowTabToggle index={index} onChange={setIndex} />
+          </HStack>
+        }
       />
       <RNETabView
         navigationState={{ index, routes }}

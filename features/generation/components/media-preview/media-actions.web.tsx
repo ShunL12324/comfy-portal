@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
+import { downloadMediaOnWeb } from '@/services/media-export';
 import { showToast } from '@/utils/toast';
 import { ImageIcon, Save } from 'lucide-react-native';
 import { memo } from 'react';
@@ -40,19 +41,7 @@ export const MediaActions = memo(function MediaActions({
     try {
       if (!mediaUrl) return;
 
-      // On web, trigger a browser download
-      const response = await fetch(mediaUrl);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const filename = mediaUrl.split('/').pop()?.split('?')[0] || 'download';
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      await downloadMediaOnWeb(mediaUrl);
 
       onClose();
       showToast.success('Media download started', undefined, safeAreaInsets.top + 16);

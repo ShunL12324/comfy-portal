@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useWorkflowStore } from '@/features/workflow/stores/workflow-store';
 import { saveWorkflowThumbnail } from '@/services/image-storage';
+import { withLocalMedia } from '@/services/media-export';
 import { showToast } from '@/utils/toast';
 import * as MediaLibrary from 'expo-media-library';
 import { ImageIcon, Save } from 'lucide-react-native';
@@ -49,7 +50,7 @@ export const MediaActions = memo(function MediaActions({
       }
 
       if (mediaUrl) {
-        await MediaLibrary.saveToLibraryAsync(mediaUrl);
+        await withLocalMedia(mediaUrl, MediaLibrary.saveToLibraryAsync);
         onClose();
         showToast.success('Media saved to your gallery', undefined, safeAreaInsets.top + 16);
       }

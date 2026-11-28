@@ -1,6 +1,8 @@
 import { Workflow } from '@/features/workflow/types';
 import { generateUUID } from '@/utils/uuid';
 import { Directory, File, Paths } from 'expo-file-system';
+import { GALLERY_MEDIA_EXTENSIONS, mediaFilename } from '@/features/generation/utils/media';
+import { getSavedOutputPath, type GalleryMedia } from './comfy-assets';
 
 interface SaveMediaOptions {
   serverId: string;
@@ -13,6 +15,7 @@ interface SaveMediaOptions {
    * job's outputs are already on disk and avoid saving them twice.
    */
   promptId?: string;
+  outputPath?: string;
 }
 
 function getGeneratedDir(serverId: string, workflowId: string) {
@@ -27,6 +30,17 @@ function ensureDirectory(dir: Directory) {
   dir.create({ intermediates: true, idempotent: true });
 }
 
+export async function removeGeneratedMedia(serverId: string, workflowId: string, url: string) {
+  const generatedDir = getGeneratedDir(serverId, workflowId);
+  const filename = Paths.basename(url);
+  if (!filename) throw new Error('Invalid media URL');
+
+  const file = new File(generatedDir, filename);
+  if (file.exists) file.delete();
+  const metadata = new File(generatedDir, `${filename}.json`);
+  if (metadata.exists) metadata.delete();
+}
+
 export async function saveGeneratedMedia({
   serverId,
   workflowId,
@@ -34,21 +48,13 @@ export async function saveGeneratedMedia({
   workflow,
   delete: shouldDelete,
   promptId,
+  outputPath,
 }: SaveMediaOptions) {
   try {
     const generatedDir = getGeneratedDir(serverId, workflowId);
 
     if (shouldDelete) {
-      const filename = mediaUrl.split('/').pop()?.split('?')[0];
-      if (!filename) throw new Error('Invalid media URL');
-
-      new File(generatedDir, filename).delete();
-      try {
-        new File(generatedDir, `${filename}.json`).delete();
-      } catch (error) {
-        void error;
-        // Ignore if metadata file doesn't exist
-      }
+      await removeGeneratedMedia(serverId, workflowId, mediaUrl);
       return;
     }
 
@@ -56,7 +62,7 @@ export async function saveGeneratedMedia({
 
     const uuid = await generateUUID();
     const timestamp = new Date().toISOString();
-    const originalExt = mediaUrl.split('.').pop()?.split('?')[0] || 'png';
+    const originalExt = mediaFilename(mediaUrl).split('.').pop() || 'png';
     const filename = `${timestamp}-${uuid}.${originalExt}`;
 
     const mediaFile = new File(generatedDir, filename);
@@ -74,6 +80,7 @@ export async function saveGeneratedMedia({
       workflow,
       originalUrl: mediaUrl,
       ...(promptId ? { promptId } : {}),
+      ...(outputPath ? { outputPath } : {}),
     };
 
     metadataFile.write(JSON.stringify(metadata, null, 2), { encoding: 'utf8' });
@@ -100,11 +107,10 @@ export async function getGeneratedMedia(serverId: string, workflowId: string) {
       ensureDirectory(generatedDir);
     }
 
-    const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.mov'];
     const mediaFiles = generatedDir
       .list()
       .filter((entry): entry is File => entry instanceof File)
-      .filter((file) => supportedExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)));
+      .filter((file) => GALLERY_MEDIA_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(`.${ext}`)));
 
     return Promise.all(
       mediaFiles.map(async (file) => {
@@ -125,7 +131,7 @@ export async function getGeneratedMedia(serverId: string, workflowId: string) {
   }
 }
 
-export async function loadHistoryMedia(serverId: string, workflowId: string) {
+export async function loadHistoryMedia(serverId: string, workflowId: string): Promise<GalleryMedia[]> {
   try {
     const mediaItems = await getGeneratedMedia(serverId, workflowId);
 
@@ -134,6 +140,7 @@ export async function loadHistoryMedia(serverId: string, workflowId: string) {
       .map((item) => ({
         url: item.path,
         timestamp: new Date(item.metadata.timestamp).getTime(),
+        outputPath: getSavedOutputPath(item.metadata.outputPath, item.metadata.originalUrl),
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
